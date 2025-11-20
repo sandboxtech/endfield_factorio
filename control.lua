@@ -39,8 +39,7 @@ local persistent_infinite_tech_names = {'steel-plate-productivity', 'plastic-bar
 local function player_gui(player)
 
     if not storage.dynamic_introduction then
-        storage.dynamic_introduction =
-            '版本号20251119\n[img=entity/big-wriggler-pentapod]BUG反馈 Q群 293280221 541826511\n\n'
+        storage.dynamic_introduction = ''
     end
     player.gui.top.clear()
     player.gui.top.add {
@@ -123,10 +122,10 @@ script.on_event(defines.events.on_pre_player_left_game, function(event)
     end
     -- if player.surface and not player.surface.platform then
     if player.character then
-        player.force.add_chart_tag(player.surface, {
-            position = player.character.position,
-            text = '[entity=character]'
-        })
+        -- player.force.add_chart_tag(player.surface, {
+        --     position = player.character.position,
+        --     text = '[entity=character]'
+        -- })
         player.character.die()
         -- 删除尸体
         for _, space_platform in pairs(game.forces.player.platforms) do
@@ -418,11 +417,11 @@ end)
 local function reset()
     storage.run = (storage.run or 0) + 1
 
-    -- 清除星球前
-    local last_run_ticks = (game.tick - (storage.run_start_tick or game.tick))
-    game.print({'wn.warp-success-time', math.floor(last_run_ticks / hour_to_tick),
-                math.floor(last_run_ticks / min_to_tick) % 60})
-    storage.run_start_tick = game.tick
+    -- -- 清除星球前
+    -- local last_run_ticks = (game.tick - (storage.run_start_tick or game.tick))
+    -- game.print({'wn.warp-success-time', math.floor(last_run_ticks / hour_to_tick),
+    --             math.floor(last_run_ticks / min_to_tick) % 60})
+    -- storage.run_start_tick = game.tick
 
     -- 重置玩家
     for _, player in pairs(game.players) do
@@ -523,11 +522,13 @@ local function reset()
             force.technologies[tech_name].enabled = true
             force.technologies[tech_name].visible_when_disabled = true
         end
+        game.print({'wn.unlock-notice'})
     else
         for _, tech_name in pairs(persistent_infinite_tech_names) do
             force.technologies[tech_name].enabled = false
             force.technologies[tech_name].visible_when_disabled = true
         end
+        game.print({'wn.lock-notice'})
     end
 
     -- 更新UI信息
@@ -614,33 +615,24 @@ script.on_event(defines.events.on_chunk_generated, function(event)
     players_gui() -- 更新...
 end)
 
-local function can_reset()
-    return game.forces.player.technologies['promethium-science-pack'].researched
-end
-
 script.on_event(defines.events.on_research_finished, function(event)
-
     local research = event.research
     local research_name = research.name
 
-    if not event.by_script then
-        -- 增加时间
-        if research.prototype and not research.prototype.research_trigger then
-            local delta_minutes = storage.warp_minutes_per_tech * (research_name == 'health' and 2 or 1)
-            storage.warp_minutes_total = storage.warp_minutes_total + delta_minutes
-            game.print({'wn.warp-time-tech', delta_minutes, get_warp_time_left()})
-        end
-
-        -- 自动添加无限科技
-        if research.level > research.prototype.level then
-            local queue = game.forces.player.research_queue
-            queue[table_size(queue) + 1] = research
-            game.forces.player.research_queue = queue
-            game.print({'wn.start-tech', research.name, research.level + 1})
+    local force = game.forces.player
+    for _, tech_name in pairs(persistent_infinite_tech_names) do
+        if tech_name == research_name then
+            game.print({'wn.persistent-tech', research.name, research.level})
+            reset()
         end
     end
-
-    players_gui()
+    -- -- 自动添加无限科技
+    -- if research.level > research.prototype.level then
+    --     local queue = game.forces.player.research_queue
+    --     queue[table_size(queue) + 1] = research
+    --     game.forces.player.research_queue = queue
+    --     game.print({'wn.start-tech', research.name, research.level + 1})
+    -- end
 end)
 
 -- 手动重置
@@ -665,24 +657,6 @@ script.on_event(defines.events.on_space_platform_changed_state, function(event)
         if table_size(force.platforms) > storage.max_platform_count then
             platform.destroy(1)
             game.print({'wn.too-many-platforms', storage.max_platform_count})
-        end
-    end
-
-    -- 首次到达
-    local platform = event.platform
-    local location = platform.space_location
-    if not location then
-        return
-    end
-
-    local name = location.name
-
-    players_gui()
-
-    -- 前往下一个地点
-    if name == edge then
-        if (can_reset()) then
-            reset()
         end
     end
 end)
@@ -710,11 +684,11 @@ script.on_nth_tick(60 * 60, function()
     local force = game.forces.player
     local size = table_size(force.platforms)
     if size < 1 and not force.technologies[persistent_infinite_tech_names[1]].enabled then
-        -- force.technologies['rocket-silo'].enabled = true
         for _, tech_name in pairs(persistent_infinite_tech_names) do
-            force.technologies[tech_name].enabled = false
+            force.technologies[tech_name].enabled = true
             force.technologies[tech_name].visible_when_disabled = true
         end
+        game.print({'wn.unlock-notice'})
     end
 end)
 
