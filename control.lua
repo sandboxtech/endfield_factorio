@@ -111,6 +111,7 @@ end
 -- 开图
 script.on_event(defines.events.on_player_respawned, function(event)
     local player = game.get_player(event.player_index)
+    player.disable_flashlight()
     try_enter_space_platform(player)
 end)
 
@@ -325,7 +326,7 @@ script.on_event(defines.events.on_surface_cleared, function(event)
     mgs.width = r * 2 + 32
     mgs.height = r * 2 + 32
 
-    mgs.starting_area = 2 * random_exp(2)
+    mgs.starting_area = 1 + 2 * random_exp(2)
 
     -- 母星
     if surface == game.surfaces.nauvis then
@@ -651,14 +652,14 @@ end)
 
 script.on_event(defines.events.on_space_platform_changed_state, function(event)
     -- 平台上限
-    local platform = event.platform
-    if event.old_state == 0 then
-        local force = platform.force
-        if table_size(force.platforms) > storage.max_platform_count then
-            platform.destroy(1)
-            game.print({'wn.too-many-platforms', storage.max_platform_count})
-        end
-    end
+    -- local platform = event.platform
+    -- if event.old_state == 0 then
+    --     local force = platform.force
+    --     if table_size(force.platforms) > storage.max_platform_count then
+    --         platform.destroy(1)
+    --         game.print({'wn.too-many-platforms', storage.max_platform_count})
+    --     end
+    -- end
 end)
 
 script.on_event(defines.events.on_gui_click, function(event)
