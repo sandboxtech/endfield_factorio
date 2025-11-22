@@ -105,14 +105,14 @@ local function player_reset(player)
         -- pass
     end
     player.disable_flashlight()
-    try_enter_space_platform(player)
+    -- try_enter_space_platform(player)
 end
 
 -- 开图
 script.on_event(defines.events.on_player_respawned, function(event)
     local player = game.get_player(event.player_index)
     player.disable_flashlight()
-    try_enter_space_platform(player)
+    -- try_enter_space_platform(player)
 end)
 
 -- 开图
@@ -240,7 +240,9 @@ renames['gleba_stone'] = 'item/stone'
 local function set_resource(name, mgs, richness_multiplier)
 
     local size = random_size()
-    local richness = random_richness()
+    local richness = random_richness() * 1 / (1 + storage.run * 0.05)
+    richness = math.max(0.01, richness)
+
     local frequency = random_frequency()
     local value = size * richness * frequency / storage.size / storage.richness / storage.frequency
 
@@ -620,13 +622,16 @@ script.on_event(defines.events.on_research_finished, function(event)
     local research = event.research
     local research_name = research.name
 
-    local force = game.forces.player
-    for _, tech_name in pairs(persistent_infinite_tech_names) do
-        if tech_name == research_name then
-            game.print({'wn.persistent-tech', research.name, research.level})
-            reset()
+    if not event.by_script then
+        local force = game.forces.player
+        for _, tech_name in pairs(persistent_infinite_tech_names) do
+            if tech_name == research_name then
+                game.print({'wn.persistent-tech', research.name, research.level})
+                reset()
+            end
         end
     end
+
     -- -- 自动添加无限科技
     -- if research.level > research.prototype.level then
     --     local queue = game.forces.player.research_queue
