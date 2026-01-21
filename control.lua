@@ -302,7 +302,7 @@ script.on_event(defines.events.on_surface_cleared, function(event)
 
     try_add_trait({'wn.traits-planet', surface.name})
 
-    if math.random(1, 6) == 1 then
+    if math.random(1, 6) == 1 and surface ~= game.surfaces.aquilo then
         -- 潮汐锁定，永夜
         surface.freeze_daytime = true
         surface.daytime = 0.56
@@ -586,9 +586,9 @@ script.on_event(defines.events.on_player_joined_game, function(event)
     if player.online_time > 0 then
         local last_delta = math.max(0, math.floor((game.tick - player.last_online) / hour_to_tick))
         local total_time = math.max(0, math.floor(player.online_time / hour_to_tick))
-        welcome = {'wn.welcome-player', player.name, total_time, last_delta}
+        welcome = {'wn.welcome-player', player.name, total_time, last_delta, player.locale}
     else
-        welcome = {'wn.welcome-new-player', player.name}
+        welcome = {'wn.welcome-new-player', player.name, player.locale}
     end
     game.print(welcome)
 end)
