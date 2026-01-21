@@ -240,7 +240,7 @@ renames['gleba_stone'] = 'item/stone'
 local function set_resource(name, mgs, richness_multiplier)
 
     local size = random_size()
-    local richness = random_richness() * 1 / (1 + storage.run * 0.05)
+    local richness = readable(random_richness() * 1 / (1 + storage.run * 0.05))
     richness = math.max(0.01, richness)
 
     local frequency = random_frequency()
@@ -426,6 +426,23 @@ local function reset()
     --             math.floor(last_run_ticks / min_to_tick) % 60})
     -- storage.run_start_tick = game.tick
 
+    -- 统计about to rust飞船
+    if not storage.rust then
+        storage.rust = {}
+    end
+    for _, space_platform in pairs(game.forces.player.platforms) do
+        -- 如果space_platform.index不在storage.rust里，则加入，改名飞船。如果在，则摧毁 --storage.rust[space_platform.index]
+        if not storage.rust[space_platform.index] then
+            storage.rust[space_platform.index] = true
+            space_platform.name = '[virtual-signal=signal-skull]' .. space_platform.name
+            game.print({'wn.about-to-rust-notice', space_platform.name})
+        else
+            storage.rust[space_platform.index] = nil
+            space_platform.destroy()
+            game.print({'wn.rust-destroy-notice', space_platform.name})
+        end
+    end
+
     -- 重置玩家
     for _, player in pairs(game.players) do
         if player.surface and not player.surface.platform then
@@ -518,21 +535,21 @@ local function reset()
     try_add_trait({'', '\n', {'wn.galaxy-trait-spawning_rate', game.map_settings.asteroids.spawning_rate},
                    {'wn.galaxy-trait-spoil_time_modifier', game.difficulty_settings.spoil_time_modifier}})
 
-    local force = game.forces.player
-    local size = table_size(force.platforms)
-    if size < 1 and not force.technologies['rocket-silo'].enabled then
-        for _, tech_name in pairs(persistent_infinite_tech_names) do
-            force.technologies[tech_name].enabled = true
-            force.technologies[tech_name].visible_when_disabled = true
-        end
-        game.print({'wn.unlock-notice'})
-    else
-        for _, tech_name in pairs(persistent_infinite_tech_names) do
-            force.technologies[tech_name].enabled = false
-            force.technologies[tech_name].visible_when_disabled = true
-        end
-        game.print({'wn.lock-notice'})
-    end
+    -- local force = game.forces.player
+    -- local size = table_size(force.platforms)
+    -- if size < 1 and not force.technologies['rocket-silo'].enabled then
+    --     for _, tech_name in pairs(persistent_infinite_tech_names) do
+    --         force.technologies[tech_name].enabled = true
+    --         force.technologies[tech_name].visible_when_disabled = true
+    --     end
+    --     game.print({'wn.unlock-notice'})
+    -- else
+    --     for _, tech_name in pairs(persistent_infinite_tech_names) do
+    --         force.technologies[tech_name].enabled = false
+    --         force.technologies[tech_name].visible_when_disabled = true
+    --     end
+    --     game.print({'wn.lock-notice'})
+    -- end
 
     -- 更新UI信息
     players_gui()
@@ -628,17 +645,18 @@ script.on_event(defines.events.on_research_finished, function(event)
             if tech_name == research_name then
                 game.print({'wn.persistent-tech', research.name, research.level})
                 reset()
+            else
+                -- 自动添加非产能无限科技
+                if research.level > research.prototype.level then
+                    local queue = game.forces.player.research_queue
+                    queue[table_size(queue) + 1] = research
+                    game.forces.player.research_queue = queue
+                    game.print({'wn.start-tech', research.name, research.level + 1})
+                end
             end
         end
     end
 
-    -- -- 自动添加无限科技
-    -- if research.level > research.prototype.level then
-    --     local queue = game.forces.player.research_queue
-    --     queue[table_size(queue) + 1] = research
-    --     game.forces.player.research_queue = queue
-    --     game.print({'wn.start-tech', research.name, research.level + 1})
-    -- end
 end)
 
 -- 手动重置
@@ -684,17 +702,17 @@ script.on_event(defines.events.on_gui_click, function(event)
     end
 end)
 
--- 没有飞船 才能研究 飞船建造、无限科技
-script.on_nth_tick(60 * 60, function()
-    -- 通知 1分钟一次
-    local force = game.forces.player
-    local size = table_size(force.platforms)
-    if size < 1 and not force.technologies[persistent_infinite_tech_names[1]].enabled then
-        for _, tech_name in pairs(persistent_infinite_tech_names) do
-            force.technologies[tech_name].enabled = true
-            force.technologies[tech_name].visible_when_disabled = true
-        end
-        game.print({'wn.unlock-notice'})
-    end
-end)
+-- -- 没有飞船 才能研究 飞船建造、无限科技
+-- script.on_nth_tick(60 * 60, function()
+--     -- 通知 1分钟一次
+--     local force = game.forces.player
+--     local size = table_size(force.platforms)
+--     if size < 1 and not force.technologies[persistent_infinite_tech_names[1]].enabled then
+--         for _, tech_name in pairs(persistent_infinite_tech_names) do
+--             force.technologies[tech_name].enabled = true
+--             force.technologies[tech_name].visible_when_disabled = true
+--         end
+--         game.print({'wn.unlock-notice'})
+--     end
+-- end)
 
