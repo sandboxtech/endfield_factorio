@@ -45,7 +45,7 @@ local function player_gui(player)
     player.gui.top.add {
         type = 'sprite-button',
         sprite = 'item/electric-mining-drill',
-        name = 'info',
+        name = 'introduction',
         tooltip = {'description', storage.dynamic_introduction}
     }
 
@@ -59,6 +59,16 @@ local function player_gui(player)
         name = 'traits',
         tooltip = storage.traits
     }
+
+    if player.admin then
+        player.gui.top.add {
+            type = 'sprite-button',
+            sprite = 'item/raw-fish',
+            -- sprite = 'virtual-signal/signal-info',
+            name = 'admin',
+            tooltip = '管理员输入 /reset 手动跃迁'
+        }
+    end
 end
 
 local function players_gui()
@@ -121,6 +131,7 @@ script.on_event(defines.events.on_pre_player_left_game, function(event)
     if not player then
         return
     end
+
     -- if player.surface and not player.surface.platform then
     if player.character then
         -- player.force.add_chart_tag(player.surface, {
@@ -420,11 +431,11 @@ end)
 local function reset()
     storage.run = (storage.run or 0) + 1
 
-    -- -- 清除星球前
-    -- local last_run_ticks = (game.tick - (storage.run_start_tick or game.tick))
-    -- game.print({'wn.warp-success-time', math.floor(last_run_ticks / hour_to_tick),
-    --             math.floor(last_run_ticks / min_to_tick) % 60})
-    -- storage.run_start_tick = game.tick
+    -- 清除星球前
+    local last_run_ticks = (game.tick - (storage.run_start_tick or game.tick))
+    game.print({'wn.warp-success-time', math.floor(last_run_ticks / hour_to_tick),
+                math.floor(last_run_ticks / min_to_tick) % 60})
+    storage.run_start_tick = game.tick
 
     -- 统计about to rust飞船
     if not storage.rust then
@@ -463,7 +474,7 @@ local function reset()
     end
 
     -- 删除星球前
-    storage.traits = {'', {'wn.traits-title'}}
+    storage.traits = {'', {'wn.traits-title', storage.run}}
 
     -- 清空标记
     for _, surface in pairs(game.surfaces) do
@@ -518,11 +529,15 @@ local function reset()
     game.reset_time_played()
 
     -- 母星污染
+    if not storage.difficulty then
+        storage.difficulty = 1
+    end
     game.forces.enemy.reset_evolution()
     game.map_settings.enemy_expansion.enabled = false
     game.map_settings.pollution.enabled = true
-    game.map_settings.pollution.ageing = readable(random_exp(3))
-    game.map_settings.pollution.enemy_attack_pollution_consumption_modifier = readable(random_exp(3))
+    game.map_settings.pollution.ageing = readable(random_exp(4))
+    game.map_settings.pollution.enemy_attack_pollution_consumption_modifier = readable(random_exp(3)) /
+                                                                                  storage.difficulty
     try_add_trait({'wn.galaxy-trait-pollution-ageing', game.map_settings.pollution.ageing})
     try_add_trait({'wn.galaxy-trait-enemy_attack_pollution_consumption_modifier',
                    game.map_settings.pollution.enemy_attack_pollution_consumption_modifier})
@@ -691,10 +706,16 @@ script.on_event(defines.events.on_gui_click, function(event)
         return
     end
     if event.element.name == 'introduction' then
+        local last_run_ticks = (game.tick - (storage.run_start_tick or game.tick))
+        local life = (storage.hour_auto_reset or (200)) * (hour_to_tick - last_run_ticks)
+
         -- suicide
         if player.character then
             player.character.die()
-            game.print({'wn.suicide-notice', player.name})
+            game.print({'wn.suicide-notice', player.name, life})
+            if life <= 0 then
+                reset()
+            end
         end
         return
     else
