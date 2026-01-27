@@ -35,6 +35,15 @@ local persistent_infinite_tech_names = {'steel-plate-productivity', 'plastic-bar
                                         'processing-unit-productivity', 'rocket-part-productivity',
                                         'research-productivity', 'mining-productivity-3'}
 
+-- local disabled_tech_names = {'steel-plate-productivity', 'plastic-bar-productivity',
+--                              'low-density-structure-productivity', 'rocket-fuel-productivity',
+--                              'processing-unit-productivity', 'rocket-part-productivity', 'research-productivity',
+--                              'mining-productivity-3'}
+----         for _, tech_name in pairs(disabled_tech_names) do
+--             force.technologies[tech_name].enabled = false
+--             force.technologies[tech_name].visible_when_disabled = true
+--         end
+
 -- 左上角信息内容
 local function player_gui(player)
 
@@ -707,15 +716,16 @@ script.on_event(defines.events.on_gui_click, function(event)
     end
     if event.element.name == 'introduction' then
         local last_run_ticks = (game.tick - (storage.run_start_tick or game.tick))
-        local life = (storage.hour_auto_reset or (200)) * last_run_ticks / hour_to_tick
-        life = math.floor(life)
+        local life = ((storage.hour_auto_reset or 200) * hour_to_tick) - last_run_ticks
 
         -- suicide
         if player.character then
             player.character.die()
-            game.print({'wn.suicide-notice', player.name, life})
+
             if life <= 0 then
                 reset()
+            else
+                game.print({'wn.suicide-notice', player.name, math.floor(life) / hour_to_tick})
             end
         end
         return
