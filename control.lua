@@ -707,7 +707,8 @@ script.on_event(defines.events.on_gui_click, function(event)
     end
     if event.element.name == 'introduction' then
         local last_run_ticks = (game.tick - (storage.run_start_tick or game.tick))
-        local life = (storage.hour_auto_reset or (200)) * (hour_to_tick - last_run_ticks)
+        local life = (storage.hour_auto_reset or (200)) * last_run_ticks / hour_to_tick
+        life = math.floor(life)
 
         -- suicide
         if player.character then
