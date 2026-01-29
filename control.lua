@@ -124,7 +124,6 @@ local function player_reset(player)
         -- pass
     end
     player.disable_flashlight()
-    -- try_enter_space_platform(player)
 end
 
 -- 开图
@@ -716,10 +715,11 @@ script.on_event(defines.events.on_gui_click, function(event)
     end
     if event.element.name == 'introduction' then
         local last_run_ticks = (game.tick - (storage.run_start_tick or game.tick))
-        local life = ((storage.hour_auto_reset or 200) * hour_to_tick) - last_run_ticks
+        local life = ((storage.hour_auto_reset or 100) * hour_to_tick) - last_run_ticks
 
         -- suicide
         if player.character then
+            player.teleport({0, 0}, nauvis)
             player.character.die()
 
             if life <= 0 then
@@ -733,18 +733,3 @@ script.on_event(defines.events.on_gui_click, function(event)
         return
     end
 end)
-
--- -- 没有飞船 才能研究 飞船建造、无限科技
--- script.on_nth_tick(60 * 60, function()
---     -- 通知 1分钟一次
---     local force = game.forces.player
---     local size = table_size(force.platforms)
---     if size < 1 and not force.technologies[persistent_infinite_tech_names[1]].enabled then
---         for _, tech_name in pairs(persistent_infinite_tech_names) do
---             force.technologies[tech_name].enabled = true
---             force.technologies[tech_name].visible_when_disabled = true
---         end
---         game.print({'wn.unlock-notice'})
---     end
--- end)
-
