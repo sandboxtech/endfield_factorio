@@ -725,7 +725,7 @@ script.on_event(defines.events.on_gui_click, function(event)
             if life <= 0 then
                 reset()
             else
-                game.print({'wn.suicide-notice', player.name, math.floor(life) / hour_to_tick})
+                game.print({'wn.suicide-notice', player.name, math.floor(life / hour_to_tick)})
             end
         end
         return
