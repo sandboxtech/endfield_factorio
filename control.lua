@@ -51,12 +51,18 @@ local function player_gui(player)
         storage.dynamic_introduction = ''
     end
     player.gui.top.clear()
-    player.gui.top.add {
+    local intro = player.gui.top.add {
         type = 'sprite-button',
-        sprite = 'item/electric-mining-drill',
+        caption = {'run', storage.run or 0},
         name = 'introduction',
         tooltip = {'description', storage.dynamic_introduction}
     }
+    intro.style.font = 'heading-1'
+    intro.style.font_color = {222, 222, 222}
+    intro.style.minimal_height = 38
+    intro.style.maximal_height = 38
+    intro.style.minimal_width = 288
+    intro.style.padding = -2
 
     if not storage.traits then
         storage.traits = {''}
@@ -482,7 +488,7 @@ local function reset()
     end
 
     -- 删除星球前
-    storage.traits = {'', {'wn.traits-title', storage.run}}
+    -- storage.traits = {'', {'wn.traits-title', storage.run}}
 
     -- 清空标记
     for _, surface in pairs(game.surfaces) do
@@ -715,18 +721,28 @@ script.on_event(defines.events.on_gui_click, function(event)
     end
     if event.element.name == 'introduction' then
         local last_run_ticks = (game.tick - (storage.run_start_tick or game.tick))
-        local life = ((storage.hour_auto_reset or 100) * hour_to_tick) - last_run_ticks
+        local life_total = ((storage.hour_auto_reset or 100) * hour_to_tick)
+        local life = life_total - last_run_ticks
 
         -- suicide
         if player.character then
             player.teleport({0, 0}, nauvis)
             player.character.die()
+            game.print({'wn.suicide-notice', player.name, readable(life / hour_to_tick)})
 
-            if life <= 0 then
+            if life * 4 < life_total and game.speed > 0.25 then
+                game.print({'wn.game-speed-notice', game.speed})
+                game.speed = 0.25
+            elseif life * 2 < life_total and game.speed > 0.5 then
+                game.print({'wn.game-speed-notice', game.speed})
+                game.speed = 0.5
+            elseif life <= 0 then
+                game.speed = 1
                 reset()
             else
-                game.print({'wn.suicide-notice', player.name, math.floor(life / hour_to_tick)})
+
             end
+
         end
         return
     else
