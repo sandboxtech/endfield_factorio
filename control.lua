@@ -168,6 +168,7 @@ script.on_event(defines.events.on_pre_player_left_game, function(event)
     else
         player.clear_items_inside()
     end
+
 end)
 
 -- 创建玩家
@@ -443,6 +444,8 @@ end)
 
 -- 跃迁
 local function reset()
+    game.speed = 1
+
     storage.run = (storage.run or 0) + 1
 
     -- 清除星球前
@@ -488,7 +491,7 @@ local function reset()
     end
 
     -- 删除星球前
-    -- storage.traits = {'', {'wn.traits-title', storage.run}}
+    storage.traits = {'', {'wn.traits-title', storage.run}}
 
     -- 清空标记
     for _, surface in pairs(game.surfaces) do
@@ -721,31 +724,41 @@ script.on_event(defines.events.on_gui_click, function(event)
     end
     if event.element.name == 'introduction' then
         local last_run_ticks = (game.tick - (storage.run_start_tick or game.tick))
-        local life_total = ((storage.hour_auto_reset or 100) * hour_to_tick)
+        local life_total = ((storage.hour_auto_reset or 50) * hour_to_tick)
         local life = life_total - last_run_ticks
 
         -- suicide
         if player.character then
             player.teleport({0, 0}, nauvis)
             player.character.die()
-            game.print({'wn.suicide-notice', player.name, readable(life / hour_to_tick)})
 
-            if life * 4 < life_total and game.speed > 0.25 then
-                game.print({'wn.game-speed-notice', game.speed})
-                game.speed = 0.25
-            elseif life * 2 < life_total and game.speed > 0.5 then
-                game.print({'wn.game-speed-notice', game.speed})
-                game.speed = 0.5
-            elseif life <= 0 then
-                game.speed = 1
-                reset()
-            else
-
-            end
-
+            game.print({'wn.suicide-notice', player.name, math.floor(100 * life / hour_to_tick) / 100})
         end
+
         return
     else
         return
+    end
+end)
+
+script.on_nth_tick(60 * 60 * 60, function()
+    local last_run_ticks = (game.tick - (storage.run_start_tick or game.tick))
+    local life_total = ((storage.hour_auto_reset or 50) * hour_to_tick)
+    local life = life_total - last_run_ticks
+
+    if life * 25 < life_total and game.speed > 0.25 then
+        game.speed = 0.25
+        game.print({'wn.game-speed-notice', game.speed})
+
+    elseif life * 5 < life_total and game.speed > 0.5 then
+        game.speed = 0.5
+    elseif life <= 0 then
+        reset()
+    else
+
+    end
+
+    if speed < 1 then
+        game.print({'wn.game-speed-notice', game.speed})
     end
 end)
