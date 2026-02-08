@@ -743,7 +743,7 @@ end)
 
 script.on_nth_tick(60 * 60 * 60, function()
     local last_run_ticks = (game.tick - (storage.run_start_tick or game.tick))
-    local life_total = ((storage.hour_auto_reset or 50) * hour_to_tick)
+    local life_total = ((storage.hour_auto_reset or 100) * hour_to_tick)
     local life = life_total - last_run_ticks
 
     if life * 25 < life_total and game.speed > 0.25 then
@@ -758,7 +758,7 @@ script.on_nth_tick(60 * 60 * 60, function()
 
     end
 
-    if speed < 1 then
+    if game.speed < 1 then
         game.print({'wn.game-speed-notice', game.speed})
     end
 end)
