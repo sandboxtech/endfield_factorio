@@ -3,22 +3,14 @@ local hour_to_tick = 216000
 local min_to_tick = 3600
 
 local nauvis = 'nauvis'
-local vulcanus = 'vulcanus'
-local fulgora = 'fulgora'
-local gleba = 'gleba'
-local aquilo = 'aquilo'
-local edge = 'solar-system-edge'
-local shattered_planet = 'shattered-planet'
 
 local normal = 'normal'
-local uncommon = 'uncommon'
-local rare = 'rare'
-local epic = 'epic'
-local legendary = 'legendary'
-local qualities = {normal, uncommon, rare, epic, legendary}
 
 local not_admin_text = {'wn.permission-denied'}
 
+-- 追加一条 trait 到 tooltip 列表。
+-- 本地化字符串单层最多 20 个参数，超过 18 时把整张表嵌进
+-- 一个新表 {'', old} 作为单个元素，再继续追加，从而突破单层上限。
 local function try_add_trait(trait)
     if not trait then
         return
@@ -30,19 +22,11 @@ local function try_add_trait(trait)
     table.insert(storage.traits, trait)
 end
 
+-- 跃迁后 level 会被 force.reset() 清零，需要在 reset 前后记录并恢复。
 local persistent_infinite_tech_names = {'steel-plate-productivity', 'plastic-bar-productivity',
                                         'low-density-structure-productivity', 'rocket-fuel-productivity',
                                         'processing-unit-productivity', 'rocket-part-productivity',
                                         'research-productivity', 'mining-productivity-3'}
-
--- local disabled_tech_names = {'steel-plate-productivity', 'plastic-bar-productivity',
---                              'low-density-structure-productivity', 'rocket-fuel-productivity',
---                              'processing-unit-productivity', 'rocket-part-productivity', 'research-productivity',
---                              'mining-productivity-3'}
-----         for _, tech_name in pairs(disabled_tech_names) do
---             force.technologies[tech_name].enabled = false
---             force.technologies[tech_name].visible_when_disabled = true
---         end
 
 -- 左上角信息内容
 local function player_gui(player)
@@ -70,7 +54,6 @@ local function player_gui(player)
     player.gui.top.add {
         type = 'sprite-button',
         sprite = 'space-location/solar-system-edge',
-        -- sprite = 'virtual-signal/signal-info',
         name = 'traits',
         tooltip = storage.traits
     }
@@ -79,7 +62,6 @@ local function player_gui(player)
         player.gui.top.add {
             type = 'sprite-button',
             sprite = 'item/raw-fish',
-            -- sprite = 'virtual-signal/signal-info',
             name = 'admin',
             tooltip = '管理员输入 /reset 手动跃迁'
         }
@@ -126,9 +108,6 @@ local function player_reset(player)
     if not player then
         return
     end
-    if game.tick - player.last_online > 48 * hour_to_tick then
-        -- pass
-    end
     player.disable_flashlight()
 end
 
@@ -136,7 +115,6 @@ end
 script.on_event(defines.events.on_player_respawned, function(event)
     local player = game.get_player(event.player_index)
     player.disable_flashlight()
-    -- try_enter_space_platform(player)
 end)
 
 -- 开图
@@ -146,12 +124,7 @@ script.on_event(defines.events.on_pre_player_left_game, function(event)
         return
     end
 
-    -- if player.surface and not player.surface.platform then
     if player.character then
-        -- player.force.add_chart_tag(player.surface, {
-        --     position = player.character.position,
-        --     text = '[entity=character]'
-        -- })
         player.character.die()
         -- 删除尸体
         for _, space_platform in pairs(game.forces.player.platforms) do
@@ -179,26 +152,6 @@ script.on_event(defines.events.on_player_created, function(event)
     try_enter_space_platform(player)
 end)
 
-local function create_entity(name, x, y)
-    local entity = game.surfaces.nauvis.create_entity {
-        name = name,
-        quality = normal,
-        position = {
-            x = x,
-            y = y
-        },
-        force = 'player'
-    }
-    entity.minable = true
-    entity.destructible = true
-end
-
--- 重置母星
-local function nauvis_reset()
-    -- create_entity('rocket-silo', 5, 5)
-    -- create_entity('cargo-landing-pad', 5, -7)
-end
-
 -- 数字格式
 local function readable(x)
     if x < 0 then
@@ -213,6 +166,8 @@ local function readable(x)
         return math.floor(x / 10) * 10
     elseif x < 1000 then
         return math.floor(x / 100) * 100
+    else
+        return math.floor(x / 1000) * 1000
     end
 end
 
@@ -221,22 +176,18 @@ local function random_exp(x)
     return math.pow(2, (math.random() - math.random()) * x)
 end
 
-local function random_frequency()
-    return readable(0.1 + random_exp(3) * storage.frequency)
+-- 资源属性 = 0.1 + 指数分布 * 全局缩放，exp 越大方差越大
+local function random_attr(scale_key, exp)
+    return readable(0.1 + random_exp(exp) * storage[scale_key])
 end
 
-local function random_size()
-    return readable(0.1 + random_exp(3) * storage.size)
-end
+local function random_frequency() return random_attr('frequency', 3) end
+local function random_size()      return random_attr('size', 3) end
+local function random_richness()  return random_attr('richness', 6) end
 
-local function random_richness()
-    return readable(0.1 + random_exp(6) * storage.richness)
-end
-
+-- 自然要素（水/树/敌人基地等）使用 nature 而非全局 frequency/size/richness
 local function random_nature()
-    if not storage.nature then
-        storage.nature = 3
-    end
+    storage.nature = storage.nature or 3
     return readable(math.pow(2, (math.random() - math.random()) * storage.nature))
 end
 
@@ -342,7 +293,7 @@ script.on_event(defines.events.on_surface_cleared, function(event)
 
     storage.radius_min = storage.radius_min or 256
     storage.radius_max = storage.radius_max or 4096
-    storage.radius = storage.radius or 1024
+    storage.radius = storage.radius or 2048
     -- 刷新星球半径
     local r = storage.radius * random_exp(2)
     r = math.max(storage.radius_min, r)
@@ -364,7 +315,6 @@ script.on_event(defines.events.on_surface_cleared, function(event)
             try_add_trait({'wn.traits-peaceful-nauvis'})
         end
 
-        local names = {''}
         for _, res in pairs({'iron-ore', 'copper-ore', 'stone', 'coal', 'crude-oil'}) do
             set_resource(res, mgs)
         end
@@ -439,10 +389,11 @@ script.on_event(defines.events.on_surface_cleared, function(event)
         x = radius,
         y = radius
     }})
-    nauvis_reset()
 end)
 
 -- 跃迁
+-- 每次跃迁后所有星球被清空、重建，玩家死亡，飞船保留一周期。
+-- storage.run 从 1 开始计数（on_init 中会调用一次 reset()，对应第 1 轮）。
 local function reset()
     game.speed = 1
 
@@ -454,12 +405,12 @@ local function reset()
                 math.floor(last_run_ticks / min_to_tick) % 60})
     storage.run_start_tick = game.tick
 
-    -- 统计about to rust飞船
+    -- 飞船存活两个跃迁周期：本轮首次见到的标 skull，第二次见到时摧毁。
+    -- 玩家可借此提前撤离即将报废的飞船。
     if not storage.rust then
         storage.rust = {}
     end
     for _, space_platform in pairs(game.forces.player.platforms) do
-        -- 如果space_platform.index不在storage.rust里，则加入，改名飞船。如果在，则摧毁 --storage.rust[space_platform.index]
         if not storage.rust[space_platform.index] then
             storage.rust[space_platform.index] = true
             space_platform.name = '[virtual-signal=signal-skull]' .. space_platform.name
@@ -471,10 +422,9 @@ local function reset()
         end
     end
 
-    -- 重置玩家
+    -- 重置玩家：在星球上的杀死/清空背包，在飞船上的保留（飞船能存活一周期）
     for _, player in pairs(game.players) do
         if player.surface and not player.surface.platform then
-            -- if player.surface and player.surface.planet then
             local inventory = player.get_inventory(defines.inventory.character_main)
 
             if player.character then
@@ -485,8 +435,6 @@ local function reset()
                 player.clear_items_inside()
             end
             player_reset(player)
-        else
-
         end
     end
 
@@ -500,39 +448,26 @@ local function reset()
         end
     end
 
-    game.surfaces['nauvis'].clear(true)
-    if game.surfaces['vulcanus'] ~= nil then
-        game.surfaces['vulcanus'].clear(true)
-    end
-    if game.surfaces['gleba'] ~= nil then
-        game.surfaces['gleba'].clear(true)
-    end
-    if game.surfaces['fulgora'] ~= nil then
-        game.surfaces['fulgora'].clear(true)
-    end
-    if game.surfaces['aquilo'] ~= nil then
-        game.surfaces['aquilo'].clear(true)
+    for _, surface_name in pairs({'nauvis', 'vulcanus', 'gleba', 'fulgora', 'aquilo'}) do
+        if game.surfaces[surface_name] ~= nil then
+            game.surfaces[surface_name].clear(true)
+        end
     end
 
     local force = game.forces.player
 
-    -- 产能保留
+    -- force.reset() 会清掉所有科技进度，先记录无限科技 level，重置后再恢复。
     storage.infinite_tech_levels = storage.infinite_tech_levels or {}
-
     for _, tech_name in pairs(persistent_infinite_tech_names) do
         local tech = force.technologies[tech_name]
         storage.infinite_tech_levels[tech_name] = math.max(tech.prototype.level, tech.level)
     end
 
-    -- 重置玩家势力
     force.reset()
     force.friendly_fire = true
 
-    -- 产能保留
     for _, tech_name in pairs(persistent_infinite_tech_names) do
-        local level = storage.infinite_tech_levels[tech_name]
-        local tech = force.technologies[tech_name]
-        tech.level = level
+        force.technologies[tech_name].level = storage.infinite_tech_levels[tech_name]
     end
 
     -- 瞬移飞船
@@ -540,8 +475,6 @@ local function reset()
         platform.space_location = 'nauvis'
         platform.paused = true
     end
-
-    -- 重置科技
 
     game.reset_time_played()
 
@@ -566,22 +499,6 @@ local function reset()
 
     try_add_trait({'', '\n', {'wn.galaxy-trait-spawning_rate', game.map_settings.asteroids.spawning_rate},
                    {'wn.galaxy-trait-spoil_time_modifier', game.difficulty_settings.spoil_time_modifier}})
-
-    -- local force = game.forces.player
-    -- local size = table_size(force.platforms)
-    -- if size < 1 and not force.technologies['rocket-silo'].enabled then
-    --     for _, tech_name in pairs(persistent_infinite_tech_names) do
-    --         force.technologies[tech_name].enabled = true
-    --         force.technologies[tech_name].visible_when_disabled = true
-    --     end
-    --     game.print({'wn.unlock-notice'})
-    -- else
-    --     for _, tech_name in pairs(persistent_infinite_tech_names) do
-    --         force.technologies[tech_name].enabled = false
-    --         force.technologies[tech_name].visible_when_disabled = true
-    --     end
-    --     game.print({'wn.lock-notice'})
-    -- end
 
     -- 更新UI信息
     players_gui()
@@ -705,60 +622,46 @@ commands.add_command('reset', {'wn.run-reset-help'}, function(command)
     end
 end)
 
-script.on_event(defines.events.on_space_platform_changed_state, function(event)
-    -- 平台上限
-    -- local platform = event.platform
-    -- if event.old_state == 0 then
-    --     local force = platform.force
-    --     if table_size(force.platforms) > storage.max_platform_count then
-    --         platform.destroy(1)
-    --         game.print({'wn.too-many-platforms', storage.max_platform_count})
-    --     end
-    -- end
-end)
-
 script.on_event(defines.events.on_gui_click, function(event)
     local player = game.get_player(event.player_index)
     if not player then
         return
     end
+    -- 点击左上 run 按钮 = 自杀回母星（用于卡死时脱困）
     if event.element.name == 'introduction' then
         local last_run_ticks = (game.tick - (storage.run_start_tick or game.tick))
         local life_total = ((storage.hour_auto_reset or 50) * hour_to_tick)
         local life = life_total - last_run_ticks
 
-        -- suicide
         if player.character then
             player.teleport({0, 0}, nauvis)
             player.character.die()
 
             game.print({'wn.suicide-notice', player.name, math.floor(100 * life / hour_to_tick) / 100})
         end
-
-        return
-    else
-        return
     end
 end)
 
+-- 每分钟检查：临近跃迁时降低游戏速度，给玩家撤离时间；到时强制跃迁。
 script.on_nth_tick(60 * 60 * 60, function()
     local last_run_ticks = (game.tick - (storage.run_start_tick or game.tick))
     local life_total = ((storage.hour_auto_reset or 100) * hour_to_tick)
     local life = life_total - last_run_ticks
 
-    if life * 25 < life_total and game.speed > 0.25 then
-        game.speed = 0.25
-        game.print({'wn.game-speed-notice', game.speed})
-
-    elseif life * 5 < life_total and game.speed > 0.5 then
-        game.speed = 0.5
-    elseif life <= 0 then
+    if life <= 0 then
         reset()
-    else
-
+        return
     end
 
-    if game.speed < 1 then
+    -- 剩 1/25 寿命降到 0.25 倍速，剩 1/5 寿命降到 0.5 倍速
+    local new_speed
+    if life < life_total / 25 then
+        new_speed = 0.25
+    elseif life < life_total / 5 then
+        new_speed = 0.5
+    end
+    if new_speed and game.speed > new_speed then
+        game.speed = new_speed
         game.print({'wn.game-speed-notice', game.speed})
     end
 end)
