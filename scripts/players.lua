@@ -4,6 +4,28 @@ local gui = require('scripts.gui')
 
 local M = {}
 
+-- 列出玩家所有非零科技瓶经验。broadcast=true 时用 game.print 让所有人看到。
+function M.print_science_exp(player, broadcast)
+    local sink = broadcast and game or player
+    local prefix = broadcast and ('[player]' .. player.name .. ' ') or ''
+    local exp = storage.science_exp and storage.science_exp[player.index]
+    if not exp then
+        sink.print(prefix .. '（暂无科技瓶经验）')
+        return
+    end
+    local has_any = false
+    for key, val in pairs(exp) do
+        if val > 0 then
+            has_any = true
+            local name, quality = string.match(key, '([^/]+)/(.+)')
+            sink.print(prefix .. '[item=' .. name .. ',quality=' .. quality .. '] ' .. val)
+        end
+    end
+    if not has_any then
+        sink.print(prefix .. '（暂无科技瓶经验）')
+    end
+end
+
 -- 随机让玩家进入一艘己方太空平台。
 function M.try_enter_space_platform(player)
     local size = table_size(game.forces.player.platforms)
@@ -87,6 +109,8 @@ script.on_event(defines.events.on_player_joined_game, function(event)
         welcome = {'wn.welcome-new-player', player.name, player.locale}
     end
     game.print(welcome)
+
+    M.print_science_exp(player, true)
 end)
 
 return M

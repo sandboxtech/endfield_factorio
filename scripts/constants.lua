@@ -5,11 +5,12 @@ return {
 
     not_admin_text = {'wn.permission-denied'},
 
-    -- 跃迁后 level 会被 force.reset() 清零，需要在 reset 前后记录并恢复。
-    persistent_infinite_tech_names = {
-        'steel-plate-productivity', 'plastic-bar-productivity',
-        'low-density-structure-productivity', 'rocket-fuel-productivity',
-        'processing-unit-productivity', 'rocket-part-productivity',
-        'research-productivity', 'mining-productivity-3'
+    -- 跃迁时玩家背包里每"组"科技瓶按品质换算成的经验点数
+    quality_exp = {
+        normal    = 1,
+        uncommon  = 2,
+        rare      = 3,
+        epic      = 4,
+        legendary = 5,
     },
 }

@@ -1,29 +1,19 @@
--- 研究完成时的两种动作：
---   1. 完成产能类无限科技 → 触发跃迁
---   2. 完成其它无限科技 → 自动把下一级加入研究队列
+-- 研究完成时：若该科技解锁了新科技瓶（科技名以 -science-pack 结尾），
+-- 把本轮自动跃迁的时长延长 1 小时。其它科技无效果。
 local constants = require('scripts.constants')
-local reset = require('scripts.reset')
 
 script.on_event(defines.events.on_research_finished, function(event)
     if event.by_script then
         return
     end
     local research = event.research
-    local research_name = research.name
-    local force = game.forces.player
-
-    for _, tech_name in pairs(constants.persistent_infinite_tech_names) do
-        if tech_name == research_name then
-            game.print({'wn.persistent-tech', research.name, research.level})
-            reset.reset()
-        else
-            -- 自动添加非产能无限科技到队列
-            if research.level > research.prototype.level then
-                local queue = force.research_queue
-                queue[table_size(queue) + 1] = research
-                force.research_queue = queue
-                game.print({'wn.start-tech', research.name, research.level + 1})
-            end
-        end
+    -- 严格匹配后缀，避免误伤可能的 "*-science-pack-*" 变体
+    if string.sub(research.name, -13) ~= '-science-pack' then
+        return
     end
+
+    storage.hour_auto_reset = (storage.hour_auto_reset or 1) + 1
+    local remaining_hours = storage.hour_auto_reset -
+        (game.tick - (storage.run_start_tick or game.tick)) / constants.hour_to_tick
+    game.print(string.format('[item=%s] +1h  剩余 %.2fh', research.name, remaining_hours))
 end)

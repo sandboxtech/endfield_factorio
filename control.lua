@@ -23,6 +23,8 @@ script.on_init(function()
     storage.radius_of = {}
 
     storage.platform_lifetime = 3
+    storage.hour_auto_reset = 1
+    storage.science_exp = {}
 
     reset.reset()
 end)
