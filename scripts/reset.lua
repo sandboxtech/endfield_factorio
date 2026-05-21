@@ -3,6 +3,7 @@ local constants = require('scripts.constants')
 local util = require('scripts.util')
 local gui = require('scripts.gui')
 local players = require('scripts.players')
+local passives = require('scripts.passives')
 
 local M = {}
 
@@ -26,7 +27,7 @@ local function collect_science_exp(player)
                 if gained > 0 then
                     local key = item.name .. '/' .. item.quality
                     player_exp[key] = (player_exp[key] or 0) + gained
-                    player.print({'wn.exp-gain', item.name, item.quality, gained})
+                    game.print({'wn.exp-gain', '[player]' .. player.name .. ' ', item.name, item.quality, gained})
                 end
             end
         end
@@ -136,6 +137,12 @@ function M.reset()
     util.try_add_trait({'', '\n',
                         {'wn.galaxy-trait-spawning_rate', game.map_settings.asteroids.spawning_rate},
                         {'wn.galaxy-trait-spoil_time_modifier', game.difficulty_settings.spoil_time_modifier}})
+
+    -- 经验更新后，对所有有 character 的玩家重算被动加成
+    -- （星球上的会随 on_player_respawned 自然触发；飞船上的需要在这里手动应用）
+    for _, player in pairs(game.connected_players) do
+        passives.apply(player)
+    end
 
     gui.players_gui()
 end

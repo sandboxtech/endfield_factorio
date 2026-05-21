@@ -1,5 +1,32 @@
--- 左上角 HUD：跃迁轮次按钮 + traits tooltip + 管理员按钮。
+-- 左上角 HUD：跃迁轮次 + 星系词条 + 经验加成 + 在线名册 + 管理员按钮。
+local passives = require('scripts.passives')
+
 local M = {}
+
+-- 构建技能面板 tooltip：标题 + 12 行（瓶子经验 + 当前能力效果）。
+local function build_skills_tooltip(player)
+    local lines = {'', {'wn.skills-title'}}
+    for _, skill in pairs(passives.skills) do
+        local exp = passives.exp_total_for_pack(player.index, skill.pack)
+        local value_text = skill.fmt(passives.bonus_factor(exp)) or '—'
+        table.insert(lines, {skill.locale, exp, value_text})
+    end
+    return lines
+end
+
+-- 构建在线名册 tooltip：标题 + 每位在线玩家一行（玩家名 / 总经验）。
+local function build_roster_tooltip()
+    local lines = {'', {'wn.roster-title'}}
+    for _, player in pairs(game.connected_players) do
+        local total = 0
+        local exp = storage.science_exp and storage.science_exp[player.index]
+        if exp then
+            for _, val in pairs(exp) do total = total + val end
+        end
+        table.insert(lines, {'wn.roster-entry', player.name, total})
+    end
+    return lines
+end
 
 -- 渲染单个玩家的 HUD。
 function M.player_gui(player)
@@ -26,6 +53,22 @@ function M.player_gui(player)
         sprite = 'space-location/solar-system-edge',
         name = 'traits',
         tooltip = storage.traits
+    }
+
+    -- 被动技能面板（基于自己的累计经验）
+    player.gui.top.add {
+        type = 'sprite-button',
+        sprite = 'virtual-signal/signal-science-pack',
+        name = 'skills',
+        tooltip = build_skills_tooltip(player)
+    }
+
+    -- 在线玩家经验面板
+    player.gui.top.add {
+        type = 'sprite-button',
+        sprite = 'virtual-signal/signal-heart',
+        name = 'roster',
+        tooltip = build_roster_tooltip()
     }
 
     if player.admin then

@@ -1,29 +1,22 @@
 -- 玩家生命周期：创建/加入/离开/重生/死亡。
 local constants = require('scripts.constants')
 local gui = require('scripts.gui')
+local passives = require('scripts.passives')
 
 local M = {}
 
 -- 列出玩家所有非零科技瓶经验。broadcast=true 时用 game.print 让所有人看到。
+-- 没有任何经验时静默（不打印空提示）。
 function M.print_science_exp(player, broadcast)
     local sink = broadcast and game or player
-    -- 在 broadcast 模式下，前缀带玩家名；私聊模式下前缀为空。
     local prefix = broadcast and ('[player]' .. player.name .. ' ') or ''
     local exp = storage.science_exp and storage.science_exp[player.index]
-    if not exp then
-        sink.print({'wn.exp-empty', prefix})
-        return
-    end
-    local has_any = false
+    if not exp then return end
     for key, val in pairs(exp) do
         if val > 0 then
-            has_any = true
             local name, quality = string.match(key, '([^/]+)/(.+)')
             sink.print({'wn.exp-entry', prefix, name, quality, val})
         end
-    end
-    if not has_any then
-        sink.print({'wn.exp-empty', prefix})
     end
 end
 
@@ -55,6 +48,7 @@ end
 script.on_event(defines.events.on_player_respawned, function(event)
     local player = game.get_player(event.player_index)
     player.disable_flashlight()
+    passives.apply(player)
 end)
 
 -- 玩家离开前死掉，避免角色尸体留在飞船里阻塞跃迁清场。
@@ -88,6 +82,7 @@ script.on_event(defines.events.on_player_created, function(event)
     M.player_reset(player)
     gui.player_gui(player)
     M.try_enter_space_platform(player)
+    passives.apply(player)
 end)
 
 script.on_event(defines.events.on_player_left_game, function(event)
@@ -95,11 +90,14 @@ script.on_event(defines.events.on_player_left_game, function(event)
         return
     end
     event.player.gui.top.clear()
+    -- 离线后名册变了，刷新所有人 HUD
+    gui.players_gui()
 end)
 
 script.on_event(defines.events.on_player_joined_game, function(event)
     local player = game.get_player(event.player_index)
-    gui.player_gui(player)
+    -- 名册变了，刷新所有人 HUD（自然包含自己）
+    gui.players_gui()
 
     local welcome
     if player.online_time > 0 then
