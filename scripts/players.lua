@@ -21,22 +21,6 @@ function M.print_science_exp(player, broadcast)
     end
 end
 
--- 随机让玩家进入一艘己方太空平台。
-function M.try_enter_space_platform(player)
-    local size = table_size(game.forces.player.platforms)
-    if size < 1 then
-        return
-    end
-    local index = math.random(size)
-    local i = 1
-    for _, space_platform in pairs(game.forces.player.platforms) do
-        if index == i and space_platform then
-            player.enter_space_platform(space_platform)
-            return
-        end
-        i = i + 1
-    end
-end
 
 -- 跃迁/创建时对玩家做的状态清理。
 function M.player_reset(player)
