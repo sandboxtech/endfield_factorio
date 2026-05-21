@@ -61,3 +61,67 @@ on_player_respawned:
 
 `level = 1 + floor(log10(exp))`，`exp < 1` 时记为 0 级。`respawn_gifts.lua` 中的物品表
 `gifts_per_level[pack][level]` 列出每级新增的物品；玩家达到 N 级时累计发放 1..N 级所有物品。
+
+## 角色被动能力（`passives.lua`）
+
+每种能力由 1 个或多个科技瓶驱动，组合方式是 **log 相加**，等价于经验相乘。例：
+手搓速度若由红瓶 + 紫瓶共同决定，则 `red=10` + `purple=10` 与 `single=100` 等效。
+经验 < 1 的瓶子不计入（贡献 0）。
+
+### 两种曲线
+
+| 类型 | 全 0 时 | 公式（f） | exp=1 | 每 ×10 经验 |
+| --- | --- | --- | --- | --- |
+| `multiplier`（乘法系） | -0.5（即 0.5×） | `0.5 × Σ log10(exp_i)` | 0（基准 1×） | +0.5（+50%） |
+| `additive`（加法系） | 0 | `0.5 × (Σ log10(exp_i) + 1)` | +0.5 × base | +0.5 × base |
+
+乘法系的 -0.5 是惩罚：没攒过任何相关瓶子时角色比 vanilla 慢 50%。
+加法系的 0 是无加成：没经验时没奖励，也无惩罚。
+
+### 当前 ability 列表
+
+`passives.abilities` 是按顺序列出的 12 条（对应 12 种瓶子）。`apply = nil` 表示未实装，
+GUI 仍会显示经验占位。
+
+| # | locale 键 | 瓶子 | 曲线 | 效果 |
+| --- | --- | --- | --- | --- |
+| 1 | `wn.ability-crafting` | automation | multiplier | `character_crafting_speed_modifier = f` |
+| 2 | `wn.ability-running` | logistic | multiplier | `character_running_speed_modifier = f` |
+| 3 | `wn.ability-mining` | chemical | multiplier | `character_mining_speed_modifier = f` |
+| 4 | `wn.ability-health` | military | additive | `character_health_bonus = 250 × f`（base=250） |
+| 5–12 | — | production / utility / space / metallurgic / electromagnetic / agricultural / cryogenic / promethium | — | 未实装（仅 tooltip 展示经验） |
+
+### 应用时机
+
+- `passives.apply(player)`：对单个有 `character` 的玩家重算所有 ability 并写入 `LuaPlayer.character`。
+- 触发点：
+  - `on_player_created` / `on_player_respawned`：玩家刚拿到新 character。
+  - `reset.reset()` 末尾：跃迁后对在线玩家批量重算（飞船上的玩家不死、不触发 respawn，需手动应用）。
+- 经验更新发生在 `science_exp.collect()`（reset 前扫背包）和 `passives.exp_total_for_pack()` 读取。
+
+### GUI 展示（`gui.lua` → `build_skills_tooltip`）
+
+左上 HUD 的 🧪 按钮 tooltip 列出每条 ability：
+- 已实装：`{locale, breakdown, fmt(factor)}`，breakdown 是各瓶经验用 `+` 拼接的字符串。
+- 未实装：`wn.ability-todo` 模板，仅显示瓶名 + 单瓶经验。
+
+格式化函数：
+- `pct(f)` → `"+25%"` 等，用于乘法系。
+- `flat(f, base)` → `"+125"` 等绝对值，用于加法系 HP。
+
+### 扩展新 ability
+
+往 `M.abilities` 追加一项：
+
+```lua
+{
+    locale = 'wn.ability-xxx',     -- locale 字符串，接收 (breakdown, fmt(f))
+    packs  = {'space-science-pack'},
+    curve  = M.combined_factor_multiplier,  -- 或 additive
+    apply  = function(p, f) p.character_xxx_modifier = f end,
+    fmt    = function(f) return pct(f) end,
+},
+```
+
+注意 packs 可填多个，会按 log-sum 组合。多瓶组合的能力会让低经验玩家更难触发
+（任何一瓶 <1 就不贡献）。
