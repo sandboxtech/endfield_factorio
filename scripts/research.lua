@@ -1,3 +1,5 @@
+local science_exp = require('scripts.science_exp')
+
 -- 研究完成时：若该科技名以 -science-pack 结尾（解锁了新科技瓶），
 -- 把本轮跃迁倒计时延长 1 小时。其它科技无效果。
 script.on_event(defines.events.on_research_finished, function(event)
@@ -8,6 +10,10 @@ script.on_event(defines.events.on_research_finished, function(event)
     -- 严格匹配后缀，避免误伤可能的 "*-science-pack-*" 变体
     if string.sub(research.name, -13) ~= '-science-pack' then
         return
+    end
+
+    for _, player in pairs(game.players) do
+        science_exp.collect(player)
     end
 
     storage.warp_hours = (storage.warp_hours or 1) + 1
