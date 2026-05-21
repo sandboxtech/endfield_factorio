@@ -48,7 +48,7 @@ function M.reset()
         if player.surface and not player.surface.platform then
             local inventory = player.get_inventory(defines.inventory.character_main)
             if player.character then
-                player.character.die()
+                players.kill_on_nauvis(player)
             elseif inventory then
                 inventory.clear()
             else

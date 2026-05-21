@@ -46,17 +46,36 @@ function M.player_reset(player)
     player.disable_flashlight()
 end
 
+-- 把玩家瞬移到母星上一个无碰撞位置，更新 force 的复活点为该位置，然后杀死。
+-- 用于所有需要"死亡 → 在母星合适位置复活"的入口。无 character 时跳过。
+function M.kill_on_nauvis(player)
+    if not player or not player.character then return end
+    local nauvis = game.surfaces['nauvis']
+    if nauvis then
+        local force = player.force
+        local origin = force.get_spawn_position(nauvis)
+        local pos = nauvis.find_non_colliding_position('character', origin, 64, 1) or origin
+        force.set_spawn_position(pos, nauvis)
+        player.teleport(pos, nauvis)
+    end
+    player.character.die()
+end
+
+-- 玩家本世界（storage.run）首次拥有 character 时发放起手装备 + 经验奖励。
+-- 同时被 on_player_created（开局直接领）和 on_player_respawned（跃迁后第一次死亡复活）调用。
+local function try_gift_first_in_world(player)
+    if not player or not player.character then return end
+    storage.last_respawn_run = storage.last_respawn_run or {}
+    if storage.last_respawn_run[player.index] == storage.run then return end
+    storage.last_respawn_run[player.index] = storage.run
+    respawn_gifts.on_first_respawn(player)
+end
+
 script.on_event(defines.events.on_player_respawned, function(event)
     local player = game.get_player(event.player_index)
     player.disable_flashlight()
     passives.apply(player)
-
-    -- 每个世界（storage.run）首次复活时发放起手装备 + 科技经验奖励。
-    storage.last_respawn_run = storage.last_respawn_run or {}
-    if storage.last_respawn_run[player.index] ~= storage.run then
-        storage.last_respawn_run[player.index] = storage.run
-        respawn_gifts.on_first_respawn(player)
-    end
+    try_gift_first_in_world(player)
 end)
 
 -- 玩家离开前死掉，避免角色尸体留在飞船里阻塞跃迁清场。
@@ -67,7 +86,7 @@ script.on_event(defines.events.on_pre_player_left_game, function(event)
     end
 
     if player.character then
-        player.character.die()
+        M.kill_on_nauvis(player)
         -- 删除可能落在飞船原点附近的尸体
         for _, space_platform in pairs(game.forces.player.platforms) do
             if space_platform.surface then
@@ -89,12 +108,8 @@ script.on_event(defines.events.on_player_created, function(event)
     local player = game.get_player(event.player_index)
     M.player_reset(player)
     gui.player_gui(player)
-    M.try_enter_space_platform(player)
     passives.apply(player)
-    -- 首次进场直接死一次，触发 on_player_respawned 走起手装备流程。
-    if player.character then
-        player.character.die()
-    end
+    try_gift_first_in_world(player)
 end)
 
 script.on_event(defines.events.on_player_left_game, function(event)

@@ -1,6 +1,7 @@
 -- 周期性事件：自动跃迁倒计时 + 点击 HUD 自杀脱困。
 local constants = require('scripts.constants')
 local reset = require('scripts.reset')
+local players = require('scripts.players')
 
 -- 点击左上 run 按钮 = 自杀回母星（用于卡死时脱困）。
 script.on_event(defines.events.on_gui_click, function(event)
@@ -14,8 +15,7 @@ script.on_event(defines.events.on_gui_click, function(event)
         local life = life_total - last_run_ticks
 
         if player.character then
-            player.teleport({0, 0}, 'nauvis')
-            player.character.die()
+            players.kill_on_nauvis(player)
             game.print({'wn.suicide-notice', player.name,
                         math.floor(100 * life / constants.hour_to_tick) / 100})
         end
