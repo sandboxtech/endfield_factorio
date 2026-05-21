@@ -14,32 +14,23 @@ local renames = {
     ['gleba_stone']           = 'item/stone',
 }
 
--- 写入一种资源的 size/richness/frequency，并把档位记入 trait。
--- richness 会随跃迁次数衰减；richness_multiplier 用于地方特产差异化。
+-- 把数值映射成电池图标：<0.5 = 空（太低），[0.5,2] = 中（正常），>2 = 满（太高）。
+local function level_for(v)
+    if v < 0.5 then return 'signal-battery-low'
+    elseif v > 2 then return 'signal-battery-full'
+    else return 'signal-battery-mid-level' end
+end
+
+-- 写入一种资源的 size/richness/frequency，并把档位记入 trait（用 quality 星可视化）。
+-- richness_multiplier 用于地方特产差异化。
 local function set_resource(name, mgs, richness_multiplier)
     local size = util.random_size()
-    local richness = util.readable(util.random_richness() * 1 / (1 + storage.run * 0.05))
-    richness = math.max(0.01, richness)
-
+    local richness = math.max(0.01, util.readable(util.random_richness()))
     local frequency = util.random_frequency()
-    local value = size * richness * frequency / storage.size / storage.richness / storage.frequency
-
-    local value_string
-    if value < 0.01 then
-        value_string = {'wn.very-low'}
-    elseif value < 0.1 then
-        value_string = {'wn.low'}
-    elseif value > 100 then
-        value_string = {'wn.very-high'}
-    elseif value > 10 then
-        value_string = {'wn.high'}
-    else
-        value_string = {'wn.medium'}
-    end
 
     util.try_add_trait({'wn.traits-richness-size-frequency',
                         renames[name] or ('item/' .. name),
-                        richness, size, frequency, value_string})
+                        level_for(richness), level_for(size), level_for(frequency)})
 
     richness_multiplier = richness_multiplier or 1
     mgs.autoplace_controls[name].size = size

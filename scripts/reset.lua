@@ -27,7 +27,7 @@ local function collect_science_exp(player)
                 if gained > 0 then
                     local key = item.name .. '/' .. item.quality
                     player_exp[key] = (player_exp[key] or 0) + gained
-                    game.print({'wn.exp-gain', '[player]' .. player.name .. ' ', item.name, item.quality, gained})
+                    game.print({'wn.exp-gain', player.name .. ' ', item.name, item.quality, gained})
                 end
             end
         end

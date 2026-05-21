@@ -9,7 +9,7 @@ local M = {}
 -- 没有任何经验时静默（不打印空提示）。
 function M.print_science_exp(player, broadcast)
     local sink = broadcast and game or player
-    local prefix = broadcast and ('[player]' .. player.name .. ' ') or ''
+    local prefix = broadcast and (player.name .. ' ') or ''
     local exp = storage.science_exp and storage.science_exp[player.index]
     if not exp then return end
     for key, val in pairs(exp) do

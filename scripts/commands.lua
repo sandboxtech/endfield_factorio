@@ -53,3 +53,27 @@ commands.add_command('exp_clear', {'wn.exp-clear-help'}, function(command)
     storage.science_exp = {}
     game.print({'wn.exp-cleared'})
 end)
+
+-- /productivity <tech_name> <level>
+-- 例：/productivity steel-plate-productivity 5  → 钢板产能科技升到 5 级
+-- 仅对无限产能科技（type=change-recipe-productivity）有效。
+commands.add_command('productivity', '测试用：设置某个无限产能科技的等级', function(command)
+    if not require_admin(command) then return end
+    local args = {}
+    for w in string.gmatch(command.parameter or '', '%S+') do
+        table.insert(args, w)
+    end
+    local tech_name, level = args[1], tonumber(args[2])
+    if not tech_name or not level then
+        game.print('用法：/productivity <tech_name> <level>，例如 /productivity steel-plate-productivity 5')
+        return
+    end
+    local tech = game.forces.player.technologies[tech_name]
+    if not tech then
+        game.print('找不到科技：' .. tech_name)
+        return
+    end
+    tech.researched = true
+    tech.level = level
+    game.print(string.format('[technology=%s] level = %d', tech_name, level))
+end)

@@ -3,13 +3,21 @@ local passives = require('scripts.passives')
 
 local M = {}
 
--- 构建技能面板 tooltip：标题 + 12 行（瓶子经验 + 当前能力效果）。
+-- 构建能力面板 tooltip：标题 + 每个 ability 一行。
+-- 已实装：locale 接收 (经验明细, 当前数值)
+-- 未实装：用 ability-todo 模板，接收 (瓶子 prototype 名, 经验)
 local function build_skills_tooltip(player)
     local lines = {'', {'wn.skills-title'}}
-    for _, skill in pairs(passives.skills) do
-        local exp = passives.exp_total_for_pack(player.index, skill.pack)
-        local value_text = skill.fmt(passives.bonus_factor(exp)) or '—'
-        table.insert(lines, {skill.locale, exp, value_text})
+    for _, ability in ipairs(passives.abilities) do
+        if ability.apply then
+            local breakdown = passives.build_exp_breakdown(ability.packs, player.index)
+            local factor = ability.curve(ability.packs, player.index)
+            table.insert(lines, {ability.locale, breakdown, ability.fmt(factor)})
+        else
+            local pack = ability.packs[1]
+            local exp = passives.exp_total_for_pack(player.index, pack)
+            table.insert(lines, {'wn.ability-todo', pack, exp})
+        end
     end
     return lines
 end
@@ -52,7 +60,7 @@ function M.player_gui(player)
         type = 'sprite-button',
         sprite = 'space-location/solar-system-edge',
         name = 'traits',
-        tooltip = storage.traits
+        tooltip = {'', storage.traits, {'wn.traits-legend'}}
     }
 
     -- 被动技能面板（基于自己的累计经验）
