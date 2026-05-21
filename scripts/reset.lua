@@ -18,18 +18,24 @@ function M.reset()
                 math.floor(last_run_ticks / constants.min_to_tick) % 60})
     storage.run_start_tick = game.tick
 
-    -- 飞船存活两个跃迁周期：本轮首次见到的标 skull，第二次见到时摧毁。
-    -- 玩家可借此提前撤离即将报废的飞船。
+    -- 飞船寿命：storage.platform_lifetime 个跃迁周期。
+    -- 每次跃迁飞船经历计数 +1，并在船名前追加一个 skull 作为可视化倒计时；
+    -- 计数超过寿命时摧毁。玩家可借 skull 数量判断还能撑几轮。
     storage.rust = storage.rust or {}
+    storage.platform_lifetime = storage.platform_lifetime or 3
     for _, space_platform in pairs(game.forces.player.platforms) do
-        if not storage.rust[space_platform.index] then
-            storage.rust[space_platform.index] = true
-            space_platform.name = '[virtual-signal=signal-skull]' .. space_platform.name
-            game.print({'wn.about-to-rust-notice', space_platform.name})
-        else
+        -- 兼容旧存档：旧版用 true 表示"已标记一次"，等价于 age = 1
+        local prev = storage.rust[space_platform.index]
+        if prev == true then prev = 1 end
+        local age = (prev or 0) + 1
+        space_platform.name = '[virtual-signal=signal-skull]' .. space_platform.name
+        if age > storage.platform_lifetime then
             storage.rust[space_platform.index] = nil
             space_platform.destroy()
             game.print({'wn.rust-destroy-notice', space_platform.name})
+        else
+            storage.rust[space_platform.index] = age
+            game.print({'wn.about-to-rust-notice', space_platform.name})
         end
     end
 

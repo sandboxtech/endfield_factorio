@@ -22,5 +22,7 @@ script.on_init(function()
     storage.radius = 2048
     storage.radius_of = {}
 
+    storage.platform_lifetime = 3
+
     reset.reset()
 end)
