@@ -3,16 +3,13 @@ local M = {}
 
 -- 渲染单个玩家的 HUD。
 function M.player_gui(player)
-    if not storage.dynamic_introduction then
-        storage.dynamic_introduction = ''
-    end
     player.gui.top.clear()
 
     local intro = player.gui.top.add {
         type = 'sprite-button',
         caption = {'run', storage.run or 0},
         name = 'introduction',
-        tooltip = {'description', storage.dynamic_introduction}
+        tooltip = {'description', ''}
     }
     intro.style.font = 'heading-1'
     intro.style.font_color = {222, 222, 222}
@@ -36,7 +33,7 @@ function M.player_gui(player)
             type = 'sprite-button',
             sprite = 'item/raw-fish',
             name = 'admin',
-            tooltip = '管理员输入 /reset 手动跃迁'
+            tooltip = {'wn.admin-tooltip'}
         }
     end
 end

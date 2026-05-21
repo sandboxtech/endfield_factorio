@@ -10,7 +10,7 @@ script.on_event(defines.events.on_gui_click, function(event)
     end
     if event.element.name == 'introduction' then
         local last_run_ticks = (game.tick - (storage.run_start_tick or game.tick))
-        local life_total = ((storage.hour_auto_reset or 1) * constants.hour_to_tick)
+        local life_total = ((storage.warp_hours or 1) * constants.hour_to_tick)
         local life = life_total - last_run_ticks
 
         if player.character then
@@ -22,13 +22,13 @@ script.on_event(defines.events.on_gui_click, function(event)
     end
 end)
 
--- 临近跃迁时提醒玩家撤离：最后 1/3/5/10/20/30 分钟，以及之前每整点小时。
-local warn_minutes = {[1]=true, [3]=true, [5]=true, [10]=true, [20]=true, [30]=true}
+-- 撤离提醒触发的分钟数集合：最后 1/3/5/10/20/30 分钟，以及之前每整点小时。
+local warn_minutes = {[1] = true, [3] = true, [5] = true, [10] = true, [20] = true, [30] = true}
 
 -- 每分钟检查：到点跃迁；到撤离阈值时广播提醒。
 script.on_nth_tick(60 * 60, function()
     local last_run_ticks = game.tick - (storage.run_start_tick or game.tick)
-    local life = (storage.hour_auto_reset or 1) * constants.hour_to_tick - last_run_ticks
+    local life = (storage.warp_hours or 1) * constants.hour_to_tick - last_run_ticks
 
     if life <= 0 then
         reset.reset()
@@ -39,10 +39,10 @@ script.on_nth_tick(60 * 60, function()
     if warn_minutes[minutes] or (minutes > 30 and minutes % 60 == 0) then
         local label
         if minutes >= 60 and minutes % 60 == 0 then
-            label = string.format('%d 小时', minutes / 60)
+            label = {'wn.duration-hours', minutes / 60}
         else
-            label = string.format('%d 分钟', minutes)
+            label = {'wn.duration-minutes', minutes}
         end
-        game.print('⚠ 距离跃迁还剩 ' .. label .. '，请准备撤离至飞船')
+        game.print({'wn.warp-warning', label})
     end
 end)

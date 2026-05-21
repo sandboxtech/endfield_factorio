@@ -1,7 +1,5 @@
--- 研究完成时：若该科技解锁了新科技瓶（科技名以 -science-pack 结尾），
--- 把本轮自动跃迁的时长延长 1 小时。其它科技无效果。
-local constants = require('scripts.constants')
-
+-- 研究完成时：若该科技名以 -science-pack 结尾（解锁了新科技瓶），
+-- 把本轮跃迁倒计时延长 1 小时。其它科技无效果。
 script.on_event(defines.events.on_research_finished, function(event)
     if event.by_script then
         return
@@ -12,8 +10,6 @@ script.on_event(defines.events.on_research_finished, function(event)
         return
     end
 
-    storage.hour_auto_reset = (storage.hour_auto_reset or 1) + 1
-    local remaining_hours = storage.hour_auto_reset -
-        (game.tick - (storage.run_start_tick or game.tick)) / constants.hour_to_tick
-    game.print(string.format('[item=%s] +1h  剩余 %.2fh', research.name, remaining_hours))
+    storage.warp_hours = (storage.warp_hours or 1) + 1
+    game.print({'wn.warp-extend-tech', research.name, storage.warp_hours})
 end)

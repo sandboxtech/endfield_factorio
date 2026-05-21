@@ -7,10 +7,11 @@ local M = {}
 -- 列出玩家所有非零科技瓶经验。broadcast=true 时用 game.print 让所有人看到。
 function M.print_science_exp(player, broadcast)
     local sink = broadcast and game or player
+    -- 在 broadcast 模式下，前缀带玩家名；私聊模式下前缀为空。
     local prefix = broadcast and ('[player]' .. player.name .. ' ') or ''
     local exp = storage.science_exp and storage.science_exp[player.index]
     if not exp then
-        sink.print(prefix .. '（暂无科技瓶经验）')
+        sink.print({'wn.exp-empty', prefix})
         return
     end
     local has_any = false
@@ -18,11 +19,11 @@ function M.print_science_exp(player, broadcast)
         if val > 0 then
             has_any = true
             local name, quality = string.match(key, '([^/]+)/(.+)')
-            sink.print(prefix .. '[item=' .. name .. ',quality=' .. quality .. '] ' .. val)
+            sink.print({'wn.exp-entry', prefix, name, quality, val})
         end
     end
     if not has_any then
-        sink.print(prefix .. '（暂无科技瓶经验）')
+        sink.print({'wn.exp-empty', prefix})
     end
 end
 
