@@ -1,7 +1,9 @@
 {
   "permissions": {
     "allow": [
-      "WebFetch(domain:lua-api.factorio.com)"
+      "WebFetch(domain:lua-api.factorio.com)",
+      "Bash(git merge *)",
+      "Bash(git *)"
     ]
   }
 }
