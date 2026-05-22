@@ -21,6 +21,30 @@ function M.print_science_exp(player, broadcast)
     end
 end
 
+-- 把 target 的完整信息（行为统计 + 被动加成 + 科技瓶经验）打印给 viewer。
+function M.print_inspection(target, viewer)
+    viewer.print({'wn.inspect-header', target.name})
+    -- 行为被动加成
+    for _, ability in ipairs(passives.abilities) do
+        if ability.apply then
+            local val = passives.get_stat(target.index, ability.stat)
+            local factor = ability.curve(val)
+            viewer.print({ability.locale, val, ability.fmt(factor)})
+        end
+    end
+    -- 科技瓶经验
+    local exp = storage.science_exp and storage.science_exp[target.index]
+    if exp then
+        local prefix = target.name .. ' '
+        for key, val in pairs(exp) do
+            if val > 0 then
+                local name, quality = string.match(key, '([^/]+)/(.+)')
+                viewer.print({'wn.exp-entry', prefix, name, quality, val})
+            end
+        end
+    end
+end
+
 
 -- 跃迁/创建时对玩家做的状态清理。
 function M.player_reset(player)

@@ -1,21 +1,29 @@
-local science_exp = require('scripts.science_exp')
+local constants = require('scripts.constants')
+local player_stats = require('scripts.player_stats')
 
--- 研究完成时：若该科技名以 -science-pack 结尾（解锁了新科技瓶），
--- 把本轮跃迁倒计时延长 1 小时。其它科技无效果。
+-- 研究完成时：
+--   1) 给所有正在挂机的在线玩家 afk_research +1（任何科技都算）。
+--   2) 若该科技名以 -science-pack 结尾且不是 trigger 科技，把本轮跃迁倒计时延长 1 小时。
+--      红瓶（automation-science-pack）是 trigger 科技，不延长。
 script.on_event(defines.events.on_research_finished, function(event)
     if event.by_script then
         return
     end
+    player_stats.on_research_finished_for_afk_players()
+
     local research = event.research
     -- 严格匹配后缀，避免误伤可能的 "*-science-pack-*" 变体
     if string.sub(research.name, -13) ~= '-science-pack' then
         return
     end
-
-    for _, player in pairs(game.players) do
-        science_exp.collect(player)
+    -- trigger 科技（如红瓶）不延长跃迁时长
+    if research.prototype and research.prototype.research_trigger then
+        return
     end
 
     storage.warp_hours = (storage.warp_hours or 1) + 1
-    game.print({'wn.warp-extend-tech', research.name, storage.warp_hours})
+    local last_run_ticks = game.tick - (storage.run_start_tick or game.tick)
+    local life_hours = (storage.warp_hours * constants.hour_to_tick - last_run_ticks) / constants.hour_to_tick
+    game.print({'wn.warp-extend-tech', research.name, storage.warp_hours,
+                math.floor(life_hours * 100) / 100})
 end)

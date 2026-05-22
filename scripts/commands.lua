@@ -48,6 +48,23 @@ commands.add_command('exp', {'wn.exp-help'}, function(command)
     players.print_science_exp(player)
 end)
 
+-- /inspect <player_name>：把目标玩家的经验/被动加成打印给查看者。
+-- 查看别人会用 game.print 公告；查看自己时不公告。
+commands.add_command('inspect', {'wn.inspect-help'}, function(command)
+    local viewer = command.player_index and game.get_player(command.player_index)
+    if not viewer then return end
+    local name = command.parameter and string.match(command.parameter, '%S+')
+    local target = name and game.get_player(name) or viewer
+    if not target then
+        viewer.print({'wn.inspect-no-such-player', name or ''})
+        return
+    end
+    players.print_inspection(target, viewer)
+    if target.index ~= viewer.index then
+        game.print({'wn.inspect-notice', viewer.name, target.name})
+    end
+end)
+
 commands.add_command('exp_clear', {'wn.exp-clear-help'}, function(command)
     if not require_admin(command) then return end
     storage.science_exp = {}

@@ -1,16 +1,16 @@
--- 经验 → 玩家被动加成。
--- 每个 ability 由 1~N 个瓶子驱动，组合方式：factor 用 log 相加，等价于经验相乘。
--- 例：手搓速度 = log10(red) + log10(purple)，所以 red=10 + purple=10 等同 single=100。
---
--- 两类曲线：
---   multiplier  乘法系（移速/手搓/挖矿）：exp=0 → 0.5x，exp=1 → 1x，每 10× → +50%
---   additive    加法系（HP）：exp=0 → 0（无加成），exp=1 → +50% × base，每 10× → +50% × base
+-- 玩家行为统计 → 角色被动加成。
+-- 经验来源不再是科技瓶，而是 player_stats 记录的行为次数/时间。
+-- 曲线沿用 log10：
+--   multiplier  乘法系（移速/手搓/挖矿）：stat=0 → 0.5x，stat=1 → 1x，每 10× → +50%
+--   additive    加法系（HP/格子）：stat=0 → 无加成，stat=1 → +50% × base，每 10× → +50% × base
+
+local player_stats = require('scripts.player_stats')
 
 local M = {}
 
 local LOG10 = math.log(10)
 
--- 累计某种瓶子的全品质经验。
+-- 兼容 gui/respawn_gifts：科技瓶经验仍由 science_exp 累积，用于开局物品发放。
 function M.exp_total_for_pack(player_index, pack_name)
     local exp = storage.science_exp and storage.science_exp[player_index]
     if not exp then return 0 end
@@ -24,94 +24,68 @@ function M.exp_total_for_pack(player_index, pack_name)
     return total
 end
 
--- 把多个瓶子的 exp 折成单一 log 值。exp<1 的瓶子不计入（贡献 0）。
-local function combined_log(packs, player_index)
-    local total_log = 0
-    local any_active = false
-    for _, pack in ipairs(packs) do
-        local exp = M.exp_total_for_pack(player_index, pack)
-        if exp >= 1 then
-            total_log = total_log + math.log(exp) / LOG10
-            any_active = true
-        end
-    end
-    return total_log, any_active
+function M.get_stat(player_index, stat_name)
+    return player_stats.get(player_index)[stat_name] or 0
 end
 
--- 乘法系：所有瓶子都为 0 时回到 0.5x，每 10× 经验 +50%。
-function M.combined_factor_multiplier(packs, player_index)
-    local log_sum, any = combined_log(packs, player_index)
-    if not any then return -0.5 end
-    return 0.5 * log_sum
+-- 单一统计值 → factor。stat<1 时按 0 处理。
+function M.factor_multiplier(stat)
+    if stat < 1 then return -0.5 end
+    return 0.5 * (math.log(stat) / LOG10)
 end
 
--- 加法系：所有瓶子都为 0 时无加成，每 10× 经验 +50% × base。
-function M.combined_factor_additive(packs, player_index)
-    local log_sum, any = combined_log(packs, player_index)
-    if not any then return 0 end
-    return 0.5 * (log_sum + 1)
+function M.factor_additive(stat)
+    if stat < 1 then return 0 end
+    return 0.5 * (math.log(stat) / LOG10 + 1)
 end
 
 local function pct(f)        return string.format('%+d%%', math.floor(f * 100 + 0.5)) end
 local function flat(f, base) return string.format('%+d',   math.floor(base * f + 0.5)) end
 
--- 在 tooltip 里显示每个瓶子的经验。
-function M.build_exp_breakdown(packs, player_index)
-    local parts = {}
-    for _, pack in ipairs(packs) do
-        table.insert(parts, tostring(M.exp_total_for_pack(player_index, pack)))
-    end
-    return table.concat(parts, ' + ')
-end
-
--- 12 个瓶子对应的能力。apply = nil 表示暂未实装，仅在 tooltip 显示经验。
+-- 5 项已实装能力，每项绑定一个 player_stats 字段。
 M.abilities = {
     {
         locale = 'wn.ability-crafting',
-        packs  = {'automation-science-pack'},
-        curve  = M.combined_factor_multiplier,
+        stat   = 'craft_count',
+        curve  = M.factor_multiplier,
         apply  = function(p, f) p.character_crafting_speed_modifier = f end,
         fmt    = function(f) return pct(f) end,
     },
     {
         locale = 'wn.ability-running',
-        packs  = {'logistic-science-pack'},
-        curve  = M.combined_factor_multiplier,
+        stat   = 'afk_minutes',
+        curve  = M.factor_multiplier,
         apply  = function(p, f) p.character_running_speed_modifier = f end,
         fmt    = function(f) return pct(f) end,
     },
     {
         locale = 'wn.ability-mining',
-        packs  = {'chemical-science-pack'},
-        curve  = M.combined_factor_multiplier,
+        stat   = 'mining_count',
+        curve  = M.factor_multiplier,
         apply  = function(p, f) p.character_mining_speed_modifier = f end,
         fmt    = function(f) return pct(f) end,
     },
     {
         locale = 'wn.ability-health',
-        packs  = {'military-science-pack'},
-        curve  = M.combined_factor_additive,
+        stat   = 'deaths',
+        curve  = M.factor_additive,
         apply  = function(p, f) p.character_health_bonus = 250 * f end,
         fmt    = function(f) return flat(f, 250) end,
     },
-    -- 暂未实装：tooltip 显示经验占位，apply 跳过
-    { packs = {'production-science-pack'}    },
-    { packs = {'utility-science-pack'}       },
-    { packs = {'space-science-pack'}         },
-    { packs = {'metallurgic-science-pack'}   },
-    { packs = {'electromagnetic-science-pack'} },
-    { packs = {'agricultural-science-pack'}  },
-    { packs = {'cryogenic-science-pack'}     },
-    { packs = {'promethium-science-pack'}    },
+    {
+        locale = 'wn.ability-inventory',
+        stat   = 'afk_research',
+        curve  = M.factor_additive,
+        apply  = function(p, f) p.character_inventory_slots_bonus = math.floor(10 * f + 0.5) end,
+        fmt    = function(f) return flat(f, 10) end,
+    },
 }
 
--- 对单个玩家重算并写入所有 character 级被动。无 character 时跳过。
 function M.apply(player)
     if not player or not player.character then return end
     for _, ability in ipairs(M.abilities) do
-        if ability.apply then
-            ability.apply(player, ability.curve(ability.packs, player.index))
-        end
+        local val = M.get_stat(player.index, ability.stat)
+        ability.apply(player, ability.curve(val))
     end
 end
 

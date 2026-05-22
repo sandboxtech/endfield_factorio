@@ -1,6 +1,7 @@
 -- endfield_factorio scenario 入口。
 -- 各子模块在 require 时自行注册 script.on_event / commands.add_command。
 require('scripts.gui')
+require('scripts.player_stats')
 require('scripts.players')
 require('scripts.surface')
 require('scripts.reset')
@@ -25,6 +26,7 @@ script.on_init(function()
     storage.platform_lifetime = 3
     storage.warp_hours = 1
     storage.science_exp = {}
+    storage.player_stats = {}
 
     reset.reset()
 end)

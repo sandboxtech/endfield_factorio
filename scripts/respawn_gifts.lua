@@ -48,7 +48,7 @@ end
 
 -- ----------------------------------------------------------------------------
 -- 所有人无条件获得的起手套装：
---   modular-armor + 1 roboport(2x2,(0,0)) + 2 solar(1x1,(2,0)/(3,0)) + 1 battery-mk1(1x2,(4,0))
+--   modular-armor + 1 roboport(2x2,(0,0)) + 4 solar(1x1,(2,0)/(3,0)/(2,1)/(3,1)) + 1 battery-mk1(1x2,(4,0))
 --   背包里再塞 5 个建设机器人，配合 roboport 用。
 -- ----------------------------------------------------------------------------
 M.starter_armor = {
@@ -57,6 +57,8 @@ M.starter_armor = {
         {name = 'personal-roboport-equipment', position = {0, 0}},
         {name = 'solar-panel-equipment',       position = {2, 0}},
         {name = 'solar-panel-equipment',       position = {3, 0}},
+        {name = 'solar-panel-equipment',       position = {2, 1}},
+        {name = 'solar-panel-equipment',       position = {3, 1}},
         {name = 'battery-equipment',           position = {4, 0}},
     },
 }

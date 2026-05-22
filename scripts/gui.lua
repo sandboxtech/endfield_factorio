@@ -22,19 +22,24 @@ local M = {}
 -- 构建能力面板 tooltip：标题 + 所有已实装能力 + 空行 + 所有瓶子的开局物品。
 local function build_skills_tooltip(player)
     local lines = {'', {'wn.skills-title'}}
-    -- 第一段：所有已实装的基础能力
+    -- 第一段：所有已实装的基础能力（按玩家行为统计计算）
     for _, ability in ipairs(passives.abilities) do
         if ability.apply then
-            local breakdown = passives.build_exp_breakdown(ability.packs, player.index)
-            local factor = ability.curve(ability.packs, player.index)
-            table.insert(lines, {ability.locale, breakdown, ability.fmt(factor)})
+            local val = passives.get_stat(player.index, ability.stat)
+            local factor = ability.curve(val)
+            table.insert(lines, {ability.locale, val, ability.fmt(factor)})
         end
     end
     -- 段间空行
     table.insert(lines, '\n')
-    -- 第二段：每个瓶子一行开局物品
-    for _, ability in ipairs(passives.abilities) do
-        local pack = ability.packs[1]
+    -- 第二段：每个科技瓶一行开局物品（仍由背包里的瓶子经验决定）
+    local gift_packs = {
+        'automation-science-pack', 'logistic-science-pack', 'chemical-science-pack',
+        'military-science-pack', 'production-science-pack', 'utility-science-pack',
+        'space-science-pack', 'metallurgic-science-pack', 'electromagnetic-science-pack',
+        'agricultural-science-pack', 'cryogenic-science-pack', 'promethium-science-pack',
+    }
+    for _, pack in ipairs(gift_packs) do
         local exp = passives.exp_total_for_pack(player.index, pack)
         table.insert(lines, {'wn.ability-item', pack, exp, todo_items_for(pack, player.index)})
     end
