@@ -28,15 +28,27 @@ function M.print_inspection(target, viewer)
         local val = passives.get_stat(target.index, ab.stat)
         viewer.print({ab.locale, math.floor(val), ab.fmt(passives.skill_factor(target.index, ab))})
     end
-    -- 累计在线时长（统计，不再换金币）
-    viewer.print({'wn.ability-online', passives.get_stat(target.index, 'online_minutes')})
-    -- 科技瓶经验（→ 下次开局直接发的代表物资）
-    local exp = storage.science_exp and storage.science_exp[target.index]
-    if exp then
-        local prefix = target.name .. ' '
-        for pack, val in pairs(exp) do
-            if val > 0 then
-                viewer.print({'wn.exp-entry', prefix, pack, val})
+    -- 累计在线时长 → 开局金币(√在线分钟)
+    local om = passives.get_stat(target.index, 'online_minutes')
+    viewer.print({'wn.ability-online', om, respawn_gifts.coin_reward(om)})
+    -- 每种科技瓶：总经验 + 当前发的物资 + 距下一档还差多少经验、升到多少
+    for _, pack in ipairs(constants.science_packs) do
+        local items = respawn_gifts.pack_gifts[pack]
+        if items then
+            local pexp = passives.exp_total_for_pack(target.index, pack)
+            local cur = {}
+            for _, item in ipairs(items) do
+                cur[#cur + 1] = '[item=' .. item .. ']×' .. respawn_gifts.gift_count(pexp, item)
+            end
+            local nx = respawn_gifts.next_threshold(pexp, items)
+            if nx then
+                local nxt = {}
+                for _, item in ipairs(items) do
+                    nxt[#nxt + 1] = '[item=' .. item .. ']×' .. respawn_gifts.gift_count(nx, item)
+                end
+                viewer.print({'wn.exp-detail', pack, pexp, table.concat(cur, ' '), nx - pexp, table.concat(nxt, ' ')})
+            else
+                viewer.print({'wn.exp-detail-max', pack, pexp, table.concat(cur, ' ')})
             end
         end
     end

@@ -19,10 +19,10 @@ local function build_skills_tooltip(player)
     for _, pack in ipairs(constants.science_packs) do
         local items = respawn_gifts.pack_gifts[pack]
         if items then
-            local n = respawn_gifts.gift_count(passives.exp_total_for_pack(player.index, pack))
+            local exp = passives.exp_total_for_pack(player.index, pack)
             local t = {}
             for _, item in ipairs(items) do
-                t[#t + 1] = '[item=' .. item .. ']×' .. n
+                t[#t + 1] = '[item=' .. item .. ']×' .. respawn_gifts.gift_count(exp, item)
             end
             parts[#parts + 1] = {'wn.ability-reward', pack, table.concat(t, '  ')}
         end
