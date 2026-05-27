@@ -33,17 +33,10 @@ return {
         {quality = 'legendary', divisor = 10, cap = 1 * 200},
     },
 
-    -- 在线奖励：在线行为统计 → 品质科技瓶（复活时发放，作为市场货币）。
-    --   普通(normal)瓶子玩家可量产，会让初期量产瓶子刷货币，故奖励**只发四档品质瓶**：
-    --   uncommon / rare / epic / legendary，绝不发 normal。
-    --   数量 = floor(sqrt(stat) × reward_amount_mult)。
-    -- ★ 可配置：每个在线统计发"哪种瓶子(pack) + 哪档品质(quality)"。只有 3 个在线统计，
-    --   legendary 档默认留空（注释），你可以指定来源后启用。
-    online_rewards = {
-        {stat = 'online_minutes',  quality = 'uncommon',  pack = 'automation-science-pack', label = 'wn.coin-src-minutes'},
-        {stat = 'online_research', quality = 'rare',      pack = 'logistic-science-pack',   label = 'wn.coin-src-research'},
-        {stat = 'online_warps',    quality = 'epic',      pack = 'military-science-pack',   label = 'wn.coin-src-warps'},
-        -- {stat = 'online_warps', quality = 'legendary', pack = 'production-science-pack', label = 'wn.coin-src-warps'},  -- legendary：自行指定来源/瓶子后启用
-    },
+    -- 在线奖励（货币二）：在线/挂机时长 → 普通金币，复活（每局开始）时发放。
+    --   数量 = floor(√online_minutes × reward_amount_mult)。
+    --   更高品质金币（uncommon+）不在此发放——只能在普罗米修斯市场用普罗米修斯瓶兑换。
+    online_coin_stat = 'online_minutes',
+    online_coin_label = 'wn.coin-src-minutes',
     reward_amount_mult = 1,
 }

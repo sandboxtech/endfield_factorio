@@ -21,21 +21,76 @@ local NORTH_GAP = 6      -- 最南一行距出生点的格数（北 = -Y）
 -- 物品格式：{name = '物品原型名', price = 数字}
 -- 示例（automation 市场）：items = {{name = 'electric-mining-drill', price = 5}, {name = 'assembling-machine-1', price = 5}}
 M.sections = {
-    {currency = 'automation-science-pack',     items = {}},  -- 红瓶  · 自动化科技阶段商品
-    {currency = 'logistic-science-pack',       items = {}},  -- 绿瓶  · 物流科技阶段商品
-    {currency = 'military-science-pack',       items = {}},  -- 黑瓶  · 军事科技阶段商品
-    {currency = 'chemical-science-pack',       items = {}},  -- 蓝瓶  · 化工科技阶段商品
-    {currency = 'production-science-pack',     items = {}},  -- 紫瓶  · 生产科技阶段商品
-    {currency = 'utility-science-pack',        items = {}},  -- 黄瓶  · 通用科技阶段商品
-    {currency = 'space-science-pack',          items = {}},  -- 白瓶  · 太空科技阶段商品
-    {currency = 'metallurgic-science-pack',    items = {}},  -- 火星瓶 · 冶金科技阶段商品
-    {currency = 'electromagnetic-science-pack',items = {}},  -- 雷星瓶 · 电磁科技阶段商品
-    {currency = 'agricultural-science-pack',   items = {}},  -- 草星瓶 · 农业科技阶段商品
-    {currency = 'cryogenic-science-pack',      items = {}},  -- 极地瓶 · 低温科技阶段商品
+    -- 红瓶 · 自动化基础：采矿/组装/传送带/机械臂/电杆/管道
+    {currency = 'automation-science-pack', items = {
+        {name = 'electric-mining-drill', price = 3}, {name = 'assembling-machine-1', price = 3},
+        {name = 'transport-belt', price = 1}, {name = 'inserter', price = 1},
+        {name = 'small-electric-pole', price = 1}, {name = 'pipe', price = 1},
+    }},
+    -- 绿瓶 · 物流升级：2 级组装/快速带/地下带/分流器/快爪/中型电杆
+    {currency = 'logistic-science-pack', items = {
+        {name = 'assembling-machine-2', price = 4}, {name = 'fast-transport-belt', price = 2},
+        {name = 'underground-belt', price = 2}, {name = 'splitter', price = 2},
+        {name = 'fast-inserter', price = 2}, {name = 'medium-electric-pole', price = 2},
+    }},
+    -- 黑瓶 · 防御（保护工厂，非个人装备）：枪炮塔/激光塔/墙/闸门/雷达
+    {currency = 'military-science-pack', items = {
+        {name = 'gun-turret', price = 3}, {name = 'laser-turret', price = 6},
+        {name = 'stone-wall', price = 1}, {name = 'gate', price = 2}, {name = 'radar', price = 4},
+    }},
+    -- 蓝瓶 · 化工/石油：化工厂/炼油厂/抽油机/电炉/储液罐/大型配电
+    {currency = 'chemical-science-pack', items = {
+        {name = 'chemical-plant', price = 4}, {name = 'oil-refinery', price = 6},
+        {name = 'pumpjack', price = 4}, {name = 'electric-furnace', price = 5},
+        {name = 'storage-tank', price = 2}, {name = 'substation', price = 4},
+    }},
+    -- 紫瓶 · 量产：3 级组装/信标/模块/特快带
+    {currency = 'production-science-pack', items = {
+        {name = 'assembling-machine-3', price = 8}, {name = 'beacon', price = 8},
+        {name = 'productivity-module', price = 6}, {name = 'speed-module', price = 6},
+        {name = 'efficiency-module', price = 5}, {name = 'express-transport-belt', price = 3},
+    }},
+    -- 黄瓶 · 机器人物流：机器人塔/建设/物流机器人/请求箱/供应箱/大电杆
+    {currency = 'utility-science-pack', items = {
+        {name = 'roboport', price = 8}, {name = 'construction-robot', price = 2},
+        {name = 'logistic-robot', price = 2}, {name = 'requester-chest', price = 4},
+        {name = 'passive-provider-chest', price = 3}, {name = 'big-electric-pole', price = 3},
+    }},
+    -- 白瓶 · 大规模运输：火车/车厢/铁轨/车站/集装机械臂/2 级速度模块
+    {currency = 'space-science-pack', items = {
+        {name = 'locomotive', price = 6}, {name = 'cargo-wagon', price = 4},
+        {name = 'rail', price = 1}, {name = 'train-stop', price = 3},
+        {name = 'bulk-inserter', price = 5}, {name = 'speed-module-2', price = 12},
+    }},
+    -- 火星瓶 · 冶金（Vulcanus）：铸造厂/大型采矿机/2 级产能模块/特快地下带
+    {currency = 'metallurgic-science-pack', items = {
+        {name = 'foundry', price = 8}, {name = 'big-mining-drill', price = 8},
+        {name = 'productivity-module-2', price = 12}, {name = 'express-underground-belt', price = 4},
+    }},
+    -- 雷星瓶 · 电磁（Fulgora）：电磁工厂/回收机/蓄电池/大型配电
+    {currency = 'electromagnetic-science-pack', items = {
+        {name = 'electromagnetic-plant', price = 8}, {name = 'recycler', price = 6},
+        {name = 'accumulator', price = 3}, {name = 'substation', price = 4},
+    }},
+    -- 草星瓶 · 农业（Gleba）：生化舱/农业塔/特快分流器
+    {currency = 'agricultural-science-pack', items = {
+        {name = 'biochamber', price = 6}, {name = 'agricultural-tower', price = 6},
+        {name = 'express-splitter', price = 4},
+    }},
+    -- 极地瓶 · 低温（Aquilo）：低温工厂/供暖塔/热管/热交换器
+    {currency = 'cryogenic-science-pack', items = {
+        {name = 'cryogenic-plant', price = 8}, {name = 'heating-tower', price = 6},
+        {name = 'heat-pipe', price = 1}, {name = 'heat-exchanger', price = 4},
+    }},
     -- 普罗米修斯市场：兑换金币（金币唯一来源；付 Q 品质普罗米修斯瓶得 Q 品质金币）。
-    {currency = 'promethium-science-pack',     items = {{name = 'coin', price = 1}}},
-    -- 金币市场：卖装备（用金币购买）。填写装备清单：
-    {currency = 'coin',                        items = {}},
+    {currency = 'promethium-science-pack', items = {{name = 'coin', price = 1}}},
+    -- 金币市场：卖个人装备（用金币购买）。
+    {currency = 'coin', items = {
+        {name = 'solar-panel-equipment', price = 5}, {name = 'battery-equipment', price = 5},
+        {name = 'personal-roboport-equipment', price = 8}, {name = 'exoskeleton-equipment', price = 10},
+        {name = 'energy-shield-equipment', price = 10}, {name = 'night-vision-equipment', price = 3},
+        {name = 'belt-immunity-equipment', price = 3},
+    }},
 }
 
 local function section_for(currency)

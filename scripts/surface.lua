@@ -1,6 +1,5 @@
 -- 每次跃迁后随机生成各星球：地图设定、资源、自然要素、圆形边界。
 local util = require('scripts.util')
-local gui = require('scripts.gui')
 
 -- autoplace control 名 → 用于 tooltip 显示的 sprite 路径
 local renames = {
@@ -169,7 +168,7 @@ script.on_event(defines.events.on_surface_cleared, function(event)
     end
 
     surface.map_gen_settings = mgs
-    gui.players_gui()
+    -- 不在这里刷 GUI：on_surface_cleared 只由 reset.reset() 触发，其末尾会统一刷新。
 
     -- 仅母星预先 chart 一块区域，方便玩家落地后立刻看清地形
     if surface ~= game.surfaces.nauvis then

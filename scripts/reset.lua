@@ -48,9 +48,11 @@ function M.reset()
     -- 所有在线玩家本轮跃迁计数 +1（→ rare 金币）
     player_stats.on_warp_for_online_players()
 
-    -- 重置玩家：在星球上的杀死/清空背包，在飞船上的保留（飞船能存活一周期）
+    -- 重置所有玩家（含飞船上的）：有 character 的传送回母星并杀死 → 在母星复活领奖励；
+    -- 否则清空背包。这样每轮跃迁人人重置、背包必空，杜绝"待在飞船上跨轮保留背包、反复白嫖经验"。
+    -- 飞船本身仍按 platform_lifetime 老化（见上方循环），与玩家死亡解耦。
     for _, player in pairs(game.players) do
-        if player.surface and not player.surface.platform then
+        if player.surface then
             local inventory = player.get_inventory(defines.inventory.character_main)
             if player.character then
                 players.kill_on_nauvis(player)

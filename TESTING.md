@@ -13,7 +13,7 @@
    ```
    （给齐全部科技 + 进入作弊模式，方便建造/补给。注意每次跃迁 `force.reset()` 会清空科技，跃迁后如需建造请重跑一次。）
 4. 想随时看自己的数据：
-   - 鼠标悬停左上角 [img=virtual-signal/signal-science-pack] **🧪 按钮** → 能力面板 tooltip（含每瓶 `Lv. 当前/升级经验` 与在线奖励瓶子行）。
+   - 鼠标悬停左上角 [img=virtual-signal/signal-science-pack] **🧪 按钮** → 能力面板 tooltip（含每瓶 `Lv. 当前/升级经验` 与在线金币行）。
    - `/inspect` 打印自己的被动加成 + 科技瓶经验。
    - `/exp` 打印自己的科技瓶经验。
    - `/life` 显示距离下次自动跃迁剩余时间。
@@ -65,21 +65,18 @@
 
 ---
 
-## C. 在线奖励品质瓶子（只看在线，不看挂机）
+## C. 在线奖励普通金币（按在线时长）
 
-> 验证：在线统计 → 品质科技瓶（uncommon/rare/epic，**不发可量产的 normal**），数量 = floor(√统计)。
-> 默认映射（`constants.online_rewards` 可改）：分钟→uncommon 红瓶、研究→rare 绿瓶、跃迁→epic 黑瓶。
+> 验证：在线/挂机时长（`online_minutes`）→ **普通金币**，复活（每局开始）时发放，数量 = floor(√online_minutes)。
+> 更高品质金币不在此发放，只能在普罗米修斯市场兑换。`online_minutes` 终身累积 → 越老开局金币越多。
 
-1. 灌入在线统计：
+1. 灌入在线分钟：
    ```
-   /c storage.player_stats = storage.player_stats or {}; storage.player_stats[1] = storage.player_stats[1] or {}; storage.player_stats[1].online_minutes = 10000; storage.player_stats[1].online_research = 2500; storage.player_stats[1].online_warps = 100
+   /c storage.player_stats = storage.player_stats or {}; storage.player_stats[1] = storage.player_stats[1] or {}; storage.player_stats[1].online_minutes = 10000
    ```
-2. 悬停 🧪 按钮，末尾三行预期（默认配置）：
-   - [item=automation-science-pack,quality=uncommon] 在线分钟 · 10000 · **100**（√10000）
-   - [item=logistic-science-pack,quality=rare] 在线研究科技 · 2500 · **50**
-   - [item=military-science-pack,quality=epic] 在线跃迁次数 · 100 · **10**
-3. `/reset` 复活后查背包，预期：100 uncommon 红瓶 + 50 rare 绿瓶 + 10 epic 黑瓶（**没有 normal 瓶**）。
-4. **反挂机验证**：站着别动 ≥1 分钟（保持在线），`/inspect` 看 `online_minutes` 仍在涨（在线即计，不要求挂机）。
+2. 悬停 🧪 按钮，末尾一行预期：`[item=coin] 在线分钟 · 10000 · 100`（√10000）。
+3. `/reset` 复活后查背包，预期：**100 个 normal 金币**。
+4. **反挂机/终身累积验证**：保持在线 ≥1 分钟，`/inspect` 看 `online_minutes` 在涨（在线即计）；分钟越多，下一局开局金币越多。
 
 ---
 
@@ -87,10 +84,10 @@
 
 > 验证：出生点 13 个原版 market，每个只卖一种货币，付 Q 品质货币得 Q 品质物品。
 
-> ⚠ `market.lua` 的 `M.sections` 现在是**占位模板**：除普罗米修斯市场（已预填兑金币）外，
-> 其余市场默认**空货架**。要测购买，先在 `M.sections` 按"每瓶卖其科技阶段商品"填好货物。
+> `market.lua` 的 `M.sections` 已填好：11 个科技瓶市场卖各自科技阶段的生产物品、金币市场卖装备、
+> 普罗米修斯市场兑金币。价格/货物可在 `M.sections` 内继续调。
 
-1. 先备好货币：跑一遍 B、C 的灌数据 + `/reset`，复活后身上有 epic/legendary 瓶子（货币一）+ uncommon/rare/epic 瓶子（在线/货币二）。**没有金币**（金币只能在普罗米修斯市场换）。
+1. 先备好货币：跑一遍 B、C 的灌数据 + `/reset`，复活后身上有 epic/legendary 瓶子（货币一）+ 普通金币（在线时长，货币二）。**更高品质金币**只能在普罗米修斯市场换。
 2. 出生点**北面**（-Y 方向，地图已自动 chart）应看到 **13 个市场**：12 个科技瓶市场排 3 列 × 4 行，金币市场在最上方居中。布局（相对出生点的格偏移，北=负 Y）：
 
    ```
@@ -104,8 +101,8 @@
    （顺序 = `constants.science_packs`；每个市场 3×3 格、间距 3 格。）
 3. （填好货物后）走到 **自动化市场**，按 **E** 打开 → 原版交易界面，列出你填的物品 × 5 品质条 offer。
 4. **付 Q 得 Q**（关键）：用 **epic** 红瓶买 → 得 **epic** 物品；用 legendary 红瓶买 → 得 legendary 物品。确认产出品质 == 付款品质。
-5. **普罗米修斯市场**：用普罗米修斯瓶按品质换 coin（**金币唯一来源**；epic 普罗米修斯瓶 → epic 金币）。
-6. **金币市场**（最上方）：先在步骤 5 换到金币，再买装备（需你先在 `M.sections` 的 coin 项填装备清单）。
+5. **金币市场**（最上方）：用**在线赚的普通金币**买装备（已预填装备清单）；普通金币买 normal 品质装备。
+6. **普罗米修斯市场**：用普罗米修斯瓶按品质换更高品质金币（**uncommon+ 金币唯一来源**；epic 普罗米修斯瓶 → epic 金币 → 金币市场买 epic 装备）。
 7. **只收一种货币**：确认自动化市场只接受红瓶、不接受其它瓶/金币。
 8. **买不起**：货币不足时该 offer 在原版界面无法购买（置灰）。
 9. **不可摧毁**：用武器打市场 / 尝试拆，预期打不掉、挖不动（`destructible=false` + `minable=false`）。

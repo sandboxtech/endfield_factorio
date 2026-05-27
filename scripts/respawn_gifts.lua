@@ -4,8 +4,8 @@
 -- 设计：不再往背包塞成品建筑（会爆背包、且对数曲线在 1 级后失效）。
 -- 改为发放"货币"，玩家到 Nauvis 出生点的市场按需购买：
 --   · 携带累计经验 → 同种瓶子（√ 曲线，见 currency.reward_for_exp）。
---   · 在线行为统计 → 品质瓶子 uncommon+（见 currency.reward_amount + constants.online_rewards）。
--- 金币不作为奖励发放——只能在普罗米修斯市场兑换。
+--   · 在线/挂机时长 → 普通金币（见 currency.reward_amount + constants.online_coin_stat）。
+-- 更高品质金币不作为奖励——只能在普罗米修斯市场兑换。
 local constants = require('scripts.constants')
 local currency = require('scripts.currency')
 local passives = require('scripts.passives')
@@ -65,14 +65,11 @@ local function give_currency(player)
         end
     end
 
-    -- 在线奖励：发品质科技瓶（uncommon/rare/epic/legendary，不发可量产的 normal）。
-    -- 金币不再作为奖励发放——金币只能在普罗米修斯市场兑换。
+    -- 在线奖励：在线/挂机时长 → 普通金币。更高品质金币只能在普罗米修斯市场兑换。
     local stats = player_stats.get(player.index)
-    for _, r in ipairs(constants.online_rewards) do
-        local amount = currency.reward_amount(stats[r.stat])
-        if amount > 0 then
-            main.insert{name = r.pack, count = amount, quality = r.quality}
-        end
+    local coins = currency.reward_amount(stats[constants.online_coin_stat])
+    if coins > 0 then
+        main.insert{name = 'coin', count = coins, quality = 'normal'}
     end
 end
 

@@ -30,12 +30,10 @@ local function build_skills_tooltip(player)
         end
     end
 
-    -- 第三段：在线行为 → 品质科技瓶（uncommon+）
+    -- 第三段：在线/挂机时长 → 普通金币
     parts[#parts + 1] = '\n'
-    for _, r in ipairs(constants.online_rewards) do
-        local stat = passives.get_stat(player.index, r.stat)
-        parts[#parts + 1] = {'wn.ability-online', r.pack, r.quality, {r.label}, stat, currency.reward_amount(stat)}
-    end
+    local cstat = passives.get_stat(player.index, constants.online_coin_stat)
+    parts[#parts + 1] = {'wn.ability-online', {constants.online_coin_label}, cstat, currency.reward_amount(cstat)}
 
     -- 折叠：突破单层参数上限
     local lines = {''}
