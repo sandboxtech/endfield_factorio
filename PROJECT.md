@@ -19,7 +19,7 @@
 | `respawn_gifts.lua` | 每个世界（`storage.run`）首次复活时发放起手护甲 + **货币**：携带经验换的 epic/legendary 瓶子 + 在线时长换的普通金币。不再直接发建筑，改由市场购买。 |
 | `currency.lua` | 货币换算（纯函数）：`reward_for_exp` 经验→epic/legendary 瓶子（√曲线）、`reward_amount` 在线统计→金币数量。 |
 | `market.lua` | Nauvis 出生点的 13 个原版 market 实体（每轮跃迁后延迟重放，不可摧毁/挖取，铺混凝土地坪整齐对齐）。货物产出固定 normal；价格按物品 `q` 品质货币：epic 买大需求散件、legendary 买设备/插件。用原版交易界面；`on_tick` 延迟放置避开 `surface.clear` 异步结算。 |
-| `passives.lua` | **固定惩罚**：全员 -50% 手搓、-50% 移动；挖矿/生命/背包保持原版。不再有升级型能力。保留 `exp_total_for_pack`/`get_stat` 供货币与 GUI 读取。 |
+| `passives.lua` | **固定惩罚**：全员 -50% 手搓、-50% 移动、-50% 挖矿/拆除；生命/背包保持原版。不再有升级型能力。保留 `exp_total_for_pack`/`get_stat` 供货币与 GUI 读取。 |
 | `science_exp.lua` | 跃迁前扫描玩家背包里的科技瓶，按 `每组 × 品质倍率` 累加进 `storage.science_exp`。 |
 | `research.lua` | 研究完含 `-science-pack` 名字的科技时，把本轮跃迁倒计时延长 1 小时。 |
 | `surface.lua` | 跃迁后随机生成各星球：地图设定、资源分布、圆形边界。 |
@@ -109,7 +109,8 @@ on_player_respawned:
 
 - 手搓速度 `character_crafting_speed_modifier = -0.5`（-50%）
 - 移动速度 `character_running_speed_modifier = -0.5`（-50%）
-- 挖矿速度、生命值上限、背包容量：**保持原版**（不加修正）
+- 挖矿/拆除速度 `character_mining_speed_modifier = -0.5`（-50%）
+- 生命值上限、背包容量：**保持原版**（不加修正）
 
 由 `passives.apply(player)` 施加。角色换新（创建/复活/跃迁）后修正会清零，故
 `on_player_created` / `on_player_respawned` / `reset.reset()` 末尾都重新调用。

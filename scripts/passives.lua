@@ -1,13 +1,14 @@
 -- 角色被动：固定惩罚，不随任何统计/升级变化。
---   所有玩家 -50% 手搓速度、-50% 移动速度。
---   挖矿速度、生命值上限、背包容量均保持原版（不加任何修正）。
+--   所有玩家 -50% 手搓速度、-50% 移动速度、-50% 挖矿/拆除速度。
+--   生命值上限、背包容量保持原版（不加修正）。
 -- 科技瓶经验仍由 science_exp 累积，但只用于"携带奖励瓶子"（currency.reward_for_exp），不再驱动被动。
 local player_stats = require('scripts.player_stats')
 
 local M = {}
 
-M.craft_penalty = -0.5   -- 手搓速度 -50%
-M.run_penalty   = -0.5   -- 移动速度 -50%
+M.craft_penalty  = -0.5   -- 手搓速度 -50%
+M.run_penalty    = -0.5   -- 移动速度 -50%
+M.mining_penalty = -0.5   -- 挖矿/拆除速度 -50%
 
 -- 某瓶累计科技瓶经验（→ 携带奖励），供 gui / respawn_gifts / inspect 读取。
 -- key 就是瓶名（12 种），各品质已在 science_exp.collect 里累加进同一 key。
@@ -27,6 +28,7 @@ function M.apply(player)
     if not player or not player.character then return end
     player.character_crafting_speed_modifier = M.craft_penalty
     player.character_running_speed_modifier = M.run_penalty
+    player.character_mining_speed_modifier = M.mining_penalty
 end
 
 return M

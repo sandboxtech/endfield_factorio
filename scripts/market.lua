@@ -50,6 +50,10 @@ M.sections = {
         {name = 'laser-turret',q = 'legendary', price = 1, count = 1},
         {name = 'flamethrower-turret',q = 'legendary', price = 1, count = 1},
         {name = 'radar',       q = 'legendary', price = 1, count = 1},
+        {name = 'productivity-module',    q = 'legendary', price = 1, count = 1},
+        {name = 'speed-module',           q = 'legendary', price = 1, count = 1},
+        {name = 'efficiency-module',      q = 'legendary', price = 1, count = 1},
+        {name = 'quality-module',      q = 'legendary', price = 1, count = 1},
     }},
     -- 蓝瓶 · 化工/石油
     {currency = 'chemical-science-pack', items = {
@@ -60,9 +64,6 @@ M.sections = {
         {name = 'oil-refinery',     q = 'legendary', price = 1, count = 1},
         {name = 'pumpjack',         q = 'legendary', price = 1, count = 1},
         {name = 'electric-furnace', q = 'legendary', price = 1, count = 1},
-        {name = 'productivity-module',    q = 'legendary', price = 1, count = 1},
-        {name = 'speed-module',           q = 'legendary', price = 1, count = 1},
-        {name = 'efficiency-module',      q = 'legendary', price = 1, count = 1},
     }},
     -- 紫瓶 · 量产
     {currency = 'production-science-pack', items = {
@@ -71,20 +72,17 @@ M.sections = {
         {name = 'express-splitter', q = 'epic',      price = 1, count = 50},
         {name = 'assembling-machine-3',   q = 'legendary', price = 1, count = 1},
         {name = 'beacon',                 q = 'legendary', price = 1, count = 1},
-        {name = 'rail',          q = 'epic', price = 1, count = 50},
-        {name = 'rail-support',  q = 'epic', price = 1, count = 10},
-        {name = 'rail-ramp',     q = 'epic', price = 1, count = 5},
     }},
     -- 黄瓶 · 机器人物流
     {currency = 'utility-science-pack', items = {
         {name = 'construction-robot',      q = 'epic', price = 1, count = 10},
         {name = 'logistic-robot',          q = 'legendary', price = 1, count = 10},
         {name = 'roboport',                q = 'legendary', price = 1, count = 1},
-        {name = 'requester-chest',         q = 'epic', price = 1, count = 1},
         {name = 'passive-provider-chest',  q = 'epic', price = 1, count = 1},
-        {name = 'active-provider-chest',   q = 'epic', price = 1, count = 1},
         {name = 'storage-chest',           q = 'epic', price = 1, count = 1},
-        {name = 'buffer-chest',            q = 'epic', price = 1, count = 1},
+        {name = 'requester-chest',         q = 'legendary', price = 1, count = 1},
+        {name = 'active-provider-chest',   q = 'legendary', price = 1, count = 1},
+        {name = 'buffer-chest',            q = 'legendary', price = 1, count = 1},
     }},
     -- 白瓶 · 太空科技：飞船平台设备
     {currency = 'space-science-pack', items = {
@@ -96,6 +94,7 @@ M.sections = {
         {name = 'speed-module-2',              q = 'legendary', price = 1, count = 1},
         {name = 'productivity-module-2',       q = 'legendary', price = 1, count = 1},
         {name = 'efficiency-module-2',         q = 'legendary', price = 1, count = 1},
+        {name = 'quality-module-2',         q = 'legendary', price = 1, count = 1},
     }},
     -- 火星瓶 · 冶金（Vulcanus）：turbo 传送带 + 速度模块2
     {currency = 'metallurgic-science-pack', items = {
@@ -132,11 +131,12 @@ M.sections = {
     {currency = 'promethium-science-pack', items = {}},
     -- 金币市场：用在线赚的普通金币买个人装备。
     {currency = 'coin', items = {
-        {name = 'solar-panel-equipment',       q = 'normal', price = 5,  count = 1},
-        {name = 'battery-equipment',           q = 'normal', price = 5,  count = 1},
-        {name = 'personal-roboport-equipment', q = 'normal', price = 8,  count = 1},
+        {name = 'solar-panel-equipment',       q = 'normal', price = 1,  count = 1},
+        {name = 'battery-equipment',           q = 'normal', price = 1,  count = 1},
+        {name = 'construction-robot',          q = 'normal', price = 1, count = 1},
+        {name = 'personal-roboport-equipment', q = 'normal', price = 1,  count = 1},
         {name = 'exoskeleton-equipment',       q = 'normal', price = 10, count = 1},
-        {name = 'energy-shield-equipment',     q = 'normal', price = 10, count = 1},
+        {name = 'power-armor',       q = 'normal', price = 100, count = 1},
     }},
 }
 
