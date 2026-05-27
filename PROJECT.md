@@ -18,13 +18,13 @@
 | `players.lua` | 玩家生命周期事件：创建/加入/离开/复活/死亡，调用 passives + gifts。 |
 | `respawn_gifts.lua` | 每个世界（`storage.run`）首次复活时发放起手护甲 + **货币**：品质科技瓶（按经验）+ 品质金币（按在线统计）。不再直接发建筑，改由市场购买。 |
 | `currency.lua` | 货币换算（纯函数）：`reward_for_exp` 经验→品质瓶子（√曲线）、`progress_for_exp` 经验→等级/升级进度、`coin_amount` 在线统计→金币。 |
-| `market.lua` | Nauvis 出生点的市场实体（不可摧毁/挖取，每轮重放）+ 自定义商店 GUI：付 Q 品质货币得 Q 品质物品。建筑用对应瓶子买、装备用金币买。 |
+| `market.lua` | Nauvis 出生点的 13 个原版 market 实体（每轮重放，不可摧毁/挖取）。每个只卖一种货币的 5 品质货物，用 `add_market_item` 上架（价格+产出都带 quality，付 Q 得 Q）。12 瓶市场 3×4 网格，金币市场在最上方。无自定义 GUI，用原版交易界面。 |
 | `passives.lua` | **行为统计**（player_stats）→ character 被动加成（手搓/移速/挖矿/HP/格子）；曲线为 log。另保留 `exp_total_for_pack`/`get_stat` 供货币与 GUI 读取。 |
 | `science_exp.lua` | 跃迁前扫描玩家背包里的科技瓶，按 `每组 × 品质倍率` 累加进 `storage.science_exp`。 |
 | `research.lua` | 研究完含 `-science-pack` 名字的科技时，把本轮跃迁倒计时延长 1 小时。 |
 | `surface.lua` | 跃迁后随机生成各星球：地图设定、资源分布、圆形边界。 |
 | `reset.lua` | 跃迁主流程：清场 → 收集经验 → 杀玩家 → 清星球 → 重置科技 → 随机参数。 |
-| `tick.lua` | `on_gui_click` 与 `on_nth_tick(3600)` 的**唯一注册点**：每分钟在线采样（调 `player_stats.sample_online`）+ 跃迁倒计时 + 撤离提醒；点击 HUD 自杀脱困；商店点击转发 `market.on_gui_click`。 |
+| `tick.lua` | `on_gui_click` 与 `on_nth_tick(3600)` 的**唯一注册点**：每分钟在线采样（调 `player_stats.sample_online`）+ 跃迁倒计时 + 撤离提醒；点击 HUD 自杀脱困。 |
 | `player_stats.lua` | 玩家行为统计（手搓/挖矿/死亡/在线分钟/在线研究/在线跃迁次数）。**只看是否在线、不看是否挂机**，避免鼓励在线挂机。跨跃迁累积，驱动 passives 与金币。**不再自注册 on_nth_tick**（统一到 tick.lua）。旧存档 `afk_*` 字段在 `M.get` 中迁移为 `online_*`。 |
 | `rocket.lua` | 发射火箭惩罚：每次 `on_rocket_launched` 令本轮 `warp_hours` -1 分钟，公告并打印火箭载荷。 |
 | `commands.lua` | 管理/调试命令（控制台调用视作管理员）。 |
@@ -39,7 +39,8 @@
 - `storage.science_exp[player_index][pack_name '/' quality] = exp`：累计科技瓶经验。
 - `storage.last_respawn_run[player_index]`：玩家上次复活时的 `storage.run`，用于判定"本世界是否首次复活"。
 - `storage.player_stats[player_index]`：行为统计（驱动 passives + 金币）。含 `online_warps`（在线跃迁次数）。
-- `storage.market_unit_number`：当前 Nauvis 市场实体的 unit_number，用于 `on_gui_opened` 识别并弹出商店。
+
+（市场用原版交易界面，offer 已带品质，无需额外 storage 状态。）
 - `storage.traits`：左上 HUD 列出的本轮星系词条（本地化字符串数组）。
 - 地图参数：`storage.richness / frequency / size / radius / difficulty / local_specialty_multiplier`。
 
@@ -64,8 +65,7 @@ on_player_respawned:
     若 storage.run != last_respawn_run[idx]:
         respawn_gifts.on_first_respawn(player)  -- 起手护甲 + 货币（品质瓶子 + 品质金币）
 
-打开市场实体 (on_gui_opened) -> market.open_shop -> 自定义商店 GUI
-点击购买按钮 (on_gui_click, 经 tick.lua 转发) -> market.try_buy
+打开市场实体 -> 原版交易界面（offer 由 market.stock_market 上架，价格+产出都带品质）
 ```
 
 ## 货币经济（替代旧的"按等级发物品到背包"）
@@ -97,70 +97,56 @@ on_player_respawned:
 
 ### 市场（`market.lua`）
 
-`M.sections` 列出分区：生产建筑用对应品质科技瓶购买、装备用品质金币购买、普罗米修斯瓶兑金币。
-**付什么品质，得什么品质**（自定义 GUI 实现，原版 market 的 give-item 不支持品质输出）。
-价格可在 `M.sections` 内逐项调。
+`M.sections` 列出每种货币卖什么：生产建筑用对应品质科技瓶购买、装备用品质金币购买、普罗米修斯瓶兑金币。
+出生点放 13 个原版 market 实体（12 瓶市场 3×4 网格 + 金币市场在最上方，3 格间距），
+每个用 `add_market_item` 把该货币的"物品 × 5 品质"全上架——`MarketIngredient`（价格）和
+give-item offer 都带 `quality`，所以**付什么品质货币，得什么品质物品**。价格在 `M.sections` 内逐项调。
 
 ## 角色被动能力（`passives.lua`）
 
-每种能力由 1 个或多个科技瓶驱动，组合方式是 **log 相加**，等价于经验相乘。例：
-手搓速度若由红瓶 + 紫瓶共同决定，则 `red=10` + `purple=10` 与 `single=100` 等效。
-经验 < 1 的瓶子不计入（贡献 0）。
+每条能力由一个 **player_stats 行为统计**驱动（不再是科技瓶），曲线用 log10：统计越多越强，1 点回到原版水平。
+`exp_total_for_pack` / `get_stat` 仍保留，供货币系统与 GUI 读取（瓶子经验现在只用于市场货币，不再驱动被动）。
 
 ### 两种曲线
 
-| 类型 | 全 0 时 | 公式（f） | exp=1 | 每 ×10 经验 |
+| 类型 | stat<1（含 0） | 公式 f(stat) | stat=1 | 每 ×10 |
 | --- | --- | --- | --- | --- |
-| `multiplier`（乘法系） | -0.5（即 0.5×） | `0.5 × Σ log10(exp_i)` | 0（基准 1×） | +0.5（+50%） |
-| `additive`（加法系） | 0 | `0.5 × (Σ log10(exp_i) + 1)` | +0.5 × base | +0.5 × base |
+| `factor_multiplier`（乘法系） | -0.5（0.5×，惩罚） | `0.5 × log10(stat)` | 0（基准 1×） | +0.5（+50%） |
+| `factor_additive`（加法系） | 0（无加成） | `0.5 × (log10(stat) + 1)` | +0.5 × base | +0.5 × base |
 
-乘法系的 -0.5 是惩罚：没攒过任何相关瓶子时角色比 vanilla 慢 50%。
-加法系的 0 是无加成：没经验时没奖励，也无惩罚。
+### 当前 ability 列表（5 条，全部已实装）
 
-### 当前 ability 列表
-
-`passives.abilities` 是按顺序列出的 12 条（对应 12 种瓶子）。`apply = nil` 表示未实装，
-GUI 仍会显示经验占位。
-
-| # | locale 键 | 瓶子 | 曲线 | 效果 |
-| --- | --- | --- | --- | --- |
-| 1 | `wn.ability-crafting` | automation | multiplier | `character_crafting_speed_modifier = f` |
-| 2 | `wn.ability-running` | logistic | multiplier | `character_running_speed_modifier = f` |
-| 3 | `wn.ability-mining` | chemical | multiplier | `character_mining_speed_modifier = f` |
-| 4 | `wn.ability-health` | military | additive | `character_health_bonus = 250 × f`（base=250） |
-| 5–12 | — | production / utility / space / metallurgic / electromagnetic / agricultural / cryogenic / promethium | — | 未实装（仅 tooltip 展示经验） |
+| locale 键 | 驱动统计 | 曲线 | 效果 |
+| --- | --- | --- | --- |
+| `wn.ability-crafting` | `craft_count` | multiplier | `character_crafting_speed_modifier = f` |
+| `wn.ability-running` | `online_minutes` | multiplier | `character_running_speed_modifier = f` |
+| `wn.ability-mining` | `mining_count` | multiplier | `character_mining_speed_modifier = f` |
+| `wn.ability-health` | `deaths` | additive | `character_health_bonus = 250 × f` |
+| `wn.ability-inventory` | `online_research` | additive | `character_inventory_slots_bonus = floor(10 × f)` |
 
 ### 应用时机
 
-- `passives.apply(player)`：对单个有 `character` 的玩家重算所有 ability 并写入 `LuaPlayer.character`。
-- 触发点：
-  - `on_player_created` / `on_player_respawned`：玩家刚拿到新 character。
-  - `reset.reset()` 末尾：跃迁后对在线玩家批量重算（飞船上的玩家不死、不触发 respawn，需手动应用）。
-- 经验更新发生在 `science_exp.collect()`（reset 前扫背包）和 `passives.exp_total_for_pack()` 读取。
+- `passives.apply(player)`：对单个有 `character` 的玩家重算所有 ability 写入 `LuaPlayer.character`。
+- 触发点：`on_player_created` / `on_player_respawned`（刚拿到新 character）；`reset.reset()` 末尾
+  （跃迁后对在线玩家批量重算，飞船上的玩家不死、不触发 respawn，需手动应用）。
+- 统计更新发生在 `player_stats` 的各事件处理器（手搓/挖矿/死亡/研究）与每分钟 `sample_online`。
 
 ### GUI 展示（`gui.lua` → `build_skills_tooltip`）
 
-左上 HUD 的 🧪 按钮 tooltip 列出每条 ability：
-- 已实装：`{locale, breakdown, fmt(factor)}`，breakdown 是各瓶经验用 `+` 拼接的字符串。
-- 未实装：`wn.ability-todo` 模板，仅显示瓶名 + 单瓶经验。
-
-格式化函数：
-- `pct(f)` → `"+25%"` 等，用于乘法系。
-- `flat(f, base)` → `"+125"` 等绝对值，用于加法系 HP。
+左上 HUD 🧪 按钮 tooltip 三段：① 5 条被动 `{locale, 统计值, fmt(factor)}` ② 12 瓶货币进度（等级/升级经验）
+③ 在线金币。所有行先收集成 flat 列表，再折叠成嵌套 localised string（突破单层 ~20 参数上限，沿用 `util` 手法）。
+格式化：`pct(f)` → `"+25%"`（乘法系）；`flat(f, base)` → `"+125"`（加法系）。
 
 ### 扩展新 ability
 
-往 `M.abilities` 追加一项：
+往 `M.abilities` 追加一项（新统计需先在 `player_stats.lua` 的 `DEFAULTS` 加字段并在相应事件里累加）：
 
 ```lua
 {
-    locale = 'wn.ability-xxx',     -- locale 字符串，接收 (breakdown, fmt(f))
-    packs  = {'space-science-pack'},
-    curve  = M.combined_factor_multiplier,  -- 或 additive
+    locale = 'wn.ability-xxx',
+    stat   = 'some_player_stat',           -- player_stats 字段名
+    curve  = M.factor_multiplier,           -- 或 M.factor_additive
     apply  = function(p, f) p.character_xxx_modifier = f end,
     fmt    = function(f) return pct(f) end,
-},
+}
 ```
-
-注意 packs 可填多个，会按 log-sum 组合。多瓶组合的能力会让低经验玩家更难触发
-（任何一瓶 <1 就不贡献）。

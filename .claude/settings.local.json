@@ -13,7 +13,8 @@
       "Bash(python3 -c ' *)",
       "Read(//mnt/c/**)",
       "Read(//home/syx/**)",
-      "Read(//mnt/c/Users/syx/AppData/Roaming/Factorio/**)"
+      "Read(//mnt/c/Users/syx/AppData/Roaming/Factorio/**)",
+      "Bash(python3 *)"
     ]
   }
 }

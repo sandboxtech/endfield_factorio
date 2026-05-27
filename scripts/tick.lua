@@ -1,20 +1,17 @@
 -- 周期性事件：自动跃迁倒计时 + 点击 HUD 自杀脱困。
--- 本文件是 on_gui_click 与 on_nth_tick(3600) 的唯一注册点，其它模块通过被调用的
--- 函数接入（market.on_gui_click / player_stats.sample_online），避免多文件重复注册互相覆盖。
+-- 本文件是 on_gui_click 与 on_nth_tick(3600) 的唯一注册点；player_stats 的每分钟采样
+-- 通过 player_stats.sample_online 接入，避免多文件重复注册 on_nth_tick 互相覆盖。
 local constants = require('scripts.constants')
 local reset = require('scripts.reset')
 local players = require('scripts.players')
 local player_stats = require('scripts.player_stats')
-local market = require('scripts.market')
 
--- 点击左上 run 按钮 = 自杀回母星（用于卡死时脱困）；商店按钮转发给 market。
+-- 点击左上 run 按钮 = 自杀回母星（用于卡死时脱困）。
 script.on_event(defines.events.on_gui_click, function(event)
     local player = game.get_player(event.player_index)
     if not player then
         return
     end
-    market.on_gui_click(event)
-    if not (event.element and event.element.valid) then return end
     if event.element.name == 'introduction' then
         local last_run_ticks = (game.tick - (storage.run_start_tick or game.tick))
         local life_total = ((storage.warp_hours or 1) * constants.hour_to_tick)
