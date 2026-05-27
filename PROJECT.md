@@ -29,7 +29,7 @@
 | `tick.lua` | `on_gui_click` 与 `on_nth_tick(3600)` 的**唯一注册点**：每分钟在线采样 + **给在线玩家各 +1 金币** + 跃迁倒计时 + 撤离提醒；点 HUD 自杀脱困。 |
 | `player_stats.lua` | 行为统计**数据存储**：craft_count/mining_count/move_distance/deaths/online_minutes。只管 get/默认值/旧档迁移 + 在线采样；递增在 `passives.lua`。跨跃迁累积。 |
 | `rocket.lua` | 发射火箭惩罚：每次 `on_rocket_launched` 令本轮 `warp_hours` -1 分钟，公告 + 打印载荷。 |
-| `commands.lua` | 命令：`/reset`、`/players_gui`、`/life`、`/inspect`(=`/chakan`)、`/exp_clear`。 |
+| `commands.lua` | 命令：`/reset`、`/players_gui`、`/exp_clear`（管理员）；`/inspect`(=`/chakan`)、`/countdown`(=`/life`)、`/preview`(=`/yulan` 预览立即跃迁收益)、`/tutorial`(=`/jiaocheng` 教程，使用时通知所有管理员)。 |
 | `gui.lua` | 左上角 HUD：轮次按钮、星系词条、🧪 面板（每瓶经验+下局发的物资）、在线名册、管理员按钮。 |
 
 > `currency.lua` 已废弃（功能并入 `respawn_gifts`），不再被 require，可删除。

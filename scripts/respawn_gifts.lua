@@ -21,8 +21,8 @@ M.pack_gifts = {
     ['metallurgic-science-pack']     = {'foundry', 'big-mining-drill'},
     ['electromagnetic-science-pack'] = {'electromagnetic-plant', 'recycler'},
     ['agricultural-science-pack']    = {'biochamber', 'heating-tower'},
-    ['cryogenic-science-pack']       = {'cryogenic-plant', 'productivity-module-3'},
-    ['promethium-science-pack']      = {'efficiency-module-3', 'speed-module-3'},
+    ['cryogenic-science-pack']       = {'cryogenic-plant', 'productivity-module'},
+    ['promethium-science-pack']      = {'efficiency-module', 'speed-module'},
     ['military-science-pack']        = {'gun-turret', 'firearm-magazine'},
 }
 

@@ -17,9 +17,9 @@ local reset = require('scripts.reset')
 script.on_init(function()
     game.speed = 1
 
-    storage.richness = 1
-    storage.frequency = 1
-    storage.size = 1
+    storage.richness_multiplier = 4
+    storage.size_multiplier = 4
+    storage.frequency_multiplier = 4
     storage.local_specialty_multiplier = 0.25
 
     storage.radius = 2048

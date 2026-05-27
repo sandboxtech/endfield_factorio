@@ -4,6 +4,7 @@ local constants = require('scripts.constants')
 local gui = require('scripts.gui')
 local reset = require('scripts.reset')
 local players = require('scripts.players')
+local science_exp = require('scripts.science_exp')
 
 -- 包装：仅管理员可执行；返回 player 或 nil（控制台也算管理员）
 local function require_admin(command)
@@ -33,14 +34,19 @@ commands.add_command('players_gui', {'wn.players-gui-help'}, function(command)
     end
 end)
 
-commands.add_command('life', {'wn.life-help'}, function(command)
+-- 显示距下次自动跃迁的剩余时间。主名 /countdown，/life 作旧别名保留。
+local function countdown_cmd(command)
     local player = command.player_index and game.get_player(command.player_index)
     local last_run_ticks = game.tick - (storage.run_start_tick or game.tick)
     local total_hours = storage.warp_hours or 1
     local life_hours = (total_hours * constants.hour_to_tick - last_run_ticks) / constants.hour_to_tick
     local msg = {'wn.life-status', math.floor(life_hours * 100) / 100, total_hours}
     if player then player.print(msg) else game.print(msg) end
-end)
+end
+
+commands.add_command('countdown', {'wn.life-help'}, countdown_cmd)
+commands.add_command('daojishi', {'wn.life-help'}, countdown_cmd)
+commands.add_command('life', {'wn.life-help'}, countdown_cmd)
 
 -- （/exp 已删除：与 /inspect（无参数=看自己）重复。print_science_exp 仍由玩家加入时的广播使用。）
 
@@ -68,3 +74,37 @@ commands.add_command('exp_clear', {'wn.exp-clear-help'}, function(command)
     storage.science_exp = {}
     game.print({'wn.exp-cleared'})
 end)
+
+-- /tutorial（/jiaocheng 同功能）：把游戏教程打给自己，并通知所有在线管理员谁看了。
+local function tutorial_cmd(command)
+    local viewer = command.player_index and game.get_player(command.player_index)
+    if not viewer then return end
+    viewer.print({'wn.tutorial'})
+    for _, admin in pairs(game.connected_players) do
+        if admin.admin and admin.index ~= viewer.index then
+            admin.print({'wn.tutorial-notice', viewer.name})
+        end
+    end
+end
+
+commands.add_command('tutorial', {'wn.tutorial-help'}, tutorial_cmd)
+commands.add_command('jiaocheng', {'wn.tutorial-help'}, tutorial_cmd)
+
+-- /preview（/yulan 同功能）：若现在立即跃迁，背包里的科技瓶各能换多少经验。
+local function preview_cmd(command)
+    local player = command.player_index and game.get_player(command.player_index)
+    if not player then return end
+    local gain = science_exp.preview(player)
+    player.print({'wn.preview-header'})
+    local any = false
+    for _, pack in ipairs(constants.science_packs) do
+        if (gain[pack] or 0) > 0 then
+            any = true
+            player.print({'wn.preview-entry', pack, gain[pack]})
+        end
+    end
+    if not any then player.print({'wn.preview-none'}) end
+end
+
+commands.add_command('preview', {'wn.preview-help'}, preview_cmd)
+commands.add_command('yulan', {'wn.preview-help'}, preview_cmd)

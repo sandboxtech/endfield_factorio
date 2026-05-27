@@ -18,9 +18,9 @@ M.offers = {
 
     -- 护甲格子（装零件用）
     {'modular-armor',                    1, 5},
-    {'power-armor',                      1, 30},   
-    {'power-armor-mk2',                  1, 200},
-    {'mech-armor',                       1, 800},
+    {'power-armor',                      1, 50},   
+    {'power-armor-mk2',                  1, 500},
+    {'mech-armor',                       1, 2000},
 
     -- 【单级装备】无分级，价格自行配置
     {'exoskeleton-equipment',            1,  30},

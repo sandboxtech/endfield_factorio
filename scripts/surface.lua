@@ -15,22 +15,22 @@ local renames = {
     ['gleba_stone']           = 'item/stone',
 }
 
--- 资源档位：丰度/面积/频率各抽一个 1..9 的随机整数 N，乘数 = 2^(N - 中心)：
---   丰度 = 标准 × 2^(N-7)（N=7 为标准，范围 1/64 ~ 4×）
---   面积 = 标准 × 2^(N-6)（N=6 为标准，范围 1/32 ~ 8×）
---   频率 = 标准 × 2^(N-5)（N=5 为标准，范围 1/16 ~ 16×）
+-- 资源档位：丰度/面积/频率各抽一个 1..9 的随机整数 N，乘数 = 2^(N-中心) × 全局倍率：
+--   丰度 = 2^(N-7) × storage.richness_multiplier
+--   面积 = 2^(N-6) × storage.size_multiplier
+--   频率 = 2^(N-5) × storage.frequency_multiplier
 -- 档位用 [virtual-signal=signal-N]（1~9，越大越多）显示在星系词条里。
--- richness_multiplier：地方特产用它额外降低【丰度】（只乘丰度，不动面积/频率）。
-local function set_resource(name, mgs, richness_multiplier)
+-- specialty_mult：地方特产用它额外降低【丰度】（只乘丰度，不动面积/频率）。
+local function set_resource(name, mgs, specialty_mult)
     local nr, ns, nf = math.random(1, 9), math.random(1, 9), math.random(1, 9)
 
     util.try_add_trait({'wn.traits-richness-size-frequency',
                         renames[name] or ('item/' .. name), nr, ns, nf})
 
     local ac = mgs.autoplace_controls[name]
-    ac.richness  = 2 ^ (nr - 7) * (richness_multiplier or 1)
-    ac.size      = 2 ^ (ns - 6)
-    ac.frequency = 2 ^ (nf - 5)
+    ac.richness  = 2 ^ (nr - 7) * storage.richness_multiplier * (specialty_mult or 1)
+    ac.size      = 2 ^ (ns - 6) * storage.size_multiplier
+    ac.frequency = 2 ^ (nf - 5) * storage.frequency_multiplier
 end
 
 local function random_nature_mgs(mgs, name)
@@ -89,6 +89,10 @@ script.on_event(defines.events.on_surface_cleared, function(event)
     storage.radius_min = storage.radius_min or 256
     storage.radius_max = storage.radius_max or 4096
     storage.radius = storage.radius or 2048
+    -- 全局资源倍率（老存档兜底；新档由 control.lua on_init 设为 4）
+    storage.richness_multiplier = storage.richness_multiplier or 4
+    storage.size_multiplier = storage.size_multiplier or 4
+    storage.frequency_multiplier = storage.frequency_multiplier or 4
     -- 刷新星球半径，箝制在 [radius_min, radius_max]
     local r = storage.radius * util.random_exp(2)
     r = math.max(storage.radius_min, r)

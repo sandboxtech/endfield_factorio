@@ -38,9 +38,44 @@ function M.reset()
         end
     end
 
-    -- 先扫描所有在线玩家的科技瓶累积经验（必须在清背包之前）
+    -- 先扫描所有在线玩家的科技瓶累积经验（必须在清背包之前），同时统计本轮结算
+    local summaries = {}
     for _, player in pairs(game.players) do
-        science_exp.collect(player)
+        local gain = science_exp.collect(player)
+        if gain then
+            local total, parts = 0, {}
+            for _, pack in ipairs(constants.science_packs) do
+                if (gain[pack] or 0) > 0 then
+                    total = total + gain[pack]
+                    parts[#parts + 1] = '[img=item/' .. pack .. ']+' .. gain[pack]
+                end
+            end
+            if total > 0 then
+                summaries[#summaries + 1] = {name = player.name, total = total, detail = table.concat(parts, '  ')}
+            end
+        end
+    end
+    -- 本轮结算：按本轮带走经验从多到少广播（顺带成了小排行榜）
+    if #summaries > 0 then
+        table.sort(summaries, function(a, b) return a.total > b.total end)
+        game.print({'wn.summary-title'})
+        for _, s in ipairs(summaries) do
+            game.print({'wn.summary-player', s.name, s.total, s.detail})
+        end
+    end
+
+    -- 清理长期不活跃玩家（3 天没上线）：删除其玩家对象，释放蓝图/快捷键等存档膨胀。
+    -- 经验/统计按【名字】存储（player_stats / science_exp），删玩家不动这些数据；
+    -- 玩家用同名回归时自动继承。
+    local INACTIVE_TICKS = 3 * 86400 * 60   -- 3 天（1 天 = 86400 秒 × 60 tick）
+    local stale = {}
+    for _, player in pairs(game.players) do
+        if not player.connected and (game.tick - player.last_online) > INACTIVE_TICKS then
+            stale[#stale + 1] = player
+        end
+    end
+    if #stale > 0 then
+        game.remove_offline_players(stale)
     end
 
     -- 重置所有玩家（含飞船上的）：有 character 的传送回母星并杀死 → 在母星复活领奖励；
@@ -108,7 +143,7 @@ function M.reset()
 
     game.map_settings.asteroids.spawning_rate = util.readable(util.random_exp(4))
     game.difficulty_settings.spoil_time_modifier = util.readable(0.5 + util.random_exp(4))
-    game.difficulty_settings.technology_price_multiplier = 1
+    game.difficulty_settings.technology_price_multiplier = 2   -- 每个世界科技成本恒为 2 倍
 
     util.try_add_trait({'', '\n',
                         {'wn.galaxy-trait-spawning_rate', game.map_settings.asteroids.spawning_rate},

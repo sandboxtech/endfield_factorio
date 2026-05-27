@@ -19,29 +19,16 @@ local DEFAULTS = {
     deaths         = 0,
 }
 
--- 旧存档字段迁移：afk_minutes → online_minutes。
-local RENAMES = {
-    afk_minutes = 'online_minutes',
-}
-
+-- 统计按【玩家名】存储：名字跨 index 稳定，被删玩家用同名回归即自动继承，删玩家时无需动 storage。
 function M.get(player_index)
     storage.player_stats = storage.player_stats or {}
-    local s = storage.player_stats[player_index]
+    local player = game.get_player(player_index)
+    local key = player and player.name or player_index
+    local s = storage.player_stats[key]
     if not s then
         s = {}
         for k, v in pairs(DEFAULTS) do s[k] = v end
-        storage.player_stats[player_index] = s
-    else
-        -- 兼容旧存档：先迁移改名字段，再给缺失字段补 0
-        for old, new in pairs(RENAMES) do
-            if s[new] == nil and s[old] ~= nil then
-                s[new] = s[old]
-                s[old] = nil
-            end
-        end
-        for k, v in pairs(DEFAULTS) do
-            if s[k] == nil then s[k] = v end
-        end
+        storage.player_stats[key] = s
     end
     return s
 end
