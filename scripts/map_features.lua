@@ -21,9 +21,13 @@ function M.knobs()
         local v = noise.hash01(wseed(off) * 6.1)
         return power and v ^ power or v
     end
+    -- 中心化：两个独立哈希之差 → 三角分布、集中在 0.5。多半接近原版，极端(极干极湿/极秃极茂)很罕见。
+    local function kc(off)
+        return 0.5 + (noise.hash01(wseed(off) * 6.1) - noise.hash01(wseed(off) * 3.7)) * 0.5
+    end
     return {
-        verdancy  = k(801),       -- 树/草繁茂度（均匀：有的世界茂密、有的稀疏）
-        rockiness = k(803),       -- 岩石密度
+        verdancy  = kc(801),      -- 树/草繁茂度（中心化：多半正常，极干/极茂罕见）
+        rockiness = kc(803),      -- 岩石密度（中心化）
         danger    = k(805, 2),    -- 虫群危险度（曲线偏低，安宁居多）
         riches    = k(807, 1.6),  -- 战利品丰度（曲线偏低）
         exotic    = k(809, 3),    -- 跨星球异物倾向（立方偏置，诡异世界很罕见）
@@ -162,30 +166,6 @@ local function feat_treasure(surface, lt, W)
     end
 end
 
--- 虫群前哨（worm 炮塔）：tier 门控，远离出生点。force='enemy'（必须敌对）。
-local WORMS = {'small-worm-turret', 'small-worm-turret', 'medium-worm-turret', 'big-worm-turret'}
-local function feat_worms(surface, lt, A, S, Z, W)
-    local s = strength(709)
-    if s == 0 then return end
-    local danger = W and W.danger or 0          -- 本轮危险度：越高虫越密、范围越大（连续，替代硬编码 0.35）
-    local scatter = 0.15 + 0.5 * danger
-    local thr = 0.72 - s * 0.2 - 0.15 * danger
-    for x = 0, 31, 4 do
-        for y = 0, 31, 4 do
-            local px, py = lt.x + x, lt.y + y
-            if px * px + py * py > 80 * 80
-               and noise.fractal_warped(noise.octaves.blob, px, py, wseed(709), A, S, Z) > thr
-               and math.random() < scatter then
-                local w = WORMS[math.random(#WORMS)]
-                local pos = {x = px + 0.5, y = py + 0.5}
-                if surface.can_place_entity{name = w, position = pos} then
-                    surface.create_entity{name = w, force = 'enemy', position = pos}
-                end
-            end
-        end
-    end
-end
-
 -- 树木主题（连续插值，不是离散几种世界）：把每棵树【从原版色/灰度插值到本轮目标】，插值量 = strength。
 --   strength 立方偏置：绝大多数 ≈0（几乎原版）、极小概率接近 1（大改）。所以"特殊树世界"很罕见。
 --   颜色目标按【位置低频噪声】取 → 相邻树同色、成片（像原版按地貌变化），不会每棵乱跳；
@@ -235,7 +215,7 @@ function M.generate(surface, lt)
     end
     for _, def in ipairs(EXOTIC) do place_feature(surface, lt, def, A, S, Z, W) end
     theme_trees(surface, lt)
-    if surface.name == 'nauvis' then feat_worms(surface, lt, A, S, Z, W) end   -- worm 是母星生物，只长母星
+    -- 虫群交回原版 enemy-base 自然生成（成簇于虫巢，比手动满地散更自然）；不再手动放 worm。
     feat_crash_site(surface, lt, W)
     feat_treasure(surface, lt, W)
 end

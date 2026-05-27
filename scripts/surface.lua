@@ -2,6 +2,7 @@
 local util = require('scripts.util')
 local market = require('scripts.market')
 local map_features = require('scripts.map_features')
+local noise = require('scripts.noise')
 
 -- 资源档位：丰度/面积/频率各抽一个 1..9 的随机整数 N，乘数 = 1.3^(N-中心) × 全局倍率：
 --   丰度 = 1.3^(N-7) × richness_multiplier；面积 = 1.3^(N-6) × size_multiplier；频率 = 1.3^(N-5) × frequency_multiplier。
@@ -16,11 +17,13 @@ local function set_resource(name, mgs, specialty_mult)
     ac.frequency = 1.3 ^ (nf - 5) * storage.frequency_multiplier
 end
 
--- 纯地貌要素（树/石/水/悬崖/湿度/植物）：大幅浮动，长歪了也只是地貌不同。
+-- 自然要素（水/悬崖/火山/岛屿）。
 local function random_nature_mgs(mgs, name)
-    mgs.autoplace_controls[name].richness = util.random_nature()
-    mgs.autoplace_controls[name].frequency = util.random_nature()
-    mgs.autoplace_controls[name].size = util.random_nature()
+    local ac = mgs.autoplace_controls[name]
+    if not ac then return end
+    ac.frequency = util.random_nature()
+    ac.size      = util.random_nature()
+    ac.richness  = util.random_nature()
 end
 
 -- 影响难度/节奏的要素（敌人巢穴）：大概率正常、小概率小幅偏离，避免随机出"虫海"或"无虫"。
@@ -35,7 +38,7 @@ end
 local function nature_by_knob(mgs, name, mood)
     local ac = mgs.autoplace_controls[name]
     if not ac then return end
-    ac.frequency = 0.4 + mood * 1.6
+    ac.frequency = 0.6 + mood * 1.4   -- 下限抬高 → 低繁茂世界也不至于太秃
     ac.size      = 0.3 + mood * 0.6 + (math.random() ^ 3) * 1.3
     ac.richness  = 0.6 + math.random() * 0.8
 end
@@ -47,10 +50,62 @@ local function bias_climate(mgs, knobs)
     mgs.property_expression_names = mgs.property_expression_names or {}
     local pen = mgs.property_expression_names
     local function tri() return math.random() - math.random() end   -- ∈(-1,1)，偏中间
-    pen['control:moisture:bias']      = tostring((knobs.verdancy - 0.5) * 0.5)  -- 干湿：由繁茂度连续决定
+    -- 干湿整体偏湿（基线 +0.12）：多半略湿润，几乎不会强偏干 → 不再"湿度经常太低/满地荒漠"。
+    pen['control:moisture:bias']      = tostring(0.12 + (knobs.verdancy - 0.5) * 0.4)
     pen['control:aux:bias']           = tostring(tri() * 0.35)                   -- 副维：沙/红沙调色
     pen['control:temperature:bias']   = tostring(tri() * 12)                     -- 温度：±~12°C 改变生物群系
     pen['control:moisture:frequency'] = tostring(0.6 + math.random() * 0.9)      -- 生物群系斑块大小(连续)
+end
+
+-- "染地世界"调色板（学 Comfy journey 'infested'）：在地面层盖半透明染色精灵，不改地块本身
+-- （寻路/属性/资源都不变），只改观感 → 属"修改观感"而非"覆盖地形"。
+local GROUND_TINT_PALETTE = {
+    {r = 0.75, g = 0.0,  b = 0.15},  -- 血红
+    {r = 0.6,  g = 0.0,  b = 0.6},   -- 紫（感染）
+    {r = 0.1,  g = 0.5,  b = 0.05},  -- 毒绿
+    {r = 0.35, g = 0.2,  b = 0.0},   -- 锈褐
+}
+
+-- 销毁某表面上现存的染地精灵（换图前清理，避免跨轮累积）。
+local function clear_ground_tint(surface)
+    for _, obj in pairs(rendering.get_all_objects()) do
+        if obj.valid and obj.surface and obj.surface.index == surface.index then
+            obj.destroy()
+        end
+    end
+end
+
+-- ── 噪声 tile 替换（罕见世界变体）─────────────────────────────────────────────
+-- 每个世界可能有几条规则；每条 = {源 tile 家族 + 随机噪声通道 + 目标 tile}。噪声区(平滑大团)内的
+-- 源 tile 换成目标 tile → 成片、部分替换。源取 Nauvis 自然 tile，目标取精选池（外星地表/液体/熔岩/虚空），
+-- 不用字面全部 tile（避免随机出实验室/混凝土/过渡 tile 这种难看的）。
+local REMAP_SRC = {   -- 随机选一个家族整体作为 from
+    {'water', 'deepwater', 'water-green', 'deepwater-green', 'water-shallow', 'water-mud'},  -- 水族
+    {'grass-1', 'grass-2', 'grass-3', 'grass-4'},                                            -- 草
+    {'dry-dirt', 'dirt-1', 'dirt-2', 'dirt-3', 'dirt-4', 'dirt-5', 'dirt-6', 'dirt-7'},      -- 土
+    {'sand-1', 'sand-2', 'sand-3'},                                                          -- 沙
+    {'red-desert-0', 'red-desert-1', 'red-desert-2', 'red-desert-3'},                        -- 红沙
+}
+-- 目标池带权重：可走"换皮"地表常见；液体/熔岩中等稀有；虚空最稀有（不可走/危险）。
+local REMAP_DST = {
+    {w = 8, t = 'volcanic-ash-flats'}, {w = 8, t = 'volcanic-soil-dark'}, {w = 6, t = 'volcanic-jagged-ground'},
+    {w = 8, t = 'fulgoran-dunes'},     {w = 6, t = 'fulgoran-sand'},
+    {w = 8, t = 'snow-flat'},          {w = 6, t = 'dust-flat'},          {w = 6, t = 'ice-rough'},
+    {w = 6, t = 'wetland-green'},      {w = 6, t = 'lowland-olive-blubber'}, {w = 6, t = 'midland-yellow-crust'},
+    {w = 6, t = 'natural-yumako-soil'}, {w = 5, t = 'nuclear-ground'},
+    {w = 4, t = 'oil-ocean-deep'},     {w = 3, t = 'ammoniacal-ocean'},   {w = 3, t = 'gleba-deep-lake'},  -- 液体(不可走)
+    {w = 2, t = 'lava'},                                                                                  -- 熔岩(烧人)
+    {w = 1, t = 'empty-space'},                                                                           -- 虚空(掉落)
+}
+local REMAP_DST_TOTAL = 0
+for _, d in ipairs(REMAP_DST) do REMAP_DST_TOTAL = REMAP_DST_TOTAL + d.w end
+local function pick_remap_dst()
+    local r, acc = math.random() * REMAP_DST_TOTAL, 0
+    for _, d in ipairs(REMAP_DST) do
+        acc = acc + d.w
+        if r <= acc then return d.t end
+    end
+    return REMAP_DST[1].t
 end
 
 -- 表面新建时只重置 seed（cleared 才会进入完整生成流程）。
@@ -136,6 +191,33 @@ script.on_event(defines.events.on_surface_cleared, function(event)
     -- 本轮整局气质（繁茂/岩石/危险/富庶/异物），与 map_features 共用同一套确定性旋钮 → 全局气质一致。
     local knobs = map_features.knobs()
 
+    -- 染地世界：小概率出现（诡异世界更可能）。出现时 alpha 走立方曲线 → 大概率温和淡染、
+    -- 小概率浓重得像 infested。先清掉本表面上一轮的染色精灵，再决定本轮是否/如何染。
+    clear_ground_tint(surface)
+    storage.ground_tint = storage.ground_tint or {}
+    storage.ground_tint[surface.name] = nil
+    if math.random() < 0.06 + 0.25 * knobs.exotic then
+        local c = GROUND_TINT_PALETTE[math.random(#GROUND_TINT_PALETTE)]
+        local a = 0.05 + (math.random() ^ 3) * 0.32   -- 多半 ~0.05–0.12 淡染；极少 ~0.37 浓染(infested 感)
+        storage.ground_tint[surface.name] = {r = c.r, g = c.g, b = c.b, a = a}
+    end
+
+    -- 噪声 tile 替换：小概率世界，本轮生成 1~3 条随机规则(源家族 + 噪声 + 目标 tile)。
+    storage.tile_remap = storage.tile_remap or {}
+    storage.tile_remap[surface.name] = nil
+    if math.random() < 0.05 + 0.25 * knobs.exotic then
+        local rules = {}
+        for _ = 1, math.random(1, 3) do
+            rules[#rules + 1] = {
+                from = REMAP_SRC[math.random(#REMAP_SRC)],
+                to = pick_remap_dst(),
+                seed = math.random(1, 4294967295),
+                threshold = -0.15 + math.random() * 0.55,   -- 低=大片替换，高=零星斑块
+            }
+        end
+        storage.tile_remap[surface.name] = rules
+    end
+
     -- 母星
     if surface == game.surfaces.nauvis then
         surface.peaceful_mode = math.random(1, 5) == 1
@@ -148,7 +230,7 @@ script.on_event(defines.events.on_surface_cleared, function(event)
         end
         random_nature_mgs(mgs, 'water')
         random_nature_mgs(mgs, 'nauvis_cliff')
-        random_nature_mgs(mgs, 'starting_area_moisture')
+        -- starting_area_moisture 用原版默认（出生区本就湿润），不再随机到极干
         nature_by_knob(mgs, 'trees', knobs.verdancy)    -- 树：密度随繁茂度，规模多半小偶尔大
         nature_by_knob(mgs, 'rocks', knobs.rockiness)
         balance_mgs(mgs, 'enemy-base')   -- 虫巢密度影响难度 → 大概率正常
@@ -241,6 +323,39 @@ script.on_event(defines.events.on_chunk_generated, function(event)
     -- 放在铺虚空【之后】，can_place_entity 自动跳过虚空/水/障碍。generate 内部按 PLANET[表面名]
     -- 自行判断，未定义的表面（飞船平台）直接跳过。详见 scripts/map_features.lua。
     map_features.generate(surface, left_top)
+
+    -- 噪声 tile 替换：本轮该表面的每条规则，把噪声区(平滑大团)内的源 tile 换成目标 tile。
+    -- 只动匹配到的 tile（圆外已是虚空、不匹配），成片部分替换。仅替换世界(罕见)才进此分支。
+    local remap = storage.tile_remap and storage.tile_remap[surface.name]
+    if remap then
+        for _, rule in ipairs(remap) do
+            local found = surface.find_tiles_filtered{name = rule.from, area = {{left_top.x, left_top.y}, {left_top.x + 32, left_top.y + 32}}}
+            if #found > 0 then
+                local tiles = {}
+                for _, t in pairs(found) do
+                    local p = t.position
+                    if noise.fractal(noise.octaves.smooth, p.x, p.y, rule.seed) > rule.threshold then
+                        tiles[#tiles + 1] = {name = rule.to, position = p}
+                    end
+                end
+                if #tiles > 0 then surface.set_tiles(tiles) end
+            end
+        end
+    end
+
+    -- 染地世界：本轮该表面若被选中，在地面层盖一张缩放到整块(32×32)的半透明染色精灵。
+    -- 不改地块本身，只改观感。仅圆内区块绘制（圆外多是虚空，跳过省开销）。
+    local gt = storage.ground_tint and storage.ground_tint[surface.name]
+    if gt then
+        local cx, cy = left_top.x + 16, left_top.y + 16
+        if cx * cx + cy * cy <= r * r then
+            rendering.draw_sprite{
+                sprite = 'tile/lab-dark-2', x_scale = 32, y_scale = 32,
+                target = {cx, cy}, surface = surface,
+                tint = gt, render_layer = 'ground-layer-1',
+            }
+        end
+    end
     -- 注意：不要在这里刷 GUI。区块生成极高频（每轮跃迁成百上千次），
     -- HUD 不依赖区块，刷新由 reset/玩家事件触发即可。
 end)
