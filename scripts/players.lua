@@ -116,7 +116,10 @@ local function place_on_random_planet(player)
         pos = settle(surface) or player.force.get_spawn_position(surface)
     end
     player.teleport(pos, surface)
-    -- 玩家复活点周围 chart 一个边长 512 的正方形（±256）
+    -- chart 只揭示【已生成】的区块；新星球除出生点外都没生成，所以先强制生成 ±256 再 chart。
+    -- （生成母星区块会触发 map_features，较重；嫌卡把这里的 8 调小，如 4=±128。）
+    surface.request_to_generate_chunks(pos, 8)   -- 8 区块 ≈ 256 格
+    surface.force_generate_chunk_requests()
     player.force.chart(surface, {{pos.x - 256, pos.y - 256}, {pos.x + 256, pos.y + 256}})
 end
 

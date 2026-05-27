@@ -1,7 +1,7 @@
 -- 每次跃迁后随机生成各星球：地图设定、资源、自然要素、圆形边界。
 local util = require('scripts.util')
 local market = require('scripts.market')
-local noise = require('scripts.noise')
+local map_features = require('scripts.map_features')
 
 -- 资源档位：丰度/面积/频率各抽一个 1..9 的随机整数 N，乘数 = 1.3^(N-中心) × 全局倍率：
 --   丰度 = 1.3^(N-7) × richness_multiplier；面积 = 1.3^(N-6) × size_multiplier；频率 = 1.3^(N-5) × frequency_multiplier。
@@ -198,39 +198,6 @@ script.on_event(defines.events.on_surface_cleared, function(event)
     market.place_on_nauvis()
 end)
 
--- 母星撒废料：【逐格】用 simplex 分形噪声（scripts/noise，scrapyard 倍频）判断，超阈值就放 scrap。
--- simplex 平滑、不重复、跨区块连续 → 废料连成自然矿场（不是每块一个方块、也无正弦条纹）。
--- 按本轮 storage.run 派生种子 → 本轮全图同一噪声场（团块跨区块连片），每轮布局不同。
--- scrap 需回收机才能拆 → 中后期福利。用连续随机参数（非二元开关）：
---   intensity 0~1 → 阈值高低 → 本轮废料从"几乎没有"到"很多"连续过渡；
---   richbase + 第二层噪声 → 每格储量按本轮富度 × 平滑起伏，不再单调。
---   force='player'：否则机器人不能拆，影响体验。
--- 暂时 100% 出现方便测试；之后要"降低出现概率"也别做成二元，可把 intensity 整体往下压。
-local function scatter_scrap(surface, left_top)
-    local seed = (storage.run or 0) * 1009 + 31
-    local angle, stretch, zoom = noise.seeded_transform(seed)
-    local intensity = noise.hash01(seed * 5.1)               -- 本轮覆盖强度 0~1
-    local threshold = 0.7 - intensity * 0.55                 -- 强度高→阈值低→铺得广（约 0.15~0.7）
-    local richbase  = 200 + noise.hash01(seed * 6.3) * 3000  -- 本轮富度基准 200~3200
-    for x = 0, 31 do
-        for y = 0, 31 do
-            local px, py = left_top.x + x, left_top.y + y
-            local nv = noise.fractal_warped(noise.octaves.scrapyard, px, py, seed, angle, stretch, zoom)
-            if nv > threshold then
-                local pos = {x = px + 0.5, y = py + 0.5}
-                if surface.can_place_entity{name = 'scrap', position = pos} then
-                    -- 储量 = 本轮富度 × 另一层平滑噪声(0.3~1.7)：片内贫富起伏 + 每轮整体富度不同
-                    local rn = (noise.fractal(noise.octaves.scrapyard, px, py, seed + 50000) + 1) * 0.5
-                    surface.create_entity{
-                        name = 'scrap', force = 'player', position = pos,
-                        amount = math.max(50, math.floor(richbase * (0.3 + rn * 1.4))),
-                    }
-                end
-            end
-        end
-    end
-end
-
 -- 圆形地图：超出半径的格子全部铺成虚空。
 script.on_event(defines.events.on_chunk_generated, function(event)
     local surface = event.surface
@@ -257,10 +224,10 @@ script.on_event(defines.events.on_chunk_generated, function(event)
         end
     end
 
-    -- 母星撒废料：放在铺虚空【之后】，can_place_entity 会自动跳过虚空/水，无需判断边界
-    if surface == game.surfaces.nauvis then
-        scatter_scrap(surface, left_top)
-    end
+    -- 各星球地图风味（本地特色矿/石/树/遗迹/冰山 + 跨星球异物 + 树木主题 + 虫群/物资箱）：
+    -- 放在铺虚空【之后】，can_place_entity 自动跳过虚空/水/障碍。generate 内部按 PLANET[表面名]
+    -- 自行判断，未定义的表面（飞船平台）直接跳过。详见 scripts/map_features.lua。
+    map_features.generate(surface, left_top)
     -- 注意：不要在这里刷 GUI。区块生成极高频（每轮跃迁成百上千次），
     -- HUD 不依赖区块，刷新由 reset/玩家事件触发即可。
 end)

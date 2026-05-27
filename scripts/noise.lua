@@ -71,9 +71,19 @@ M.d2 = d2
 
 -- 倍频模板（modifier=频率，越小团块越大；weight=权重）。仿 Comfy 的 'scrapyard'。
 M.octaves = {
-    scrapyard = {
-        {modifier = 0.005, weight = 1}, {modifier = 0.01, weight = 0.35},
-        {modifier = 0.05, weight = 0.23}, {modifier = 0.1, weight = 0.11},
+    -- 废料：主频偏高(团块中等) + 强细节(打碎巨块、带孔洞)，避免一整片巨型矿
+    scrap = {
+        {modifier = 0.012, weight = 1}, {modifier = 0.035, weight = 0.5},
+        {modifier = 0.09, weight = 0.3}, {modifier = 0.2, weight = 0.12},
+    },
+    blob = {  -- 通用中团块（石阵/树林/虫区）
+        {modifier = 0.01, weight = 1}, {modifier = 0.04, weight = 0.4}, {modifier = 0.1, weight = 0.15},
+    },
+    smooth = {  -- 大而平滑（湖泊）
+        {modifier = 0.006, weight = 1}, {modifier = 0.02, weight = 0.2},
+    },
+    fine = {  -- 细密（装饰物/密度）
+        {modifier = 0.05, weight = 1}, {modifier = 0.15, weight = 0.3},
     },
 }
 
@@ -100,9 +110,12 @@ end
 M.hash01 = hash01   -- 暴露出去：可由种子派生"本轮要不要某风味"等开关
 
 function M.seeded_transform(seed)
-    local angle   = hash01(seed * 1.7) * math.pi * 2
-    local stretch = 1 + hash01(seed * 2.9) * 6        -- 1~7：1=圆，越大越长条
-    local zoom    = 0.6 + hash01(seed * 4.3) * 0.8    -- 0.6~1.4：整体特征大小（收窄，防巨块）
+    local angle = hash01(seed * 1.7) * math.pi * 2
+    local stretch = 1                                 -- 默认圆团
+    if hash01(seed * 2.9) > 0.85 then                 -- 仅 ~15% 轮次拉成长条（不再每张图都长条）
+        stretch = 1.6 + hash01(seed * 5.5) * 2.4      -- 1.6~4
+    end
+    local zoom = 0.7 + hash01(seed * 4.3) * 0.7       -- 0.7~1.4：整体特征大小
     return angle, stretch, zoom
 end
 
