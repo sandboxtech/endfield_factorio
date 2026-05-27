@@ -87,35 +87,32 @@ M.sections = {
     }},
     -- 火星瓶 · 冶金（Vulcanus）
     {currency = 'metallurgic-science-pack', items = {
-        {name = 'turbo-transport-belt', q = 'epic',      price = 1, count = 10},
+        -- 绿色系列传送带
+        -- 速度2
         {name = 'foundry',                  q = 'legendary', price = 1, count = 1},
         {name = 'big-mining-drill',         q = 'legendary', price = 1, count = 1},
-        {name = 'productivity-module-2',    q = 'legendary', price = 2, count = 1},
     }},
     -- 雷星瓶 · 电磁（Fulgora）
     {currency = 'electromagnetic-science-pack', items = {
-        {name = 'substation',           q = 'epic',      price = 1, count = 10},
+        -- 品质2
         {name = 'electromagnetic-plant',q = 'legendary', price = 1, count = 1},
         {name = 'recycler',             q = 'legendary', price = 1, count = 1},
-        {name = 'accumulator',          q = 'legendary', price = 1, count = 2},
     }},
     -- 草星瓶 · 农业（Gleba）
     {currency = 'agricultural-science-pack', items = {
-        {name = 'express-splitter',   q = 'epic',      price = 1, count = 10},
+        -- 节能2
         {name = 'biochamber',         q = 'legendary', price = 1, count = 1},
         {name = 'agricultural-tower', q = 'legendary', price = 1, count = 1},
     }},
     -- 极地瓶 · 低温（Aquilo）
     {currency = 'cryogenic-science-pack', items = {
-        {name = 'heat-pipe',       q = 'epic',      price = 1, count = 50},
+        -- 产能2
         {name = 'cryogenic-plant', q = 'legendary', price = 1, count = 1},
         {name = 'heating-tower',   q = 'legendary', price = 1, count = 1},
-        {name = 'heat-exchanger',  q = 'legendary', price = 1, count = 2},
     }},
-    -- 普罗米修斯市场：用普罗米修斯瓶兑换金币（金币的高级来源）。
+    -- 兑换任意其他瓶子
     {currency = 'promethium-science-pack', items = {
-        {name = 'coin', q = 'epic',      price = 1, count = 10},
-        {name = 'coin', q = 'legendary', price = 1, count = 100},
+        -- 帮我填写
     }},
     -- 金币市场：用在线赚的普通金币买个人装备。
     {currency = 'coin', items = {
@@ -124,8 +121,6 @@ M.sections = {
         {name = 'personal-roboport-equipment', q = 'normal', price = 8,  count = 1},
         {name = 'exoskeleton-equipment',       q = 'normal', price = 10, count = 1},
         {name = 'energy-shield-equipment',     q = 'normal', price = 10, count = 1},
-        {name = 'night-vision-equipment',      q = 'normal', price = 3,  count = 1},
-        {name = 'belt-immunity-equipment',     q = 'normal', price = 3,  count = 1},
     }},
 }
 
