@@ -1,7 +1,7 @@
 -- 地图风味（原则：用噪声【修改 2.0 原生生成】，不用手动 stamp 去【覆盖】——原生地貌更自然）。
 -- 因此本模块只做原生【做不到】的事；地貌(石/树/矿/水…)交回原生，由 surface.lua 用气候偏置/autoplace 调本轮风味。
 --   · M.knobs()：本轮整局气质连续旋钮(繁茂/岩石/危险/富庶/异物)，与 surface.lua 共用 → 全局气质一致渐变。
---   · PLANET：仅母星 scrap（原生无废料）；EXOTIC：跨星异物(原生无法跨星)，稀疏散布。simplex 噪声成片。
+--   · PLANET：目前空（手动放矿/废料表现不如原生，全交原生）；EXOTIC：跨星异物(原生无法跨星)，稀疏散布。
 --   · 每特征从种子(storage.run+off)派生 strength：~60% 不出现，出现时立方偏置(多半小、极少大)。
 --   · 树木主题 theme_trees：对【原生树】按本轮强度从原版色插值到目标色(连续，非离散世界) → 改原生，不覆盖。
 --   · 通用风味：worm 虫群(force='enemy',仅母星)、随机木/铁/钢战利品箱(force='player',加权+品质)。
@@ -70,20 +70,16 @@ local function place_feature(surface, lt, def, A, S, Z, W)
     end
 end
 
--- 手动放置只保留【2.0 原生无法生成】的东西：
---   · 母星无原生废料 → scrap 用噪声有机散布（玩家很喜欢的招牌特色，保留）。
---   · 地貌(石/树/矿/遗迹/冰山/烟囱…)各星球原生都有且更自然 → 全部交回原生，由 surface.lua
---     用「气候偏置 + autoplace」按本轮气质调出风味（修改原生，而非手动覆盖）。
-local PLANET = {
-    nauvis = {
-        {name = 'scrap', off = 31, amount = {200, 3000}},
-    },
-}
+-- 手动放置的本地特色：目前为空。
+--   矿/石/树/水/废料等手动 stamp 表现大多不如原生（连母星 scrap 也移除了）→ 全部交回 2.0 原生，
+--   由 surface.lua 用「气候偏置 + autoplace」按本轮气质调风味（修改原生，而非覆盖）。
+--   若以后要放"原生绝对没有"的本地特产，再在此按 {name, off, amount/density, threshold} 添加。
+local PLANET = {}
 
--- 跨星球异物：原生 autoplace 无法把 A 星之物长到 B 星，所以这点"违和惊喜"只能手动。
--- 全 rare + 低密度高阈值 → 仅零星几个散布(不成片，避免丑)；出现概率随【异物倾向】渐变。
+-- 跨星球异物：原生 autoplace 无法把 A 星之物长到 B 星，这点"违和惊喜"只能手动。
+-- 全 rare + 低密度高阈值 → 仅零星几个散布(不成片)；出现概率随【异物倾向】渐变。仅保留实体型(树/石/遗迹/冰山)，
+-- 不放废料矿(手动废料表现差)。
 local EXOTIC = {
-    {name = 'scrap', off = 311, amount = {200, 2000}, rare = true, density = 0.5, threshold = 0.82},
     {name = 'ashland-lichen-tree', off = 313, rare = true, density = 0.06, threshold = 0.84},
     {name = 'fulgoran-ruin-small', off = 317, rare = true, density = 0.05, threshold = 0.86},
     {name = 'lithium-iceberg-big', off = 319, rare = true, density = 0.05, threshold = 0.86},
