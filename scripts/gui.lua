@@ -15,14 +15,8 @@ local function build_skills_tooltip(player)
     local cstat = passives.get_stat(player.index, constants.online_coin_stat)
     parts[#parts + 1] = {'wn.ability-online', {constants.online_coin_label}, cstat, currency.reward_amount(cstat)}
 
-    -- 基础能力（按玩家行为统计计算）
-    parts[#parts + 1] = '\n'
-    for _, ability in ipairs(passives.abilities) do
-        if ability.apply then
-            local val = passives.get_stat(player.index, ability.stat)
-            parts[#parts + 1] = {ability.locale, val, ability.fmt(ability.curve(val))}
-        end
-    end
+    -- 固定惩罚说明（全员一致，不随升级变化）
+    parts[#parts + 1] = {'wn.skills-penalty'}
 
     -- 每个科技瓶：下次跃迁实际会给的初始瓶子数（按品质）
     parts[#parts + 1] = '\n'

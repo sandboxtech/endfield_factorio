@@ -1,8 +1,8 @@
--- Nauvis 出生点的市场群：13 个原版 market 实体，每个只卖一种货币的 5 品质货物。
---   · 12 个科技瓶市场排成 3 列 × 4 行（3 格间距），金币市场在最上方居中。
---   · 直接用原版 add_market_item 上架 offer：价格和产出都带 quality（付 Q 品质货币得 Q 品质物品）。
---   · 生产建筑用对应品质科技瓶购买；装备用品质金币购买；普罗米修斯瓶兑金币。
--- 用原版交易界面，本模块不注册任何事件，只提供 place_on_nauvis() 供 reset 调用。
+-- Nauvis 出生点的市场群：13 个原版 market 实体（每轮跃迁后延迟重放）。
+--   · 12 个科技瓶市场排成 3 列 × 4 行，金币市场在最上方；每个铺混凝土地坪、整齐对齐。
+--   · 货物产出固定 normal 品质；价格按物品的 q 品质货币——epic 买大需求散件、legendary 买设备/插件。
+--   · 装备用普通金币买；普罗米修斯瓶兑金币。
+-- 用原版交易界面。本模块注册 on_tick：到 storage.market_place_tick 时放置（避开 surface.clear 的异步结算）。
 local constants = require('scripts.constants')
 
 local M = {}
@@ -25,41 +25,47 @@ M.sections = {
     -- 红瓶 · 自动化基础
     {currency = 'automation-science-pack', items = {
         {name = 'transport-belt',        q = 'epic',      price = 1, count = 50},
-        {name = 'pipe',                  q = 'epic',      price = 1, count = 50},
-        {name = 'small-electric-pole',   q = 'epic',      price = 1, count = 25},
-        {name = 'electric-mining-drill', q = 'legendary', price = 1, count = 1},
+        {name = 'underground-belt',      q = 'epic',      price = 1, count = 10},
+        {name = 'splitter',              q = 'epic',      price = 1, count = 10},
+        {name = 'small-electric-pole',   q = 'legendary',      price = 1, count = 10},
         {name = 'assembling-machine-1',  q = 'legendary', price = 1, count = 1},
         {name = 'inserter',              q = 'legendary', price = 1, count = 5},
+        {name = 'electric-mining-drill', q = 'legendary', price = 1, count = 1},
     }},
     -- 绿瓶 · 物流升级
     {currency = 'logistic-science-pack', items = {
         {name = 'fast-transport-belt',  q = 'epic',      price = 1, count = 50},
-        {name = 'underground-belt',     q = 'epic',      price = 1, count = 10},
-        {name = 'splitter',             q = 'epic',      price = 1, count = 10},
-        {name = 'medium-electric-pole', q = 'epic',      price = 1, count = 25},
+        {name = 'fast-underground-belt',q = 'epic',      price = 1, count = 10},
+        {name = 'fast-splitter',        q = 'epic',      price = 1, count = 10},
+        {name = 'medium-electric-pole', q = 'legendary',      price = 1, count = 10},
         {name = 'assembling-machine-2', q = 'legendary', price = 1, count = 1},
         {name = 'fast-inserter',        q = 'legendary', price = 1, count = 5},
+        {name = 'solar-panel', q = 'legendary', price = 1, count = 1},
     }},
     -- 黑瓶 · 防御
     {currency = 'military-science-pack', items = {
+        {name = 'firearm-magazine',  q = 'epic',      price = 1, count = 50},
         {name = 'stone-wall',  q = 'epic',      price = 1, count = 25},
-        {name = 'gate',        q = 'epic',      price = 1, count = 5},
         {name = 'gun-turret',  q = 'legendary', price = 1, count = 2},
-        {name = 'laser-turret',q = 'legendary', price = 2, count = 1},
+        {name = 'laser-turret',q = 'legendary', price = 1, count = 1},
+        {name = 'flamethrower-turret',q = 'legendary', price = 1, count = 1},
         {name = 'radar',       q = 'legendary', price = 1, count = 1},
     }},
     -- 蓝瓶 · 化工/石油
     {currency = 'chemical-science-pack', items = {
+        {name = 'pipe',             q = 'epic',      price = 1, count = 50},
         {name = 'substation',       q = 'epic',      price = 1, count = 10},
+        {name = 'big-electric-pole',q = 'epic',      price = 1, count = 10},
         {name = 'chemical-plant',   q = 'legendary', price = 1, count = 1},
         {name = 'oil-refinery',     q = 'legendary', price = 1, count = 1},
         {name = 'pumpjack',         q = 'legendary', price = 1, count = 1},
         {name = 'electric-furnace', q = 'legendary', price = 1, count = 1},
-        {name = 'storage-tank',     q = 'legendary', price = 1, count = 2},
     }},
     -- 紫瓶 · 量产
     {currency = 'production-science-pack', items = {
         {name = 'express-transport-belt', q = 'epic',      price = 1, count = 50},
+        {name = 'express-underground-belt', q = 'epic',      price = 1, count = 10},
+        {name = 'express-splitter', q = 'epic',      price = 1, count = 50},
         {name = 'assembling-machine-3',   q = 'legendary', price = 1, count = 1},
         {name = 'beacon',                 q = 'legendary', price = 1, count = 1},
         {name = 'productivity-module',    q = 'legendary', price = 1, count = 1},
@@ -68,25 +74,20 @@ M.sections = {
     }},
     -- 黄瓶 · 机器人物流
     {currency = 'utility-science-pack', items = {
-        {name = 'big-electric-pole',       q = 'epic',      price = 1, count = 25},
-        {name = 'roboport',                q = 'legendary', price = 1, count = 1},
-        {name = 'construction-robot',      q = 'legendary', price = 1, count = 10},
-        {name = 'logistic-robot',          q = 'legendary', price = 1, count = 10},
-        {name = 'requester-chest',         q = 'legendary', price = 1, count = 2},
-        {name = 'passive-provider-chest',  q = 'legendary', price = 1, count = 2},
+        {name = 'roboport',                q = 'epic', price = 1, count = 1},
+        {name = 'construction-robot',      q = 'epic', price = 1, count = 10},
+        {name = 'logistic-robot',          q = 'epic', price = 1, count = 10},
+        {name = 'requester-chest',         q = 'epic', price = 1, count = 1},
+        {name = 'passive-provider-chest',  q = 'epic', price = 1, count = 1},
     }},
-    -- 白瓶 · 大规模运输
+    -- 白瓶 · 太空科技，飞船设备
     {currency = 'space-science-pack', items = {
-        {name = 'rail',          q = 'epic',      price = 1, count = 100},
-        {name = 'locomotive',    q = 'legendary', price = 2, count = 1},
-        {name = 'cargo-wagon',   q = 'legendary', price = 1, count = 2},
-        {name = 'train-stop',    q = 'legendary', price = 1, count = 2},
-        {name = 'bulk-inserter', q = 'legendary', price = 1, count = 5},
+        -- [item=space-platform-starter-pack][item=crusher][item=asteroid-collector][item=thruster][item=cargo-bay]
         {name = 'speed-module-2',q = 'legendary', price = 2, count = 1},
     }},
     -- 火星瓶 · 冶金（Vulcanus）
     {currency = 'metallurgic-science-pack', items = {
-        {name = 'express-underground-belt', q = 'epic',      price = 1, count = 10},
+        {name = 'turbo-transport-belt', q = 'epic',      price = 1, count = 10},
         {name = 'foundry',                  q = 'legendary', price = 1, count = 1},
         {name = 'big-mining-drill',         q = 'legendary', price = 1, count = 1},
         {name = 'productivity-module-2',    q = 'legendary', price = 2, count = 1},
@@ -135,7 +136,7 @@ local function section_for(currency)
 end
 
 -- 13 个市场相对出生点的偏移：12 科技瓶 3 列 × 4 行，金币市场在最上方居中。
--- 列 x = -3,0,3（居中）；行从北到南，最南行在 -NORTH_GAP。
+-- 列 x = -CELL,0,+CELL（居中）；行从北到南，最南行在 -NORTH_GAP。
 function M.layout()
     local out = {}
     local rows = math.ceil(#constants.science_packs / COLS)   -- 4

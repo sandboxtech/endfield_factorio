@@ -18,8 +18,8 @@
 | `players.lua` | 玩家生命周期事件：创建/加入/离开/复活/死亡，调用 passives + gifts。 |
 | `respawn_gifts.lua` | 每个世界（`storage.run`）首次复活时发放起手护甲 + **货币**：携带经验换的 epic/legendary 瓶子 + 在线时长换的普通金币。不再直接发建筑，改由市场购买。 |
 | `currency.lua` | 货币换算（纯函数）：`reward_for_exp` 经验→epic/legendary 瓶子（√曲线）、`reward_amount` 在线统计→金币数量。 |
-| `market.lua` | Nauvis 出生点的 13 个原版 market 实体（每轮重放，不可摧毁/挖取）。每个只卖一种货币的 5 品质货物，用 `add_market_item` 上架（价格+产出都带 quality，付 Q 得 Q）。12 瓶市场 3×4 网格，金币市场在最上方。无自定义 GUI，用原版交易界面。 |
-| `passives.lua` | **行为统计**（player_stats）→ character 被动加成（手搓/移速/挖矿/HP/格子）；曲线为 log。另保留 `exp_total_for_pack`/`get_stat` 供货币与 GUI 读取。 |
+| `market.lua` | Nauvis 出生点的 13 个原版 market 实体（每轮跃迁后延迟重放，不可摧毁/挖取，铺混凝土地坪整齐对齐）。货物产出固定 normal；价格按物品 `q` 品质货币：epic 买大需求散件、legendary 买设备/插件。用原版交易界面；`on_tick` 延迟放置避开 `surface.clear` 异步结算。 |
+| `passives.lua` | **固定惩罚**：全员 -50% 手搓、-50% 移动；挖矿/生命/背包保持原版。不再有升级型能力。保留 `exp_total_for_pack`/`get_stat` 供货币与 GUI 读取。 |
 | `science_exp.lua` | 跃迁前扫描玩家背包里的科技瓶，按 `每组 × 品质倍率` 累加进 `storage.science_exp`。 |
 | `research.lua` | 研究完含 `-science-pack` 名字的科技时，把本轮跃迁倒计时延长 1 小时。 |
 | `surface.lua` | 跃迁后随机生成各星球：地图设定、资源分布、圆形边界。 |
@@ -97,57 +97,25 @@ on_player_respawned:
 
 出生点放 13 个原版 market 实体（12 瓶市场 3×4 网格 + 金币市场在最上方，3 格间距）。
 每个用 `add_market_item` 把该货币的"物品 × 5 品质"全上架——`MarketIngredient`（价格）和
-give-item offer 都带 `quality`，所以**付什么品质货币，得什么品质物品**。
+货物**产出固定 normal 品质**；价格按物品 `q` 字段所需的货币品质：**epic 买大需求散件**（传送带/电杆/管道/墙/铁轨，量大）、**legendary 买设备/插件**（机器/模块/机械臂，量小）。
 
 `M.sections` 是**手动配置区（占位待填）**：每个市场只收一种货币，science-pack 市场卖
 "该瓶对应科技阶段的商品"；金币市场卖装备；普罗米修斯市场兑金币（已预填，金币唯一来源）。
 逐项填 `{name=物品, price=该品质货币个数}`。
 
-## 角色被动能力（`passives.lua`）
+## 角色被动（`passives.lua`）
 
-每条能力由一个 **player_stats 行为统计**驱动（不再是科技瓶），曲线用 log10：统计越多越强，1 点回到原版水平。
-`exp_total_for_pack` / `get_stat` 仍保留，供货币系统与 GUI 读取（瓶子经验现在只用于市场货币，不再驱动被动）。
+**固定惩罚，不随任何统计/升级变化**。所有玩家：
 
-### 两种曲线
+- 手搓速度 `character_crafting_speed_modifier = -0.5`（-50%）
+- 移动速度 `character_running_speed_modifier = -0.5`（-50%）
+- 挖矿速度、生命值上限、背包容量：**保持原版**（不加修正）
 
-| 类型 | stat<1（含 0） | 公式 f(stat) | stat=1 | 每 ×10 |
-| --- | --- | --- | --- | --- |
-| `factor_multiplier`（乘法系） | -0.5（0.5×，惩罚） | `0.5 × log10(stat)` | 0（基准 1×） | +0.5（+50%） |
-| `factor_additive`（加法系） | 0（无加成） | `0.5 × (log10(stat) + 1)` | +0.5 × base | +0.5 × base |
-
-### 当前 ability 列表（5 条，全部已实装）
-
-| locale 键 | 驱动统计 | 曲线 | 效果 |
-| --- | --- | --- | --- |
-| `wn.ability-crafting` | `craft_count` | multiplier | `character_crafting_speed_modifier = f` |
-| `wn.ability-running` | `online_minutes` | multiplier | `character_running_speed_modifier = f` |
-| `wn.ability-mining` | `mining_count` | multiplier | `character_mining_speed_modifier = f` |
-| `wn.ability-health` | `deaths` | additive | `character_health_bonus = 250 × f` |
-| `wn.ability-inventory` | `online_research` | additive | `character_inventory_slots_bonus = floor(10 × f)` |
-
-### 应用时机
-
-- `passives.apply(player)`：对单个有 `character` 的玩家重算所有 ability 写入 `LuaPlayer.character`。
-- 触发点：`on_player_created` / `on_player_respawned`（刚拿到新 character）；`reset.reset()` 末尾
-  （跃迁后对在线玩家批量重算，飞船上的玩家不死、不触发 respawn，需手动应用）。
-- 统计更新发生在 `player_stats` 的各事件处理器（手搓/挖矿/死亡/研究）与每分钟 `sample_online`。
+由 `passives.apply(player)` 施加。角色换新（创建/复活/跃迁）后修正会清零，故
+`on_player_created` / `on_player_respawned` / `reset.reset()` 末尾都重新调用。
+`exp_total_for_pack` / `get_stat` 保留，供货币与 GUI 读取（科技瓶经验只用于携带奖励，不再驱动被动）。
 
 ### GUI 展示（`gui.lua` → `build_skills_tooltip`）
 
-左上 HUD 🧪 按钮 tooltip 三段（顺序）：① 在线金币行 ② 5 条被动 `{locale, 统计值, fmt(factor)}` ③ 12 瓶"跃迁给瓶数"（按品质）。
+左上 HUD 🧪 按钮 tooltip：① 在线金币行 ② 固定惩罚说明（`wn.skills-penalty`）③ 12 瓶"跃迁给瓶数"（按品质）。
 所有行先收集成 flat 列表，再折叠成嵌套 localised string（突破单层 ~20 参数上限，沿用 `util` 手法）。
-格式化：`pct(f)` → `"+25%"`（乘法系）；`flat(f, base)` → `"+125"`（加法系）。
-
-### 扩展新 ability
-
-往 `M.abilities` 追加一项（新统计需先在 `player_stats.lua` 的 `DEFAULTS` 加字段并在相应事件里累加）：
-
-```lua
-{
-    locale = 'wn.ability-xxx',
-    stat   = 'some_player_stat',           -- player_stats 字段名
-    curve  = M.factor_multiplier,           -- 或 M.factor_additive
-    apply  = function(p, f) p.character_xxx_modifier = f end,
-    fmt    = function(f) return pct(f) end,
-}
-```
