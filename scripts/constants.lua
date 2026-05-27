@@ -15,11 +15,12 @@ return {
     },
 
     -- 12 种科技瓶，作为"货币种类"和奖励/商店遍历顺序的唯一来源。
+    -- 顺序 = 市场网格位置（3 列 × 4 行）。军事(灰瓶)放最后一格。
     science_packs = {
-        'automation-science-pack', 'logistic-science-pack', 'military-science-pack',
-        'chemical-science-pack', 'production-science-pack', 'utility-science-pack',
-        'space-science-pack', 'metallurgic-science-pack', 'electromagnetic-science-pack',
-        'agricultural-science-pack', 'cryogenic-science-pack', 'promethium-science-pack',
+        'automation-science-pack', 'logistic-science-pack', 'chemical-science-pack',
+        'production-science-pack', 'utility-science-pack', 'space-science-pack',
+        'metallurgic-science-pack', 'electromagnetic-science-pack', 'agricultural-science-pack',
+        'cryogenic-science-pack', 'promethium-science-pack', 'military-science-pack',
     },
 
     -- 货币一（携带经验奖励 reward_for_exp）：epic、legendary 两档，都用平方根曲线、独立计算。

@@ -13,11 +13,13 @@ local renames = {
     ['gleba_stone']           = 'item/stone',
 }
 
--- 把数值映射成电池图标：<0.5 = 空（太低），[0.5,2] = 中（正常），>2 = 满（太高）。
+-- 把数值映射成 5 档品质图标（灰 normal < 绿 < 蓝 < 紫 < 橙 legendary，越高越丰）。
 local function level_for(v)
-    if v < 0.5 then return 'signal-battery-low'
-    elseif v > 2 then return 'signal-battery-full'
-    else return 'signal-battery-mid-level' end
+    if v < 0.5 then return 'normal'
+    elseif v < 1 then return 'uncommon'
+    elseif v < 2 then return 'rare'
+    elseif v < 4 then return 'epic'
+    else return 'legendary' end
 end
 
 -- 写入一种资源的 size/richness/frequency，并把档位记入 trait（用 quality 星可视化）。

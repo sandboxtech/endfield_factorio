@@ -24,8 +24,7 @@ end
 -- 把 target 的信息（固定惩罚 + 科技瓶经验）打印给 viewer。
 function M.print_inspection(target, viewer)
     viewer.print({'wn.inspect-header', target.name})
-    viewer.print({'wn.skills-penalty'})
-    -- 科技瓶经验（→ 携带奖励瓶子）
+    -- 科技瓶经验（→ 携带奖励瓶子）。固定惩罚是全局的，不在这里逐人显示。
     local exp = storage.science_exp and storage.science_exp[target.index]
     if exp then
         local prefix = target.name .. ' '

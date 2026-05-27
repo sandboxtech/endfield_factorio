@@ -17,7 +17,10 @@
       "Bash(python3 *)",
       "Bash(grep -oE \"\\\\{name = '[^']+', q = '[^']+', price = [0-9]+, count = [0-9]+\\\\}\" scripts/market.lua)",
       "Bash(grep -cE \"\\\\{name = '[^']+', q = '\" scripts/market.lua)",
-      "Bash(cd *)"
+      "Bash(cd *)",
+      "Bash(cd /home/syx/.claude/projects/-mnt-c-Users-syx-AppData-Roaming-Factorio-scenarios-endfield-factorio/memory/)",
+      "Bash(cat MEMORY.md)",
+      "Bash(grep -rqI 'name = \"__TRACKED_VAR__\"' '/mnt/c/Program Files \\(x86\\)/Steam/steamapps/common/Factorio/data/base/prototypes' '/mnt/c/Program Files \\(x86\\)/Steam/steamapps/common/Factorio/data/space-age/prototypes' '/mnt/c/Program Files \\(x86\\)/Steam/steamapps/common/Factorio/data/elevated-rails/prototypes' '/mnt/c/Program Files \\(x86\\)/Steam/steamapps/common/Factorio/data/quality/prototypes')"
     ]
   }
 }

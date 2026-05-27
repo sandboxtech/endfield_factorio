@@ -117,5 +117,6 @@ on_player_respawned:
 
 ### GUI 展示（`gui.lua` → `build_skills_tooltip`）
 
-左上 HUD 🧪 按钮 tooltip：① 在线金币行 ② 固定惩罚说明（`wn.skills-penalty`）③ 12 瓶"跃迁给瓶数"（按品质）。
+左上 HUD 🧪 按钮 tooltip：① 在线金币行 ② 12 瓶"跃迁给瓶数"（按品质）。
+固定惩罚说明（`wn.skills-penalty`）改放在 🌐 星系词条按钮 tooltip 顶部（见下）。
 所有行先收集成 flat 列表，再折叠成嵌套 localised string（突破单层 ~20 参数上限，沿用 `util` 手法）。

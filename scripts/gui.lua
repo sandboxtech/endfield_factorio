@@ -15,9 +15,6 @@ local function build_skills_tooltip(player)
     local cstat = passives.get_stat(player.index, constants.online_coin_stat)
     parts[#parts + 1] = {'wn.ability-online', {constants.online_coin_label}, cstat, currency.reward_amount(cstat)}
 
-    -- 固定惩罚说明（全员一致，不随升级变化）
-    parts[#parts + 1] = {'wn.skills-penalty'}
-
     -- 每个科技瓶：下次跃迁实际会给的初始瓶子数（按品质）
     parts[#parts + 1] = '\n'
     for _, pack in ipairs(constants.science_packs) do
@@ -68,7 +65,8 @@ function M.player_gui(player)
         type = 'sprite-button',
         sprite = 'space-location/solar-system-edge',
         name = 'traits',
-        tooltip = {'', storage.traits, {'wn.traits-legend'}}
+        -- 顶部先放固定惩罚说明（全员一致），再列本轮星系/星球词条 + 图例
+        tooltip = {'', {'wn.skills-penalty'}, '\n', storage.traits, {'wn.traits-legend'}}
     }
 
     -- 被动技能面板（基于自己的累计经验）
