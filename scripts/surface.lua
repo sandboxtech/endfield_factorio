@@ -30,6 +30,29 @@ local function balance_mgs(mgs, name)
     mgs.autoplace_controls[name].size = util.mostly_normal()
 end
 
+-- 树/石/植被等纯地貌：本轮密度由整局气质 mood∈[0,1] 连续决定；个体规模走"多半小、偶尔大"曲线
+-- （立方把规模压向小，避免到处大团）。这是【调原生 autoplace】让原生自己长，不是手动 stamp → 排布天然。
+local function nature_by_knob(mgs, name, mood)
+    local ac = mgs.autoplace_controls[name]
+    if not ac then return end
+    ac.frequency = 0.4 + mood * 1.6
+    ac.size      = 0.3 + mood * 0.6 + (math.random() ^ 3) * 1.3
+    ac.richness  = 0.6 + math.random() * 0.8
+end
+
+-- 用命名噪声输入的【偏置】修改原生气候（2.0 干净杠杆：常量数字串即可，运行时无法编译公式）。
+-- 整颗星偏湿/干/冷/热，原生生成器据此自然长出对应草/沙/树/水比例——是"修改原生"而非"覆盖"。
+-- 偏置多半接近 0(≈原版)、偶尔明显 → 寻常世界居多、剧变世界罕见。值必须是字符串。
+local function bias_climate(mgs, knobs)
+    mgs.property_expression_names = mgs.property_expression_names or {}
+    local pen = mgs.property_expression_names
+    local function tri() return math.random() - math.random() end   -- ∈(-1,1)，偏中间
+    pen['control:moisture:bias']      = tostring((knobs.verdancy - 0.5) * 0.5)  -- 干湿：由繁茂度连续决定
+    pen['control:aux:bias']           = tostring(tri() * 0.35)                   -- 副维：沙/红沙调色
+    pen['control:temperature:bias']   = tostring(tri() * 12)                     -- 温度：±~12°C 改变生物群系
+    pen['control:moisture:frequency'] = tostring(0.6 + math.random() * 0.9)      -- 生物群系斑块大小(连续)
+end
+
 -- 表面新建时只重置 seed（cleared 才会进入完整生成流程）。
 script.on_event(defines.events.on_surface_created, function(event)
     local surface = game.get_surface(event.surface_index)
@@ -110,6 +133,9 @@ script.on_event(defines.events.on_surface_cleared, function(event)
     mgs.height = r * 2 + 32
     mgs.starting_area = 1 + 2 * util.random_exp(2)
 
+    -- 本轮整局气质（繁茂/岩石/危险/富庶/异物），与 map_features 共用同一套确定性旋钮 → 全局气质一致。
+    local knobs = map_features.knobs()
+
     -- 母星
     if surface == game.surfaces.nauvis then
         surface.peaceful_mode = math.random(1, 5) == 1
@@ -120,29 +146,16 @@ script.on_event(defines.events.on_surface_cleared, function(event)
         for _, res in pairs({'uranium-ore'}) do
             set_resource(res, mgs, storage.local_specialty_multiplier)
         end
-        for _, res in pairs({'water', 'trees', 'rocks', 'nauvis_cliff', 'starting_area_moisture'}) do
-            random_nature_mgs(mgs, res)
-        end
+        random_nature_mgs(mgs, 'water')
+        random_nature_mgs(mgs, 'nauvis_cliff')
+        random_nature_mgs(mgs, 'starting_area_moisture')
+        nature_by_knob(mgs, 'trees', knobs.verdancy)    -- 树：密度随繁茂度，规模多半小偶尔大
+        nature_by_knob(mgs, 'rocks', knobs.rockiness)
         balance_mgs(mgs, 'enemy-base')   -- 虫巢密度影响难度 → 大概率正常
 
-        -- 地表主题（纯表现，大幅改观）：靠 property_expression_names 抑制某些地块家族
-        -- （常量 -1000 = 该地块永不生成，是该字段的标准运行时用法），让每局母星调色板大变。
-        --   1 草原（去沙/红沙→偏绿）  2 荒漠（去草→偏沙）  3 焦土（去草+沙→偏土/红）  4 默认混合
-        mgs.property_expression_names = mgs.property_expression_names or {}
-        local function suppress(...)
-            for _, t in ipairs({...}) do
-                mgs.property_expression_names['tile:' .. t .. ':probability'] = -1000
-            end
-        end
-        local theme = math.random(1, 4)
-        if theme == 1 then
-            suppress('sand-1', 'sand-2', 'sand-3', 'red-desert-0', 'red-desert-1', 'red-desert-2', 'red-desert-3')
-        elseif theme == 2 then
-            suppress('grass-1', 'grass-2', 'grass-3', 'grass-4')
-        elseif theme == 3 then
-            suppress('grass-1', 'grass-2', 'grass-3', 'grass-4', 'sand-1', 'sand-2', 'sand-3')
-        end
-        if math.random(1, 4) == 1 then suppress('deepwater') end   -- 1/4 额外"少深水"
+        -- 本轮气候用噪声【偏置】修改原生（连续，非离散主题）：偏湿→偏绿多树、偏干→偏沙、控温改群系，
+        -- 由原生生成器自然铺开（不再硬抑制某地块家族）。每局母星调色板因此连续渐变。
+        bias_climate(mgs, knobs)
     end
 
     -- 火星
@@ -174,7 +187,7 @@ script.on_event(defines.events.on_surface_cleared, function(event)
         balance_mgs(mgs, 'gleba_enemy_base')   -- 五足兽巢密度影响难度 → 大概率正常
 
         random_nature_mgs(mgs, 'gleba_water')
-        random_nature_mgs(mgs, 'gleba_plants')
+        nature_by_knob(mgs, 'gleba_plants', knobs.verdancy)   -- 草星植被同样随本轮繁茂度
         random_nature_mgs(mgs, 'gleba_cliff')
     end
 
