@@ -33,10 +33,18 @@ local function set_resource(name, mgs, specialty_mult)
     ac.frequency = 2 ^ (nf - 5) * storage.frequency_multiplier
 end
 
+-- 纯地貌要素（树/石/水/悬崖/湿度/植物）：大幅浮动，长歪了也只是地貌不同。
 local function random_nature_mgs(mgs, name)
     mgs.autoplace_controls[name].richness = util.random_nature()
     mgs.autoplace_controls[name].frequency = util.random_nature()
     mgs.autoplace_controls[name].size = util.random_nature()
+end
+
+-- 影响难度/节奏的要素（敌人巢穴）：大概率正常、小概率小幅偏离，避免随机出"虫海"或"无虫"。
+local function balance_mgs(mgs, name)
+    mgs.autoplace_controls[name].richness = util.mostly_normal()
+    mgs.autoplace_controls[name].frequency = util.mostly_normal()
+    mgs.autoplace_controls[name].size = util.mostly_normal()
 end
 
 -- 表面新建时只重置 seed（cleared 才会进入完整生成流程）。
@@ -67,11 +75,30 @@ script.on_event(defines.events.on_surface_cleared, function(event)
     -- 星球昼夜与气候
     surface.always_day = false
     surface.freeze_daytime = false
-    surface.min_brightness = 0
+    surface.daytime = math.random()   -- 随机当地时间：到达时清晨/正午/黄昏/深夜随机（下方永昼/永夜会覆盖）
     surface.wind_speed = 0.02 * (0.5 + math.random())
     surface.wind_orientation = math.random()
     surface.wind_orientation_change = 0.0001 * (0.5 + math.random())
-    surface.solar_power_multiplier = 1
+
+    -- 外观随机（纯表现，可大幅浮动）：每颗星每次跃迁"长相"都不同，强化旅行新鲜感。
+    --   brightness_visual_weights：按 RGB 给白天光照染色，是运行时最接近"改土地颜色"的手段。
+    --   大部分时候低饱和（三通道围绕同一亮度小幅抖动，只是淡淡色调）；1/6 概率夸张（血红/幽绿/冷蓝）。
+    local cr, cg, cb
+    if math.random(1, 6) == 1 then
+        cr = 0.35 + math.random()   -- 0.35~1.35 各自独立 → 高饱和强色调
+        cg = 0.35 + math.random()
+        cb = 0.35 + math.random()
+    else
+        local base = 0.9 + 0.2 * math.random()   -- 共同亮度 0.9~1.1
+        cr = base + (math.random() - 0.5) * 0.12  -- ±0.06 抖动 → 低饱和
+        cg = base + (math.random() - 0.5) * 0.12
+        cb = base + (math.random() - 0.5) * 0.12
+    end
+    surface.brightness_visual_weights = {r = cr, g = cg, b = cb}
+    surface.min_brightness = 0.4 * math.random()         -- 夜晚黑暗程度 0~0.4（0=漆黑），纯表现
+    surface.show_clouds = math.random(1, 5) > 1          -- 1/5 概率无云，纯表现
+    -- 阳光强度影响太阳能发电（玩法）→ 大概率正常、小概率小幅偏离
+    surface.solar_power_multiplier = util.mostly_normal()
 
     util.try_add_trait({'wn.traits-planet', surface.name})
 
@@ -118,8 +145,16 @@ script.on_event(defines.events.on_surface_cleared, function(event)
         for _, res in pairs({'uranium-ore'}) do
             set_resource(res, mgs, storage.local_specialty_multiplier)
         end
-        for _, res in pairs({'water', 'trees', 'enemy-base', 'rocks', 'nauvis_cliff', 'starting_area_moisture'}) do
+        for _, res in pairs({'water', 'trees', 'rocks', 'nauvis_cliff', 'starting_area_moisture'}) do
             random_nature_mgs(mgs, res)
+        end
+        balance_mgs(mgs, 'enemy-base')   -- 虫巢密度影响难度 → 大概率正常
+
+        -- 偶尔"少深水世界"：property_expression_names 用常量覆盖把深水概率压到 -1000（永不生成）。
+        -- 这是该字段的标准运行时用法；深水本就不可建造，属纯地貌变化。
+        if math.random(1, 4) == 1 then
+            mgs.property_expression_names = mgs.property_expression_names or {}
+            mgs.property_expression_names['tile:deepwater:probability'] = -1000
         end
     end
 
@@ -152,9 +187,7 @@ script.on_event(defines.events.on_surface_cleared, function(event)
 
         set_resource('gleba_stone', mgs, storage.local_specialty_multiplier * 2)
 
-        mgs.autoplace_controls['gleba_enemy_base'].richness = math.random() * 6
-        mgs.autoplace_controls['gleba_enemy_base'].size = math.random() * 6
-        mgs.autoplace_controls['gleba_enemy_base'].frequency = math.random() * 6
+        balance_mgs(mgs, 'gleba_enemy_base')   -- 五足兽巢密度影响难度 → 大概率正常
 
         random_nature_mgs(mgs, 'gleba_water')
         random_nature_mgs(mgs, 'gleba_plants')
@@ -177,7 +210,8 @@ script.on_event(defines.events.on_surface_cleared, function(event)
     if surface ~= game.surfaces.nauvis then
         return
     end
-    local radius = math.floor(storage.radius * 0.2)
+    -- 每次跃迁后预先 chart 母星出生点附近（半径约 128），落地即可看清周围地形
+    local radius = 128
     game.forces.player.chart(game.surfaces.nauvis, {{x = -radius, y = -radius}, {x = radius, y = radius}})
 
     -- 在出生点放金币市场。此时 surface.clear 已结算，放置的实体不会再被清掉。

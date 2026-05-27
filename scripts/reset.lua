@@ -118,8 +118,8 @@ function M.reset()
     force.reset()
     force.friendly_fire = true
 
-    -- 跃迁倒计时重置为 1 小时，需研究科技瓶相关科技来延长
-    storage.warp_hours = 1
+    -- 跃迁倒计时重置为 30 分钟(0.5 小时)，需研究科技瓶相关科技来延长（每项 +1 小时）
+    storage.warp_hours = 0.5
 
     -- 飞船全部瞬移回母星轨道并暂停
     for _, platform in pairs(force.platforms) do
@@ -129,21 +129,22 @@ function M.reset()
 
     game.reset_time_played()
 
-    -- 母星污染/敌人参数随机化
+    -- 污染/敌人/腐败等【影响玩法节奏】的全局参数：大概率正常值，小概率小幅偏离（util.mostly_normal）。
+    -- 不再大幅随机——极端的污染/虫子/腐败速度会毁掉一局的可玩性。
     storage.difficulty = storage.difficulty or 1
     game.forces.enemy.reset_evolution()
     game.map_settings.enemy_expansion.enabled = false
     game.map_settings.pollution.enabled = true
-    game.map_settings.pollution.ageing = util.readable(util.random_exp(4))
+    game.map_settings.pollution.ageing = util.mostly_normal()
     game.map_settings.pollution.enemy_attack_pollution_consumption_modifier =
-        util.readable(util.random_exp(3)) / storage.difficulty
+        util.mostly_normal() / storage.difficulty
     util.try_add_trait({'wn.galaxy-trait-pollution-ageing', game.map_settings.pollution.ageing})
     util.try_add_trait({'wn.galaxy-trait-enemy_attack_pollution_consumption_modifier',
                         game.map_settings.pollution.enemy_attack_pollution_consumption_modifier})
 
-    game.map_settings.asteroids.spawning_rate = util.readable(util.random_exp(4))
-    game.difficulty_settings.spoil_time_modifier = util.readable(0.5 + util.random_exp(4))
-    game.difficulty_settings.technology_price_multiplier = 2   -- 每个世界科技成本恒为 2 倍
+    game.map_settings.asteroids.spawning_rate = util.mostly_normal()
+    game.difficulty_settings.spoil_time_modifier = util.mostly_normal()   -- 腐败速度：大概率正常
+    game.difficulty_settings.technology_price_multiplier = 2              -- 每个世界科技成本恒为 2 倍
 
     util.try_add_trait({'', '\n',
                         {'wn.galaxy-trait-spawning_rate', game.map_settings.asteroids.spawning_rate},

@@ -15,7 +15,29 @@ local function require_admin(command)
     return nil
 end
 
-commands.add_command('reset', {'wn.run-reset-help'}, function(command)
+-- 任何自定义指令被使用时，私聊通知所有在线管理员：谁用了什么指令（含参数）。
+-- 控制台调用（无 player_index）不通知；不通知使用者本人（即便他是管理员）。
+local function notify_admins(command)
+    local player = command.player_index and game.get_player(command.player_index)
+    if not player then return end
+    local what = '/' .. command.name
+    if command.parameter then what = what .. ' ' .. command.parameter end
+    for _, admin in pairs(game.connected_players) do
+        if admin.admin and admin.index ~= player.index then
+            admin.print({'wn.cmd-used', player.name, what})
+        end
+    end
+end
+
+-- 用本函数代替 commands.add_command 注册：执行前先向管理员审计一条"谁用了什么"。
+local function add_command(name, help, fn)
+    commands.add_command(name, help, function(command)
+        notify_admins(command)
+        fn(command)
+    end)
+end
+
+add_command('reset', {'wn.run-reset-help'}, function(command)
     if not command.player_index then return end
     local player = game.get_player(command.player_index)
     if not player or player.admin then
@@ -25,7 +47,7 @@ commands.add_command('reset', {'wn.run-reset-help'}, function(command)
     end
 end)
 
-commands.add_command('players_gui', {'wn.players-gui-help'}, function(command)
+add_command('players_gui', {'wn.players-gui-help'}, function(command)
     local player = game.get_player(command.player_index)
     if not player or player.admin then
         gui.players_gui()
@@ -44,9 +66,9 @@ local function countdown_cmd(command)
     if player then player.print(msg) else game.print(msg) end
 end
 
-commands.add_command('countdown', {'wn.life-help'}, countdown_cmd)
-commands.add_command('daojishi', {'wn.life-help'}, countdown_cmd)
-commands.add_command('life', {'wn.life-help'}, countdown_cmd)
+add_command('countdown', {'wn.life-help'}, countdown_cmd)
+add_command('daojishi', {'wn.life-help'}, countdown_cmd)
+add_command('life', {'wn.life-help'}, countdown_cmd)
 
 -- （/exp 已删除：与 /inspect（无参数=看自己）重复。print_science_exp 仍由玩家加入时的广播使用。）
 
@@ -66,29 +88,24 @@ local function inspect_cmd(command)
     game.print({'wn.inspect-notice', viewer.name, command.name, target.name})
 end
 
-commands.add_command('inspect', {'wn.inspect-help'}, inspect_cmd)
-commands.add_command('chakan', {'wn.inspect-help'}, inspect_cmd)
+add_command('inspect', {'wn.inspect-help'}, inspect_cmd)
+add_command('chakan', {'wn.inspect-help'}, inspect_cmd)
 
-commands.add_command('exp_clear', {'wn.exp-clear-help'}, function(command)
+add_command('exp_clear', {'wn.exp-clear-help'}, function(command)
     if not require_admin(command) then return end
     storage.science_exp = {}
     game.print({'wn.exp-cleared'})
 end)
 
--- /tutorial（/jiaocheng 同功能）：把游戏教程打给自己，并通知所有在线管理员谁看了。
+-- /tutorial（/jiaocheng 同功能）：把游戏教程打给自己。（管理员审计由 add_command 统一处理）
 local function tutorial_cmd(command)
     local viewer = command.player_index and game.get_player(command.player_index)
     if not viewer then return end
     viewer.print({'wn.tutorial'})
-    for _, admin in pairs(game.connected_players) do
-        if admin.admin and admin.index ~= viewer.index then
-            admin.print({'wn.tutorial-notice', viewer.name})
-        end
-    end
 end
 
-commands.add_command('tutorial', {'wn.tutorial-help'}, tutorial_cmd)
-commands.add_command('jiaocheng', {'wn.tutorial-help'}, tutorial_cmd)
+add_command('tutorial', {'wn.tutorial-help'}, tutorial_cmd)
+add_command('jiaocheng', {'wn.tutorial-help'}, tutorial_cmd)
 
 -- /preview（/yulan 同功能）：若现在立即跃迁，背包里的科技瓶各能换多少经验。
 local function preview_cmd(command)
@@ -106,5 +123,5 @@ local function preview_cmd(command)
     if not any then player.print({'wn.preview-none'}) end
 end
 
-commands.add_command('preview', {'wn.preview-help'}, preview_cmd)
-commands.add_command('yulan', {'wn.preview-help'}, preview_cmd)
+add_command('preview', {'wn.preview-help'}, preview_cmd)
+add_command('yulan', {'wn.preview-help'}, preview_cmd)

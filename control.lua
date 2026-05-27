@@ -26,7 +26,7 @@ script.on_init(function()
     storage.radius_of = {}
 
     storage.platform_lifetime = 3
-    storage.warp_hours = 1
+    storage.warp_hours = 0.5   -- 初始跃迁倒计时 30 分钟
     storage.science_exp = {}
     storage.player_stats = {}
 

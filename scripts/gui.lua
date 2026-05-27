@@ -54,20 +54,13 @@ function M.player_gui(player)
     intro.style.minimal_width = 288
     intro.style.padding = -2
 
-    if not storage.traits then
-        storage.traits = {''}
-    end
-    player.gui.top.add {
-        type = 'sprite-button',
-        sprite = 'space-location/solar-system-edge',
-        name = 'traits',
-        tooltip = {'', storage.traits, {'wn.traits-legend'}}
-    }
+    -- 星系词条按钮已隐藏：每局世界的矿物/昼夜/天色等不再摆在 UI 上，让玩家自己探索发现。
+    -- （storage.traits 仍在后台累积，便于以后需要时再展示。）
 
     -- 被动技能面板（基于自己的累计经验）
     player.gui.top.add {
         type = 'sprite-button',
-        sprite = 'virtual-signal/signal-science-pack',
+        sprite = 'entity/character',
         name = 'skills',
         tooltip = build_skills_tooltip(player)
     }
