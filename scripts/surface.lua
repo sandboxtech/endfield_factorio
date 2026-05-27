@@ -1,17 +1,19 @@
 -- 每次跃迁后随机生成各星球：地图设定、资源、自然要素、圆形边界。
 local util = require('scripts.util')
 local market = require('scripts.market')
+local noise = require('scripts.noise')
 
--- 资源档位：丰度/面积/频率各抽一个 1..9 的随机整数 N，乘数 = 2^(N-中心) × 全局倍率：
---   丰度 = 2^(N-7) × richness_multiplier；面积 = 2^(N-6) × size_multiplier；频率 = 2^(N-5) × frequency_multiplier。
--- 不再展示给玩家（星系词条 UI 已删），让玩家自己探索发现。
--- specialty_mult：地方特产用它额外降低【丰度】（只乘丰度，不动面积/频率）。
+-- 资源档位：丰度/面积/频率各抽一个 1..9 的随机整数 N，乘数 = 1.3^(N-中心) × 全局倍率：
+--   丰度 = 1.3^(N-7) × richness_multiplier；面积 = 1.3^(N-6) × size_multiplier；频率 = 1.3^(N-5) × frequency_multiplier。
+-- 底数用 1.3（不是 2）→ 浮动温和（约 0.27~2.9 倍），避免极端的巨型矿区。
+-- 全局倍率：richness=4（矿更富）、size=frequency=1（大小/数量正常）。
+-- specialty_mult：地方特产额外降低【丰度】（只乘丰度，不动面积/频率）。
 local function set_resource(name, mgs, specialty_mult)
     local nr, ns, nf = math.random(1, 9), math.random(1, 9), math.random(1, 9)
     local ac = mgs.autoplace_controls[name]
-    ac.richness  = 2 ^ (nr - 7) * storage.richness_multiplier * (specialty_mult or 1)
-    ac.size      = 2 ^ (ns - 6) * storage.size_multiplier
-    ac.frequency = 2 ^ (nf - 5) * storage.frequency_multiplier
+    ac.richness  = 3 ^ (nr - 7) * storage.richness_multiplier * (specialty_mult or 1)
+    ac.size      = 1.5 ^ (ns - 6) * storage.size_multiplier
+    ac.frequency = 1.3 ^ (nf - 5) * storage.frequency_multiplier
 end
 
 -- 纯地貌要素（树/石/水/悬崖/湿度/植物）：大幅浮动，长歪了也只是地貌不同。
@@ -95,8 +97,8 @@ script.on_event(defines.events.on_surface_cleared, function(event)
     storage.radius = storage.radius or 2048
     -- 全局资源倍率（老存档兜底；新档由 control.lua on_init 设为 4）
     storage.richness_multiplier = storage.richness_multiplier or 4
-    storage.size_multiplier = storage.size_multiplier or 4
-    storage.frequency_multiplier = storage.frequency_multiplier or 4
+    storage.size_multiplier = storage.size_multiplier or 1
+    storage.frequency_multiplier = storage.frequency_multiplier or 1
     -- 刷新星球半径，箝制在 [radius_min, radius_max]
     local r = storage.radius * util.random_exp(2)
     r = math.max(storage.radius_min, r)
@@ -123,12 +125,24 @@ script.on_event(defines.events.on_surface_cleared, function(event)
         end
         balance_mgs(mgs, 'enemy-base')   -- 虫巢密度影响难度 → 大概率正常
 
-        -- 偶尔"少深水世界"：property_expression_names 用常量覆盖把深水概率压到 -1000（永不生成）。
-        -- 这是该字段的标准运行时用法；深水本就不可建造，属纯地貌变化。
-        if math.random(1, 4) == 1 then
-            mgs.property_expression_names = mgs.property_expression_names or {}
-            mgs.property_expression_names['tile:deepwater:probability'] = -1000
+        -- 地表主题（纯表现，大幅改观）：靠 property_expression_names 抑制某些地块家族
+        -- （常量 -1000 = 该地块永不生成，是该字段的标准运行时用法），让每局母星调色板大变。
+        --   1 草原（去沙/红沙→偏绿）  2 荒漠（去草→偏沙）  3 焦土（去草+沙→偏土/红）  4 默认混合
+        mgs.property_expression_names = mgs.property_expression_names or {}
+        local function suppress(...)
+            for _, t in ipairs({...}) do
+                mgs.property_expression_names['tile:' .. t .. ':probability'] = -1000
+            end
         end
+        local theme = math.random(1, 4)
+        if theme == 1 then
+            suppress('sand-1', 'sand-2', 'sand-3', 'red-desert-0', 'red-desert-1', 'red-desert-2', 'red-desert-3')
+        elseif theme == 2 then
+            suppress('grass-1', 'grass-2', 'grass-3', 'grass-4')
+        elseif theme == 3 then
+            suppress('grass-1', 'grass-2', 'grass-3', 'grass-4', 'sand-1', 'sand-2', 'sand-3')
+        end
+        if math.random(1, 4) == 1 then suppress('deepwater') end   -- 1/4 额外"少深水"
     end
 
     -- 火星
@@ -184,6 +198,32 @@ script.on_event(defines.events.on_surface_cleared, function(event)
     market.place_on_nauvis()
 end)
 
+-- 母星撒废料：【逐格】用 simplex 分形噪声（scripts/noise，scrapyard 倍频）判断，超阈值就放 scrap。
+-- simplex 平滑、不重复、跨区块连续 → 废料连成自然矿场（不是每块一个方块、也无正弦条纹）。
+-- 按本轮 storage.run 派生种子 → 本轮全图同一噪声场（团块跨区块连片），每轮布局不同。
+-- scrap 需回收机才能拆 → 中后期福利。SCRAP_THRESHOLD 越高越稀；储量随噪声值由中心向外递减。
+local SCRAP_THRESHOLD = 0.58   -- 分形输出约 [-1,1] 集中在 0 附近；阈值越高废料越稀、团块越小
+
+local function scatter_scrap(surface, left_top)
+    local seed = (storage.run or 0) * 1009 + 31
+    -- "偶尔的风味"：只有约 40% 的轮次有废料，其余轮次完全没有
+    if noise.hash01(seed * 5.1) >= 0.4 then return end
+    -- 本轮专属变换：决定矿脉是圆团还是长条、朝哪个方向、多大（同一轮全图一致 → 团块跨区块连片）
+    local angle, stretch, zoom = noise.seeded_transform(seed)
+    for x = 0, 31 do
+        for y = 0, 31 do
+            local px, py = left_top.x + x, left_top.y + y
+            local nv = noise.fractal_warped(noise.octaves.scrapyard, px, py, seed, angle, stretch, zoom)
+            if nv > SCRAP_THRESHOLD then
+                local pos = {x = px + 0.5, y = py + 0.5}
+                if surface.can_place_entity{name = 'scrap', position = pos} then
+                    surface.create_entity{name = 'scrap', amount = math.floor(200 + (nv - SCRAP_THRESHOLD) * 4000), position = pos}
+                end
+            end
+        end
+    end
+end
+
 -- 圆形地图：超出半径的格子全部铺成虚空。
 script.on_event(defines.events.on_chunk_generated, function(event)
     local surface = event.surface
@@ -191,25 +231,28 @@ script.on_event(defines.events.on_chunk_generated, function(event)
 
     local r = storage.radius_of[surface.name] or storage.radius
 
-    -- chunk 左上角距原点比 r^2/2 还近 → 整个 chunk 都在圆内，跳过
-    if left_top.x * left_top.x + left_top.y * left_top.y < r * r / 2 then
-        return
-    end
-
-    local chunk_size = 32
-    local tiles = {}
-    local cx, cy = 0.5, 0.5
-    for x = -1, chunk_size, 1 do
-        for y = -1, chunk_size, 1 do
-            local px = left_top.x + x
-            local py = left_top.y + y
-            if (px - cx) * (px - cx) + (py - cy) * (py - cy) > r * r then
-                table.insert(tiles, {name = 'empty-space', position = {x = px, y = py}})
+    -- 圆外格子铺虚空（整块都在圆内则跳过此段）
+    if left_top.x * left_top.x + left_top.y * left_top.y >= r * r / 2 then
+        local chunk_size = 32
+        local tiles = {}
+        local cx, cy = 0.5, 0.5
+        for x = -1, chunk_size, 1 do
+            for y = -1, chunk_size, 1 do
+                local px = left_top.x + x
+                local py = left_top.y + y
+                if (px - cx) * (px - cx) + (py - cy) * (py - cy) > r * r then
+                    table.insert(tiles, {name = 'empty-space', position = {x = px, y = py}})
+                end
             end
         end
+        if table_size(tiles) > 0 then
+            surface.set_tiles(tiles)
+        end
     end
-    if table_size(tiles) > 0 then
-        surface.set_tiles(tiles)
+
+    -- 母星撒废料：放在铺虚空【之后】，can_place_entity 会自动跳过虚空/水，无需判断边界
+    if surface == game.surfaces.nauvis then
+        scatter_scrap(surface, left_top)
     end
     -- 注意：不要在这里刷 GUI。区块生成极高频（每轮跃迁成百上千次），
     -- HUD 不依赖区块，刷新由 reset/玩家事件触发即可。

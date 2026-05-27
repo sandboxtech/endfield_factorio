@@ -89,8 +89,40 @@ local function try_gift_first_in_world(player)
     respawn_gifts.on_first_respawn(player)
 end
 
+-- 死亡复活落点：按权重随机一个星球（母星 30% / 火星·草星·雷星各 20% / 极地 10%）。
+-- 确保该星球出生区已生成，传送过去，并 chart 周围 128。出生点附近无落脚处则回母星兜底。
+local RESPAWN_WEIGHTS = {
+    {name = 'nauvis', w = 30}, {name = 'vulcanus', w = 20}, {name = 'gleba', w = 20},
+    {name = 'fulgora', w = 20}, {name = 'aquilo', w = 10},
+}
+
+local function place_on_random_planet(player)
+    if not player or not player.character then return end
+    local roll, acc, target = math.random(1, 100), 0, 'nauvis'
+    for _, p in ipairs(RESPAWN_WEIGHTS) do
+        acc = acc + p.w
+        if roll <= acc then target = p.name break end
+    end
+    local function settle(s)
+        local origin = player.force.get_spawn_position(s)
+        s.request_to_generate_chunks(origin, 3)
+        s.force_generate_chunk_requests()
+        return s.find_non_colliding_position('character', origin, 128, 1)
+    end
+    local surface = game.surfaces[target] or game.surfaces.nauvis
+    local pos = settle(surface)
+    if not pos then   -- 该星球出生点附近无落脚处 → 回母星兜底
+        surface = game.surfaces.nauvis
+        pos = settle(surface) or player.force.get_spawn_position(surface)
+    end
+    player.teleport(pos, surface)
+    -- 玩家复活点周围 chart 一个边长 512 的正方形（±256）
+    player.force.chart(surface, {{pos.x - 256, pos.y - 256}, {pos.x + 256, pos.y + 256}})
+end
+
 script.on_event(defines.events.on_player_respawned, function(event)
     local player = game.get_player(event.player_index)
+    place_on_random_planet(player)   -- 随机星球落点 + chart 128
     player.disable_flashlight()
     passives.apply(player)
     try_gift_first_in_world(player)

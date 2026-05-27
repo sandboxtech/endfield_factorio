@@ -17,9 +17,9 @@ local reset = require('scripts.reset')
 script.on_init(function()
     game.speed = 1
 
-    storage.richness_multiplier = 4
-    storage.size_multiplier = 4
-    storage.frequency_multiplier = 4
+    storage.richness_multiplier = 4   -- 矿更富（每格储量）
+    storage.size_multiplier = 1       -- 矿脉大小正常（=1 才不会糊成巨型矿区）
+    storage.frequency_multiplier = 1  -- 矿脉数量正常
     storage.local_specialty_multiplier = 0.25
 
     storage.radius = 2048

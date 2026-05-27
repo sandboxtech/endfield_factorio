@@ -125,3 +125,16 @@ end
 
 add_command('preview', {'wn.preview-help'}, preview_cmd)
 add_command('yulan', {'wn.preview-help'}, preview_cmd)
+
+-- /suicide（/zisha 同功能）：自杀脱困。死后按权重随机在某个星球复活（见 players.lua）。
+local function suicide_cmd(command)
+    local player = command.player_index and game.get_player(command.player_index)
+    if not player or not player.character then return end
+    local last_run_ticks = game.tick - (storage.run_start_tick or game.tick)
+    local life = (storage.warp_hours or 1) * constants.hour_to_tick - last_run_ticks
+    players.kill_on_nauvis(player)
+    game.print({'wn.suicide-notice', player.name, math.floor(100 * life / constants.hour_to_tick) / 100})
+end
+
+add_command('suicide', {'wn.suicide-help'}, suicide_cmd)
+add_command('zisha', {'wn.suicide-help'}, suicide_cmd)

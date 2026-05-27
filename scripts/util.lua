@@ -25,10 +25,10 @@ function M.random_exp(x)
     return math.pow(2, (math.random() - math.random()) * x)
 end
 
--- 自然要素的随机倍率（纯表现 / 常规地图变化，可大幅浮动）：2^(三角随机×4) ≈ 1/16~16×，中位 1。
+-- 自然要素的随机倍率（纯表现 / 常规地图变化，可大幅浮动）
 -- 用于树/石/水/悬崖/湿度/植物等——长歪了也只是地貌不同，不破坏节奏。
 function M.random_nature()
-    return M.readable(2 ^ ((math.random() - math.random()) * 4))
+    return M.readable(2 ^ ((math.random() - math.random()) * 7))
 end
 
 -- 影响玩法节奏的参数（腐败速度、敌人密度、阳光、污染等）：大概率正常值 1，小概率小幅偏离。
