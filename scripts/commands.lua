@@ -42,13 +42,9 @@ commands.add_command('life', {'wn.life-help'}, function(command)
     if player then player.print(msg) else game.print(msg) end
 end)
 
-commands.add_command('exp', {'wn.exp-help'}, function(command)
-    local player = command.player_index and game.get_player(command.player_index)
-    if not player then return end
-    players.print_science_exp(player)
-end)
+-- （/exp 已删除：与 /inspect（无参数=看自己）重复。print_science_exp 仍由玩家加入时的广播使用。）
 
--- /inspect <玩家名>（/chakan 同功能，中文拼音别名）：打印目标玩家的科技瓶经验 + 固定惩罚。
+-- /inspect <玩家名>（/chakan 同功能，中文拼音别名）：打印目标玩家的科技瓶经验。
 -- 省略玩家名 = 查看自己。查看别人会用 game.print 公告；查看自己时不公告。
 local function inspect_cmd(command)
     local viewer = command.player_index and game.get_player(command.player_index)

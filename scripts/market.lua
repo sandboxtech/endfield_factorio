@@ -230,7 +230,6 @@ function M.place_on_nauvis()
             ent.destructible = false   -- 不可摧毁
             ent.minable = false        -- 不可挖取
             stock_market(ent, m.currency)
-            force.add_chart_tag(nauvis, {position = pos, icon = {type = 'item', name = m.currency}})
             placed = placed + 1
         end
     end

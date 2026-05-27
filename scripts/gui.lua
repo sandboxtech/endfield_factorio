@@ -13,23 +13,24 @@ local function build_skills_tooltip(player)
 
     -- 最开头：在线/挂机时长 → 普通金币
     local cstat = passives.get_stat(player.index, constants.online_coin_stat)
-    parts[#parts + 1] = {'wn.ability-online', {constants.online_coin_label}, cstat, currency.reward_amount(cstat)}
+    local coin_count = currency.reward_amount(cstat)
+    if coin_count > 0 then
+        parts[#parts + 1] = {'wn.ability-online', {constants.online_coin_label}, cstat, coin_count}
+    end
 
     -- 每个科技瓶：下次跃迁实际会给的初始瓶子数（按品质）
     parts[#parts + 1] = '\n'
     for _, pack in ipairs(constants.science_packs) do
         local reward = currency.reward_for_exp(passives.exp_total_for_pack(player.index, pack))
         local desc
-        if #reward == 0 then
-            desc = '—'
-        else
+        if #reward ~= 0 then
             local t = {}
             for _, r in ipairs(reward) do
                 t[#t + 1] = '[item=' .. pack .. ',quality=' .. r.quality .. ']×' .. r.count
             end
             desc = table.concat(t, '  ')
+            parts[#parts + 1] = {'wn.ability-reward', pack, desc}
         end
-        parts[#parts + 1] = {'wn.ability-reward', pack, desc}
     end
 
     -- 折叠：突破单层参数上限
