@@ -12,31 +12,30 @@ local CELL = 3
 local COLS = 3            -- 12 个科技瓶市场 = 3 列 × 4 行（3 列正好关于出生点居中）
 local NORTH_GAP = 6      -- 最南一行距出生点的格数（北 = -Y）
 
--- 商店分区。currency 为科技瓶名或 'coin'；price 单位为该货币的"个数"。
+-- ★★★ 手动配置区：填写每个市场出售什么 ★★★
+-- 规则：
+--   · 每个市场只收一种货币(currency)。science-pack 市场卖"该瓶对应科技阶段的商品"（保持通用）。
+--   · 每个物品按 5 个品质各上架一条 offer：付 Q 品质货币 → 得 Q 品质物品。
+--   · price = 购买所需的"该品质货币"个数。普通(normal)瓶子可量产，不作为奖励来源。
+--   · 金币(coin)不作为任何奖励发放——只能在普罗米修斯市场用普罗米修斯瓶兑换；金币市场卖装备。
+-- 物品格式：{name = '物品原型名', price = 数字}
+-- 示例（automation 市场）：items = {{name = 'electric-mining-drill', price = 5}, {name = 'assembling-machine-1', price = 5}}
 M.sections = {
-    {currency = 'automation-science-pack',     items = {{name = 'electric-mining-drill', price = 5}, {name = 'assembling-machine-1', price = 5}}},
-    {currency = 'logistic-science-pack',       items = {{name = 'assembling-machine-2', price = 5}, {name = 'solar-panel', price = 5}}},
-    {currency = 'military-science-pack',        items = {{name = 'gun-turret', price = 5}, {name = 'firearm-magazine', price = 2}}},
-    {currency = 'chemical-science-pack',        items = {{name = 'substation', price = 8}, {name = 'electric-furnace', price = 5}}},
-    {currency = 'production-science-pack',      items = {{name = 'beacon', price = 10}, {name = 'assembling-machine-3', price = 10}}},
-    {currency = 'utility-science-pack',         items = {{name = 'logistic-robot', price = 3}, {name = 'construction-robot', price = 2}}},
-    {currency = 'space-science-pack',           items = {{name = 'storage-chest', price = 3}, {name = 'requester-chest', price = 5}}},
-    {currency = 'metallurgic-science-pack',     items = {{name = 'foundry', price = 10}, {name = 'big-mining-drill', price = 10}}},
-    {currency = 'electromagnetic-science-pack', items = {{name = 'electromagnetic-plant', price = 10}, {name = 'recycler', price = 8}}},
-    {currency = 'agricultural-science-pack',    items = {{name = 'biochamber', price = 8}, {name = 'agricultural-tower', price = 8}}},
-    {currency = 'cryogenic-science-pack',       items = {{name = 'cryogenic-plant', price = 10}, {name = 'heating-tower', price = 8}}},
-    -- 普罗米修斯（终极货币）：按品质兑换金币，是 epic/legendary 金币的唯一来源 → 高级装备。
-    {currency = 'promethium-science-pack',      items = {{name = 'coin', price = 1}}},
-    -- 金币市场：用品质金币购买装备（normal/uncommon/rare 来自在线行为，epic/legendary 来自普罗米修斯兑换）。
-    {currency = 'coin', items = {
-        {name = 'solar-panel-equipment',        price = 5},
-        {name = 'battery-equipment',            price = 5},
-        {name = 'personal-roboport-equipment',  price = 8},
-        {name = 'exoskeleton-equipment',        price = 10},
-        {name = 'energy-shield-equipment',      price = 10},
-        {name = 'night-vision-equipment',       price = 3},
-        {name = 'belt-immunity-equipment',      price = 3},
-    }},
+    {currency = 'automation-science-pack',     items = {}},  -- 红瓶  · 自动化科技阶段商品
+    {currency = 'logistic-science-pack',       items = {}},  -- 绿瓶  · 物流科技阶段商品
+    {currency = 'military-science-pack',       items = {}},  -- 黑瓶  · 军事科技阶段商品
+    {currency = 'chemical-science-pack',       items = {}},  -- 蓝瓶  · 化工科技阶段商品
+    {currency = 'production-science-pack',     items = {}},  -- 紫瓶  · 生产科技阶段商品
+    {currency = 'utility-science-pack',        items = {}},  -- 黄瓶  · 通用科技阶段商品
+    {currency = 'space-science-pack',          items = {}},  -- 白瓶  · 太空科技阶段商品
+    {currency = 'metallurgic-science-pack',    items = {}},  -- 火星瓶 · 冶金科技阶段商品
+    {currency = 'electromagnetic-science-pack',items = {}},  -- 雷星瓶 · 电磁科技阶段商品
+    {currency = 'agricultural-science-pack',   items = {}},  -- 草星瓶 · 农业科技阶段商品
+    {currency = 'cryogenic-science-pack',      items = {}},  -- 极地瓶 · 低温科技阶段商品
+    -- 普罗米修斯市场：兑换金币（金币唯一来源；付 Q 品质普罗米修斯瓶得 Q 品质金币）。
+    {currency = 'promethium-science-pack',     items = {{name = 'coin', price = 1}}},
+    -- 金币市场：卖装备（用金币购买）。填写装备清单：
+    {currency = 'coin',                        items = {}},
 }
 
 local function section_for(currency)

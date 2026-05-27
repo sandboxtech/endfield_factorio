@@ -1,6 +1,6 @@
 # 手动测试流程
 
-针对货币/市场/在线金币/火箭惩罚/跃迁等主要功能的逐步手测清单。
+针对货币/市场/在线奖励/火箭惩罚/跃迁等主要功能的逐步手测清单。
 按模块顺序执行即可覆盖核心路径。**单人游戏里玩家 index = 1**，下文命令均按 1 写。
 
 ## 0. 前置准备
@@ -13,7 +13,7 @@
    ```
    （给齐全部科技 + 进入作弊模式，方便建造/补给。注意每次跃迁 `force.reset()` 会清空科技，跃迁后如需建造请重跑一次。）
 4. 想随时看自己的数据：
-   - 鼠标悬停左上角 [img=virtual-signal/signal-science-pack] **🧪 按钮** → 能力面板 tooltip（含每瓶 `Lv. 当前/升级经验` 与在线金币行）。
+   - 鼠标悬停左上角 [img=virtual-signal/signal-science-pack] **🧪 按钮** → 能力面板 tooltip（含每瓶 `Lv. 当前/升级经验` 与在线奖励瓶子行）。
    - `/inspect` 打印自己的被动加成 + 科技瓶经验。
    - `/exp` 打印自己的科技瓶经验。
    - `/life` 显示距离下次自动跃迁剩余时间。
@@ -33,49 +33,52 @@
 
 ---
 
-## B. 货币曲线：品质科技瓶（按经验）
+## B. 货币一曲线：携带经验 → epic/legendary 瓶子（独立 √ 曲线）
 
-> 验证：经验 → 品质瓶子的 √ 阶梯曲线、UI 等级显示、跃迁后实物发放、防爆背包。
+> 验证：`epic = floor(√exp)`（最多 4 组/800）、`legendary = floor(√exp/10)`（最多 1 组/200），两档**独立**。
+> 普通瓶可量产，故货币一不发 normal/uncommon/rare。经验来源瓶子的品质不影响奖励品质。
 
-1. 给自己灌入红瓶经验（automation）。先测"刚进绿瓶"边界 20110：
+1. 给自己灌入红瓶经验（automation）。先测"刚进 legendary"边界 100：
    ```
-   /c storage.science_exp = storage.science_exp or {}; storage.science_exp[1] = storage.science_exp[1] or {}; storage.science_exp[1]['automation-science-pack/normal'] = 20110
+   /c storage.science_exp = storage.science_exp or {}; storage.science_exp[1] = storage.science_exp[1] or {}; storage.science_exp[1]['automation-science-pack/normal'] = 100
    ```
-2. 悬停 🧪 按钮，找到 automation 那一行，预期：`Lv.201 · …→ [uncommon]`
-   （20100 经验填满 200 normal，多出的 10 经验进 uncommon 第 1 个，故 Lv.201）。
+2. 悬停 🧪 按钮，找到 automation 那一行，预期：`Lv.11 · 100/121 → [epic]`
+   （√100=10 epic + √100/10=1 legendary，共 11；下一个 epic 在 exp=11²=121）。
 3. `/reset` 触发跃迁 → 等待/点击复活。
-4. 复活后查背包，预期：**200 个 normal 红瓶 + 1 个 uncommon 红瓶**（各占 1 格）。
+4. 复活后查背包，预期：**10 个 epic 红瓶 + 1 个 legendary 红瓶**。
 5. 边界对照表（设好经验后看 🧪 或跃迁后看背包）：
 
-   | 设定经验 | 预期奖励 |
-   | --- | --- |
-   | `10` | 4 个 normal |
-   | `20100` | 200 normal（1 整组） |
-   | `20110` | 200 normal + 1 uncommon |
-   | `221100` | 200 normal + 200 uncommon |
+   | 设定经验 | epic | legendary |
+   | --- | --- | --- |
+   | `10` | 3 | 0 |
+   | `100` | 10 | 1 |
+   | `10000` | 100 | 10 |
+   | `640000` | 800（4 组满） | 80 |
+   | `4000000`+ | 800（4 组满） | 200（1 组满） |
 
-6. **防爆背包**：给所有 12 种瓶子灌满（每种都能拿满 5 品质 = 5 组）：
+6. **防爆背包**：给所有 12 种瓶子灌中等经验（每种约 10000 → 各 100 epic + 10 legendary）：
    ```
-   /c storage.science_exp = storage.science_exp or {}; storage.science_exp[1] = {}; for _,p in pairs({'automation-science-pack','logistic-science-pack','military-science-pack','chemical-science-pack','production-science-pack','utility-science-pack','space-science-pack','metallurgic-science-pack','electromagnetic-science-pack','agricultural-science-pack','cryogenic-science-pack','promethium-science-pack'}) do storage.science_exp[1][p..'/normal'] = 1e12 end
+   /c storage.science_exp = storage.science_exp or {}; storage.science_exp[1] = {}; for _,p in pairs({'automation-science-pack','logistic-science-pack','military-science-pack','chemical-science-pack','production-science-pack','utility-science-pack','space-science-pack','metallurgic-science-pack','electromagnetic-science-pack','agricultural-science-pack','cryogenic-science-pack','promethium-science-pack'}) do storage.science_exp[1][p..'/normal'] = 10000 end
    ```
-   `/reset` 复活后预期：货币占用约 **60 格**（12 瓶 × 5 品质，各 1 组），背包（约 80 格）**不溢出、地上不掉落物品**。
-   ✅ 通过条件：没有物品掉到地面。
+   `/reset` 复活后预期：每瓶 100 epic + 10 legendary（各 <1 组），12 瓶共约 24 格，不溢出。
+   理论极值：每瓶最多 4+1=5 组 → `12 瓶 × 5 = 60 组` ≤ 背包约 80 格，**任何情况都不爆背包**。
 
 ---
 
-## C. 在线金币（只看在线，不看挂机）
+## C. 在线奖励品质瓶子（只看在线，不看挂机）
 
-> 验证：在线统计 → 品质金币（normal/uncommon/rare），数量 = floor(√统计)。
+> 验证：在线统计 → 品质科技瓶（uncommon/rare/epic，**不发可量产的 normal**），数量 = floor(√统计)。
+> 默认映射（`constants.online_rewards` 可改）：分钟→uncommon 红瓶、研究→rare 绿瓶、跃迁→epic 黑瓶。
 
 1. 灌入在线统计：
    ```
    /c storage.player_stats = storage.player_stats or {}; storage.player_stats[1] = storage.player_stats[1] or {}; storage.player_stats[1].online_minutes = 10000; storage.player_stats[1].online_research = 2500; storage.player_stats[1].online_warps = 100
    ```
-2. 悬停 🧪 按钮，末尾三行预期：
-   - [item=coin] 在线分钟 · 10000 · **100**（√10000）
-   - [item=coin,quality=uncommon] 在线研究科技 · 2500 · **50**
-   - [item=coin,quality=rare] 在线跃迁次数 · 100 · **10**
-3. `/reset` 复活后查背包，预期：100 normal 金币 + 50 uncommon 金币 + 10 rare 金币。
+2. 悬停 🧪 按钮，末尾三行预期（默认配置）：
+   - [item=automation-science-pack,quality=uncommon] 在线分钟 · 10000 · **100**（√10000）
+   - [item=logistic-science-pack,quality=rare] 在线研究科技 · 2500 · **50**
+   - [item=military-science-pack,quality=epic] 在线跃迁次数 · 100 · **10**
+3. `/reset` 复活后查背包，预期：100 uncommon 红瓶 + 50 rare 绿瓶 + 10 epic 黑瓶（**没有 normal 瓶**）。
 4. **反挂机验证**：站着别动 ≥1 分钟（保持在线），`/inspect` 看 `online_minutes` 仍在涨（在线即计，不要求挂机）。
 
 ---
@@ -84,7 +87,10 @@
 
 > 验证：出生点 13 个原版 market，每个只卖一种货币，付 Q 品质货币得 Q 品质物品。
 
-1. 先备好货币：跑一遍 B、C 的灌数据 + `/reset`，复活后身上有各品质瓶子 + 金币。
+> ⚠ `market.lua` 的 `M.sections` 现在是**占位模板**：除普罗米修斯市场（已预填兑金币）外，
+> 其余市场默认**空货架**。要测购买，先在 `M.sections` 按"每瓶卖其科技阶段商品"填好货物。
+
+1. 先备好货币：跑一遍 B、C 的灌数据 + `/reset`，复活后身上有 epic/legendary 瓶子（货币一）+ uncommon/rare/epic 瓶子（在线/货币二）。**没有金币**（金币只能在普罗米修斯市场换）。
 2. 出生点**北面**（-Y 方向，地图已自动 chart）应看到 **13 个市场**：12 个科技瓶市场排 3 列 × 4 行，金币市场在最上方居中。布局（相对出生点的格偏移，北=负 Y）：
 
    ```
@@ -96,10 +102,10 @@
                   ★出生点(0,0)
    ```
    （顺序 = `constants.science_packs`；每个市场 3×3 格、间距 3 格。）
-3. 走到 **自动化市场**，按 **E** 打开 → 原版交易界面，列出 2 种物品 × 5 品质 = 10 条 offer。
-4. **付 Q 得 Q**（关键）：用 **normal** 红瓶买矿机 → 得 normal 矿机；用 **uncommon** 红瓶买 → 得 **uncommon** 矿机。确认产出品质 == 付款品质。
-5. **金币市场**（最上方）：用 normal/uncommon/rare 金币买对应品质装备。
-6. **普罗米修斯市场**：用普罗米修斯瓶按品质换 coin（epic/legendary 金币唯一来源）。
+3. （填好货物后）走到 **自动化市场**，按 **E** 打开 → 原版交易界面，列出你填的物品 × 5 品质条 offer。
+4. **付 Q 得 Q**（关键）：用 **epic** 红瓶买 → 得 **epic** 物品；用 legendary 红瓶买 → 得 legendary 物品。确认产出品质 == 付款品质。
+5. **普罗米修斯市场**：用普罗米修斯瓶按品质换 coin（**金币唯一来源**；epic 普罗米修斯瓶 → epic 金币）。
+6. **金币市场**（最上方）：先在步骤 5 换到金币，再买装备（需你先在 `M.sections` 的 coin 项填装备清单）。
 7. **只收一种货币**：确认自动化市场只接受红瓶、不接受其它瓶/金币。
 8. **买不起**：货币不足时该 offer 在原版界面无法购买（置灰）。
 9. **不可摧毁**：用武器打市场 / 尝试拆，预期打不掉、挖不动（`destructible=false` + `minable=false`）。

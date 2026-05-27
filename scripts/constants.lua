@@ -22,30 +22,28 @@ return {
         'agricultural-science-pack', 'cryogenic-science-pack', 'promethium-science-pack',
     },
 
-    -- 品质由低到高。货币（实物科技瓶）随累计经验逐级解锁更高品质。
+    -- 品质由低到高（市场按 5 品质各上架一条 offer 时遍历用）。
     quality_order = {'normal', 'uncommon', 'rare', 'epic', 'legendary'},
 
-    -- 每品质的"成本倍率"：第 q 品质的第 k 瓶奖励需要 cost_mult[q] × k 经验。
-    -- 因此填满某品质 1 组(200)需要 cost_mult[q] × (1+2+...+200) = cost_mult[q] × 20100 经验。
-    quality_cost_mult = {
-        normal    = 1,
-        uncommon  = 10,
-        rare      = 100,
-        epic      = 1000,
-        legendary = 10000,
+    -- 货币一（携带经验奖励 reward_for_exp）：epic、legendary 两档，都用平方根曲线、独立计算。
+    --   epic 数量 = floor(√exp / 1)，最多 4 组(800)。
+    --   legendary 数量 = floor(√exp / 10)，最多 1 组(200)。legendary 独立给（非 epic 溢出）。
+    carry_rewards = {
+        {quality = 'epic',      divisor = 1,  cap = 4 * 200},
+        {quality = 'legendary', divisor = 10, cap = 1 * 200},
     },
 
-    -- 每瓶每品质最多奖励 1 组 = 200。5 品质 × 12 瓶 = 60 组上限。
-    reward_quality_cap = 200,
-
-    -- 金币（第二货币，用于装备市场）。品质由在线行为来源决定，数量按 √统计 给出。
-    --   只看"是否在线"，不看是否挂机，避免反向鼓励在线挂机。
-    --   在线分钟 → normal 金币；在线研究科技 → uncommon 金币；在线跃迁次数 → rare 金币。
-    coin_sources = {
-        {stat = 'online_minutes',  quality = 'normal',   label = 'wn.coin-src-minutes'},
-        {stat = 'online_research', quality = 'uncommon', label = 'wn.coin-src-research'},
-        {stat = 'online_warps',    quality = 'rare',     label = 'wn.coin-src-warps'},
+    -- 在线奖励：在线行为统计 → 品质科技瓶（复活时发放，作为市场货币）。
+    --   普通(normal)瓶子玩家可量产，会让初期量产瓶子刷货币，故奖励**只发四档品质瓶**：
+    --   uncommon / rare / epic / legendary，绝不发 normal。
+    --   数量 = floor(sqrt(stat) × reward_amount_mult)。
+    -- ★ 可配置：每个在线统计发"哪种瓶子(pack) + 哪档品质(quality)"。只有 3 个在线统计，
+    --   legendary 档默认留空（注释），你可以指定来源后启用。
+    online_rewards = {
+        {stat = 'online_minutes',  quality = 'uncommon',  pack = 'automation-science-pack', label = 'wn.coin-src-minutes'},
+        {stat = 'online_research', quality = 'rare',      pack = 'logistic-science-pack',   label = 'wn.coin-src-research'},
+        {stat = 'online_warps',    quality = 'epic',      pack = 'military-science-pack',   label = 'wn.coin-src-warps'},
+        -- {stat = 'online_warps', quality = 'legendary', pack = 'production-science-pack', label = 'wn.coin-src-warps'},  -- legendary：自行指定来源/瓶子后启用
     },
-    -- 金币数量 = floor(sqrt(stat) × coin_curve_mult)。
-    coin_curve_mult = 1,
+    reward_amount_mult = 1,
 }
