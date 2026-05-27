@@ -204,7 +204,8 @@ local function theme_trees(surface, lt)
             local gmax = t.tree_gray_stage_index_max
             if gmax and gmax > 0 then
                 local target = gray_target * gmax
-                t.tree_gray_stage_index = math.floor(t.tree_gray_stage_index + (target - t.tree_gray_stage_index) * strength + 0.5)
+                local v = math.floor(t.tree_gray_stage_index + (target - t.tree_gray_stage_index) * strength + 0.5)
+                t.tree_gray_stage_index = math.max(0, math.min(gmax, v))   -- 灰度 0-based [0,gmax]
             end
             local cmax = t.tree_color_index_max
             if cmax and cmax > 0 then
@@ -212,7 +213,8 @@ local function theme_trees(surface, lt)
                 local n = (noise.fractal(noise.octaves.blob, t.position.x, t.position.y, gseed) + 1) * 0.5
                 local cc = (base_color + (n - 0.5) * color_spread) % 1
                 local target = cc * cmax
-                t.tree_color_index = math.floor(t.tree_color_index + (target - t.tree_color_index) * strength + 0.5)
+                local v = math.floor(t.tree_color_index + (target - t.tree_color_index) * strength + 0.5)
+                t.tree_color_index = math.max(1, math.min(cmax, v))        -- 颜色 1-based [1,cmax]，0 会报错
             end
         end
     end
