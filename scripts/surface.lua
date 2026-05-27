@@ -206,5 +206,6 @@ script.on_event(defines.events.on_chunk_generated, function(event)
     if table_size(tiles) > 0 then
         surface.set_tiles(tiles)
     end
-    gui.players_gui()
+    -- 注意：不要在这里刷 GUI。区块生成极高频（每轮跃迁成百上千次），
+    -- HUD 不依赖区块，刷新由 reset/玩家事件触发即可。
 end)
