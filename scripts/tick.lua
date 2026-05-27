@@ -4,6 +4,34 @@
 local constants = require('scripts.constants')
 local reset = require('scripts.reset')
 local player_stats = require('scripts.player_stats')
+local map_features = require('scripts.map_features')
+local util = require('scripts.util')
+
+-- 每分钟"事件世界"：向在线玩家附近随机空降敌方炮弹，落点炸开并刷一窝虫（落点刷虫）。
+-- 仅对处于 storage.event_world 表面的玩家触发；落点数随本轮危险度。
+local function run_world_events()
+    if not storage.event_world then return end
+    local danger = map_features.knobs().danger
+    local raids = math.max(1, math.floor((1 + danger * 2) * (storage.event_intensity or 1) + 0.5))
+    for _, player in pairs(game.connected_players) do
+        local ch = player.character
+        if ch and storage.event_world[player.surface.name] then
+            local surface, evo = player.surface, game.forces.enemy.get_evolution_factor(player.surface)
+            for _ = 1, raids do
+                if math.random() < 0.7 then
+                    local ang, dist = math.random() * 2 * math.pi, 30 + math.random() * 50
+                    local lp = {x = ch.position.x + math.cos(ang) * dist, y = ch.position.y + math.sin(ang) * dist}
+                    surface.create_entity{name = 'massive-explosion', position = lp}
+                    for _ = 1, math.random(3, 6) do
+                        local name = util.evo_biter(evo)
+                        local p = surface.find_non_colliding_position(name, lp, 8, 1)
+                        if p then surface.create_entity{name = name, position = p, force = 'enemy'} end
+                    end
+                end
+            end
+        end
+    end
+end
 
 -- 点击左上 run 按钮 = 弹出游戏教程（自杀脱困改用 /suicide /zisha 命令）。
 script.on_event(defines.events.on_gui_click, function(event)
@@ -23,6 +51,7 @@ local warn_minutes = {[1] = true, [3] = true, [5] = true, [10] = true, [20] = tr
 -- （player_stats 不再单独注册 on_nth_tick，统一在此调度，避免后注册者覆盖前者。）
 script.on_nth_tick(60 * 60, function()
     player_stats.sample_online()
+    run_world_events()
 
     -- 每分钟尝试给每个在线玩家塞 1 个普通金币（背包满则塞不进，忽略即可）。
     for _, player in pairs(game.connected_players) do

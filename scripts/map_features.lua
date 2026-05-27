@@ -25,12 +25,14 @@ function M.knobs()
     local function kc(off)
         return 0.5 + (noise.hash01(wseed(off) * 6.1) - noise.hash01(wseed(off) * 3.7)) * 0.5
     end
+    local exotic = k(809, 3)   -- 跨星球异物倾向（立方偏置，诡异世界很罕见）
     return {
         verdancy  = kc(801),      -- 树/草繁茂度（中心化：多半正常，极干/极茂罕见）
         rockiness = kc(803),      -- 岩石密度（中心化）
-        danger    = k(805, 2),    -- 虫群危险度（曲线偏低，安宁居多）
         riches    = k(807, 1.6),  -- 战利品丰度（曲线偏低）
-        exotic    = k(809, 3),    -- 跨星球异物倾向（立方偏置，诡异世界很罕见）
+        exotic    = exotic,
+        -- 危险度：曲线偏低 + 与异物倾向【正相关】（诡异世界往往也更危险）。
+        danger    = math.min(1, k(805, 2) * 0.7 + exotic * 0.7),
     }
 end
 
@@ -42,9 +44,11 @@ local function strength(off)
     return 0.1 + r * r * r * 0.9
 end
 
--- 通用放置：def = {name, off, amount={lo,hi}(资源才填), density(0~1, 默认1=成片实心), threshold(默认0.78),
+-- 通用放置：def = {name, off, amount={lo,hi}(资源才填), density(0~1, 默认1), threshold(默认0.72),
 --   force(默认player), rare(true=异星物，额外加一道小概率门)}
 -- A/S/Z = 本轮【全局共享】的朝向/拉伸/缩放（所有特征一致，不互相打架）；def.off 决定各自的噪声场(位置不同)。
+-- 两条路径：① 资源(def.amount) 需连续成片 → 逐格按噪声填；② 普通实体(稀疏) → 不逐格，而是【随机采样】
+--   若干位置、命中噪声区才放（性能远好于 1024 格逐格判噪声）。
 local function place_feature(surface, lt, def, A, S, Z, W)
     -- 异星物出现概率随【本轮异物倾向】连续变化（不再硬编码 15%）：寻常世界几乎没有，诡异世界才多。
     if def.rare and noise.hash01(wseed(def.off) * 9.9) > 0.03 + 0.5 * (W and W.exotic or 0) then return end
@@ -53,21 +57,31 @@ local function place_feature(surface, lt, def, A, S, Z, W)
     local fseed = wseed(def.off)
     -- 阈值高→覆盖小；s 多半很小(立方曲线)→大多数是小斑块，极少 s 大才铺成片
     local threshold = (def.threshold or 0.72) - s * 0.32
-    local density = def.density or 1
-    for x = 0, 31 do
-        for y = 0, 31 do
-            local px, py = lt.x + x, lt.y + y
-            if noise.fractal_warped(noise.octaves.scrap, px, py, fseed, A, S, Z) > threshold
-               and (density >= 1 or math.random() < density) then
-                local pos = {x = px + 0.5, y = py + 0.5}
-                if surface.can_place_entity{name = def.name, position = pos} then
-                    if def.amount then   -- 资源：储量按本轮强度 × 第二层噪声起伏
+
+    if def.amount then
+        -- 资源：逐格按噪声填（需要连续矿块）。
+        for x = 0, 31 do
+            for y = 0, 31 do
+                local px, py = lt.x + x, lt.y + y
+                if noise.fractal_warped(noise.octaves.scrap, px, py, fseed, A, S, Z) > threshold then
+                    local pos = {x = px + 0.5, y = py + 0.5}
+                    if surface.can_place_entity{name = def.name, position = pos} then
                         local rn = (noise.fractal(noise.octaves.scrap, px, py, fseed + 50000) + 1) * 0.5
                         surface.create_entity{name = def.name, force = def.force or 'player', position = pos,
                             amount = math.max(50, math.floor((def.amount[1] + (def.amount[2] - def.amount[1]) * rn) * (0.5 + s)))}
-                    else                 -- 普通实体（石/树/遗迹/冰山…）
-                        surface.create_entity{name = def.name, force = def.force or 'player', position = pos}
                     end
+                end
+            end
+        end
+    else
+        -- 普通实体：随机采样 N 个位置，命中噪声区才放（N 随 density+本轮强度，几个而已）。
+        local samples = math.random(0, math.ceil((def.density or 0.3) * 30 * (0.4 + s)))
+        for _ = 1, samples do
+            local px, py = lt.x + math.random(0, 31), lt.y + math.random(0, 31)
+            if noise.fractal_warped(noise.octaves.scrap, px, py, fseed, A, S, Z) > threshold then
+                local pos = {x = px + 0.5, y = py + 0.5}
+                if surface.can_place_entity{name = def.name, position = pos} then
+                    surface.create_entity{name = def.name, force = def.force or 'player', position = pos}
                 end
             end
         end
@@ -137,33 +151,98 @@ local function fill_loot(chest, n)
     end
 end
 
+-- 测试箱奖励（罕见）：永续箱(随机物品无限供应) 或 无底箱(无限垃圾桶)。设为【不可打开/不可拆走、可摧毁】，
+-- 防止滥用又能就地用（接机械臂/传送带）。force=player。
+local function spawn_test_chest(surface, pos)
+    local chest = surface.create_entity{name = 'infinity-chest', force = 'player', position = pos}
+    if not chest then return end
+    if math.random() < 0.7 then                                   -- 永续箱：随机一种物品无限供应
+        local item = LOOT[math.random(#LOOT)].name
+        local ss = prototypes.item[item] and prototypes.item[item].stack_size or 50
+        chest.infinity_container_filters = {{index = 1, name = item, count = ss, mode = 'exactly'}}
+    else                                                          -- 无底箱：移除一切（无限垃圾桶）
+        chest.remove_unfiltered_items = true
+    end
+    chest.operable = false        -- 不可打开/重配
+    chest.minable_flag = false    -- 不可拆走
+    chest.destructible = true     -- 可摧毁
+end
+
+-- 放一个战利品箱：小概率是测试箱奖励，否则普通木/铁/钢箱 + 加权战利品。pos = {x+0.5, y+0.5}。
+local function place_loot_chest(surface, pos, n)
+    if not surface.can_place_entity{name = 'steel-chest', position = pos} then return end
+    if math.random() < (storage.test_chest_chance or 0.06) then
+        spawn_test_chest(surface, pos)
+    else
+        local chest = surface.create_entity{name = CHESTS[math.random(#CHESTS)], force = 'player', position = pos}
+        if chest then fill_loot(chest, n) end
+    end
+end
+
 -- 区块级确定性随机 [0,1)：点状稀有风味用。
 local function chunk_rng(lt, off)
     return noise.hash01(lt.x * 0.1234 + lt.y * 0.3717 + off * 1.7 + (storage.run or 0) * 0.011)
 end
 
--- 物资箱（原"坠机点"）：可机器人拆的随机箱(木/铁/钢)，战利品多些。force=player。频率随【富庶度】渐变。
+-- 物资箱（原"坠机点"）：战利品多些。force=player。频率随【富庶度】渐变。
 local function feat_crash_site(surface, lt, W)
     local s = strength(503)
     if s == 0 or chunk_rng(lt, 503) > s * (0.02 + 0.06 * (W and W.riches or 0)) then return end
-    local cx, cy = lt.x + math.random(7, 25), lt.y + math.random(7, 25)
-    local name = CHESTS[math.random(#CHESTS)]
-    if surface.can_place_entity{name = name, position = {cx + 0.5, cy + 0.5}} then
-        local chest = surface.create_entity{name = name, force = 'player', position = {cx + 0.5, cy + 0.5}}
-        if chest then fill_loot(chest, math.random(5, 9)) end
-    end
+    place_loot_chest(surface, {lt.x + math.random(7, 25) + 0.5, lt.y + math.random(7, 25) + 0.5}, math.random(5, 9))
 end
 
--- 宝箱缓存（单个随机箱）：更稀有。force=player。频率随【富庶度】渐变。
+-- 宝箱缓存（单个箱）：更稀有。force=player。频率随【富庶度】渐变。
 local function feat_treasure(surface, lt, W)
     local s = strength(601)
     if s == 0 or chunk_rng(lt, 601) > s * (0.015 + 0.05 * (W and W.riches or 0)) then return end
-    local cx, cy = lt.x + math.random(2, 29), lt.y + math.random(2, 29)
-    local name = CHESTS[math.random(#CHESTS)]
-    if surface.can_place_entity{name = name, position = {cx + 0.5, cy + 0.5}} then
-        local chest = surface.create_entity{name = name, force = 'player', position = {cx + 0.5, cy + 0.5}}
-        if chest then fill_loot(chest, math.random(2, 4)) end
+    place_loot_chest(surface, {lt.x + math.random(2, 29) + 0.5, lt.y + math.random(2, 29) + 0.5}, math.random(2, 4))
+end
+
+-- 危险世界敌人组成（主题由 surface.lua 按星球滚定，存 storage.danger_theme[星球]）：
+--   worms 纯虫(炮虫/巢穴)、turrets 纯炮塔(机枪+雷+重炮)、mixed 混合。
+--   带弹的：gun-turret 用本星弹种 theme.mag(mag=true)，artillery-turret 固定炮弹。无标记的不填弹。
+local ENEMY_SETS = {
+    worms = {'small-worm-turret', 'small-worm-turret', 'medium-worm-turret', 'big-worm-turret', 'biter-spawner', 'spitter-spawner'},
+    turrets = {'land-mine', {name = 'gun-turret', mag = true, n = 20}, {name = 'gun-turret', mag = true, n = 20}, {name = 'artillery-turret', ammo = 'artillery-shell', n = 4}},
+    mixed = {'small-worm-turret', 'medium-worm-turret', 'biter-spawner', 'land-mine', {name = 'gun-turret', mag = true, n = 20}, {name = 'artillery-turret', ammo = 'artillery-shell', n = 4}},
+}
+-- 远离出生点(>96格)随机采样放敌人；数量随危险度 × storage.danger_density。force='enemy'。
+local function feat_danger(surface, lt, A, S, Z, W)
+    local theme = storage.danger_theme and storage.danger_theme[surface.name]
+    if not theme then return end
+    local pool = ENEMY_SETS[theme.set] or ENEMY_SETS.mixed
+    local danger = W.danger
+    local thr = 0.78 - 0.25 * danger
+    for _ = 1, math.random(0, math.ceil(danger * 12 * (storage.danger_density or 1))) do
+        local px, py = lt.x + math.random(0, 31), lt.y + math.random(0, 31)
+        if px * px + py * py > 96 * 96
+           and noise.fractal_warped(noise.octaves.blob, px, py, wseed(811), A, S, Z) > thr then
+            local def = pool[math.random(#pool)]
+            local name = type(def) == 'table' and def.name or def
+            local pos = {x = px + 0.5, y = py + 0.5}
+            if surface.can_place_entity{name = name, position = pos} then
+                local e = surface.create_entity{name = name, force = 'enemy', position = pos}
+                if e and type(def) == 'table' then
+                    local ammo = def.mag and theme.mag or def.ammo   -- 机枪用本星弹种；重炮用炮弹
+                    if ammo then e.insert{name = ammo, count = def.n} end
+                end
+            end
+        end
     end
+end
+
+-- 危险世界偶现飞船残骸：机器人无法拆除 → 阻碍蓝图，作为障碍风味。force='neutral'。
+local WRECKS = {
+    'crash-site-spaceship-wreck-big-1', 'crash-site-spaceship-wreck-big-2',
+    'crash-site-spaceship-wreck-medium-1', 'crash-site-spaceship-wreck-medium-2', 'crash-site-spaceship-wreck-medium-3',
+    'crash-site-spaceship-wreck-small-1', 'crash-site-spaceship-wreck-small-2', 'crash-site-spaceship-wreck-small-3',
+}
+local function feat_wrecks(surface, lt, W)
+    if not (storage.danger_theme and storage.danger_theme[surface.name]) then return end
+    if chunk_rng(lt, 813) > 0.05 * W.danger * (storage.danger_density or 1) then return end
+    local name = WRECKS[math.random(#WRECKS)]
+    local pos = surface.find_non_colliding_position(name, {lt.x + math.random(4, 27), lt.y + math.random(4, 27)}, 12, 1)
+    if pos then surface.create_entity{name = name, position = pos, force = 'neutral'} end
 end
 
 -- 树木主题（连续插值，不是离散几种世界）：把每棵树【从原版色/灰度插值到本轮目标】，插值量 = strength。
@@ -215,9 +294,11 @@ function M.generate(surface, lt)
     end
     for _, def in ipairs(EXOTIC) do place_feature(surface, lt, def, A, S, Z, W) end
     theme_trees(surface, lt)
-    -- 虫群交回原版 enemy-base 自然生成（成簇于虫巢，比手动满地散更自然）；不再手动放 worm。
     feat_crash_site(surface, lt, W)
     feat_treasure(surface, lt, W)
+    -- 危险世界（按 W.danger，与 exotic 正相关）：成簇敌方实体 + 偶现飞船残骸障碍。原版 enemy-base 仍自然出虫。
+    feat_danger(surface, lt, A, S, Z, W)
+    feat_wrecks(surface, lt, W)
 end
 
 return M

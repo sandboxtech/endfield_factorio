@@ -4,6 +4,16 @@ local market = require('scripts.market')
 local map_features = require('scripts.map_features')
 local noise = require('scripts.noise')
 
+-- 各"世界变体"出现概率的可调常量（默认 1，游戏内 /c storage.prob_danger=3 之类即可动态调）。
+local function prob(key) return storage['prob_' .. key] or 1 end
+
+-- debug 打印：只发给在线管理员，不刷屏所有玩家。
+local function debug_print(msg)
+    for _, p in pairs(game.connected_players) do
+        if p.admin then p.print(msg) end
+    end
+end
+
 -- 资源档位：丰度/面积/频率各抽一个 1..9 的随机整数 N，乘数 = 1.3^(N-中心) × 全局倍率：
 --   丰度 = 1.3^(N-7) × richness_multiplier；面积 = 1.3^(N-6) × size_multiplier；频率 = 1.3^(N-5) × frequency_multiplier。
 -- 底数用 1.3（不是 2）→ 浮动温和（约 0.27~2.9 倍），避免极端的巨型矿区。
@@ -91,7 +101,7 @@ local TILE_CLASS = {
         'volcanic-ash-flats', 'volcanic-ash-dark', 'volcanic-ash-light', 'volcanic-soil-dark', 'volcanic-soil-light',
         'volcanic-jagged-ground', 'volcanic-pumice-stones', 'volcanic-smooth-stone',
         'fulgoran-dunes', 'fulgoran-sand', 'fulgoran-dust', 'fulgoran-rock',
-        'wetland-green', 'lowland-olive-blubber', 'lowland-brown-blubber', 'lowland-pale-green', 'midland-yellow-crust',
+        'lowland-olive-blubber', 'lowland-brown-blubber', 'lowland-pale-green', 'midland-yellow-crust',
         'highland-dark-rock', 'highland-yellow-rock', 'natural-yumako-soil', 'natural-jellynut-soil',
         'snow-flat', 'snow-lumpy', 'snow-patchy', 'dust-flat', 'dust-lumpy', 'ice-rough', 'ice-smooth', 'brash-ice',
         'nuclear-ground',
@@ -99,14 +109,38 @@ local TILE_CLASS = {
     hazard = {'lava', 'lava-hot'},   -- 熔岩(不可走+烧人)
     void   = {'empty-space'},        -- 虚空(掉落)
 }
--- 源家族：自然成区的子类，替换其一仍保留其他 → 地貌不单调。水用整类(匹配任意星球现存的水)。
-local REMAP_SRC = {
-    {class = 'water',  tiles = TILE_CLASS.water},
-    {class = 'ground', tiles = {'grass-1', 'grass-2', 'grass-3', 'grass-4'}},
-    {class = 'ground', tiles = {'dry-dirt', 'dirt-1', 'dirt-2', 'dirt-3', 'dirt-4', 'dirt-5', 'dirt-6', 'dirt-7'}},
-    {class = 'ground', tiles = {'sand-1', 'sand-2', 'sand-3', 'red-desert-0', 'red-desert-1', 'red-desert-2', 'red-desert-3'}},
-    {class = 'ground', tiles = {'volcanic-ash-flats', 'volcanic-ash-dark', 'volcanic-soil-dark', 'volcanic-jagged-ground'}},
-    {class = 'ground', tiles = {'fulgoran-dunes', 'fulgoran-sand', 'fulgoran-dust'}},
+-- 源家族【按星球分类】：只从该星球实际存在的 tile 里选源（否则像在 Nauvis 替换 Fulgora 地形 → 永不发生）。
+-- 每个 = {class(water/ground), tiles=子家族}；替换其一仍保留其他 → 地貌不单调。目标仍用全局 TILE_CLASS（跨星变样）。
+local PLANET_SRC = {
+    nauvis = {
+        {class = 'water',  tiles = {'water', 'deepwater', 'water-green', 'deepwater-green', 'water-shallow', 'water-mud'}},
+        {class = 'ground', tiles = {'grass-1', 'grass-2', 'grass-3', 'grass-4'}},
+        {class = 'ground', tiles = {'dry-dirt', 'dirt-1', 'dirt-2', 'dirt-3', 'dirt-4', 'dirt-5', 'dirt-6', 'dirt-7'}},
+        {class = 'ground', tiles = {'sand-1', 'sand-2', 'sand-3', 'red-desert-0', 'red-desert-1', 'red-desert-2', 'red-desert-3'}},
+    },
+    vulcanus = {
+        {class = 'water',  tiles = {'lava', 'lava-hot', 'lava-2'}},
+        {class = 'ground', tiles = {'volcanic-ash-flats', 'volcanic-ash-dark', 'volcanic-ash-light', 'volcanic-ash-soil'}},
+        {class = 'ground', tiles = {'volcanic-soil-dark', 'volcanic-soil-light', 'volcanic-jagged-ground', 'volcanic-pumice-stones', 'volcanic-smooth-stone'}},
+        {class = 'ground', tiles = {'volcanic-cracks', 'volcanic-cracks-hot', 'volcanic-cracks-warm', 'volcanic-folds', 'volcanic-folds-flat', 'volcanic-folds-warm'}},
+    },
+    fulgora = {
+        {class = 'water',  tiles = {'oil-ocean-deep', 'oil-ocean-shallow'}},
+        {class = 'ground', tiles = {'fulgoran-dunes', 'fulgoran-sand', 'fulgoran-dust'}},
+        {class = 'ground', tiles = {'fulgoran-rock', 'fulgoran-conduit', 'fulgoran-machinery', 'fulgoran-paving', 'fulgoran-walls'}},
+    },
+    gleba = {
+        {class = 'water',  tiles = {'gleba-deep-lake'}},
+        {class = 'ground', tiles = {'lowland-olive-blubber', 'lowland-brown-blubber', 'lowland-pale-green', 'lowland-cream-cauliflower', 'lowland-dead-skin'}},
+        {class = 'ground', tiles = {'midland-yellow-crust', 'midland-cracked-lichen', 'midland-turquoise-bark'}},
+        {class = 'ground', tiles = {'highland-dark-rock', 'highland-yellow-rock', 'natural-yumako-soil', 'natural-jellynut-soil'}},
+    },
+    aquilo = {
+        {class = 'water',  tiles = {'ammoniacal-ocean', 'ammoniacal-ocean-2'}},
+        {class = 'ground', tiles = {'snow-flat', 'snow-lumpy', 'snow-patchy', 'snow-crests'}},
+        {class = 'ground', tiles = {'ice-rough', 'ice-smooth', 'brash-ice', 'brash-ice-2', 'ice-platform'}},
+        {class = 'ground', tiles = {'dust-flat', 'dust-lumpy', 'dust-patchy', 'dust-crests'}},
+    },
 }
 -- 目标类别：同类(自然)高概率，跨类(戏剧)低概率。
 local function pick_target_class(src_class)
@@ -116,7 +150,38 @@ local function pick_target_class(src_class)
     if r < 0.98 then return 'hazard' end                                           -- 熔岩
     return 'void'                                                                  -- 虚空(最罕见)
 end
-local function rand_tile(class) local p = TILE_CLASS[class]; return p[math.random(#p)] end
+-- 运行时按 prototypes.tile 过滤掉无效 tile 名（拼错的自动丢弃，避免 set_tiles/find_tiles 报 unknown tile）。
+-- prototypes 不变 → 建一次缓存。被丢弃的无效名记入 INVALID_TILES，debug 时进游戏打印一次（提示拼错）。
+local VALID_TILES
+local INVALID_TILES = {}
+local INVALID_REPORTED = false
+local function valid_pools()
+    if VALID_TILES then return VALID_TILES end
+    local function filt(list)
+        local out = {}
+        for _, n in ipairs(list) do
+            if prototypes.tile[n] then out[#out + 1] = n else INVALID_TILES[#INVALID_TILES + 1] = n end
+        end
+        return out
+    end
+    VALID_TILES = {class = {}, src = {}}   -- class=全局目标池；src[星球]=该星过滤后的源家族
+    for k, v in pairs(TILE_CLASS) do VALID_TILES.class[k] = filt(v) end
+    for planet, families in pairs(PLANET_SRC) do
+        local fs = {}
+        for _, s in ipairs(families) do
+            local t = filt(s.tiles)
+            if #t > 0 then fs[#fs + 1] = {class = s.class, tiles = t} end
+        end
+        VALID_TILES.src[planet] = fs
+    end
+    if #INVALID_TILES > 0 then log('[endfield] 无效 tile 名(已忽略): ' .. table.concat(INVALID_TILES, ', ')) end
+    return VALID_TILES
+end
+local function rand_tile(class)
+    local p = valid_pools().class[class]
+    if not p or #p == 0 then return nil end
+    return p[math.random(#p)]
+end
 
 -- 表面新建时只重置 seed（cleared 才会进入完整生成流程）。
 script.on_event(defines.events.on_surface_created, function(event)
@@ -198,18 +263,24 @@ script.on_event(defines.events.on_surface_cleared, function(event)
     mgs.height = r * 2 + 32
     mgs.starting_area = 1 + 2 * util.random_exp(2)
 
+    if storage.debug == nil then storage.debug = true end   -- 老存档兜底
+
     -- 本轮整局气质（繁茂/岩石/危险/富庶/异物），与 map_features 共用同一套确定性旋钮 → 全局气质一致。
     local knobs = map_features.knobs()
+
+    -- 各"世界变体"出现概率都乘以一个 storage 常量(默认 1，可游戏内 /c storage.prob_xxx=N 动态调)。
+    local dbg = {}   -- debug 模式下汇总本表面生成的变体属性
 
     -- 染地世界：小概率出现（诡异世界更可能）。出现时 alpha 走立方曲线 → 大概率温和淡染、
     -- 小概率浓重得像 infested。先清掉本表面上一轮的染色精灵，再决定本轮是否/如何染。
     clear_ground_tint(surface)
     storage.ground_tint = storage.ground_tint or {}
     storage.ground_tint[surface.name] = nil
-    if math.random() < 0.06 + 0.25 * knobs.exotic then
+    if math.random() < (0.06 + 0.25 * knobs.exotic) * prob('ground_tint') then
         local c = GROUND_TINT_PALETTE[math.random(#GROUND_TINT_PALETTE)]
         local a = 0.05 + (math.random() ^ 3) * 0.32   -- 多半 ~0.05–0.12 淡染；极少 ~0.37 浓染(infested 感)
         storage.ground_tint[surface.name] = {r = c.r, g = c.g, b = c.b, a = a}
+        dbg[#dbg + 1] = string.format('tint a=%.2f', a)
     end
 
     -- tile 替换世界：较常见（多为自然同类替换），本轮 1~3 条规则。每条 = 源家族 → 目标 tile + 一种 mask：
@@ -217,26 +288,64 @@ script.on_event(defines.events.on_surface_cleared, function(event)
     --   tree/rock/ore 跟随【2.0 原生的树/石/矿分布】替换 → 森林地面/岩屑带/矿脉晕染，非常组织化。
     storage.tile_remap = storage.tile_remap or {}
     storage.tile_remap[surface.name] = nil
-    if math.random() < 0.3 + 0.3 * knobs.exotic then
+    local srcs = valid_pools().src[surface.name]
+    if srcs and #srcs > 0 and math.random() < (0.5 + 0.4 * knobs.exotic) * prob('tile_remap') then
         local rules = {}
-        for _ = 1, math.random(1, 3) do
-            local src = REMAP_SRC[math.random(#REMAP_SRC)]
+        local nrules = 1 + math.floor(math.random() ^ 2 * (storage.tile_remap_rules or 3))   -- 偏向少：多半 1 条
+        for _ = 1, nrules do
+            local src = srcs[math.random(#srcs)]
             local tclass = pick_target_class(src.class)
-            local natural = (tclass == src.class)
-            local mask
-            if natural and math.random() < 0.6 then
-                mask = 'all'                                              -- 自然替换多半整片，不用噪声
-            else
-                local pool = {'noise', 'noise', 'tree', 'rock', 'ore'}    -- 否则按噪声 或 跟随树/石/矿分布
-                mask = pool[math.random(#pool)]
+            local to = rand_tile(tclass)
+            if to then
+                local natural = (tclass == src.class)
+                local mask
+                if natural and math.random() < 0.6 then
+                    mask = 'all'                                          -- 自然替换多半整片，不用噪声
+                else
+                    local mp = {'noise', 'noise', 'tree', 'rock', 'ore'}  -- 否则按噪声 或 跟随树/石/矿分布
+                    mask = mp[math.random(#mp)]
+                end
+                rules[#rules + 1] = {
+                    from = src.tiles, to = to, mask = mask,
+                    seed = math.random(1, 4294967295),
+                    -- noise mask 覆盖面非线性：多半小斑块(阈值高)、极小概率大片(阈值低)。
+                    threshold = 0.45 - math.random() ^ 3 * 0.6,
+                }
+                dbg[#dbg + 1] = string.format('%s→%s/%s', src.tiles[1], to, mask)
             end
-            rules[#rules + 1] = {
-                from = src.tiles, to = rand_tile(tclass), mask = mask,
-                seed = math.random(1, 4294967295),
-                threshold = -0.1 + math.random() * 0.45,   -- noise mask 用：低=大片，高=零星
-            }
         end
-        storage.tile_remap[surface.name] = rules
+        if #rules > 0 then storage.tile_remap[surface.name] = rules end
+    end
+
+    -- 危险世界：每星球独立滚（概率 = knobs.danger × prob_danger，所以 prob_danger=0 即关闭）。
+    -- 出现则定本星【敌人组成主题】(纯虫/纯炮塔/混合) 与【机枪弹种】(越危险越强)；具体放置在 map_features.feat_danger。
+    storage.danger_theme = storage.danger_theme or {}
+    storage.danger_theme[surface.name] = nil
+    if math.random() < knobs.danger * prob('danger') then
+        local set = ({'worms', 'turrets', 'mixed', 'mixed'})[math.random(4)]
+        local mags = {'firearm-magazine', 'piercing-rounds-magazine', 'uranium-rounds-magazine'}
+        local mag = mags[math.min(#mags, 1 + math.floor(knobs.danger * 3))]
+        local replicant = math.random() < 0.35   -- 复制虫：建筑被虫破坏时冒虫（事件驱动，见 world_fx.lua）
+        storage.danger_theme[surface.name] = {set = set, mag = mag, replicant = replicant}
+        dbg[#dbg + 1] = 'danger:' .. set .. (replicant and '+replicant' or '')
+    end
+
+    -- 每分钟事件世界：向玩家附近空降炮弹→落点刷虫。
+    storage.event_world = storage.event_world or {}
+    storage.event_world[surface.name] = nil
+    if math.random() < (0.04 + 0.4 * knobs.danger) * prob('event') then
+        storage.event_world[surface.name] = true
+        dbg[#dbg + 1] = 'event-world'
+    end
+
+    if storage.debug then
+        if not INVALID_REPORTED and #INVALID_TILES > 0 then
+            INVALID_REPORTED = true
+            debug_print('[gen] 无效 tile 名(已忽略): ' .. table.concat(INVALID_TILES, ', '))
+        end
+        debug_print(string.format('[gen] %s: verdancy=%.2f danger=%.2f exotic=%.2f | %s',
+            surface.name, knobs.verdancy, knobs.danger, knobs.exotic,
+            #dbg > 0 and table.concat(dbg, ', ') or '普通'))
     end
 
     -- 母星
@@ -351,7 +460,7 @@ script.on_event(defines.events.on_chunk_generated, function(event)
     if remap then
         local area = {{left_top.x, left_top.y}, {left_top.x + 32, left_top.y + 32}}
         for _, rule in ipairs(remap) do
-            local found = surface.find_tiles_filtered{name = rule.from, area = area}
+            local found = prototypes.tile[rule.to] and surface.find_tiles_filtered{name = rule.from, area = area} or {}
             if #found > 0 then
                 local mark   -- entity-mask 时：可替换位置集合（"x:y"→true）
                 if rule.mask == 'tree' or rule.mask == 'rock' or rule.mask == 'ore' then
@@ -398,3 +507,7 @@ script.on_event(defines.events.on_chunk_generated, function(event)
     -- 注意：不要在这里刷 GUI。区块生成极高频（每轮跃迁成百上千次），
     -- HUD 不依赖区块，刷新由 reset/玩家事件触发即可。
 end)
+
+-- 场景加载即构建并校验 tile 池（2.0 控制阶段加载期 prototypes 可用）；无效名记入 log。
+-- pcall 兜底（万一加载期不可用），运行时 valid_pools 也会懒构建。
+pcall(valid_pools)

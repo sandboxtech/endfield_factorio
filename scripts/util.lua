@@ -31,6 +31,15 @@ function M.random_nature()
     return M.random_exp(3)
 end
 
+-- 按敌人进化度挑一种虫（空降/复制虫等共用）。
+function M.evo_biter(evo)
+    local r = math.random()
+    if evo > 0.9 and r < 0.4 then return 'behemoth-biter' end
+    if evo > 0.5 and r < 0.5 then return 'big-biter' end
+    if evo > 0.2 and r < 0.6 then return 'medium-biter' end
+    return 'small-biter'
+end
+
 -- 影响玩法节奏的参数（腐败速度、敌人密度、阳光、污染等）：大概率正常值 1，小概率小幅偏离。
 -- 70% 直接返回 1；其余 2^(三角随机×0.6) ≈ 0.66~1.5。避免极端值毁掉一局的可玩性。
 function M.mostly_normal()
