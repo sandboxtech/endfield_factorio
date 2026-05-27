@@ -33,6 +33,14 @@ local warn_minutes = {[1] = true, [3] = true, [5] = true, [10] = true, [20] = tr
 script.on_nth_tick(60 * 60, function()
     player_stats.sample_online()
 
+    -- 每分钟尝试给每个在线玩家塞 1 个普通金币（背包满则塞不进，忽略即可）。
+    for _, player in pairs(game.connected_players) do
+        if player.character then
+            local main = player.get_inventory(defines.inventory.character_main)
+            if main then main.insert{name = 'coin', count = 1} end
+        end
+    end
+
     local last_run_ticks = game.tick - (storage.run_start_tick or game.tick)
     local life = (storage.warp_hours or 1) * constants.hour_to_tick - last_run_ticks
 

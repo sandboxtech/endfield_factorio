@@ -38,13 +38,13 @@ function M.print_inspection(target, viewer)
             local pexp = passives.exp_total_for_pack(target.index, pack)
             local cur = {}
             for _, item in ipairs(items) do
-                cur[#cur + 1] = '[item=' .. item .. ']×' .. respawn_gifts.gift_count(pexp, item)
+                cur[#cur + 1] = '[img=item/' .. item .. ']×' .. respawn_gifts.gift_count(pexp, item)
             end
             local nx = respawn_gifts.next_threshold(pexp, items)
             if nx then
                 local nxt = {}
                 for _, item in ipairs(items) do
-                    nxt[#nxt + 1] = '[item=' .. item .. ']×' .. respawn_gifts.gift_count(nx, item)
+                    nxt[#nxt + 1] = '[img=item/' .. item .. ']×' .. respawn_gifts.gift_count(nx, item)
                 end
                 viewer.print({'wn.exp-detail', pack, pexp, table.concat(cur, ' '), nx - pexp, table.concat(nxt, ' ')})
             else

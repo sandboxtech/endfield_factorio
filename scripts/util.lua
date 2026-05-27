@@ -39,15 +39,6 @@ function M.random_exp(x)
     return math.pow(2, (math.random() - math.random()) * x)
 end
 
--- 资源属性 = 0.1 + 指数分布 * 全局缩放，exp 越大方差越大。
-function M.random_attr(scale_key, exp)
-    return M.readable(0.1 + M.random_exp(exp) * storage[scale_key])
-end
-
-function M.random_frequency() return M.random_attr('frequency', 3) end
-function M.random_size()      return M.random_attr('size', 3) end
-function M.random_richness()  return M.random_attr('richness', 6) end
-
 -- 自然要素（水/树/敌人基地等）使用 nature 而非全局 frequency/size/richness。
 function M.random_nature()
     storage.nature = storage.nature or 3

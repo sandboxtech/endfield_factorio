@@ -3,26 +3,34 @@
 -- 每轮跃迁后由 surface.lua 的 on_surface_cleared（母星分支、clear 结算后）放置；不可摧毁/挖取。
 local M = {}
 
--- 出售清单：{物品, 数量, 金币价}。价格相对挂机金币（√在线分钟，约每局 7~100 枚）合理，可自由增删/调价。
+-- 出售清单：{物品, 数量, 金币价}。金币来自在线（开局 √在线分钟 + 每分钟 +1）。
 M.offers = {
-    {'solar-panel-equipment',            1, 2},
-    {'battery-equipment',                1, 2},
-    {'battery-mk2-equipment',            1, 6},
-    {'battery-mk3-equipment',            1, 12},
-    {'personal-roboport-equipment',      1, 4},
-    {'personal-roboport-mk2-equipment',  1, 12},
-    {'night-vision-equipment',           1, 2},
-    {'belt-immunity-equipment',          1, 3},
-    {'toolbelt-equipment',               1, 5},
-    {'exoskeleton-equipment',            1, 5},
-    {'energy-shield-equipment',          1, 4},
-    {'energy-shield-mk2-equipment',      1, 10},
-    {'discharge-defense-equipment',      1, 6},
-    {'personal-laser-defense-equipment', 1, 8},
-    {'fusion-reactor-equipment',         1, 15},
-    -- 配套护甲（装备零件需要装甲格子才能装上用）
-    {'power-armor',                      1, 20},
-    {'power-armor-mk2',                  1, 60},
+    -- 【分级装备】按梯度定价：高级档每点属性更贵（性价比明显更低），换取同/更省装甲格。
+    --   电池每档都占 2 格：mk1 20MJ / mk2 100MJ / mk3 250MJ；每 MJ 单价 6.7→3.3→2.1，越高越亏但越省格。
+    {'battery-equipment',                1,   3},   -- 20MJ  · 2 格
+    {'battery-mk2-equipment',            1,  50},   -- 100MJ · 2 格
+    {'battery-mk3-equipment',            1, 300},   -- 250MJ · 2 格
+
+    {'energy-shield-equipment',          1,  5},   -- 50 护盾  · 4 格
+    {'energy-shield-mk2-equipment',      1,  100},   -- 150 护盾 · 4 格
+    {'personal-roboport-equipment',      1,  10},   -- 35MJ 缓冲 · 4 格
+    {'personal-roboport-mk2-equipment',  1,  100},   -- 更快更多机器人 · 4 格
+
+    -- 护甲格子（装零件用）
+    {'modular-armor',                    1, 5},
+    {'power-armor',                      1, 30},   
+    {'power-armor-mk2',                  1, 200},
+    {'mech-armor',                       1, 800},
+
+    -- 【单级装备】无分级，价格自行配置
+    {'exoskeleton-equipment',            1,  30},
+    {'personal-laser-defense-equipment', 1,  50},
+    {'toolbelt-equipment',               1,  100},
+
+    -- 电源：按功率定价，功率越高每瓦越贵（高级件性价比更低）。功率假设 100 / 750 / 2500。
+    {'solar-panel-equipment',            1,   3},   -- 100
+    {'fission-reactor-equipment',        1,  50},   -- 750
+    {'fusion-reactor-equipment',         1, 300},   -- 2500
 }
 
 local function stock(ent)

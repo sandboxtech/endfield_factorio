@@ -15,30 +15,22 @@ local renames = {
     ['gleba_stone']           = 'item/stone',
 }
 
--- 把数值映射成 5 档品质图标（灰 normal < 绿 < 蓝 < 紫 < 橙 legendary，越高越丰）。
-local function level_for(v)
-    if v < 0.5 then return 'normal'
-    elseif v < 1 then return 'uncommon'
-    elseif v < 2 then return 'rare'
-    elseif v < 4 then return 'epic'
-    else return 'legendary' end
-end
-
--- 写入一种资源的 size/richness/frequency，并把档位记入 trait（用 quality 星可视化）。
--- richness_multiplier 用于地方特产差异化。
+-- 资源档位：丰度/面积/频率各抽一个 1..9 的随机整数 N，乘数 = 2^(N - 中心)：
+--   丰度 = 标准 × 2^(N-7)（N=7 为标准，范围 1/64 ~ 4×）
+--   面积 = 标准 × 2^(N-6)（N=6 为标准，范围 1/32 ~ 8×）
+--   频率 = 标准 × 2^(N-5)（N=5 为标准，范围 1/16 ~ 16×）
+-- 档位用 [virtual-signal=signal-N]（1~9，越大越多）显示在星系词条里。
+-- richness_multiplier：地方特产用它额外降低【丰度】（只乘丰度，不动面积/频率）。
 local function set_resource(name, mgs, richness_multiplier)
-    local size = util.random_size()
-    local richness = math.max(0.01, util.readable(util.random_richness()))
-    local frequency = util.random_frequency()
+    local nr, ns, nf = math.random(1, 9), math.random(1, 9), math.random(1, 9)
 
     util.try_add_trait({'wn.traits-richness-size-frequency',
-                        renames[name] or ('item/' .. name),
-                        level_for(richness), level_for(size), level_for(frequency)})
+                        renames[name] or ('item/' .. name), nr, ns, nf})
 
-    richness_multiplier = richness_multiplier or 1
-    mgs.autoplace_controls[name].size = size
-    mgs.autoplace_controls[name].richness = richness * richness_multiplier
-    mgs.autoplace_controls[name].frequency = frequency
+    local ac = mgs.autoplace_controls[name]
+    ac.richness  = 2 ^ (nr - 7) * (richness_multiplier or 1)
+    ac.size      = 2 ^ (ns - 6)
+    ac.frequency = 2 ^ (nf - 5)
 end
 
 local function random_nature_mgs(mgs, name)
