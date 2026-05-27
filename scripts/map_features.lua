@@ -171,10 +171,14 @@ end
 -- 放一个战利品箱：小概率是测试箱奖励，否则普通木/铁/钢箱 + 加权战利品。pos = {x+0.5, y+0.5}。
 local function place_loot_chest(surface, pos, n)
     if not surface.can_place_entity{name = 'steel-chest', position = pos} then return end
-    if math.random() < (storage.test_chest_chance or 0.06) then
+    -- 每世界独立的战利品风格（surface.lua 滚定）：哪些箱体 + 测试箱概率。无则兜底默认。
+    local style = storage.loot_style and storage.loot_style[surface.name]
+    local chests = (style and style.chests) or CHESTS
+    local test = (style and style.test) or (storage.test_chest_chance or 0.06)   -- 0 也是合法值(本世界不出测试箱)
+    if math.random() < test then
         spawn_test_chest(surface, pos)
     else
-        local chest = surface.create_entity{name = CHESTS[math.random(#CHESTS)], force = 'player', position = pos}
+        local chest = surface.create_entity{name = chests[math.random(#chests)], force = 'player', position = pos}
         if chest then fill_loot(chest, n) end
     end
 end
@@ -198,19 +202,23 @@ local function feat_treasure(surface, lt, W)
     place_loot_chest(surface, {lt.x + math.random(2, 29) + 0.5, lt.y + math.random(2, 29) + 0.5}, math.random(2, 4))
 end
 
--- 危险世界敌人组成（主题由 surface.lua 按星球滚定，存 storage.danger_theme[星球]）：
---   worms 纯虫(炮虫/巢穴)、turrets 纯炮塔(机枪+雷+重炮)、mixed 混合。
---   带弹的：gun-turret 用本星弹种 theme.mag(mag=true)，artillery-turret 固定炮弹。无标记的不填弹。
-local ENEMY_SETS = {
-    worms = {'small-worm-turret', 'small-worm-turret', 'medium-worm-turret', 'big-worm-turret', 'biter-spawner', 'spitter-spawner'},
-    turrets = {'land-mine', {name = 'gun-turret', mag = true, n = 20}, {name = 'gun-turret', mag = true, n = 20}, {name = 'artillery-turret', ammo = 'artillery-shell', n = 4}},
-    mixed = {'small-worm-turret', 'medium-worm-turret', 'biter-spawner', 'land-mine', {name = 'gun-turret', mag = true, n = 20}, {name = 'artillery-turret', ammo = 'artillery-shell', n = 4}},
-}
+-- 按本星【独立开关】theme 构建敌人池（worm/spawner/turret/mine/art 各自有无）。
+--   带弹的：gun-turret 用本星弹种 theme.mag(mag=true)，artillery-turret 固定炮弹；无标记的不填弹。
+local function danger_pool(t)
+    local pool = {}
+    if t.worm then pool[#pool + 1] = 'small-worm-turret'; pool[#pool + 1] = 'medium-worm-turret'; pool[#pool + 1] = 'big-worm-turret' end
+    if t.spawner then pool[#pool + 1] = 'biter-spawner'; pool[#pool + 1] = 'spitter-spawner' end
+    if t.mine then pool[#pool + 1] = 'land-mine' end
+    if t.turret then pool[#pool + 1] = {name = 'gun-turret', mag = true, n = 20} end
+    if t.art then pool[#pool + 1] = {name = 'artillery-turret', ammo = 'artillery-shell', n = 4} end
+    return pool
+end
 -- 远离出生点(>96格)随机采样放敌人；数量随危险度 × storage.danger_density。force='enemy'。
 local function feat_danger(surface, lt, A, S, Z, W)
     local theme = storage.danger_theme and storage.danger_theme[surface.name]
     if not theme then return end
-    local pool = ENEMY_SETS[theme.set] or ENEMY_SETS.mixed
+    local pool = danger_pool(theme)
+    if #pool == 0 then return end
     local danger = W.danger
     local thr = 0.78 - 0.25 * danger
     for _ = 1, math.random(0, math.ceil(danger * 12 * (storage.danger_density or 1))) do

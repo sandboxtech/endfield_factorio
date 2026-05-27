@@ -113,7 +113,9 @@ local TILE_CLASS = {
 -- 每个 = {class(water/ground), tiles=子家族}；替换其一仍保留其他 → 地貌不单调。目标仍用全局 TILE_CLASS（跨星变样）。
 local PLANET_SRC = {
     nauvis = {
-        {class = 'water',  tiles = {'water', 'deepwater', 'water-green', 'deepwater-green', 'water-shallow', 'water-mud'}},
+        -- full = 整片替换时的安全目标（只换成仍可泵的真水，排除浅水/泥 → 不会让母星缺水）
+        {class = 'water',  tiles = {'water', 'deepwater', 'water-green', 'deepwater-green', 'water-shallow', 'water-mud'},
+            full = {'water', 'deepwater', 'water-green', 'deepwater-green'}},
         {class = 'ground', tiles = {'grass-1', 'grass-2', 'grass-3', 'grass-4'}},
         {class = 'ground', tiles = {'dry-dirt', 'dirt-1', 'dirt-2', 'dirt-3', 'dirt-4', 'dirt-5', 'dirt-6', 'dirt-7'}},
         {class = 'ground', tiles = {'sand-1', 'sand-2', 'sand-3', 'red-desert-0', 'red-desert-1', 'red-desert-2', 'red-desert-3'}},
@@ -170,7 +172,7 @@ local function valid_pools()
         local fs = {}
         for _, s in ipairs(families) do
             local t = filt(s.tiles)
-            if #t > 0 then fs[#fs + 1] = {class = s.class, tiles = t} end
+            if #t > 0 then fs[#fs + 1] = {class = s.class, tiles = t, full = s.full and filt(s.full)} end
         end
         VALID_TILES.src[planet] = fs
     end
@@ -295,16 +297,23 @@ script.on_event(defines.events.on_surface_cleared, function(event)
         for _ = 1, nrules do
             local src = srcs[math.random(#srcs)]
             local tclass = pick_target_class(src.class)
-            local to = rand_tile(tclass)
-            if to then
-                local natural = (tclass == src.class)
-                local mask
-                if natural and math.random() < 0.6 then
-                    mask = 'all'                                          -- 自然替换多半整片，不用噪声
+            local natural = (tclass == src.class)
+            local mask = (natural and math.random() < 0.6) and 'all'             -- 自然替换多半整片
+                or ({'noise', 'noise', 'tree', 'rock', 'ore'})[math.random(5)]   -- 否则噪声/跟随树石矿
+            -- 选目标。【约束】整片(all)替换不能让星球缺资源：水源只换成同功能的水(full，仍可泵)、
+            -- 地表只换地表；部分替换(noise/实体)原 tile 仍保留，目标可任意(可条件变重油海/熔岩/虚空)。
+            local to
+            if mask == 'all' then
+                if src.class == 'water' then
+                    local fp = src.full or src.tiles
+                    to = fp[math.random(#fp)]
                 else
-                    local mp = {'noise', 'noise', 'tree', 'rock', 'ore'}  -- 否则按噪声 或 跟随树/石/矿分布
-                    mask = mp[math.random(#mp)]
+                    to = rand_tile('ground')
                 end
+            else
+                to = rand_tile(tclass)
+            end
+            if to then
                 rules[#rules + 1] = {
                     from = src.tiles, to = to, mask = mask,
                     seed = math.random(1, 4294967295),
@@ -317,26 +326,51 @@ script.on_event(defines.events.on_surface_cleared, function(event)
         if #rules > 0 then storage.tile_remap[surface.name] = rules end
     end
 
-    -- 危险世界：每星球独立滚（概率 = knobs.danger × prob_danger，所以 prob_danger=0 即关闭）。
-    -- 出现则定本星【敌人组成主题】(纯虫/纯炮塔/混合) 与【机枪弹种】(越危险越强)；具体放置在 map_features.feat_danger。
+    -- 危险世界：每星球独立滚（概率 = knobs.danger × prob_danger，prob_danger=0 即关闭）。
+    -- 各敌人类型【独立】开关 → 组合多样(只沙虫 / 只机枪炮塔 / 虫+重炮 …)；机枪弹种随危险度；
+    -- 35% 还带"复制虫"(建筑被虫破坏冒虫，事件驱动见 world_fx.lua)。具体放置在 map_features.feat_danger。
     storage.danger_theme = storage.danger_theme or {}
     storage.danger_theme[surface.name] = nil
     if math.random() < knobs.danger * prob('danger') then
-        local set = ({'worms', 'turrets', 'mixed', 'mixed'})[math.random(4)]
         local mags = {'firearm-magazine', 'piercing-rounds-magazine', 'uranium-rounds-magazine'}
-        local mag = mags[math.min(#mags, 1 + math.floor(knobs.danger * 3))]
-        local replicant = math.random() < 0.35   -- 复制虫：建筑被虫破坏时冒虫（事件驱动，见 world_fx.lua）
-        storage.danger_theme[surface.name] = {set = set, mag = mag, replicant = replicant}
-        dbg[#dbg + 1] = 'danger:' .. set .. (replicant and '+replicant' or '')
+        local t = {
+            worm    = math.random() < 0.6,    -- 沙虫炮塔
+            spawner = math.random() < 0.4,    -- 虫巢
+            turret  = math.random() < 0.4,    -- 敌方机枪炮塔(带弹)
+            mine    = math.random() < 0.4,    -- 敌方地雷
+            art     = math.random() < 0.12 + 0.3 * knobs.danger,   -- 敌方重炮(更稀，随危险度)
+            mag     = mags[math.min(#mags, 1 + math.floor(knobs.danger * 3))],
+            replicant = math.random() < 0.35,
+        }
+        if not (t.worm or t.spawner or t.turret or t.mine or t.art) then t.worm = true end   -- 至少一种
+        storage.danger_theme[surface.name] = t
+        local on = {}
+        for _, k in ipairs({'worm', 'spawner', 'turret', 'mine', 'art'}) do if t[k] then on[#on + 1] = k end end
+        if t.replicant then on[#on + 1] = 'replicant' end
+        dbg[#dbg + 1] = 'danger:' .. table.concat(on, '+')
     end
 
-    -- 每分钟事件世界：向玩家附近空降炮弹→落点刷虫。
+    -- 事件世界：每分钟触发一种事件（独立于危险度，奖励/危险皆有）。详见 tick.lua run_world_events。
+    --   raid 空降虫 / meteor 矿石陨石雨 / supply 物资空投 / coinfall 金币雨。
     storage.event_world = storage.event_world or {}
     storage.event_world[surface.name] = nil
-    if math.random() < (0.04 + 0.4 * knobs.danger) * prob('event') then
-        storage.event_world[surface.name] = true
-        dbg[#dbg + 1] = 'event-world'
+    if math.random() < 0.1 * prob('event') then
+        local et = ({'raid', 'meteor', 'supply', 'coinfall'})[math.random(4)]
+        storage.event_world[surface.name] = et
+        dbg[#dbg + 1] = 'event:' .. et
     end
+
+    -- 战利品风格：每世界【独立】决定出哪些箱体(木/铁/钢) + 是否出测试箱(永续/无底)。
+    storage.loot_style = storage.loot_style or {}
+    local chests = {}
+    if math.random() < 0.85 then chests[#chests + 1] = 'wooden-chest' end
+    if math.random() < 0.7 then chests[#chests + 1] = 'iron-chest' end
+    if math.random() < 0.6 then chests[#chests + 1] = 'steel-chest' end
+    if #chests == 0 then chests[1] = 'wooden-chest' end
+    storage.loot_style[surface.name] = {
+        chests = chests,
+        test = (math.random() < 0.5) and (storage.test_chest_chance or 0.06) or 0,   -- 半数世界才可能出测试箱
+    }
 
     if storage.debug then
         if not INVALID_REPORTED and #INVALID_TILES > 0 then

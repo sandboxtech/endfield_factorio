@@ -7,27 +7,52 @@ local player_stats = require('scripts.player_stats')
 local map_features = require('scripts.map_features')
 local util = require('scripts.util')
 
--- 每分钟"事件世界"：向在线玩家附近随机空降敌方炮弹，落点炸开并刷一窝虫（落点刷虫）。
--- 仅对处于 storage.event_world 表面的玩家触发；落点数随本轮危险度。
+local METEOR_ORE = {'iron-ore', 'copper-ore', 'stone', 'coal'}
+local SUPPLY_ITEMS = {'electronic-circuit', 'iron-gear-wheel', 'steel-plate', 'advanced-circuit', 'inserter', 'transport-belt', 'fast-inserter'}
+
+-- 玩家周围 [lo,hi] 距离的随机落点。
+local function rand_near(ch, lo, hi)
+    local ang, dist = math.random() * 2 * math.pi, lo + math.random() * (hi - lo)
+    return {x = ch.position.x + math.cos(ang) * dist, y = ch.position.y + math.sin(ang) * dist}
+end
+
+-- 每分钟事件世界：按本星 storage.event_world 的事件类型，对该星上每个在线玩家触发。强度随 event_intensity。
+--   raid 空降虫(危险) / meteor 矿石陨石雨(奖励) / supply 物资空投(奖励) / coinfall 金币雨(奖励)。
 local function run_world_events()
     if not storage.event_world then return end
     local danger = map_features.knobs().danger
-    local raids = math.max(1, math.floor((1 + danger * 2) * (storage.event_intensity or 1) + 0.5))
+    local k = storage.event_intensity or 1
     for _, player in pairs(game.connected_players) do
         local ch = player.character
-        if ch and storage.event_world[player.surface.name] then
-            local surface, evo = player.surface, game.forces.enemy.get_evolution_factor(player.surface)
-            for _ = 1, raids do
-                if math.random() < 0.7 then
-                    local ang, dist = math.random() * 2 * math.pi, 30 + math.random() * 50
-                    local lp = {x = ch.position.x + math.cos(ang) * dist, y = ch.position.y + math.sin(ang) * dist}
-                    surface.create_entity{name = 'massive-explosion', position = lp}
-                    for _ = 1, math.random(3, 6) do
-                        local name = util.evo_biter(evo)
-                        local p = surface.find_non_colliding_position(name, lp, 8, 1)
-                        if p then surface.create_entity{name = name, position = p, force = 'enemy'} end
+        local et = ch and storage.event_world[player.surface.name]
+        if et then
+            local surface = player.surface
+            if et == 'raid' then
+                local evo = game.forces.enemy.get_evolution_factor(surface)
+                for _ = 1, math.max(1, math.floor((1 + danger * 2) * k + 0.5)) do
+                    if math.random() < 0.7 then
+                        local lp = rand_near(ch, 30, 80)
+                        surface.create_entity{name = 'massive-explosion', position = lp}
+                        for _ = 1, math.random(3, 6) do
+                            local name = util.evo_biter(evo)
+                            local p = surface.find_non_colliding_position(name, lp, 8, 1)
+                            if p then surface.create_entity{name = name, position = p, force = 'enemy'} end
+                        end
                     end
                 end
+            elseif et == 'meteor' then   -- 矿石陨石雨：落点炸开 + 撒一堆矿
+                for _ = 1, math.max(1, math.floor(3 * k + 0.5)) do
+                    local lp = rand_near(ch, 25, 90)
+                    surface.create_entity{name = 'big-explosion', position = lp}
+                    surface.spill_item_stack{position = lp, stack = {name = METEOR_ORE[math.random(#METEOR_ORE)], count = math.random(20, 80)}, enable_looted = true}
+                end
+            elseif et == 'supply' then   -- 物资空投：玩家附近撒中级材料
+                for _ = 1, math.max(1, math.floor(2 * k + 0.5)) do
+                    local lp = rand_near(ch, 8, 28)
+                    surface.spill_item_stack{position = lp, stack = {name = SUPPLY_ITEMS[math.random(#SUPPLY_ITEMS)], count = math.random(10, 40)}, enable_looted = true}
+                end
+            elseif et == 'coinfall' then   -- 金币雨
+                player.insert{name = 'coin', count = math.max(1, math.floor(8 * k + 0.5))}
             end
         end
     end
