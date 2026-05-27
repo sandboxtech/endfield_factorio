@@ -75,38 +75,48 @@ local function clear_ground_tint(surface)
     end
 end
 
--- ── 噪声 tile 替换（罕见世界变体）─────────────────────────────────────────────
--- 每个世界可能有几条规则；每条 = {源 tile 家族 + 随机噪声通道 + 目标 tile}。噪声区(平滑大团)内的
--- 源 tile 换成目标 tile → 成片、部分替换。源取 Nauvis 自然 tile，目标取精选池（外星地表/液体/熔岩/虚空），
--- 不用字面全部 tile（避免随机出实验室/混凝土/过渡 tile 这种难看的）。
-local REMAP_SRC = {   -- 随机选一个家族整体作为 from
-    {'water', 'deepwater', 'water-green', 'deepwater-green', 'water-shallow', 'water-mud'},  -- 水族
-    {'grass-1', 'grass-2', 'grass-3', 'grass-4'},                                            -- 草
-    {'dry-dirt', 'dirt-1', 'dirt-2', 'dirt-3', 'dirt-4', 'dirt-5', 'dirt-6', 'dirt-7'},      -- 土
-    {'sand-1', 'sand-2', 'sand-3'},                                                          -- 沙
-    {'red-desert-0', 'red-desert-1', 'red-desert-2', 'red-desert-3'},                        -- 红沙
+-- ── tile 替换（世界变体）──────────────────────────────────────────────────────
+-- 把地形分几类，规则形如「源家族 → 目标 tile」：
+--   · 同类替换(水→另一种水, 某地表→另一种地表) = 自然，高概率，整片替换、不用噪声；
+--   · 跨类替换(地→水/熔岩/虚空 等) = 戏剧化，低概率，用平滑大团噪声成片、不满图。
+-- 目标可为任意自然 tile（含外星/虚空），但【排除测试/纯色/玩家造 tile】(lab/tutorial/混凝土/landfill 等)。
+local TILE_CLASS = {
+    water = {  -- 液体(不可走)：母星各种水 + 草星深湖 + 雷星油海 + 极地氨海
+        'water', 'deepwater', 'water-green', 'deepwater-green', 'water-shallow', 'water-mud',
+        'gleba-deep-lake', 'oil-ocean-deep', 'oil-ocean-shallow', 'ammoniacal-ocean', 'ammoniacal-ocean-2',
+    },
+    ground = {  -- 可走地表：母星 + 各外星地表 + 核地
+        'grass-1', 'grass-2', 'grass-3', 'grass-4', 'dry-dirt', 'dirt-1', 'dirt-2', 'dirt-3', 'dirt-4', 'dirt-5', 'dirt-6', 'dirt-7',
+        'sand-1', 'sand-2', 'sand-3', 'red-desert-0', 'red-desert-1', 'red-desert-2', 'red-desert-3',
+        'volcanic-ash-flats', 'volcanic-ash-dark', 'volcanic-ash-light', 'volcanic-soil-dark', 'volcanic-soil-light',
+        'volcanic-jagged-ground', 'volcanic-pumice-stones', 'volcanic-smooth-stone',
+        'fulgoran-dunes', 'fulgoran-sand', 'fulgoran-dust', 'fulgoran-rock',
+        'wetland-green', 'lowland-olive-blubber', 'lowland-brown-blubber', 'lowland-pale-green', 'midland-yellow-crust',
+        'highland-dark-rock', 'highland-yellow-rock', 'natural-yumako-soil', 'natural-jellynut-soil',
+        'snow-flat', 'snow-lumpy', 'snow-patchy', 'dust-flat', 'dust-lumpy', 'ice-rough', 'ice-smooth', 'brash-ice',
+        'nuclear-ground',
+    },
+    hazard = {'lava', 'lava-hot'},   -- 熔岩(不可走+烧人)
+    void   = {'empty-space'},        -- 虚空(掉落)
 }
--- 目标池带权重：可走"换皮"地表常见；液体/熔岩中等稀有；虚空最稀有（不可走/危险）。
-local REMAP_DST = {
-    {w = 8, t = 'volcanic-ash-flats'}, {w = 8, t = 'volcanic-soil-dark'}, {w = 6, t = 'volcanic-jagged-ground'},
-    {w = 8, t = 'fulgoran-dunes'},     {w = 6, t = 'fulgoran-sand'},
-    {w = 8, t = 'snow-flat'},          {w = 6, t = 'dust-flat'},          {w = 6, t = 'ice-rough'},
-    {w = 6, t = 'wetland-green'},      {w = 6, t = 'lowland-olive-blubber'}, {w = 6, t = 'midland-yellow-crust'},
-    {w = 6, t = 'natural-yumako-soil'}, {w = 5, t = 'nuclear-ground'},
-    {w = 4, t = 'oil-ocean-deep'},     {w = 3, t = 'ammoniacal-ocean'},   {w = 3, t = 'gleba-deep-lake'},  -- 液体(不可走)
-    {w = 2, t = 'lava'},                                                                                  -- 熔岩(烧人)
-    {w = 1, t = 'empty-space'},                                                                           -- 虚空(掉落)
+-- 源家族：自然成区的子类，替换其一仍保留其他 → 地貌不单调。水用整类(匹配任意星球现存的水)。
+local REMAP_SRC = {
+    {class = 'water',  tiles = TILE_CLASS.water},
+    {class = 'ground', tiles = {'grass-1', 'grass-2', 'grass-3', 'grass-4'}},
+    {class = 'ground', tiles = {'dry-dirt', 'dirt-1', 'dirt-2', 'dirt-3', 'dirt-4', 'dirt-5', 'dirt-6', 'dirt-7'}},
+    {class = 'ground', tiles = {'sand-1', 'sand-2', 'sand-3', 'red-desert-0', 'red-desert-1', 'red-desert-2', 'red-desert-3'}},
+    {class = 'ground', tiles = {'volcanic-ash-flats', 'volcanic-ash-dark', 'volcanic-soil-dark', 'volcanic-jagged-ground'}},
+    {class = 'ground', tiles = {'fulgoran-dunes', 'fulgoran-sand', 'fulgoran-dust'}},
 }
-local REMAP_DST_TOTAL = 0
-for _, d in ipairs(REMAP_DST) do REMAP_DST_TOTAL = REMAP_DST_TOTAL + d.w end
-local function pick_remap_dst()
-    local r, acc = math.random() * REMAP_DST_TOTAL, 0
-    for _, d in ipairs(REMAP_DST) do
-        acc = acc + d.w
-        if r <= acc then return d.t end
-    end
-    return REMAP_DST[1].t
+-- 目标类别：同类(自然)高概率，跨类(戏剧)低概率。
+local function pick_target_class(src_class)
+    local r = math.random()
+    if r < 0.65 then return src_class end                                         -- 同类自然替换
+    if r < 0.90 then return src_class == 'water' and 'ground' or 'water' end       -- 水↔地
+    if r < 0.98 then return 'hazard' end                                           -- 熔岩
+    return 'void'                                                                  -- 虚空(最罕见)
 end
+local function rand_tile(class) local p = TILE_CLASS[class]; return p[math.random(#p)] end
 
 -- 表面新建时只重置 seed（cleared 才会进入完整生成流程）。
 script.on_event(defines.events.on_surface_created, function(event)
@@ -202,17 +212,28 @@ script.on_event(defines.events.on_surface_cleared, function(event)
         storage.ground_tint[surface.name] = {r = c.r, g = c.g, b = c.b, a = a}
     end
 
-    -- 噪声 tile 替换：小概率世界，本轮生成 1~3 条随机规则(源家族 + 噪声 + 目标 tile)。
+    -- tile 替换世界：较常见（多为自然同类替换），本轮 1~3 条规则。每条 = 源家族 → 目标 tile + 一种 mask：
+    --   all  整片换(自然同类多用，不结合噪声)   noise 平滑大团噪声成片
+    --   tree/rock/ore 跟随【2.0 原生的树/石/矿分布】替换 → 森林地面/岩屑带/矿脉晕染，非常组织化。
     storage.tile_remap = storage.tile_remap or {}
     storage.tile_remap[surface.name] = nil
-    if math.random() < 0.05 + 0.25 * knobs.exotic then
+    if math.random() < 0.3 + 0.3 * knobs.exotic then
         local rules = {}
         for _ = 1, math.random(1, 3) do
+            local src = REMAP_SRC[math.random(#REMAP_SRC)]
+            local tclass = pick_target_class(src.class)
+            local natural = (tclass == src.class)
+            local mask
+            if natural and math.random() < 0.6 then
+                mask = 'all'                                              -- 自然替换多半整片，不用噪声
+            else
+                local pool = {'noise', 'noise', 'tree', 'rock', 'ore'}    -- 否则按噪声 或 跟随树/石/矿分布
+                mask = pool[math.random(#pool)]
+            end
             rules[#rules + 1] = {
-                from = REMAP_SRC[math.random(#REMAP_SRC)],
-                to = pick_remap_dst(),
+                from = src.tiles, to = rand_tile(tclass), mask = mask,
                 seed = math.random(1, 4294967295),
-                threshold = -0.15 + math.random() * 0.55,   -- 低=大片替换，高=零星斑块
+                threshold = -0.1 + math.random() * 0.45,   -- noise mask 用：低=大片，高=零星
             }
         end
         storage.tile_remap[surface.name] = rules
@@ -324,19 +345,37 @@ script.on_event(defines.events.on_chunk_generated, function(event)
     -- 自行判断，未定义的表面（飞船平台）直接跳过。详见 scripts/map_features.lua。
     map_features.generate(surface, left_top)
 
-    -- 噪声 tile 替换：本轮该表面的每条规则，把噪声区(平滑大团)内的源 tile 换成目标 tile。
-    -- 只动匹配到的 tile（圆外已是虚空、不匹配），成片部分替换。仅替换世界(罕见)才进此分支。
+    -- tile 替换：本轮该表面每条规则，把匹配到的源 tile 按 mask 换成目标 tile。圆外已是虚空、不匹配。
+    -- mask=all 整片；noise 平滑噪声区；tree/rock/ore 跟随原生树/石/矿分布（在其 tile 及邻近替换）。
     local remap = storage.tile_remap and storage.tile_remap[surface.name]
     if remap then
+        local area = {{left_top.x, left_top.y}, {left_top.x + 32, left_top.y + 32}}
         for _, rule in ipairs(remap) do
-            local found = surface.find_tiles_filtered{name = rule.from, area = {{left_top.x, left_top.y}, {left_top.x + 32, left_top.y + 32}}}
+            local found = surface.find_tiles_filtered{name = rule.from, area = area}
             if #found > 0 then
+                local mark   -- entity-mask 时：可替换位置集合（"x:y"→true）
+                if rule.mask == 'tree' or rule.mask == 'rock' or rule.mask == 'ore' then
+                    local etype = rule.mask == 'ore' and 'resource' or (rule.mask == 'rock' and 'simple-entity' or 'tree')
+                    local R = rule.mask == 'rock' and 2 or 1
+                    mark = {}
+                    for _, e in pairs(surface.find_entities_filtered{type = etype, area = area}) do
+                        local ex, ey = math.floor(e.position.x), math.floor(e.position.y)
+                        for dx = -R, R do
+                            for dy = -R, R do mark[(ex + dx) .. ':' .. (ey + dy)] = true end
+                        end
+                    end
+                end
                 local tiles = {}
                 for _, t in pairs(found) do
-                    local p = t.position
-                    if noise.fractal(noise.octaves.smooth, p.x, p.y, rule.seed) > rule.threshold then
-                        tiles[#tiles + 1] = {name = rule.to, position = p}
+                    local p, ok = t.position, false
+                    if rule.mask == 'all' then
+                        ok = true
+                    elseif rule.mask == 'noise' then
+                        ok = noise.fractal(noise.octaves.smooth, p.x, p.y, rule.seed) > rule.threshold
+                    else
+                        ok = mark[math.floor(p.x) .. ':' .. math.floor(p.y)] or false
                     end
+                    if ok then tiles[#tiles + 1] = {name = rule.to, position = p} end
                 end
                 if #tiles > 0 then surface.set_tiles(tiles) end
             end
