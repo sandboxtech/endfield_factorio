@@ -5,6 +5,8 @@ local gui = require('scripts.gui')
 local players = require('scripts.players')
 local passives = require('scripts.passives')
 local science_exp = require('scripts.science_exp')
+local player_stats = require('scripts.player_stats')
+local market = require('scripts.market')
 
 local M = {}
 
@@ -42,6 +44,9 @@ function M.reset()
     for _, player in pairs(game.players) do
         science_exp.collect(player)
     end
+
+    -- 所有在线玩家本轮跃迁计数 +1（→ rare 金币）
+    player_stats.on_warp_for_online_players()
 
     -- 重置玩家：在星球上的杀死/清空背包，在飞船上的保留（飞船能存活一周期）
     for _, player in pairs(game.players) do
@@ -117,6 +122,9 @@ function M.reset()
     for _, player in pairs(game.connected_players) do
         passives.apply(player)
     end
+
+    -- 在母星出生点放置/刷新装备市场（不可摧毁、不可挖取）
+    market.place_on_nauvis()
 
     gui.players_gui()
 end

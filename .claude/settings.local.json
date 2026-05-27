@@ -3,7 +3,17 @@
     "allow": [
       "WebFetch(domain:lua-api.factorio.com)",
       "Bash(git merge *)",
-      "Bash(git *)"
+      "Bash(git *)",
+      "Bash(command -v img2pdf magick convert gs)",
+      "Bash(command -v python3 python)",
+      "Bash(python3 -c \"import PIL; print\\('PIL', PIL.__version__\\)\")",
+      "Bash(python3 /tmp/jpg2pdf.py a.jpg a.pdf)",
+      "Bash(xxd)",
+      "Bash(command -v lua luac luajit luacheck)",
+      "Bash(python3 -c ' *)",
+      "Read(//mnt/c/**)",
+      "Read(//home/syx/**)",
+      "Read(//mnt/c/Users/syx/AppData/Roaming/Factorio/**)"
     ]
   }
 }

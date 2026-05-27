@@ -53,7 +53,7 @@ M.abilities = {
     },
     {
         locale = 'wn.ability-running',
-        stat   = 'afk_minutes',
+        stat   = 'online_minutes',
         curve  = M.factor_multiplier,
         apply  = function(p, f) p.character_running_speed_modifier = f end,
         fmt    = function(f) return pct(f) end,
@@ -74,7 +74,7 @@ M.abilities = {
     },
     {
         locale = 'wn.ability-inventory',
-        stat   = 'afk_research',
+        stat   = 'online_research',
         curve  = M.factor_additive,
         apply  = function(p, f) p.character_inventory_slots_bonus = math.floor(10 * f + 0.5) end,
         fmt    = function(f) return flat(f, 10) end,

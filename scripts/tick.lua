@@ -1,14 +1,20 @@
 -- 周期性事件：自动跃迁倒计时 + 点击 HUD 自杀脱困。
+-- 本文件是 on_gui_click 与 on_nth_tick(3600) 的唯一注册点，其它模块通过被调用的
+-- 函数接入（market.on_gui_click / player_stats.sample_online），避免多文件重复注册互相覆盖。
 local constants = require('scripts.constants')
 local reset = require('scripts.reset')
 local players = require('scripts.players')
+local player_stats = require('scripts.player_stats')
+local market = require('scripts.market')
 
--- 点击左上 run 按钮 = 自杀回母星（用于卡死时脱困）。
+-- 点击左上 run 按钮 = 自杀回母星（用于卡死时脱困）；商店按钮转发给 market。
 script.on_event(defines.events.on_gui_click, function(event)
     local player = game.get_player(event.player_index)
     if not player then
         return
     end
+    market.on_gui_click(event)
+    if not (event.element and event.element.valid) then return end
     if event.element.name == 'introduction' then
         local last_run_ticks = (game.tick - (storage.run_start_tick or game.tick))
         local life_total = ((storage.warp_hours or 1) * constants.hour_to_tick)
@@ -25,8 +31,11 @@ end)
 -- 撤离提醒触发的分钟数集合：最后 1/3/5/10/20/30 分钟，以及之前每整点小时。
 local warn_minutes = {[1] = true, [3] = true, [5] = true, [10] = true, [20] = true, [30] = true}
 
--- 每分钟检查：到点跃迁；到撤离阈值时广播提醒。
+-- 每分钟统一处理：在线时长采样 + 跃迁倒计时 + 撤离提醒。
+-- （player_stats 不再单独注册 on_nth_tick，统一在此调度，避免后注册者覆盖前者。）
 script.on_nth_tick(60 * 60, function()
+    player_stats.sample_online()
+
     local last_run_ticks = game.tick - (storage.run_start_tick or game.tick)
     local life = (storage.warp_hours or 1) * constants.hour_to_tick - last_run_ticks
 

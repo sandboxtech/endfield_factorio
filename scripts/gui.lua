@@ -1,47 +1,47 @@
 -- 左上角 HUD：跃迁轮次 + 星系词条 + 经验加成 + 在线名册 + 管理员按钮。
+local constants = require('scripts.constants')
 local passives = require('scripts.passives')
-local respawn_gifts = require('scripts.respawn_gifts')
-
--- 未实装能力的 tooltip 物品列：按玩家当前该瓶经验对应的等级，
--- 把累计能拿到的物品展开成 "[item=foo]×N [item=bar]×M"。
--- exp=0 时所有物品显示 ×0；表里没东西则回退成瓶子图标。
-local function todo_items_for(pack, player_index)
-    local exp = passives.exp_total_for_pack(player_index, pack)
-    local level = respawn_gifts.level_for(exp)
-    local list = respawn_gifts.cumulative_items(pack, level)
-    if #list == 0 then return '[item=' .. pack .. ']' end
-    local parts = {}
-    for _, it in ipairs(list) do
-        table.insert(parts, '[item=' .. it.name .. ']×' .. it.count)
-    end
-    return table.concat(parts, ' ')
-end
+local currency = require('scripts.currency')
 
 local M = {}
 
--- 构建能力面板 tooltip：标题 + 所有已实装能力 + 空行 + 所有瓶子的开局物品。
+-- 构建能力面板 tooltip。先收集所有行，再折叠成嵌套 localised string：
+-- 单层 localised string 最多 ~20 个参数，本面板（能力 + 12 瓶进度 + 金币）会超，
+-- 故每攒满 18 个就把整张表嵌进 {'', old} 再继续，沿用 util.try_add_trait 的手法。
 local function build_skills_tooltip(player)
-    local lines = {'', {'wn.skills-title'}}
+    local parts = {{'wn.skills-title'}}
+
     -- 第一段：所有已实装的基础能力（按玩家行为统计计算）
     for _, ability in ipairs(passives.abilities) do
         if ability.apply then
             local val = passives.get_stat(player.index, ability.stat)
-            local factor = ability.curve(val)
-            table.insert(lines, {ability.locale, val, ability.fmt(factor)})
+            parts[#parts + 1] = {ability.locale, val, ability.fmt(ability.curve(val))}
         end
     end
-    -- 段间空行
-    table.insert(lines, '\n')
-    -- 第二段：每个科技瓶一行开局物品（仍由背包里的瓶子经验决定）
-    local gift_packs = {
-        'automation-science-pack', 'logistic-science-pack', 'chemical-science-pack',
-        'military-science-pack', 'production-science-pack', 'utility-science-pack',
-        'space-science-pack', 'metallurgic-science-pack', 'electromagnetic-science-pack',
-        'agricultural-science-pack', 'cryogenic-science-pack', 'promethium-science-pack',
-    }
-    for _, pack in ipairs(gift_packs) do
-        local exp = passives.exp_total_for_pack(player.index, pack)
-        table.insert(lines, {'wn.ability-item', pack, exp, todo_items_for(pack, player.index)})
+
+    -- 第二段：每个科技瓶的货币进度（等级 + 当前经验/升级经验，奖励正比于等级）
+    parts[#parts + 1] = '\n'
+    for _, pack in ipairs(constants.science_packs) do
+        local p = currency.progress_for_exp(passives.exp_total_for_pack(player.index, pack))
+        if p.need > 0 then
+            parts[#parts + 1] = {'wn.ability-reward', pack, p.level, p.into, p.need, p.quality}
+        else
+            parts[#parts + 1] = {'wn.ability-reward-max', pack, p.level}
+        end
+    end
+
+    -- 第三段：在线行为 → 品质金币（装备市场货币）
+    parts[#parts + 1] = '\n'
+    for _, src in ipairs(constants.coin_sources) do
+        local stat = passives.get_stat(player.index, src.stat)
+        parts[#parts + 1] = {'wn.ability-coin', src.quality, {src.label}, stat, currency.coin_amount(stat)}
+    end
+
+    -- 折叠：突破单层参数上限
+    local lines = {''}
+    for _, part in ipairs(parts) do
+        if #lines >= 19 then lines = {'', lines} end
+        lines[#lines + 1] = part
     end
     return lines
 end
