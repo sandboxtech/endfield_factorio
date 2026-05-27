@@ -19,13 +19,13 @@
 | `respawn_gifts.lua` | 每个世界（`storage.run`）首次复活时发放起手护甲 + **货币**：携带经验换的 epic/legendary 瓶子 + 在线时长换的普通金币。不再直接发建筑，改由市场购买。 |
 | `currency.lua` | 货币换算（纯函数）：`reward_for_exp` 经验→epic/legendary 瓶子（√曲线）、`reward_amount` 在线统计→金币数量。 |
 | `market.lua` | Nauvis 出生点的 13 个原版 market 实体（每轮跃迁后延迟重放，不可摧毁/挖取，铺混凝土地坪整齐对齐）。货物产出固定 normal；价格按物品 `q` 品质货币：epic 买大需求散件、legendary 买设备/插件。用原版交易界面；`on_tick` 延迟放置避开 `surface.clear` 异步结算。 |
-| `passives.lua` | **固定惩罚**：全员 -50% 手搓、-50% 移动、-50% 挖矿/拆除；生命/背包保持原版。不再有升级型能力。保留 `exp_total_for_pack`/`get_stat` 供货币与 GUI 读取。 |
+| `passives.lua` | **动作即时升级的 4 技能**：手搓→手搓速度、步行→移动速度、采矿/拆除→挖矿速度、死亡→生命上限。曲线自带 -50% 下限（0 经验时 -50%，做动作爬升）。独占 craft/mine/changed_position/died 事件，递增统计并即时施加。保留 `exp_total_for_pack`/`get_stat`。 |
 | `science_exp.lua` | 跃迁前扫描玩家背包里的科技瓶，按 `每组 × 品质倍率` 累加进 `storage.science_exp`。 |
 | `research.lua` | 研究完含 `-science-pack` 名字的科技时，把本轮跃迁倒计时延长 1 小时。 |
 | `surface.lua` | 跃迁后随机生成各星球：地图设定、资源分布、圆形边界。 |
 | `reset.lua` | 跃迁主流程：清场 → 收集经验 → 杀玩家 → 清星球 → 重置科技 → 随机参数。 |
 | `tick.lua` | `on_gui_click` 与 `on_nth_tick(3600)` 的**唯一注册点**：每分钟在线采样（调 `player_stats.sample_online`）+ 跃迁倒计时 + 撤离提醒；点击 HUD 自杀脱困。 |
-| `player_stats.lua` | 玩家行为统计（手搓/挖矿/死亡/在线分钟/在线研究/在线跃迁次数）。**只看是否在线、不看是否挂机**，避免鼓励在线挂机。跨跃迁累积，驱动 passives 与在线金币奖励。**不再自注册 on_nth_tick**（统一到 tick.lua）。旧存档 `afk_*` 字段在 `M.get` 中迁移为 `online_*`。 |
+| `player_stats.lua` | 行为统计**数据存储**（craft_count/mining_count/move_distance/deaths + online_minutes/research/warps）。只管 get/默认值/旧档迁移 + 在线类采样；技能统计的递增在 `passives.lua` 的动作事件里。跨跃迁累积。 |
 | `rocket.lua` | 发射火箭惩罚：每次 `on_rocket_launched` 令本轮 `warp_hours` -1 分钟，公告并打印火箭载荷。 |
 | `commands.lua` | 管理/调试命令（控制台调用视作管理员）。 |
 | `gui.lua` | 左上角 HUD：轮次、星系词条、经验加成、在线名册、管理员按钮。 |

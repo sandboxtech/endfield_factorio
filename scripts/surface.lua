@@ -1,5 +1,7 @@
 -- 每次跃迁后随机生成各星球：地图设定、资源、自然要素、圆形边界。
 local util = require('scripts.util')
+local market = require('scripts.market')
+local gui = require('scripts.gui')
 
 -- autoplace control 名 → 用于 tooltip 显示的 sprite 路径
 local renames = {
@@ -170,7 +172,10 @@ script.on_event(defines.events.on_surface_cleared, function(event)
     end
 
     surface.map_gen_settings = mgs
-    -- 不在这里刷 GUI：on_surface_cleared 只由 reset.reset() 触发，其末尾会统一刷新。
+    -- 必须在这里刷 GUI：clear 是异步的，星球词条是在本事件里（reset 返回之后）才 try_add_trait
+    -- 加进 storage.traits 的；reset 末尾那次刷新发生在词条加入之前，抓不到。这里每星球清完刷一次，
+    -- 最后一颗星清完时 tooltip 就集齐了所有星球词条。
+    gui.players_gui()
 
     -- 仅母星预先 chart 一块区域，方便玩家落地后立刻看清地形
     if surface ~= game.surfaces.nauvis then
@@ -178,6 +183,9 @@ script.on_event(defines.events.on_surface_cleared, function(event)
     end
     local radius = math.floor(storage.radius * 0.2)
     game.forces.player.chart(game.surfaces.nauvis, {{x = -radius, y = -radius}, {x = radius, y = radius}})
+
+    -- 在母星出生点放置市场。此时 surface.clear 已结算，放置的实体不会再被清掉。
+    market.place_on_nauvis()
 end)
 
 -- 圆形地图：超出半径的格子全部铺成虚空。

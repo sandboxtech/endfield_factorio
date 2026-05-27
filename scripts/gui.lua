@@ -11,12 +11,8 @@ local M = {}
 local function build_skills_tooltip(player)
     local parts = {{'wn.skills-title'}}
 
-    -- 最开头：在线/挂机时长 → 普通金币
-    local cstat = passives.get_stat(player.index, constants.online_coin_stat)
-    local coin_count = currency.reward_amount(cstat)
-    if coin_count > 0 then
-        parts[#parts + 1] = {'wn.ability-online', {constants.online_coin_label}, cstat, coin_count}
-    end
+    -- 注意：角色技能（手搓/移动/挖矿/生命）和在线金币都是实时变化的，而 tooltip 在建面板时就固定、
+    -- 不会刷新，显示会过时；故这里只显示"下次跃迁初始物品"，其余用 /inspect（每次现算）查看。
 
     -- 每个科技瓶：下次跃迁实际会给的初始瓶子数（按品质）
     parts[#parts + 1] = '\n'
@@ -66,8 +62,7 @@ function M.player_gui(player)
         type = 'sprite-button',
         sprite = 'space-location/solar-system-edge',
         name = 'traits',
-        -- 顶部先放固定惩罚说明（全员一致），再列本轮星系/星球词条 + 图例
-        tooltip = {'', {'wn.skills-penalty'}, '\n', storage.traits, {'wn.traits-legend'}}
+        tooltip = {'', storage.traits, {'wn.traits-legend'}}
     }
 
     -- 被动技能面板（基于自己的累计经验）

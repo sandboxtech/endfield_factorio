@@ -5,7 +5,6 @@ local gui = require('scripts.gui')
 local players = require('scripts.players')
 local passives = require('scripts.passives')
 local science_exp = require('scripts.science_exp')
-local player_stats = require('scripts.player_stats')
 
 local M = {}
 
@@ -43,9 +42,6 @@ function M.reset()
     for _, player in pairs(game.players) do
         science_exp.collect(player)
     end
-
-    -- 所有在线玩家本轮跃迁计数 +1（→ rare 金币）
-    player_stats.on_warp_for_online_players()
 
     -- 重置所有玩家（含飞船上的）：有 character 的传送回母星并杀死 → 在母星复活领奖励；
     -- 否则清空背包。这样每轮跃迁人人重置、背包必空，杜绝"待在飞船上跨轮保留背包、反复白嫖经验"。
@@ -124,9 +120,8 @@ function M.reset()
         passives.apply(player)
     end
 
-    -- 延迟放置市场：surface.clear() 是异步的，同一 tick 放市场会被 clear 的结算清掉
-    -- （只剩 force 级地图钉子）。改为设个时间戳，由 market.lua 的 on_tick 在结算后再放。
-    storage.market_place_tick = game.tick + 60
+    -- 市场不在这里放：clear 是异步的。改由 surface.lua 的 on_surface_cleared（母星分支）
+    -- 在 clear 结算后放置（见 market.place_on_nauvis）。
 
     gui.players_gui()
 end

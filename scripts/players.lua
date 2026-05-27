@@ -3,6 +3,7 @@ local constants = require('scripts.constants')
 local gui = require('scripts.gui')
 local passives = require('scripts.passives')
 local respawn_gifts = require('scripts.respawn_gifts')
+local currency = require('scripts.currency')
 
 local M = {}
 
@@ -23,7 +24,15 @@ end
 -- 把 target 的信息（固定惩罚 + 科技瓶经验）打印给 viewer。
 function M.print_inspection(target, viewer)
     viewer.print({'wn.inspect-header', target.name})
-    -- 科技瓶经验（→ 携带奖励瓶子）。固定惩罚是全局的，不在这里逐人显示。
+    -- 角色技能（实时值，每次 /inspect 现算）：手搓/移动/挖矿/生命
+    for _, ab in ipairs(passives.abilities) do
+        local val = passives.get_stat(target.index, ab.stat)
+        viewer.print({ab.locale, math.floor(val), ab.fmt(passives.skill_factor(target.index, ab))})
+    end
+    -- 在线时长 → 金币
+    local cstat = passives.get_stat(target.index, constants.online_coin_stat)
+    viewer.print({'wn.ability-online', {constants.online_coin_label}, cstat, currency.reward_amount(cstat)})
+    -- 科技瓶经验（→ 携带奖励瓶子）
     local exp = storage.science_exp and storage.science_exp[target.index]
     if exp then
         local prefix = target.name .. ' '

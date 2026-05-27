@@ -1,33 +1,27 @@
--- 记录每个玩家的行为统计，驱动 passives 被动加成与金币奖励。
+-- 玩家行为统计的数据存储。技能用的统计（craft_count/mining_count/move_distance/deaths）
+-- 由 passives.lua 在对应动作事件里递增并即时施加；本文件只负责 get/默认值/迁移 +
+-- 在线类统计（online_minutes 等）的采样。
 -- 字段：
---   online_minutes  在线累计分钟数（每分钟采样一次，在线即 +1）
---   online_research 在线时完成的科技数量
---   mining_count    手动采矿/拆除次数
---   craft_count     手搓完成的配方数量
---   craft_seconds   手搓累计耗时（按 recipe.energy × count 估算）
---   deaths          死亡次数
---   online_warps    在线时经历的跃迁次数（→ rare 金币）
--- 数据跨跃迁保留（与 storage.science_exp 一致，是终身累积）。
---
--- 注意：奖励只看"是否在线"，不看是否挂机（is_afk）——否则会反向鼓励玩家在线挂机不干活。
+--   online_minutes  在线累计分钟数（每分钟采样，在线即 +1 → 金币奖励）
+--   craft_count     手搓完成的物品数（→ 手搓速度技能）
+--   mining_count    手动采矿/拆除次数（→ 挖矿速度技能）
+--   move_distance   步行累计格数（→ 移动速度技能）
+--   deaths          死亡次数（→ 生命上限技能）
+-- 数据跨跃迁保留（终身累积）。
 
 local M = {}
 
 local DEFAULTS = {
-    online_minutes  = 0,
-    online_research = 0,
-    mining_count    = 0,
-    craft_count     = 0,
-    craft_seconds   = 0,
-    deaths          = 0,
-    online_warps    = 0,
+    online_minutes = 0,
+    craft_count    = 0,
+    mining_count   = 0,
+    move_distance  = 0,
+    deaths         = 0,
 }
 
--- 旧存档字段迁移：afk_* → online_*（语义从"挂机"改为"在线"）。
+-- 旧存档字段迁移：afk_minutes → online_minutes。
 local RENAMES = {
-    afk_minutes  = 'online_minutes',
-    afk_research = 'online_research',
-    afk_warps    = 'online_warps',
+    afk_minutes = 'online_minutes',
 }
 
 function M.get(player_index)
@@ -52,22 +46,6 @@ function M.get(player_index)
     return s
 end
 
--- 研究完成时调用：所有在线玩家 online_research +1（任何科技都算）。
-function M.on_research_finished_for_online_players()
-    for _, player in pairs(game.connected_players) do
-        local s = M.get(player.index)
-        s.online_research = s.online_research + 1
-    end
-end
-
--- 跃迁时调用：所有在线玩家 online_warps +1（→ rare 金币）。
-function M.on_warp_for_online_players()
-    for _, player in pairs(game.connected_players) do
-        local s = M.get(player.index)
-        s.online_warps = s.online_warps + 1
-    end
-end
-
 -- 每分钟采样一次：所有在线玩家 online_minutes +1。
 -- 由 tick.lua 的统一 on_nth_tick(3600) 调用——本文件不再单独注册，避免覆盖。
 function M.sample_online()
@@ -78,26 +56,6 @@ function M.sample_online()
     end
 end
 
-script.on_event(defines.events.on_player_mined_entity, function(event)
-    if not event.player_index then return end
-    local s = M.get(event.player_index)
-    s.mining_count = s.mining_count + 1
-end)
-
-script.on_event(defines.events.on_player_crafted_item, function(event)
-    local s = M.get(event.player_index)
-    local stack = event.item_stack
-    local count = (stack and stack.valid_for_read and stack.count) or 1
-    s.craft_count = s.craft_count + count
-    local recipe = event.recipe
-    if recipe and recipe.energy then
-        s.craft_seconds = s.craft_seconds + recipe.energy * count
-    end
-end)
-
-script.on_event(defines.events.on_player_died, function(event)
-    local s = M.get(event.player_index)
-    s.deaths = s.deaths + 1
-end)
+-- 手搓/采矿/移动/死亡的事件处理已移到 passives.lua（在那里递增统计并即时升级技能）。
 
 return M

@@ -56,9 +56,8 @@ local function inspect_cmd(command)
         return
     end
     players.print_inspection(target, viewer)
-    if target.index ~= viewer.index then
-        game.print({'wn.inspect-notice', viewer.name, target.name})
-    end
+    -- 向所有玩家公告：谁用什么指令查看了谁（command.name 是 'inspect' 或 'chakan'）
+    game.print({'wn.inspect-notice', viewer.name, command.name, target.name})
 end
 
 commands.add_command('inspect', {'wn.inspect-help'}, inspect_cmd)

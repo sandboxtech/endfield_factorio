@@ -1,8 +1,9 @@
--- Nauvis 出生点的市场群：13 个原版 market 实体（每轮跃迁后延迟重放）。
+-- Nauvis 出生点的市场群：13 个原版 market 实体（每轮跃迁后重放）。
 --   · 12 个科技瓶市场排成 3 列 × 4 行，金币市场在最上方；每个铺混凝土地坪、整齐对齐。
 --   · 货物产出固定 normal 品质；价格按物品的 q 品质货币——epic 买大需求散件、legendary 买设备/插件。
 --   · 装备用普通金币买；普罗米修斯瓶兑金币。
--- 用原版交易界面。本模块注册 on_tick：到 storage.market_place_tick 时放置（避开 surface.clear 的异步结算）。
+-- 用原版交易界面。place_on_nauvis() 由 surface.lua 的 on_surface_cleared（母星分支）调用——
+-- 那时 surface.clear 已结算，放置的市场不会再被清掉（比延迟 on_tick 优雅）。
 local constants = require('scripts.constants')
 
 local M = {}
@@ -234,15 +235,5 @@ function M.place_on_nauvis()
         end
     end
 end
-
--- 延迟放置：reset 设置 storage.market_place_tick；到点后放市场。
--- 必须晚于 reset 那一 tick，否则 surface.clear() 的异步结算会把市场清掉。
-script.on_event(defines.events.on_tick, function()
-    local t = storage.market_place_tick
-    if t and game.tick >= t then
-        storage.market_place_tick = nil
-        M.place_on_nauvis()
-    end
-end)
 
 return M
