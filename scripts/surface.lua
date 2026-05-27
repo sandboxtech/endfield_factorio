@@ -201,23 +201,30 @@ end)
 -- 母星撒废料：【逐格】用 simplex 分形噪声（scripts/noise，scrapyard 倍频）判断，超阈值就放 scrap。
 -- simplex 平滑、不重复、跨区块连续 → 废料连成自然矿场（不是每块一个方块、也无正弦条纹）。
 -- 按本轮 storage.run 派生种子 → 本轮全图同一噪声场（团块跨区块连片），每轮布局不同。
--- scrap 需回收机才能拆 → 中后期福利。SCRAP_THRESHOLD 越高越稀；储量随噪声值由中心向外递减。
-local SCRAP_THRESHOLD = 0.58   -- 分形输出约 [-1,1] 集中在 0 附近；阈值越高废料越稀、团块越小
-
+-- scrap 需回收机才能拆 → 中后期福利。用连续随机参数（非二元开关）：
+--   intensity 0~1 → 阈值高低 → 本轮废料从"几乎没有"到"很多"连续过渡；
+--   richbase + 第二层噪声 → 每格储量按本轮富度 × 平滑起伏，不再单调。
+--   force='player'：否则机器人不能拆，影响体验。
+-- 暂时 100% 出现方便测试；之后要"降低出现概率"也别做成二元，可把 intensity 整体往下压。
 local function scatter_scrap(surface, left_top)
     local seed = (storage.run or 0) * 1009 + 31
-    -- "偶尔的风味"：只有约 40% 的轮次有废料，其余轮次完全没有
-    if noise.hash01(seed * 5.1) >= 0.4 then return end
-    -- 本轮专属变换：决定矿脉是圆团还是长条、朝哪个方向、多大（同一轮全图一致 → 团块跨区块连片）
     local angle, stretch, zoom = noise.seeded_transform(seed)
+    local intensity = noise.hash01(seed * 5.1)               -- 本轮覆盖强度 0~1
+    local threshold = 0.7 - intensity * 0.55                 -- 强度高→阈值低→铺得广（约 0.15~0.7）
+    local richbase  = 200 + noise.hash01(seed * 6.3) * 3000  -- 本轮富度基准 200~3200
     for x = 0, 31 do
         for y = 0, 31 do
             local px, py = left_top.x + x, left_top.y + y
             local nv = noise.fractal_warped(noise.octaves.scrapyard, px, py, seed, angle, stretch, zoom)
-            if nv > SCRAP_THRESHOLD then
+            if nv > threshold then
                 local pos = {x = px + 0.5, y = py + 0.5}
                 if surface.can_place_entity{name = 'scrap', position = pos} then
-                    surface.create_entity{name = 'scrap', amount = math.floor(200 + (nv - SCRAP_THRESHOLD) * 4000), position = pos}
+                    -- 储量 = 本轮富度 × 另一层平滑噪声(0.3~1.7)：片内贫富起伏 + 每轮整体富度不同
+                    local rn = (noise.fractal(noise.octaves.scrapyard, px, py, seed + 50000) + 1) * 0.5
+                    surface.create_entity{
+                        name = 'scrap', force = 'player', position = pos,
+                        amount = math.max(50, math.floor(richbase * (0.3 + rn * 1.4))),
+                    }
                 end
             end
         end
