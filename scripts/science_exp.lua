@@ -18,10 +18,11 @@ function M.collect(player)
             local proto = prototypes.item[item.name]
             local mult = constants.quality_exp[item.quality] or 0
             if proto and mult > 0 then
+                -- 每组(stack)按品质给经验：normal=1 … legendary=5。
+                -- key 只用瓶名（12 种），不分品质——各品质累加到同一瓶的经验里。
                 local gained = math.floor(item.count / proto.stack_size) * mult
                 if gained > 0 then
-                    local key = item.name .. '/' .. item.quality
-                    player_exp[key] = (player_exp[key] or 0) + gained
+                    player_exp[item.name] = (player_exp[item.name] or 0) + gained
                     game.print({'wn.exp-gain', player.name .. ' ', item.name, item.quality, gained})
                 end
             end

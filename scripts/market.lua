@@ -24,21 +24,21 @@ local NORTH_GAP = 6      -- 最南一行距出生点的格数（北 = -Y）
 M.sections = {
     -- 红瓶 · 自动化基础
     {currency = 'automation-science-pack', items = {
-        -- {name = 'transport-belt',        q = 'epic',      price = 1, count = 50},
-        -- {name = 'underground-belt',      q = 'epic',      price = 1, count = 10},
-        -- {name = 'splitter',              q = 'epic',      price = 1, count = 10},
-        -- {name = 'small-electric-pole',   q = 'legendary',      price = 1, count = 10},
-        -- {name = 'inserter',              q = 'legendary', price = 1, count = 5},
+        {name = 'transport-belt',        q = 'epic',      price = 1, count = 50},
+        {name = 'underground-belt',      q = 'epic',      price = 1, count = 10},
+        {name = 'splitter',              q = 'epic',      price = 1, count = 10},
+        {name = 'small-electric-pole',   q = 'legendary',      price = 1, count = 10},
+        {name = 'inserter',              q = 'legendary', price = 1, count = 5},
         {name = 'assembling-machine-1',  q = 'legendary', price = 1, count = 1},
         {name = 'electric-mining-drill', q = 'legendary', price = 1, count = 1},
     }},
     -- 绿瓶 · 物流升级
     {currency = 'logistic-science-pack', items = {
-        -- {name = 'fast-transport-belt',  q = 'epic',      price = 1, count = 50},
-        -- {name = 'fast-underground-belt',q = 'epic',      price = 1, count = 10},
-        -- {name = 'fast-splitter',        q = 'epic',      price = 1, count = 10},
-        -- {name = 'medium-electric-pole', q = 'legendary',      price = 1, count = 10},
-        -- {name = 'fast-inserter',        q = 'legendary', price = 1, count = 5},
+        {name = 'fast-transport-belt',  q = 'epic',      price = 1, count = 50},
+        {name = 'fast-underground-belt',q = 'epic',      price = 1, count = 10},
+        {name = 'fast-splitter',        q = 'epic',      price = 1, count = 10},
+        {name = 'medium-electric-pole', q = 'legendary',      price = 1, count = 10},
+        {name = 'fast-inserter',        q = 'legendary', price = 1, count = 5},
         {name = 'assembling-machine-2', q = 'legendary', price = 1, count = 1},
         {name = 'solar-panel', q = 'legendary', price = 1, count = 1},
     }},
@@ -53,12 +53,12 @@ M.sections = {
     }},
     -- 蓝瓶 · 化工/石油
     {currency = 'chemical-science-pack', items = {
-        -- {name = 'pipe',             q = 'epic',      price = 1, count = 50},
-        -- {name = 'substation',       q = 'epic',      price = 1, count = 10},
-        -- {name = 'big-electric-pole',q = 'epic',      price = 1, count = 10},
-        -- {name = 'chemical-plant',   q = 'legendary', price = 1, count = 1},
-        -- {name = 'oil-refinery',     q = 'legendary', price = 1, count = 1},
-        -- {name = 'pumpjack',         q = 'legendary', price = 1, count = 1},
+        {name = 'pipe',             q = 'epic',      price = 1, count = 50},
+        {name = 'substation',       q = 'epic',      price = 1, count = 10},
+        {name = 'big-electric-pole',q = 'epic',      price = 1, count = 10},
+        {name = 'chemical-plant',   q = 'legendary', price = 1, count = 1},
+        {name = 'oil-refinery',     q = 'legendary', price = 1, count = 1},
+        {name = 'pumpjack',         q = 'legendary', price = 1, count = 1},
         {name = 'electric-furnace', q = 'legendary', price = 1, count = 1},
         {name = 'productivity-module',    q = 'legendary', price = 1, count = 1},
         {name = 'speed-module',           q = 'legendary', price = 1, count = 1},
@@ -66,20 +66,20 @@ M.sections = {
     }},
     -- 紫瓶 · 量产
     {currency = 'production-science-pack', items = {
-        -- {name = 'express-transport-belt', q = 'epic',      price = 1, count = 50},
-        -- {name = 'express-underground-belt', q = 'epic',      price = 1, count = 10},
-        -- {name = 'express-splitter', q = 'epic',      price = 1, count = 50},
+        {name = 'express-transport-belt', q = 'epic',      price = 1, count = 50},
+        {name = 'express-underground-belt', q = 'epic',      price = 1, count = 10},
+        {name = 'express-splitter', q = 'epic',      price = 1, count = 50},
         {name = 'assembling-machine-3',   q = 'legendary', price = 1, count = 1},
         {name = 'beacon',                 q = 'legendary', price = 1, count = 1},
-        -- {name = 'rail',          q = 'epic', price = 1, count = 50},
-        -- {name = 'rail-support',  q = 'epic', price = 1, count = 10},
-        -- {name = 'rail-ramp',     q = 'epic', price = 1, count = 5},
+        {name = 'rail',          q = 'epic', price = 1, count = 50},
+        {name = 'rail-support',  q = 'epic', price = 1, count = 10},
+        {name = 'rail-ramp',     q = 'epic', price = 1, count = 5},
     }},
     -- 黄瓶 · 机器人物流
     {currency = 'utility-science-pack', items = {
-        {name = 'roboport',                q = 'epic', price = 1, count = 1},
         {name = 'construction-robot',      q = 'epic', price = 1, count = 10},
-        {name = 'logistic-robot',          q = 'epic', price = 1, count = 10},
+        {name = 'logistic-robot',          q = 'legendary', price = 1, count = 10},
+        {name = 'roboport',                q = 'legendary', price = 1, count = 1},
         {name = 'requester-chest',         q = 'epic', price = 1, count = 1},
         {name = 'passive-provider-chest',  q = 'epic', price = 1, count = 1},
         {name = 'active-provider-chest',   q = 'epic', price = 1, count = 1},
@@ -93,27 +93,30 @@ M.sections = {
         {name = 'crusher',                     q = 'legendary', price = 1, count = 2},
         {name = 'thruster',                    q = 'legendary', price = 1, count = 2},
         {name = 'cargo-bay',                   q = 'legendary', price = 1, count = 2},
-        -- {name = 'speed-module-2',              q = 'legendary', price = 1, count = 1},
-        -- {name = 'productivity-module-2',       q = 'legendary', price = 1, count = 1},
-        -- {name = 'efficiency-module-2',         q = 'legendary', price = 1, count = 1},
+        {name = 'speed-module-2',              q = 'legendary', price = 1, count = 1},
+        {name = 'productivity-module-2',       q = 'legendary', price = 1, count = 1},
+        {name = 'efficiency-module-2',         q = 'legendary', price = 1, count = 1},
     }},
     -- 火星瓶 · 冶金（Vulcanus）：turbo 传送带 + 速度模块2
     {currency = 'metallurgic-science-pack', items = {
         -- {name = 'turbo-transport-belt',   q = 'epic',      price = 1, count = 50},
         -- {name = 'turbo-underground-belt', q = 'epic',      price = 1, count = 10},
         -- {name = 'turbo-splitter',         q = 'epic',      price = 1, count = 10},
+        {name = 'low-density-structure',  q = 'epic', price = 1, count = 1},
         {name = 'foundry',                q = 'legendary', price = 1, count = 1},
         {name = 'big-mining-drill',       q = 'legendary', price = 1, count = 1},
         {name = 'speed-module-3',         q = 'legendary', price = 1, count = 1},
     }},
     -- 雷星瓶 · 电磁（Fulgora）：品质模块2
     {currency = 'electromagnetic-science-pack', items = {
+        {name = 'processing-unit',  q = 'epic', price = 1, count = 1},
         {name = 'electromagnetic-plant', q = 'legendary', price = 1, count = 1},
         {name = 'recycler',              q = 'legendary', price = 1, count = 1},
         {name = 'quality-module-3',      q = 'legendary', price = 1, count = 1},
     }},
     -- 草星瓶 · 农业（Gleba）：节能模块2
     {currency = 'agricultural-science-pack', items = {
+        {name = 'rocket-fuel',  q = 'epic', price = 1, count = 1},
         {name = 'biochamber',          q = 'legendary', price = 1, count = 1},
         {name = 'agricultural-tower',  q = 'legendary', price = 1, count = 1},
         {name = 'efficiency-module-3', q = 'legendary', price = 1, count = 1},
@@ -231,9 +234,6 @@ function M.place_on_nauvis()
             placed = placed + 1
         end
     end
-
-    -- 报出锚点坐标 + 数量，玩家可打开地图(M)看图标，或 /c 传送过去
-    game.print({'wn.market-ready', placed .. '/' .. total, bx, by})
 end
 
 -- 延迟放置：reset 设置 storage.market_place_tick；到点后放市场。

@@ -10,17 +10,11 @@ M.craft_penalty = -0.5   -- 手搓速度 -50%
 M.run_penalty   = -0.5   -- 移动速度 -50%
 
 -- 某瓶累计科技瓶经验（→ 携带奖励），供 gui / respawn_gifts / inspect 读取。
+-- key 就是瓶名（12 种），各品质已在 science_exp.collect 里累加进同一 key。
 function M.exp_total_for_pack(player_index, pack_name)
     local exp = storage.science_exp and storage.science_exp[player_index]
     if not exp then return 0 end
-    local total = 0
-    local prefix = pack_name .. '/'
-    for key, val in pairs(exp) do
-        if string.sub(key, 1, #prefix) == prefix then
-            total = total + val
-        end
-    end
-    return total
+    return exp[pack_name] or 0
 end
 
 -- 某玩家某行为统计值（如 online_minutes → 金币奖励），供展示读取。

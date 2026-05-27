@@ -13,10 +13,9 @@ function M.print_science_exp(player, broadcast)
     local prefix = broadcast and (player.name .. ' ') or ''
     local exp = storage.science_exp and storage.science_exp[player.index]
     if not exp then return end
-    for key, val in pairs(exp) do
+    for pack, val in pairs(exp) do
         if val > 0 then
-            local name, quality = string.match(key, '([^/]+)/(.+)')
-            sink.print({'wn.exp-entry', prefix, name, quality, val})
+            sink.print({'wn.exp-entry', prefix, pack, val})
         end
     end
 end
@@ -28,10 +27,9 @@ function M.print_inspection(target, viewer)
     local exp = storage.science_exp and storage.science_exp[target.index]
     if exp then
         local prefix = target.name .. ' '
-        for key, val in pairs(exp) do
+        for pack, val in pairs(exp) do
             if val > 0 then
-                local name, quality = string.match(key, '([^/]+)/(.+)')
-                viewer.print({'wn.exp-entry', prefix, name, quality, val})
+                viewer.print({'wn.exp-entry', prefix, pack, val})
             end
         end
     end
