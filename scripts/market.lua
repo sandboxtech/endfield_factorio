@@ -23,6 +23,7 @@ M.offers = {
     {'mech-armor',                       1, 2000},
 
     -- 【单级装备】无分级，价格自行配置
+    {'night-vision-equipment',           1,   1},   -- 夜视仪：暗世界/永夜看路用，便宜
     {'exoskeleton-equipment',            1,  30},
     {'personal-laser-defense-equipment', 1,  50},
     {'toolbelt-equipment',               1,  100},

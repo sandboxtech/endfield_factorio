@@ -95,8 +95,6 @@ function M.reset()
         end
     end
 
-    -- trait 列表从头开始，首项放本轮标题
-    storage.traits = {'', {'wn.traits-title', storage.run}}
 
     -- 清空所有星球上的地图标记
     for _, surface in pairs(game.surfaces) do
@@ -138,17 +136,10 @@ function M.reset()
     game.map_settings.pollution.ageing = util.mostly_normal()
     game.map_settings.pollution.enemy_attack_pollution_consumption_modifier =
         util.mostly_normal() / storage.difficulty
-    util.try_add_trait({'wn.galaxy-trait-pollution-ageing', game.map_settings.pollution.ageing})
-    util.try_add_trait({'wn.galaxy-trait-enemy_attack_pollution_consumption_modifier',
-                        game.map_settings.pollution.enemy_attack_pollution_consumption_modifier})
 
     game.map_settings.asteroids.spawning_rate = util.mostly_normal()
     game.difficulty_settings.spoil_time_modifier = util.mostly_normal()   -- 腐败速度：大概率正常
     game.difficulty_settings.technology_price_multiplier = 2              -- 每个世界科技成本恒为 2 倍
-
-    util.try_add_trait({'', '\n',
-                        {'wn.galaxy-trait-spawning_rate', game.map_settings.asteroids.spawning_rate},
-                        {'wn.galaxy-trait-spoil_time_modifier', game.difficulty_settings.spoil_time_modifier}})
 
     -- 经验更新后，对所有有 character 的玩家重算被动加成
     -- （星球上的会随 on_player_respawned 自然触发；飞船上的需要在这里手动应用）

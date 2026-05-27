@@ -54,8 +54,7 @@ function M.player_gui(player)
     intro.style.minimal_width = 288
     intro.style.padding = -2
 
-    -- 星系词条按钮已隐藏：每局世界的矿物/昼夜/天色等不再摆在 UI 上，让玩家自己探索发现。
-    -- （storage.traits 仍在后台累积，便于以后需要时再展示。）
+    -- 星系词条已删除：每局世界的矿物/昼夜/天色等不摆在 UI 上，让玩家自己探索发现。
 
     -- 被动技能面板（基于自己的累计经验）
     player.gui.top.add {

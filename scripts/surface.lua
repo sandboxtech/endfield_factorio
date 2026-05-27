@@ -1,32 +1,13 @@
 -- 每次跃迁后随机生成各星球：地图设定、资源、自然要素、圆形边界。
 local util = require('scripts.util')
 local market = require('scripts.market')
-local gui = require('scripts.gui')
-
--- autoplace control 名 → 用于 tooltip 显示的 sprite 路径
-local renames = {
-    ['crude-oil']             = 'fluid/crude-oil',
-    ['vulcanus_coal']         = 'item/coal',
-    ['sulfuric_acid_geyser']  = 'fluid/sulfuric-acid',
-    ['lithium_brine']         = 'fluid/lithium-brine',
-    ['fluorine_vent']         = 'fluid/fluorine',
-    ['aquilo_crude_oil']      = 'fluid/crude-oil',
-    ['tungsten_ore']          = 'item/tungsten-ore',
-    ['gleba_stone']           = 'item/stone',
-}
 
 -- 资源档位：丰度/面积/频率各抽一个 1..9 的随机整数 N，乘数 = 2^(N-中心) × 全局倍率：
---   丰度 = 2^(N-7) × storage.richness_multiplier
---   面积 = 2^(N-6) × storage.size_multiplier
---   频率 = 2^(N-5) × storage.frequency_multiplier
--- 档位用 [virtual-signal=signal-N]（1~9，越大越多）显示在星系词条里。
+--   丰度 = 2^(N-7) × richness_multiplier；面积 = 2^(N-6) × size_multiplier；频率 = 2^(N-5) × frequency_multiplier。
+-- 不再展示给玩家（星系词条 UI 已删），让玩家自己探索发现。
 -- specialty_mult：地方特产用它额外降低【丰度】（只乘丰度，不动面积/频率）。
 local function set_resource(name, mgs, specialty_mult)
     local nr, ns, nf = math.random(1, 9), math.random(1, 9), math.random(1, 9)
-
-    util.try_add_trait({'wn.traits-richness-size-frequency',
-                        renames[name] or ('item/' .. name), nr, ns, nf})
-
     local ac = mgs.autoplace_controls[name]
     ac.richness  = 2 ^ (nr - 7) * storage.richness_multiplier * (specialty_mult or 1)
     ac.size      = 2 ^ (ns - 6) * storage.size_multiplier
@@ -100,17 +81,13 @@ script.on_event(defines.events.on_surface_cleared, function(event)
     -- 阳光强度影响太阳能发电（玩法）→ 大概率正常、小概率小幅偏离
     surface.solar_power_multiplier = util.mostly_normal()
 
-    util.try_add_trait({'wn.traits-planet', surface.name})
-
     -- aquilo 不参与永夜/永昼抽奖（本来就极地气候）
     if math.random(1, 6) == 1 and surface ~= game.surfaces.aquilo then
         surface.freeze_daytime = true
-        surface.daytime = 0.56
-        util.try_add_trait({'wn.traits-eternal-night'})
+        surface.daytime = 0.56   -- 永夜
     elseif math.random(1, 4) == 1 then
         surface.freeze_daytime = true
-        surface.daytime = 0
-        util.try_add_trait({'wn.traits-eternal-day'})
+        surface.daytime = 0      -- 永昼
     end
 
     storage.radius_min = storage.radius_min or 256
@@ -126,7 +103,6 @@ script.on_event(defines.events.on_surface_cleared, function(event)
     r = math.min(storage.radius_max, r)
     r = math.ceil(r)
     storage.radius_of[surface.name] = r
-    util.try_add_trait({'wn.traits-radius', r})
 
     mgs.width = r * 2 + 32
     mgs.height = r * 2 + 32
@@ -135,9 +111,6 @@ script.on_event(defines.events.on_surface_cleared, function(event)
     -- 母星
     if surface == game.surfaces.nauvis then
         surface.peaceful_mode = math.random(1, 5) == 1
-        if surface.peaceful_mode then
-            util.try_add_trait({'wn.traits-peaceful-nauvis'})
-        end
 
         for _, res in pairs({'iron-ore', 'copper-ore', 'stone', 'coal', 'crude-oil'}) do
             set_resource(res, mgs)
@@ -181,9 +154,6 @@ script.on_event(defines.events.on_surface_cleared, function(event)
     -- 草星
     if surface == game.surfaces.gleba then
         surface.peaceful_mode = math.random(1, 5) == 1
-        if surface.peaceful_mode then
-            util.try_add_trait({'wn.traits-peaceful-gleba'})
-        end
 
         set_resource('gleba_stone', mgs, storage.local_specialty_multiplier * 2)
 
@@ -201,10 +171,6 @@ script.on_event(defines.events.on_surface_cleared, function(event)
     end
 
     surface.map_gen_settings = mgs
-    -- 必须在这里刷 GUI：clear 是异步的，星球词条是在本事件里（reset 返回之后）才 try_add_trait
-    -- 加进 storage.traits 的；reset 末尾那次刷新发生在词条加入之前，抓不到。这里每星球清完刷一次，
-    -- 最后一颗星清完时 tooltip 就集齐了所有星球词条。
-    gui.players_gui()
 
     -- 仅母星预先 chart 一块区域，方便玩家落地后立刻看清地形
     if surface ~= game.surfaces.nauvis then

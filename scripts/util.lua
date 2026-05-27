@@ -1,20 +1,6 @@
 -- 通用工具函数。除了读写 storage 外无副作用。
 local M = {}
 
--- 追加一条 trait 到左上角 tooltip 列表。
--- 本地化字符串单层最多 20 个参数，超过 18 时把整张表嵌进
--- 一个新表 {'', old} 作为单个元素，再继续追加，从而突破单层上限。
-function M.try_add_trait(trait)
-    if not trait then
-        return
-    end
-    storage.traits = storage.traits or {''}
-    if table_size(storage.traits) >= 18 then
-        storage.traits = {'', storage.traits}
-    end
-    table.insert(storage.traits, trait)
-end
-
 -- 数字格式化为人类可读的"档位"。
 function M.readable(x)
     if x < 0 then
