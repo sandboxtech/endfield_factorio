@@ -40,7 +40,7 @@ local function flat(f) return string.format('%+d',   math.floor(250 * f + 0.5)) 
 M.abilities = {
     {locale = 'wn.ability-crafting', stat = 'craft_count',  factor = speed_curve(5000),
      apply = function(p, f) p.character_crafting_speed_modifier = f end, fmt = pct},
-    {locale = 'wn.ability-running',  stat = 'move_distance', factor = speed_curve(100000),
+    {locale = 'wn.ability-running',  stat = 'move_distance', factor = speed_curve(100000), cap = 1.0,
      apply = function(p, f) p.character_running_speed_modifier = f end, fmt = pct},
     {locale = 'wn.ability-mining',   stat = 'mining_count',  factor = speed_curve(5000),
      apply = function(p, f) p.character_mining_speed_modifier = f end, fmt = pct},
@@ -48,9 +48,11 @@ M.abilities = {
      apply = function(p, f) p.character_health_bonus = 250 * f end, fmt = flat},
 }
 
--- 某玩家某技能当前的修正系数 f。
+-- 某玩家某技能当前的修正系数 f。cap 存在则封顶（移动速度封 +100%，避免走路过快）。
 function M.skill_factor(player_index, ab)
-    return ab.factor(M.get_stat(player_index, ab.stat))
+    local f = ab.factor(M.get_stat(player_index, ab.stat))
+    if ab.cap and f > ab.cap then f = ab.cap end
+    return f
 end
 
 local function apply_one(player, ab)

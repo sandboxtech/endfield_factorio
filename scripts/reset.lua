@@ -120,9 +120,6 @@ function M.reset()
         passives.apply(player)
     end
 
-    -- 市场不在这里放：clear 是异步的。改由 surface.lua 的 on_surface_cleared（母星分支）
-    -- 在 clear 结算后放置（见 market.place_on_nauvis）。
-
     gui.players_gui()
 end
 

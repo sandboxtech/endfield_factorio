@@ -1,17 +1,40 @@
 -- 玩家在某个世界（storage.run）第一次复活时发放的初始物资。
 -- 由 players.lua 在 on_player_respawned / on_player_created 中调用。
 --
--- 设计：不再往背包塞成品建筑（会爆背包、且对数曲线在 1 级后失效）。
--- 改为发放"货币"，玩家到 Nauvis 出生点的市场按需购买：
---   · 携带累计经验 → 同种瓶子（√ 曲线，见 currency.reward_for_exp）。
---   · 在线/挂机时长 → 普通金币（见 currency.reward_amount + constants.online_coin_stat）。
--- 更高品质金币不作为奖励——只能在普罗米修斯市场兑换。
+-- 设计（去掉市场/金币这层中间商，降低认知负担）：
+--   你跃迁前背包里某种科技瓶带得越多（累计经验越高），下次开局就【直接】发放
+--   该瓶对应的 2 种代表物资，数量随经验增长（√ 曲线，封顶 GIFT_CAP）。
+--   "带红瓶→下局直接给矿机+组装机"，一秒就懂，不必再去市场用瓶子换。
 local constants = require('scripts.constants')
-local currency = require('scripts.currency')
 local passives = require('scripts.passives')
-local player_stats = require('scripts.player_stats')
 
 local M = {}
+
+-- 每种科技瓶 → 下次开局直接发放的 2 种代表物资。可自由增删/替换。
+M.pack_gifts = {
+    ['automation-science-pack']      = {'electric-mining-drill', 'assembling-machine-1'},
+    ['logistic-science-pack']        = {'assembling-machine-2', 'fast-transport-belt'},
+    ['chemical-science-pack']        = {'chemical-plant', 'oil-refinery'},
+    ['production-science-pack']      = {'assembling-machine-3', 'productivity-module'},
+    ['utility-science-pack']         = {'construction-robot', 'roboport'},
+    ['space-science-pack']           = {'rail', 'locomotive'},
+    ['metallurgic-science-pack']     = {'foundry', 'big-mining-drill'},
+    ['electromagnetic-science-pack'] = {'electromagnetic-plant', 'recycler'},
+    ['agricultural-science-pack']    = {'biochamber', 'agricultural-tower'},
+    ['cryogenic-science-pack']       = {'cryogenic-plant', 'heating-tower'},
+    ['promethium-science-pack']      = {'productivity-module-3', 'speed-module-3'},
+    ['military-science-pack']        = {'gun-turret', 'firearm-magazine'},
+}
+
+-- 单种物资单局发放数量 = floor(√exp)，封顶 GIFT_CAP（避免爆背包/过度碾压）。
+-- exp=0→0、=100→10、=400→20、≥2500→50（封顶）。供 gui 面板预览复用。
+local GIFT_CAP = 50
+function M.gift_count(exp)
+    if not exp or exp <= 0 then return 0 end
+    local n = math.floor(math.sqrt(exp))
+    if n > GIFT_CAP then n = GIFT_CAP end
+    return n
+end
 
 -- ----------------------------------------------------------------------------
 -- 所有人无条件获得的起手套装（保命用，不卖）：
@@ -54,24 +77,20 @@ local function give_starter_armor(player)
     end
 end
 
--- 发放货币：品质科技瓶（按经验）+ 品质金币（按在线统计）。
-local function give_currency(player)
+-- 按累计科技瓶经验，直接发放每种瓶对应的 2 种代表物资（数量 = gift_count(exp)）。
+local function give_pack_gifts(player)
     local main = player.get_inventory(defines.inventory.character_main)
     if not main then return end
-
-    -- 品质科技瓶：每瓶种按累计经验给一串 {quality,count}。每(瓶,品质)封顶 1 组(200)，不爆背包。
     for _, pack in ipairs(constants.science_packs) do
-        local exp = passives.exp_total_for_pack(player.index, pack)
-        for _, r in ipairs(currency.reward_for_exp(exp)) do
-            main.insert{name = pack, count = r.count, quality = r.quality}
+        local items = M.pack_gifts[pack]
+        if items then
+            local n = M.gift_count(passives.exp_total_for_pack(player.index, pack))
+            if n > 0 then
+                for _, item in ipairs(items) do
+                    main.insert{name = item, count = n}
+                end
+            end
         end
-    end
-
-    -- 在线奖励：在线/挂机时长 → 普通金币。更高品质金币只能在普罗米修斯市场兑换。
-    local stats = player_stats.get(player.index)
-    local coins = currency.reward_amount(stats[constants.online_coin_stat])
-    if coins > 0 then
-        main.insert{name = 'coin', count = coins, quality = 'normal'}
     end
 end
 
@@ -79,7 +98,7 @@ end
 function M.on_first_respawn(player)
     if not player or not player.character then return end
     give_starter_armor(player)
-    give_currency(player)
+    give_pack_gifts(player)
 end
 
 return M

@@ -1,31 +1,30 @@
 -- 左上角 HUD：跃迁轮次 + 星系词条 + 经验加成 + 在线名册 + 管理员按钮。
 local constants = require('scripts.constants')
 local passives = require('scripts.passives')
-local currency = require('scripts.currency')
+local respawn_gifts = require('scripts.respawn_gifts')
 
 local M = {}
 
 -- 构建能力面板 tooltip。先收集所有行，再折叠成嵌套 localised string：
--- 单层 localised string 最多 ~20 个参数，本面板（能力 + 12 瓶进度 + 金币）会超，
+-- 单层 localised string 最多 ~20 个参数，本面板（12 种瓶各 1 行）会超，
 -- 故每攒满 18 个就把整张表嵌进 {'', old} 再继续，沿用 util.try_add_trait 的手法。
 local function build_skills_tooltip(player)
     local parts = {{'wn.skills-title'}}
 
-    -- 注意：角色技能（手搓/移动/挖矿/生命）和在线金币都是实时变化的，而 tooltip 在建面板时就固定、
-    -- 不会刷新，显示会过时；故这里只显示"下次跃迁初始物品"，其余用 /inspect（每次现算）查看。
+    -- 注意：角色技能（手搓/移动/挖矿/生命）和在线时长都是实时变化的，而 tooltip 在建面板时就固定、
+    -- 不会刷新，显示会过时；故这里只显示"下次跃迁直接发的初始物资"，其余用 /inspect（每次现算）查看。
 
-    -- 每个科技瓶：下次跃迁实际会给的初始瓶子数（按品质）
+    -- 每种科技瓶：下次跃迁直接发的 2 种代表物资 × 数量（即使为 0 也列出，方便玩家知道带它有什么用）
     parts[#parts + 1] = '\n'
     for _, pack in ipairs(constants.science_packs) do
-        local reward = currency.reward_for_exp(passives.exp_total_for_pack(player.index, pack))
-        local desc
-        if #reward ~= 0 then
+        local items = respawn_gifts.pack_gifts[pack]
+        if items then
+            local n = respawn_gifts.gift_count(passives.exp_total_for_pack(player.index, pack))
             local t = {}
-            for _, r in ipairs(reward) do
-                t[#t + 1] = '[item=' .. pack .. ',quality=' .. r.quality .. ']×' .. r.count
+            for _, item in ipairs(items) do
+                t[#t + 1] = '[item=' .. item .. ']×' .. n
             end
-            desc = table.concat(t, '  ')
-            parts[#parts + 1] = {'wn.ability-reward', pack, desc}
+            parts[#parts + 1] = {'wn.ability-reward', pack, table.concat(t, '  ')}
         end
     end
 
