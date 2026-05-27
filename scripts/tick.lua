@@ -1,27 +1,18 @@
--- 周期性事件：自动跃迁倒计时 + 点击 HUD 自杀脱困。
+-- 周期性事件：自动跃迁倒计时 + 点击 HUD 弹教程。
 -- 本文件是 on_gui_click 与 on_nth_tick(3600) 的唯一注册点；player_stats 的每分钟采样
 -- 通过 player_stats.sample_online 接入，避免多文件重复注册 on_nth_tick 互相覆盖。
 local constants = require('scripts.constants')
 local reset = require('scripts.reset')
-local players = require('scripts.players')
 local player_stats = require('scripts.player_stats')
 
--- 点击左上 run 按钮 = 自杀回母星（用于卡死时脱困）。
+-- 点击左上 run 按钮 = 弹出游戏教程（自杀脱困改用 /suicide /zisha 命令）。
 script.on_event(defines.events.on_gui_click, function(event)
     local player = game.get_player(event.player_index)
     if not player then
         return
     end
     if event.element.name == 'introduction' then
-        local last_run_ticks = (game.tick - (storage.run_start_tick or game.tick))
-        local life_total = ((storage.warp_hours or 1) * constants.hour_to_tick)
-        local life = life_total - last_run_ticks
-
-        if player.character then
-            players.kill_on_nauvis(player)
-            game.print({'wn.suicide-notice', player.name,
-                        math.floor(100 * life / constants.hour_to_tick) / 100})
-        end
+        player.print({'wn.tutorial'})
     end
 end)
 
