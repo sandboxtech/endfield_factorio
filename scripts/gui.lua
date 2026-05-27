@@ -1,4 +1,4 @@
--- 左上角 HUD：跃迁轮次 + 星系词条 + 经验加成 + 在线名册 + 管理员按钮。
+-- 左上角 HUD：跃迁轮次按钮（点击=自杀回母星脱困）+ 角色面板。
 local constants = require('scripts.constants')
 local passives = require('scripts.passives')
 local respawn_gifts = require('scripts.respawn_gifts')
@@ -7,7 +7,7 @@ local M = {}
 
 -- 构建能力面板 tooltip。先收集所有行，再折叠成嵌套 localised string：
 -- 单层 localised string 最多 ~20 个参数，本面板（12 种瓶各 1 行）会超，
--- 故每攒满 18 个就把整张表嵌进 {'', old} 再继续，沿用 util.try_add_trait 的手法。
+-- 故每攒满 18 个就把整张表嵌进 {'', old} 再继续，突破单层上限。
 local function build_skills_tooltip(player)
     local parts = {{'wn.skills-title'}}
 
@@ -63,15 +63,6 @@ function M.player_gui(player)
         name = 'skills',
         tooltip = build_skills_tooltip(player)
     }
-
-    if player.admin then
-        player.gui.top.add {
-            type = 'sprite-button',
-            sprite = 'item/raw-fish',
-            name = 'admin',
-            tooltip = {'wn.admin-tooltip'}
-        }
-    end
 end
 
 -- 刷新所有玩家 HUD；离线玩家清空 GUI。
