@@ -11,7 +11,12 @@ local M = {}
 local function build_skills_tooltip(player)
     local parts = {{'wn.skills-title'}}
 
-    -- 第一段：所有已实装的基础能力（按玩家行为统计计算）
+    -- 最开头：在线/挂机时长 → 普通金币
+    local cstat = passives.get_stat(player.index, constants.online_coin_stat)
+    parts[#parts + 1] = {'wn.ability-online', {constants.online_coin_label}, cstat, currency.reward_amount(cstat)}
+
+    -- 基础能力（按玩家行为统计计算）
+    parts[#parts + 1] = '\n'
     for _, ability in ipairs(passives.abilities) do
         if ability.apply then
             local val = passives.get_stat(player.index, ability.stat)
@@ -19,21 +24,22 @@ local function build_skills_tooltip(player)
         end
     end
 
-    -- 第二段：每个科技瓶的货币进度（等级 + 当前经验/升级经验，奖励正比于等级）
+    -- 每个科技瓶：下次跃迁实际会给的初始瓶子数（按品质）
     parts[#parts + 1] = '\n'
     for _, pack in ipairs(constants.science_packs) do
-        local p = currency.progress_for_exp(passives.exp_total_for_pack(player.index, pack))
-        if p.need > 0 then
-            parts[#parts + 1] = {'wn.ability-reward', pack, p.level, p.into, p.need, p.quality}
+        local reward = currency.reward_for_exp(passives.exp_total_for_pack(player.index, pack))
+        local desc
+        if #reward == 0 then
+            desc = '—'
         else
-            parts[#parts + 1] = {'wn.ability-reward-max', pack, p.level}
+            local t = {}
+            for _, r in ipairs(reward) do
+                t[#t + 1] = '[item=' .. pack .. ',quality=' .. r.quality .. ']×' .. r.count
+            end
+            desc = table.concat(t, '  ')
         end
+        parts[#parts + 1] = {'wn.ability-reward', pack, desc}
     end
-
-    -- 第三段：在线/挂机时长 → 普通金币
-    parts[#parts + 1] = '\n'
-    local cstat = passives.get_stat(player.index, constants.online_coin_stat)
-    parts[#parts + 1] = {'wn.ability-online', {constants.online_coin_label}, cstat, currency.reward_amount(cstat)}
 
     -- 折叠：突破单层参数上限
     local lines = {''}

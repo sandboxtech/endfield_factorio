@@ -22,9 +22,6 @@ return {
         'agricultural-science-pack', 'cryogenic-science-pack', 'promethium-science-pack',
     },
 
-    -- 品质由低到高（市场按 5 品质各上架一条 offer 时遍历用）。
-    quality_order = {'normal', 'uncommon', 'rare', 'epic', 'legendary'},
-
     -- 货币一（携带经验奖励 reward_for_exp）：epic、legendary 两档，都用平方根曲线、独立计算。
     --   epic 数量 = floor(√exp / 1)，最多 4 组(800)。
     --   legendary 数量 = floor(√exp / 10)，最多 1 组(200)。legendary 独立给（非 epic 溢出）。

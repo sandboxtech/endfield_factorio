@@ -6,7 +6,6 @@ local players = require('scripts.players')
 local passives = require('scripts.passives')
 local science_exp = require('scripts.science_exp')
 local player_stats = require('scripts.player_stats')
-local market = require('scripts.market')
 
 local M = {}
 
@@ -125,8 +124,9 @@ function M.reset()
         passives.apply(player)
     end
 
-    -- 在母星出生点放置/刷新装备市场（不可摧毁、不可挖取）
-    market.place_on_nauvis()
+    -- 延迟放置市场：surface.clear() 是异步的，同一 tick 放市场会被 clear 的结算清掉
+    -- （只剩 force 级地图钉子）。改为设个时间戳，由 market.lua 的 on_tick 在结算后再放。
+    storage.market_place_tick = game.tick + 60
 
     gui.players_gui()
 end

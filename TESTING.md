@@ -13,7 +13,7 @@
    ```
    （给齐全部科技 + 进入作弊模式，方便建造/补给。注意每次跃迁 `force.reset()` 会清空科技，跃迁后如需建造请重跑一次。）
 4. 想随时看自己的数据：
-   - 鼠标悬停左上角 [img=virtual-signal/signal-science-pack] **🧪 按钮** → 能力面板 tooltip（含每瓶 `Lv. 当前/升级经验` 与在线金币行）。
+   - 鼠标悬停左上角 [img=virtual-signal/signal-science-pack] **🧪 按钮** → 能力面板 tooltip（最上是在线金币行，下面每瓶显示"跃迁给瓶数"）。
    - `/inspect` 打印自己的被动加成 + 科技瓶经验。
    - `/exp` 打印自己的科技瓶经验。
    - `/life` 显示距离下次自动跃迁剩余时间。
@@ -42,8 +42,8 @@
    ```
    /c storage.science_exp = storage.science_exp or {}; storage.science_exp[1] = storage.science_exp[1] or {}; storage.science_exp[1]['automation-science-pack/normal'] = 100
    ```
-2. 悬停 🧪 按钮，找到 automation 那一行，预期：`Lv.11 · 100/121 → [epic]`
-   （√100=10 epic + √100/10=1 legendary，共 11；下一个 epic 在 exp=11²=121）。
+2. 悬停 🧪 按钮，automation 那一行预期显示：`epic×10  legendary×1`
+   （√100=10 epic、√100/10=1 legendary）。
 3. `/reset` 触发跃迁 → 等待/点击复活。
 4. 复活后查背包，预期：**10 个 epic 红瓶 + 1 个 legendary 红瓶**。
 5. 边界对照表（设好经验后看 🧪 或跃迁后看背包）：

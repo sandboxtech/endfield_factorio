@@ -7,89 +7,124 @@ local constants = require('scripts.constants')
 
 local M = {}
 
--- 每个市场占 3×3 格（market 选择框正好 3×3），按 3 格间距平铺。
-local CELL = 3
+-- 市场按整齐网格平铺。CELL = 网格间距（格），每个市场会铺一块 CELL×CELL 的混凝土地坪，
+-- 间距 = CELL 时地坪刚好连成一整片广场。market 选择框 3×3，CELL=5 留约 2 格走道。
+local CELL = 5
 local COLS = 3            -- 12 个科技瓶市场 = 3 列 × 4 行（3 列正好关于出生点居中）
 local NORTH_GAP = 6      -- 最南一行距出生点的格数（北 = -Y）
 
--- ★★★ 手动配置区：填写每个市场出售什么 ★★★
--- 规则：
---   · 每个市场只收一种货币(currency)。science-pack 市场卖"该瓶对应科技阶段的商品"（保持通用）。
---   · 每个物品按 5 个品质各上架一条 offer：付 Q 品质货币 → 得 Q 品质物品。
---   · price = 购买所需的"该品质货币"个数。普通(normal)瓶子可量产，不作为奖励来源。
---   · 金币(coin)不作为任何奖励发放——只能在普罗米修斯市场用普罗米修斯瓶兑换；金币市场卖装备。
--- 物品格式：{name = '物品原型名', price = 数字}
--- 示例（automation 市场）：items = {{name = 'electric-mining-drill', price = 5}, {name = 'assembling-machine-1', price = 5}}
+-- ★★★ 市场货物配置 ★★★
+-- 每个市场只收一种货币(currency = 科技瓶 / coin)。每件物品三个字段：
+--   q     = 购买所需的"货币品质"。规则：
+--             epic      → normal 品质的【大需求散件】（传送带/电杆/管道/墙/铁轨…，量大价低）
+--             legendary → normal 品质的【设备/插件】（机器/模块/机械臂…，量小）
+--             （coin 市场用 normal：在线赚的普通金币买装备）
+--   price = 需要几个该品质货币
+--   count = 一次买到几个；**产出固定 normal 品质**
 M.sections = {
-    -- 红瓶 · 自动化基础：采矿/组装/传送带/机械臂/电杆/管道
+    -- 红瓶 · 自动化基础
     {currency = 'automation-science-pack', items = {
-        {name = 'electric-mining-drill', price = 3}, {name = 'assembling-machine-1', price = 3},
-        {name = 'transport-belt', price = 1}, {name = 'inserter', price = 1},
-        {name = 'small-electric-pole', price = 1}, {name = 'pipe', price = 1},
+        {name = 'transport-belt',        q = 'epic',      price = 1, count = 50},
+        {name = 'pipe',                  q = 'epic',      price = 1, count = 50},
+        {name = 'small-electric-pole',   q = 'epic',      price = 1, count = 25},
+        {name = 'electric-mining-drill', q = 'legendary', price = 1, count = 1},
+        {name = 'assembling-machine-1',  q = 'legendary', price = 1, count = 1},
+        {name = 'inserter',              q = 'legendary', price = 1, count = 5},
     }},
-    -- 绿瓶 · 物流升级：2 级组装/快速带/地下带/分流器/快爪/中型电杆
+    -- 绿瓶 · 物流升级
     {currency = 'logistic-science-pack', items = {
-        {name = 'assembling-machine-2', price = 4}, {name = 'fast-transport-belt', price = 2},
-        {name = 'underground-belt', price = 2}, {name = 'splitter', price = 2},
-        {name = 'fast-inserter', price = 2}, {name = 'medium-electric-pole', price = 2},
+        {name = 'fast-transport-belt',  q = 'epic',      price = 1, count = 50},
+        {name = 'underground-belt',     q = 'epic',      price = 1, count = 10},
+        {name = 'splitter',             q = 'epic',      price = 1, count = 10},
+        {name = 'medium-electric-pole', q = 'epic',      price = 1, count = 25},
+        {name = 'assembling-machine-2', q = 'legendary', price = 1, count = 1},
+        {name = 'fast-inserter',        q = 'legendary', price = 1, count = 5},
     }},
-    -- 黑瓶 · 防御（保护工厂，非个人装备）：枪炮塔/激光塔/墙/闸门/雷达
+    -- 黑瓶 · 防御
     {currency = 'military-science-pack', items = {
-        {name = 'gun-turret', price = 3}, {name = 'laser-turret', price = 6},
-        {name = 'stone-wall', price = 1}, {name = 'gate', price = 2}, {name = 'radar', price = 4},
+        {name = 'stone-wall',  q = 'epic',      price = 1, count = 25},
+        {name = 'gate',        q = 'epic',      price = 1, count = 5},
+        {name = 'gun-turret',  q = 'legendary', price = 1, count = 2},
+        {name = 'laser-turret',q = 'legendary', price = 2, count = 1},
+        {name = 'radar',       q = 'legendary', price = 1, count = 1},
     }},
-    -- 蓝瓶 · 化工/石油：化工厂/炼油厂/抽油机/电炉/储液罐/大型配电
+    -- 蓝瓶 · 化工/石油
     {currency = 'chemical-science-pack', items = {
-        {name = 'chemical-plant', price = 4}, {name = 'oil-refinery', price = 6},
-        {name = 'pumpjack', price = 4}, {name = 'electric-furnace', price = 5},
-        {name = 'storage-tank', price = 2}, {name = 'substation', price = 4},
+        {name = 'substation',       q = 'epic',      price = 1, count = 10},
+        {name = 'chemical-plant',   q = 'legendary', price = 1, count = 1},
+        {name = 'oil-refinery',     q = 'legendary', price = 1, count = 1},
+        {name = 'pumpjack',         q = 'legendary', price = 1, count = 1},
+        {name = 'electric-furnace', q = 'legendary', price = 1, count = 1},
+        {name = 'storage-tank',     q = 'legendary', price = 1, count = 2},
     }},
-    -- 紫瓶 · 量产：3 级组装/信标/模块/特快带
+    -- 紫瓶 · 量产
     {currency = 'production-science-pack', items = {
-        {name = 'assembling-machine-3', price = 8}, {name = 'beacon', price = 8},
-        {name = 'productivity-module', price = 6}, {name = 'speed-module', price = 6},
-        {name = 'efficiency-module', price = 5}, {name = 'express-transport-belt', price = 3},
+        {name = 'express-transport-belt', q = 'epic',      price = 1, count = 50},
+        {name = 'assembling-machine-3',   q = 'legendary', price = 1, count = 1},
+        {name = 'beacon',                 q = 'legendary', price = 1, count = 1},
+        {name = 'productivity-module',    q = 'legendary', price = 1, count = 1},
+        {name = 'speed-module',           q = 'legendary', price = 1, count = 1},
+        {name = 'efficiency-module',      q = 'legendary', price = 1, count = 1},
     }},
-    -- 黄瓶 · 机器人物流：机器人塔/建设/物流机器人/请求箱/供应箱/大电杆
+    -- 黄瓶 · 机器人物流
     {currency = 'utility-science-pack', items = {
-        {name = 'roboport', price = 8}, {name = 'construction-robot', price = 2},
-        {name = 'logistic-robot', price = 2}, {name = 'requester-chest', price = 4},
-        {name = 'passive-provider-chest', price = 3}, {name = 'big-electric-pole', price = 3},
+        {name = 'big-electric-pole',       q = 'epic',      price = 1, count = 25},
+        {name = 'roboport',                q = 'legendary', price = 1, count = 1},
+        {name = 'construction-robot',      q = 'legendary', price = 1, count = 10},
+        {name = 'logistic-robot',          q = 'legendary', price = 1, count = 10},
+        {name = 'requester-chest',         q = 'legendary', price = 1, count = 2},
+        {name = 'passive-provider-chest',  q = 'legendary', price = 1, count = 2},
     }},
-    -- 白瓶 · 大规模运输：火车/车厢/铁轨/车站/集装机械臂/2 级速度模块
+    -- 白瓶 · 大规模运输
     {currency = 'space-science-pack', items = {
-        {name = 'locomotive', price = 6}, {name = 'cargo-wagon', price = 4},
-        {name = 'rail', price = 1}, {name = 'train-stop', price = 3},
-        {name = 'bulk-inserter', price = 5}, {name = 'speed-module-2', price = 12},
+        {name = 'rail',          q = 'epic',      price = 1, count = 100},
+        {name = 'locomotive',    q = 'legendary', price = 2, count = 1},
+        {name = 'cargo-wagon',   q = 'legendary', price = 1, count = 2},
+        {name = 'train-stop',    q = 'legendary', price = 1, count = 2},
+        {name = 'bulk-inserter', q = 'legendary', price = 1, count = 5},
+        {name = 'speed-module-2',q = 'legendary', price = 2, count = 1},
     }},
-    -- 火星瓶 · 冶金（Vulcanus）：铸造厂/大型采矿机/2 级产能模块/特快地下带
+    -- 火星瓶 · 冶金（Vulcanus）
     {currency = 'metallurgic-science-pack', items = {
-        {name = 'foundry', price = 8}, {name = 'big-mining-drill', price = 8},
-        {name = 'productivity-module-2', price = 12}, {name = 'express-underground-belt', price = 4},
+        {name = 'express-underground-belt', q = 'epic',      price = 1, count = 10},
+        {name = 'foundry',                  q = 'legendary', price = 1, count = 1},
+        {name = 'big-mining-drill',         q = 'legendary', price = 1, count = 1},
+        {name = 'productivity-module-2',    q = 'legendary', price = 2, count = 1},
     }},
-    -- 雷星瓶 · 电磁（Fulgora）：电磁工厂/回收机/蓄电池/大型配电
+    -- 雷星瓶 · 电磁（Fulgora）
     {currency = 'electromagnetic-science-pack', items = {
-        {name = 'electromagnetic-plant', price = 8}, {name = 'recycler', price = 6},
-        {name = 'accumulator', price = 3}, {name = 'substation', price = 4},
+        {name = 'substation',           q = 'epic',      price = 1, count = 10},
+        {name = 'electromagnetic-plant',q = 'legendary', price = 1, count = 1},
+        {name = 'recycler',             q = 'legendary', price = 1, count = 1},
+        {name = 'accumulator',          q = 'legendary', price = 1, count = 2},
     }},
-    -- 草星瓶 · 农业（Gleba）：生化舱/农业塔/特快分流器
+    -- 草星瓶 · 农业（Gleba）
     {currency = 'agricultural-science-pack', items = {
-        {name = 'biochamber', price = 6}, {name = 'agricultural-tower', price = 6},
-        {name = 'express-splitter', price = 4},
+        {name = 'express-splitter',   q = 'epic',      price = 1, count = 10},
+        {name = 'biochamber',         q = 'legendary', price = 1, count = 1},
+        {name = 'agricultural-tower', q = 'legendary', price = 1, count = 1},
     }},
-    -- 极地瓶 · 低温（Aquilo）：低温工厂/供暖塔/热管/热交换器
+    -- 极地瓶 · 低温（Aquilo）
     {currency = 'cryogenic-science-pack', items = {
-        {name = 'cryogenic-plant', price = 8}, {name = 'heating-tower', price = 6},
-        {name = 'heat-pipe', price = 1}, {name = 'heat-exchanger', price = 4},
+        {name = 'heat-pipe',       q = 'epic',      price = 1, count = 50},
+        {name = 'cryogenic-plant', q = 'legendary', price = 1, count = 1},
+        {name = 'heating-tower',   q = 'legendary', price = 1, count = 1},
+        {name = 'heat-exchanger',  q = 'legendary', price = 1, count = 2},
     }},
-    -- 普罗米修斯市场：兑换金币（金币唯一来源；付 Q 品质普罗米修斯瓶得 Q 品质金币）。
-    {currency = 'promethium-science-pack', items = {{name = 'coin', price = 1}}},
-    -- 金币市场：卖个人装备（用金币购买）。
+    -- 普罗米修斯市场：用普罗米修斯瓶兑换金币（金币的高级来源）。
+    {currency = 'promethium-science-pack', items = {
+        {name = 'coin', q = 'epic',      price = 1, count = 10},
+        {name = 'coin', q = 'legendary', price = 1, count = 100},
+    }},
+    -- 金币市场：用在线赚的普通金币买个人装备。
     {currency = 'coin', items = {
-        {name = 'solar-panel-equipment', price = 5}, {name = 'battery-equipment', price = 5},
-        {name = 'personal-roboport-equipment', price = 8}, {name = 'exoskeleton-equipment', price = 10},
-        {name = 'energy-shield-equipment', price = 10}, {name = 'night-vision-equipment', price = 3},
-        {name = 'belt-immunity-equipment', price = 3},
+        {name = 'solar-panel-equipment',       q = 'normal', price = 5,  count = 1},
+        {name = 'battery-equipment',           q = 'normal', price = 5,  count = 1},
+        {name = 'personal-roboport-equipment', q = 'normal', price = 8,  count = 1},
+        {name = 'exoskeleton-equipment',       q = 'normal', price = 10, count = 1},
+        {name = 'energy-shield-equipment',     q = 'normal', price = 10, count = 1},
+        {name = 'night-vision-equipment',      q = 'normal', price = 3,  count = 1},
+        {name = 'belt-immunity-equipment',     q = 'normal', price = 3,  count = 1},
     }},
 }
 
@@ -115,17 +150,15 @@ function M.layout()
     return out
 end
 
--- 上架某货币的全部货物：每个物品 × 每种品质一个 offer，价格和产出都带品质。
+-- 上架某货币的全部货物：每件一条 offer——价格按物品的 q 品质货币，产出固定 normal。
 local function stock_market(ent, currency)
     local sec = section_for(currency)
     if not sec then return end
     for _, e in ipairs(sec.items) do
-        for _, q in ipairs(constants.quality_order) do
-            ent.add_market_item{
-                price = {{name = currency, count = e.price, quality = q}},
-                offer = {type = 'give-item', item = e.name, count = 1, quality = q},
-            }
-        end
+        ent.add_market_item{
+            price = {{name = currency, count = e.price, quality = e.q}},
+            offer = {type = 'give-item', item = e.name, count = e.count or 1},  -- 产出 normal
+        }
     end
 end
 
@@ -137,24 +170,56 @@ function M.place_on_nauvis()
     local s = force.get_spawn_position(nauvis)
     local bx, by = math.floor(s.x), math.floor(s.y)  -- 取整锚点，保证整数坐标对齐
 
+    -- 紧接 surface.clear 之后，必须强制生成市场所在区块，否则 create_entity 会失败
     nauvis.request_to_generate_chunks({bx, by}, 2)
     nauvis.force_generate_chunk_requests()
+    force.chart(nauvis, {{bx - 16, by - 24}, {bx + 16, by + 8}})
 
     -- 清掉旧市场（surface.clear 已删，这里是重复调用时的安全网）
     for _, old in pairs(nauvis.find_entities_filtered{name = 'market', position = {bx, by}, radius = 64}) do
         old.destroy()
     end
 
+    local half = math.floor(CELL / 2)
+    local placed = 0
+    local total = #M.layout()
     for _, m in ipairs(M.layout()) do
-        local ent = nauvis.create_entity{name = 'market', position = {x = bx + m.dx, y = by + m.dy}, force = force}
+        local pos = {x = bx + m.dx, y = by + m.dy}
+        -- 清掉挡路实体（树/悬崖/石头；矿脉不挡建筑，保留）
+        for _, e in pairs(nauvis.find_entities_filtered{position = pos, radius = half + 1, type = {'tree', 'cliff', 'simple-entity'}}) do
+            if e.valid then e.destroy() end
+        end
+        -- 铺一块 CELL×CELL 混凝土地坪：去掉水/不平地形，保证精确网格对齐放置
+        local tiles = {}
+        for dx = -half, CELL - 1 - half do
+            for dy = -half, CELL - 1 - half do
+                tiles[#tiles + 1] = {name = 'refined-concrete', position = {pos.x + dx, pos.y + dy}}
+            end
+        end
+        nauvis.set_tiles(tiles)
+        -- 精确放在网格点，不再就近挪位 → 整齐
+        local ent = nauvis.create_entity{name = 'market', position = pos, force = force}
         if ent then
             ent.destructible = false   -- 不可摧毁
             ent.minable = false        -- 不可挖取
             stock_market(ent, m.currency)
+            force.add_chart_tag(nauvis, {position = pos, icon = {type = 'item', name = m.currency}})
+            placed = placed + 1
         end
     end
 
-    force.chart(nauvis, {{bx - 12, by - 22}, {bx + 12, by + 6}})
+    -- 报出锚点坐标 + 数量，玩家可打开地图(M)看图标，或 /c 传送过去
+    game.print({'wn.market-ready', placed .. '/' .. total, bx, by})
 end
+
+-- 延迟放置：reset 设置 storage.market_place_tick；到点后放市场。
+-- 必须晚于 reset 那一 tick，否则 surface.clear() 的异步结算会把市场清掉。
+script.on_event(defines.events.on_tick, function()
+    local t = storage.market_place_tick
+    if t and game.tick >= t then
+        storage.market_place_tick = nil
+        M.place_on_nauvis()
+    end
+end)
 
 return M

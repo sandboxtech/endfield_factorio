@@ -14,7 +14,9 @@
       "Read(//mnt/c/**)",
       "Read(//home/syx/**)",
       "Read(//mnt/c/Users/syx/AppData/Roaming/Factorio/**)",
-      "Bash(python3 *)"
+      "Bash(python3 *)",
+      "Bash(grep -oE \"\\\\{name = '[^']+', q = '[^']+', price = [0-9]+, count = [0-9]+\\\\}\" scripts/market.lua)",
+      "Bash(grep -cE \"\\\\{name = '[^']+', q = '\" scripts/market.lua)"
     ]
   }
 }
