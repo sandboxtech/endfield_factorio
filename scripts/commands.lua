@@ -86,6 +86,25 @@ add_command('players_gui', {'wn.players-gui-help'}, function(command)
     end
 end)
 
+-- /gen（/shengcheng 同功能）：管理员查看各星球【最近一次世界生成】缓存的 debug 摘要。
+-- 故意用【原始】commands.add_command 注册（不走 add_command 的公告包装）→ 查看【不告知其他玩家】，
+-- 结果只打给调用的管理员。摘要在 surface.lua 生成时始终缓存进 storage.gen_debug，与 storage.debug 无关。
+local GEN_DEBUG_PLANETS = {'nauvis', 'vulcanus', 'fulgora', 'gleba', 'aquilo'}
+local function gen_debug_cmd(command)
+    local player = command.player_index and game.get_player(command.player_index)
+    if player and not player.admin then player.print(constants.not_admin_text); return end
+    local sink = player or game
+    sink.print({'wn.gen-debug-header', storage.run or 0})
+    local any = false
+    for _, name in ipairs(GEN_DEBUG_PLANETS) do
+        local line = storage.gen_debug and storage.gen_debug[name]
+        if line then any = true; sink.print(line) end
+    end
+    if not any then sink.print({'wn.gen-debug-none'}) end
+end
+commands.add_command('gen', {'wn.gen-debug-help'}, gen_debug_cmd)
+commands.add_command('shengcheng', {'wn.gen-debug-help'}, gen_debug_cmd)
+
 -- 显示距下次自动跃迁的剩余时间。主名 /countdown，/life 作旧别名保留。
 local function countdown_cmd(command)
     local player = command.player_index and game.get_player(command.player_index)

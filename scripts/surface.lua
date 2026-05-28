@@ -462,15 +462,20 @@ script.on_event(defines.events.on_surface_cleared, function(event)
     dbg[#dbg + 1] = string.format('loot material=%.2f equip=%.2f treasure=%.2f perp=%.2f',
         ls.material, ls.equipment, ls.treasure, ls.perp)
 
+    -- 本表面生成摘要：【始终】缓存进 storage.gen_debug[星球]（与 storage.debug 无关），
+    -- 供管理员随时用 /gen 查看（不公告其他玩家）。storage.debug 仅控制是否【实时】打给在线管理员。
+    local summary = string.format('[gen] %s r=%d: verdancy=%.2f rockiness=%.2f riches=%.2f danger=%.2f exotic=%.2f | %s',
+        surface.name, storage.radius_of[surface.name] or 0,
+        knobs.verdancy, knobs.rockiness, knobs.riches, knobs.danger, knobs.exotic,
+        #dbg > 0 and table.concat(dbg, ', ') or '普通')
+    storage.gen_debug[surface.name] = summary
+
     if storage.debug then
         if not INVALID_REPORTED and #INVALID_TILES > 0 then
             INVALID_REPORTED = true
             debug_print('[gen] 无效 tile 名(已忽略): ' .. table.concat(INVALID_TILES, ', '))
         end
-        debug_print(string.format('[gen] %s r=%d: verdancy=%.2f rockiness=%.2f riches=%.2f danger=%.2f exotic=%.2f | %s',
-            surface.name, storage.radius_of[surface.name] or 0,
-            knobs.verdancy, knobs.rockiness, knobs.riches, knobs.danger, knobs.exotic,
-            #dbg > 0 and table.concat(dbg, ', ') or '普通'))
+        debug_print(summary)
     end
 
     -- 按 PLANET_GEN 配置生成各星球资源/自然/气候（飞船平台等不在表内 → 跳过）。

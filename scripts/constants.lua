@@ -76,7 +76,7 @@ function M.ensure_defaults()
     -- 这是所有 storage 表的【唯一出生地】——各模块不再各自 `storage.x = storage.x or {}`，统一在此补齐。
     for _, key in ipairs({'radius_of', 'science_exp', 'player_stats', 'platform_age',
                           'ground_tint', 'tile_remap', 'danger_theme', 'event_world', 'loot_style', 'members',
-                          'last_respawn_run', 'move_pos', 'bad_items'}) do
+                          'last_respawn_run', 'move_pos', 'bad_items', 'gen_debug'}) do
         storage[key] = storage[key] or {}
     end
     -- world_fx 全局开关（默认开；/c storage.world_fx.xxx=false 单独禁用某事件驱动效果）。
