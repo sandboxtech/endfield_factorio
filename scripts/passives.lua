@@ -1,5 +1,5 @@
 -- 角色被动技能：边玩边练，动作即时升级。
---   手搓 → 手搓速度；移动(步行) → 移动速度；采矿/拆除 → 挖矿速度；死亡 → 生命上限。
+--   手搓 → 手搓速度；移动(移动) → 移动速度；采矿/拆除 → 挖矿速度；死亡 → 生命上限。
 -- 曲线自带 -50% 下限：对应统计为 0 时该项 -50%，做动作累计后爬升、超过原版。
 -- 科技瓶经验由 science_exp 累积，只用于"下次开局的初始物品"，不驱动技能。
 -- 本模块独占 on_player_crafted_item / on_player_mined_entity / on_player_changed_position /
@@ -84,7 +84,7 @@ script.on_event(defines.events.on_player_mined_entity, function(e)
     apply_one(game.get_player(e.player_index), M.abilities[3])
 end)
 
--- 移动（步行）：on_player_changed_position 走路时每 tick 触发；累加位移，过滤瞬移/换面/载具。
+-- 移动：on_player_changed_position 走路时每 tick 触发；累加位移，过滤瞬移/换面/载具。
 script.on_event(defines.events.on_player_changed_position, function(e)
     local p = game.get_player(e.player_index)
     if not (p and p.character) then return end
