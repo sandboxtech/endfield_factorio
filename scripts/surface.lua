@@ -414,15 +414,14 @@ script.on_event(defines.events.on_surface_cleared, function(event)
     -- 35% 还带"复制虫"(建筑被虫破坏冒虫，事件驱动见 world_fx.lua)。具体放置在 map_features.feat_danger。
     storage.danger_theme[surface.name] = nil
     if math.random() < knobs.danger * prob('danger') then
-        local mags = {'firearm-magazine', 'piercing-rounds-magazine', 'uranium-rounds-magazine'}
         local bd = constants.balance.danger
+        -- 机枪炮塔弹种不再全星统一，改为每个炮塔各自随机（见 map_features.pick_mag），故 theme 不再存 mag。
         local t = {
             worm    = math.random() < bd.worm,       -- 沙虫炮塔
             spawner = math.random() < bd.spawner,    -- 虫巢
             turret  = math.random() < bd.turret,     -- 敌方机枪炮塔(带弹)
             mine    = math.random() < bd.mine,       -- 敌方地雷
             art     = math.random() < bd.art_base + bd.art_danger * knobs.danger,   -- 敌方重炮(更稀，随危险度)
-            mag     = mags[math.min(#mags, 1 + math.floor(knobs.danger * 3))],
             replicant = math.random() < bd.replicant,
         }
         if not (t.worm or t.spawner or t.turret or t.mine or t.art) then t.worm = true end   -- 至少一种

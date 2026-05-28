@@ -369,15 +369,35 @@ local function spawn_perpetual_chest(surface, pos)
     return true
 end
 
+-- 敌方机枪炮塔弹种：随世界危险度【偏向】更强的弹，但【每个炮塔各自随机】（不再全星统一一种）。
+--   danger 越高 → 越可能穿甲/铀弹；低危险多为普通弹。
+local MAGS = {'firearm-magazine', 'piercing-rounds-magazine', 'uranium-rounds-magazine'}
+local function pick_mag(danger)
+    local r = (danger or 0) * 0.7 + math.random() * 0.6
+    if r > 1.0 then return MAGS[3] end    -- 铀弹
+    if r > 0.55 then return MAGS[2] end   -- 穿甲弹
+    return MAGS[1]                         -- 普通弹
+end
+
+-- 把炮塔弹药一次性【加满】：按 堆叠数 × 槽数 插入，多余自动丢弃。
+--   gun-turret 用 turret_ammo 槽、artillery-turret 用 artillery_turret_ammo 槽；ammo 为 nil 则跳过。
+local function fill_turret_ammo(e, ammo)
+    if not (ammo and prototypes.item[ammo]) then return end
+    local inv = e.get_inventory(defines.inventory.turret_ammo)
+             or e.get_inventory(defines.inventory.artillery_turret_ammo)
+    if not inv then return end
+    inv.insert{name = ammo, count = prototypes.item[ammo].stack_size * #inv}
+end
+
 -- 永续箱守卫【可选种类】：每个永续箱只用其中【1~2 种】（同箱守卫种类统一），同种内可有尺寸变体(如沙虫三档)。
---   机枪炮塔用本星弹种(theme.mag，兜底机枪弹)；沙虫/地雷不用弹。
---   重炮不在内——其自动索敌只打建筑、不会攻击靠近的玩家，当守卫等于没有。
+--   机枪炮塔每个各自随机弹种(pick_mag，随危险度)、重炮用炮弹；沙虫/地雷不用弹。弹药一律加满。
 local GUARD_KINDS = {
     worm   = {'small-worm-turret', 'medium-worm-turret', 'big-worm-turret'},  -- 沙虫（三档随机）
-    turret = {{name = 'gun-turret', mag = true, n = 20}},                     -- 机枪炮塔（本星弹）
+    turret = {{name = 'gun-turret', mag = true}},                             -- 机枪炮塔（弹种 per 炮塔随机）
     mine   = {'land-mine'},                                                   -- 地雷
+    art    = {{name = 'artillery-turret', ammo = 'artillery-shell'}},         -- 重炮（炮弹）
 }
-local GUARD_KIND_NAMES = {'worm', 'turret', 'mine'}
+local GUARD_KIND_NAMES = {'worm', 'turret', 'mine', 'art'}
 
 -- 永续箱守卫：只在【永续箱】四周放敌人(force=enemy)，普通箱【不放】。出生点附近(<64格)不放（保护新手）。
 --   种类：本箱随机选 1~2 种，之后所有守卫只从这几种里出 → 同箱统一。
@@ -405,8 +425,7 @@ local function guard_perpetual(surface, pos)
     local mean = 2 + frac * 8
     local count = math.max(2, math.floor(mean + (math.random() - math.random()) * 3 + 0.5))
 
-    local theme = storage.danger_theme and storage.danger_theme[surface.name]
-    local mag = theme and theme.mag                       -- 本星弹种
+    local danger = M.knobs().danger   -- 本轮危险度（缓存），决定机枪炮塔弹种偏向
     for _ = 1, count do
         local def = variants[math.random(#variants)]
         local name = type(def) == 'table' and def.name or def
@@ -415,8 +434,9 @@ local function guard_perpetual(surface, pos)
         local sp = surface.find_non_colliding_position(name, gp, 5, 1)
         if sp then
             local e = surface.create_entity{name = name, force = 'enemy', position = sp}
-            if e and type(def) == 'table' and def.mag then
-                e.insert{name = mag or 'firearm-magazine', count = def.n}   -- 机枪炮塔填本星弹种
+            if e and type(def) == 'table' then
+                -- 机枪炮塔 per 个随机弹种、重炮用炮弹；都加满
+                fill_turret_ammo(e, def.mag and pick_mag(danger) or def.ammo)
             end
         end
     end
@@ -435,7 +455,7 @@ local function chunk_rng(lt, off)
 end
 
 -- 四类箱子【每区块基础频率】（密度=1 时的频率上限）。钢(材料)最常见 > 铁(设备) > 木(宝箱)稀有 > 永续箱极低。
-local LOOT_FREQ = {material = 0.15, equipment = 0.10, treasure = 0.04, perp = 0.012}
+local LOOT_FREQ = {material = 0.04, equipment = 0.02, treasure = 0.01, perp = 0.005}
 
 -- 本世界本类箱子的【每区块实际出现概率】= 世界密度(surface.lua 滚的 random^2) × 基础频率 × 全局乘数。
 --   storage.loot_density(默认1) 调【全局最大密度】：2 更多、0.5 更少。无世界密度则兜底 0.3。
@@ -486,25 +506,40 @@ local function feat_perpetual(surface, lt)
 end
 
 -- 按本星【独立开关】theme 构建敌人池（worm/spawner/turret/mine/art 各自有无）。
---   带弹的：gun-turret 用本星弹种 theme.mag(mag=true)，artillery-turret 固定炮弹；无标记的不填弹。
+--   带弹的：gun-turret 每个各自随机弹种(mag=true，pick_mag)，artillery-turret 固定炮弹；无标记的不填弹。弹药加满。
 local function danger_pool(t)
     local pool = {}
     if t.worm then pool[#pool + 1] = 'small-worm-turret'; pool[#pool + 1] = 'medium-worm-turret'; pool[#pool + 1] = 'big-worm-turret' end
     if t.spawner then pool[#pool + 1] = 'biter-spawner'; pool[#pool + 1] = 'spitter-spawner' end
     if t.mine then pool[#pool + 1] = 'land-mine' end
-    if t.turret then pool[#pool + 1] = {name = 'gun-turret', mag = true, n = 20} end
-    if t.art then pool[#pool + 1] = {name = 'artillery-turret', ammo = 'artillery-shell', n = 4} end
+    if t.turret then pool[#pool + 1] = {name = 'gun-turret', mag = true} end
+    if t.art then pool[#pool + 1] = {name = 'artillery-turret', ammo = 'artillery-shell'} end
     return pool
 end
--- 远离出生点(>96格)随机采样放敌人；数量随危险度 × storage.danger_density。force='enemy'。
+-- 单区块敌人放置【尝试】上限：哪怕最危险 + 最边缘也封顶，不致铺满整片。
+local DANGER_MAX_PER_CHUNK = 10
+-- 远离出生点(>96格)随机采样放敌方炮塔/虫巢/地雷/重炮。强度随【危险度 × 离地图中心比例】增长：
+--   越靠近中心越少、越往边缘【刷新概率越高、数量越多】；但有 DANGER_MAX_PER_CHUNK 封顶。force='enemy'。
 local function feat_danger(surface, lt, A, S, Z, W)
     local theme = storage.danger_theme and storage.danger_theme[surface.name]
     if not theme then return end
     local pool = danger_pool(theme)
     if #pool == 0 then return end
-    local danger = W.danger
-    local thr = 0.78 - 0.25 * danger
-    for _ = 1, math.random(0, math.ceil(danger * 12 * (storage.danger_density or 1))) do
+
+    -- 离中心比例 frac∈[0,1]（按区块中心算）。出生点 96 格内整块跳过。
+    local ccx, ccy = lt.x + 16, lt.y + 16
+    if ccx * ccx + ccy * ccy < 96 * 96 then return end
+    local R = storage.radius_of[surface.name] or storage.radius or 2048
+    local frac = math.min(1, math.sqrt(ccx * ccx + ccy * ccy) / R)
+
+    -- 强度 = 危险度 × (0.25 + 0.75×离中心比例)，封顶 1：近中心弱、边缘强。
+    local intensity = math.min(1, W.danger * (0.25 + 0.75 * frac))
+    -- 尝试次数 = random(0, 上限)：半随机（有的区块空、有的成簇）；上限随 intensity 增长且封顶。
+    local attempts = math.random(0, math.floor(intensity * DANGER_MAX_PER_CHUNK * (storage.danger_density or 1) + 0.5))
+    if attempts <= 0 then return end
+    local thr = 0.80 - 0.30 * intensity   -- intensity 越高 → 噪声门槛越低 → 命中概率越高（刷新概率越高）
+
+    for _ = 1, attempts do
         local px, py = lt.x + math.random(0, 31), lt.y + math.random(0, 31)
         if px * px + py * py > 96 * 96
            and noise.fractal_warped(noise.octaves.blob, px, py, wseed(811), A, S, Z) > thr then
@@ -514,8 +549,8 @@ local function feat_danger(surface, lt, A, S, Z, W)
             if surface.can_place_entity{name = name, position = pos} then
                 local e = surface.create_entity{name = name, force = 'enemy', position = pos}
                 if e and type(def) == 'table' then
-                    local ammo = def.mag and theme.mag or def.ammo   -- 机枪用本星弹种；重炮用炮弹
-                    if ammo then e.insert{name = ammo, count = def.n} end
+                    -- 机枪炮塔 per 个随机弹种(随本世界危险度)、重炮用炮弹；都加满
+                    fill_turret_ammo(e, def.mag and pick_mag(W.danger) or def.ammo)
                 end
             end
         end
