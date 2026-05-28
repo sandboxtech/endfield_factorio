@@ -452,7 +452,7 @@ script.on_event(defines.events.on_surface_cleared, function(event)
         end
     end
 
-    -- 战利品风格：每世界【独立】决定出哪些箱体(木/铁/钢) + 是否出测试箱(永续/无底)。
+    -- 战利品风格：每世界【独立】决定出哪些箱体(木/铁/钢) + 本世界永续(无底)箱的浓度。
     local bl = constants.balance.loot
     local chests = {}
     if math.random() < bl.wood then chests[#chests + 1] = 'wooden-chest' end
@@ -461,14 +461,18 @@ script.on_event(defines.events.on_surface_cleared, function(event)
     if #chests == 0 then chests[1] = 'wooden-chest' end
     storage.loot_style[surface.name] = {
         chests = chests,
-        test = (math.random() < bl.test_world) and storage.test_chest_chance or 0,   -- 半数世界才可能出测试箱
-        rate = 0.3 + math.random() ^ 2 * 1.7,   -- 本世界战利品箱密度乘数(恒>0,立方偏低)：每个世界都有箱子,但有的稀有有的遍地
+        -- 物资箱/宝箱/永续箱三类【各自独立】的本世界密度，分布 = random()^2：
+        -- 大概率低密度(箱子少)、小概率高密度(遍地)。三者互不相关 → 可能物资多但没永续，反之亦然。
+        supply   = math.random() ^ 2,
+        treasure = math.random() ^ 2,
+        perp     = math.random() ^ 2,
     }
-    -- debug 摘要：本世界战利品风格——箱体(w木/i铁/s钢)、密度乘数 rate、永续(无底)箱概率 perp。
+    -- debug 摘要：本世界战利品风格——箱体(w木/i铁/s钢) + 三类箱子各自的本世界密度[0,1]。
     local ls = storage.loot_style[surface.name]
     local cletters = {}
     for _, c in ipairs(chests) do cletters[#cletters + 1] = c:sub(1, 1) end
-    dbg[#dbg + 1] = string.format('loot[%s] rate=%.2f perp=%.0f%%', table.concat(cletters), ls.rate, ls.test * 100)
+    dbg[#dbg + 1] = string.format('loot[%s] supply=%.2f treasure=%.2f perp=%.2f',
+        table.concat(cletters), ls.supply, ls.treasure, ls.perp)
 
     if storage.debug then
         if not INVALID_REPORTED and #INVALID_TILES > 0 then

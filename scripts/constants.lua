@@ -40,7 +40,7 @@ local M = {
         danger = {worm = 0.6, spawner = 0.4, turret = 0.4, mine = 0.4,
                   art_base = 0.12, art_danger = 0.3, replicant = 0.35},
         -- 战利品箱体出现概率 + 测试箱世界资格
-        loot = {wood = 0.85, iron = 0.7, steel = 0.6, test_world = 0.5},
+        loot = {wood = 0.85, iron = 0.7, steel = 0.6},
         -- 母星/草星【宁和模式】抽奖：1/N 概率开启
         peaceful_one_in = 5,
     },
@@ -67,9 +67,9 @@ function M.ensure_defaults()
         prob_danger = 1,                  -- 危险世界
         prob_event = 1,                   -- 每分钟事件世界
         danger_density = 1,               -- 危险世界里敌人/残骸的密度
+        loot_density = 1,                  -- 战利品箱(物资/宝/永续)全局密度乘数：2 更多、0.5 更少
         event_intensity = 1,              -- 每分钟事件的落点数
         tile_remap_rules = 6,             -- tile 替换世界最多几条规则
-        test_chest_chance = 0.1,          -- 战利品箱是测试箱(永续/无底)的概率
     }
     for k, v in pairs(d) do
         if storage[k] == nil then storage[k] = v end

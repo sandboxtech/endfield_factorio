@@ -29,7 +29,7 @@ function M.knobs()
     return {
         verdancy  = kc(801),      -- 树/草繁茂度（中心化：多半正常，极干/极茂罕见）
         rockiness = kc(803),      -- 岩石密度（中心化）
-        riches    = k(807, 1.6),  -- 战利品丰度（曲线偏低）
+        riches    = k(807, 1.6),  -- 战利品丰度倾向（仅打印给管理员参考；箱子密度已改由 loot_style 三类独立 random^2 决定）
         exotic    = exotic,
         -- 危险度：曲线偏低 + 与异物倾向【正相关】（诡异世界往往也更危险）。
         danger    = math.min(1, k(805, 2) * 0.7 + exotic * 0.7),
@@ -233,12 +233,14 @@ local function loot_count(name)
 end
 
 -- 随机品质（2.0 SA 特性，1.0 战利品没有）：多数 normal，小概率 uncommon/rare → 开箱偶有惊喜。
-local function roll_quality()
+-- boost(默认1) 放大高品质概率：宝箱传 >1（如 5）→ 品质明显更好（宝箱的"宝"体现在品质，不在数量）。
+local function roll_quality(boost)
+    boost = boost or 1
     local r = math.random()
-    if r < 0.0001 then return 'legendary' end
-    if r < 0.001 then return 'epic' end
-    if r < 0.01 then return 'rare' end
-    if r < 0.1 then return 'uncommon' end
+    if r < 0.0001 * boost then return 'legendary' end
+    if r < 0.001 * boost then return 'epic' end
+    if r < 0.01 * boost then return 'rare' end
+    if r < 0.1 * boost then return 'uncommon' end
     return 'normal'
 end
 
@@ -263,14 +265,14 @@ local function item_ok(name)
     return false
 end
 
-local function fill_loot(chest, n)
+local function fill_loot(chest, n, qboost)
     local inv = chest.get_inventory(defines.inventory.chest)
     if not inv then return end
     n = math.min(n, #inv)   -- 抽取次数不超过箱子格数：小箱(木16)也能装满，又不溢出浪费
     for _ = 1, n do
         local name = pick_loot()
         if item_ok(name) then
-            inv.insert{name = name, count = loot_count(name), quality = roll_quality()}
+            inv.insert{name = name, count = loot_count(name), quality = roll_quality(qboost)}
         end
     end
 end
@@ -327,22 +329,14 @@ local function guard_perpetual(surface, pos)
     end
 end
 
--- 放一个战利品箱：小概率是永续箱奖励(四周放敌人守卫)，否则普通木/铁/钢箱 + 战利品(不放敌人)。pos = {x+0.5, y+0.5}。
--- test_scale(默认1)缩放本次永续箱概率：宝箱传 <1 让它更难刷出永续箱。
-local function place_loot_chest(surface, pos, n, test_scale)
+-- 放一个普通战利品箱（木/铁/钢）+ 战利品。force=neutral（可开/可拿/可手拆，但不进蓝图）。pos = {x+0.5, y+0.5}。
+-- qboost 透传给品质骰子：宝箱传 >1 → 品质更好。
+local function place_loot_chest(surface, pos, n, qboost)
     if not surface.can_place_entity{name = 'steel-chest', position = pos} then return end
-    -- 每世界独立的战利品风格（surface.lua 滚定）：哪些箱体 + 永续箱概率。无则兜底默认。
     local style = storage.loot_style and storage.loot_style[surface.name]
     local chests = (style and style.chests) or CHESTS
-    local test = ((style and style.test) or (storage.test_chest_chance or 0.06)) * (test_scale or 1)   -- 0 也是合法值(本世界不出永续箱)
-    if math.random() < test then
-        if spawn_perpetual_chest(surface, pos) then
-            guard_perpetual(surface, pos)   -- 只有永续箱周围放敌人
-        end
-    else
-        local chest = surface.create_entity{name = chests[math.random(#chests)], force = 'neutral', position = pos}
-        if chest then fill_loot(chest, n) end
-    end
+    local chest = surface.create_entity{name = chests[math.random(#chests)], force = 'neutral', position = pos}
+    if chest then fill_loot(chest, n, qboost) end
 end
 
 -- 区块级确定性随机 [0,1)：点状稀有风味用。
@@ -350,24 +344,37 @@ local function chunk_rng(lt, off)
     return noise.hash01(lt.x * 0.1234 + lt.y * 0.3717 + off * 1.7 + (storage.run or 0) * 0.011)
 end
 
--- 每世界战利品密度乘数（surface.lua 滚定，恒 >0 → 每个世界都有箱子，只是概率不等）。无则兜底 1。
-local function loot_rate(surface)
+-- 三类箱子【每区块基础频率】（密度=1 时的频率上限）。永续箱很低（无限供应箱，保持稀有 + 周围放守卫）。
+local LOOT_FREQ = {supply = 0.15, treasure = 0.10, perp = 0.012}
+
+-- 本世界本类箱子的【每区块实际出现概率】= 世界密度(surface.lua 滚的 random^2) × 基础频率 × 全局乘数。
+--   storage.loot_density(默认1) 调【全局最大密度】：2 更多、0.5 更少。无世界密度则兜底 0.3。
+local function spawn_chance(surface, kind)
     local style = storage.loot_style and storage.loot_style[surface.name]
-    return (style and style.rate) or 1
+    local wd = (style and style[kind]) or 0.3
+    return wd * LOOT_FREQ[kind] * (storage.loot_density or 1)
 end
 
--- 物资箱（原"坠机点"）：战利品多、装得满。箱子 force=neutral（可开/可拿/可手拆，但不进蓝图；永续箱接机械臂照常）。
--- 频率随【本世界密度 × 富庶度】渐变（每世界都有，概率不等）。
-local function feat_crash_site(surface, lt, W)
-    if chunk_rng(lt, 503) > loot_rate(surface) * (0.02 + 0.06 * (W and W.riches or 0)) then return end
+-- 物资箱（原"坠机点"）：常见、装得【多】(24~50格)、【普通品质】 —— 走量的补给箱。
+local function feat_crash_site(surface, lt)
+    if chunk_rng(lt, 503) > spawn_chance(surface, 'supply') then return end
     place_loot_chest(surface, {lt.x + math.random(7, 25) + 0.5, lt.y + math.random(7, 25) + 0.5}, math.random(24, 50))
 end
 
--- 宝箱缓存（单个箱）：更稀有但也装得满些。箱子 force=neutral。频率随【本世界密度 × 富庶度】渐变。
--- 永续箱概率额外 ×0.3（比物资箱更难出永续箱）。
-local function feat_treasure(surface, lt, W)
-    if chunk_rng(lt, 601) > loot_rate(surface) * (0.015 + 0.05 * (W and W.riches or 0)) then return end
-    place_loot_chest(surface, {lt.x + math.random(2, 29) + 0.5, lt.y + math.random(2, 29) + 0.5}, math.random(12, 28), 0.3)
+-- 宝箱：更稀有、装得【少】(12~28格)、但【品质大幅提升】(×5) —— "宝"在品质不在数量，与物资箱区分。
+local function feat_treasure(surface, lt)
+    if chunk_rng(lt, 601) > spawn_chance(surface, 'treasure') then return end
+    place_loot_chest(surface, {lt.x + math.random(2, 29) + 0.5, lt.y + math.random(2, 29) + 0.5}, math.random(12, 28), 5)
+end
+
+-- 永续(无底)箱：【独立特征】（不再寄生于普通箱的子概率）。频率很低；出生点保护由 guard_perpetual 内部处理。
+local function feat_perpetual(surface, lt)
+    if chunk_rng(lt, 605) > spawn_chance(surface, 'perp') then return end
+    local pos = {lt.x + math.random(4, 27) + 0.5, lt.y + math.random(4, 27) + 0.5}
+    if not surface.can_place_entity{name = 'steel-chest', position = pos} then return end
+    if spawn_perpetual_chest(surface, pos) then
+        guard_perpetual(surface, pos)   -- 永续箱周围放敌人守卫
+    end
 end
 
 -- 按本星【独立开关】theme 构建敌人池（worm/spawner/turret/mine/art 各自有无）。
@@ -470,8 +477,10 @@ function M.generate(surface, lt)
     end
     for _, def in ipairs(EXOTIC) do place_feature(surface, lt, def, A, S, Z, W) end
     theme_trees(surface, lt)
-    feat_crash_site(surface, lt, W)
-    feat_treasure(surface, lt, W)
+    -- 三类箱子各自独立：每世界密度 random^2（surface.lua 滚定），频率互不相关。
+    feat_crash_site(surface, lt)
+    feat_treasure(surface, lt)
+    feat_perpetual(surface, lt)
     -- 危险世界（按 W.danger，与 exotic 正相关）：成簇敌方实体 + 偶现飞船残骸障碍。原版 enemy-base 仍自然出虫。
     feat_danger(surface, lt, A, S, Z, W)
     feat_wrecks(surface, lt, W)
