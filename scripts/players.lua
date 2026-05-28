@@ -139,6 +139,7 @@ script.on_event(defines.events.on_pre_player_left_game, function(event)
     end
 
     if player.character then
+        science_exp.settle(player)   -- 离线前自动结算：把背包瓶子转成经验（杀角色前），不让坚持不到跃迁就下线的玩家白干
         M.kill_on_nauvis(player)
         -- 删除可能落在飞船原点附近的尸体
         for _, space_platform in pairs(game.forces.player.platforms) do

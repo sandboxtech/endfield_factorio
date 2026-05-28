@@ -126,6 +126,31 @@ end
 add_command('preview', {'wn.preview-help'}, preview_cmd)
 add_command('yulan', {'wn.preview-help'}, preview_cmd)
 
+-- /settle（/jiesuan 同功能）：提前结算——把当前背包整组科技瓶换成经验【并消耗掉】，
+-- 本轮已结算的不会在跃迁时再算一次。给坚持不到跃迁就要下线的玩家用（下线也会自动结算）。
+local function settle_cmd(command)
+    local player = command.player_index and game.get_player(command.player_index)
+    if not player then return end
+    local gain = science_exp.settle(player)
+    local total, parts = 0, {}
+    if gain then
+        for _, pack in ipairs(constants.science_packs) do
+            if (gain[pack] or 0) > 0 then
+                total = total + gain[pack]
+                parts[#parts + 1] = '[img=item/' .. pack .. ']+' .. gain[pack]
+            end
+        end
+    end
+    if total > 0 then
+        player.print({'wn.settle-done', total, table.concat(parts, '  ')})
+    else
+        player.print({'wn.settle-none'})
+    end
+end
+
+add_command('settle', {'wn.settle-help'}, settle_cmd)
+add_command('jiesuan', {'wn.settle-help'}, settle_cmd)
+
 -- /suicide（/zisha 同功能）：自杀脱困。死后按权重随机在某个星球复活（见 players.lua）。
 local function suicide_cmd(command)
     local player = command.player_index and game.get_player(command.player_index)

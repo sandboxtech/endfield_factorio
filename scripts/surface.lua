@@ -99,28 +99,58 @@ end
 -- 把地形分几类，规则形如「源家族 → 目标 tile」：
 --   · 同类替换(水→另一种水, 某地表→另一种地表) = 自然，高概率，整片替换、不用噪声；
 --   · 跨类替换(地→水/熔岩/虚空 等) = 戏剧化，低概率，用平滑大团噪声成片、不满图。
--- 目标可为任意自然 tile（含外星/虚空），但【排除测试/纯色/玩家造 tile】(lab/tutorial/混凝土/landfill 等)。
+-- 目标池【白名单穷举】各星自然 tile（排除法挡不住套色生成的彩色混凝土等人造 tile，故改穷举）。
+-- valid_pools 会按 prototypes.tile 过滤掉拼错/不存在的，所以这里宁可多列。人造 tile 一律不在列。
+-- void/space 与 artificial(人造) 不在此白名单——它们是【受 mask 限制】的特殊目标池，由 valid_pools 另建：
+--   voidspace(empty-space/out-of-map) 仅 noise mask 可选；artificial(混凝土系等) 仅 ore mask 可选。
 local TILE_CLASS = {
-    water = {  -- 液体(不可走)：母星各种水 + 草星深湖 + 雷星油海 + 极地氨海
-        'water', 'deepwater', 'water-green', 'deepwater-green', 'water-shallow', 'water-mud',
-        'gleba-deep-lake', 'oil-ocean-deep', 'oil-ocean-shallow', 'ammoniacal-ocean', 'ammoniacal-ocean-2',
+    water  = {  -- 常规水(可整片替换的安全自然水：仍可泵/可作 all 目标)
+        'water', 'deepwater', 'water-green', 'deepwater-green', 'water-shallow', 'water-mud', 'gleba-deep-lake',
     },
-    ground = {  -- 可走地表：母星 + 各外星地表 + 核地
-        'grass-1', 'grass-2', 'grass-3', 'grass-4', 'dry-dirt', 'dirt-1', 'dirt-2', 'dirt-3', 'dirt-4', 'dirt-5', 'dirt-6', 'dirt-7',
-        'sand-1', 'sand-2', 'sand-3', 'red-desert-0', 'red-desert-1', 'red-desert-2', 'red-desert-3',
-        'volcanic-ash-flats', 'volcanic-ash-dark', 'volcanic-ash-light', 'volcanic-soil-dark', 'volcanic-soil-light',
-        'volcanic-jagged-ground', 'volcanic-pumice-stones', 'volcanic-smooth-stone',
-        'fulgoran-dunes', 'fulgoran-sand', 'fulgoran-dust', 'fulgoran-rock',
-        'lowland-olive-blubber', 'lowland-brown-blubber', 'lowland-pale-green', 'midland-yellow-crust',
-        'highland-dark-rock', 'highland-yellow-rock', 'natural-yumako-soil', 'natural-jellynut-soil',
-        'snow-flat', 'snow-lumpy', 'snow-patchy', 'dust-flat', 'dust-lumpy', 'ice-rough', 'ice-smooth', 'brash-ice',
-        'nuclear-ground',
+    exotic = {  -- 危险/异界液体 + 虚空太空（合并 hazard+void）：仅 noise mask 作目标，成片部分替换
+        'lava', 'lava-hot', 'lava-2',                       -- 岩浆
+        'oil-ocean-deep', 'oil-ocean-shallow', 'oil-deep',  -- 油海
+        'ammoniacal-ocean', 'ammoniacal-ocean-2',           -- 氨海
+        'empty-space', 'out-of-map',                        -- 虚空/太空
     },
-    hazard = {'lava', 'lava-hot'},   -- 熔岩(不可走+烧人)
-    void   = {'empty-space'},        -- 虚空(掉落)
+    artificial = {  -- 人造铺装（仅 ore mask 作目标）：混凝土系 + 9 色套色精制混凝土 + 铺路/landfill/地基
+        'concrete', 'refined-concrete', 'hazard-concrete-left', 'hazard-concrete-right',
+        'refined-hazard-concrete-left', 'refined-hazard-concrete-right',
+        'stone-path', 'landfill', 'foundation', 'space-platform-foundation',
+        'blue-refined-concrete', 'orange-refined-concrete', 'yellow-refined-concrete', 'pink-refined-concrete',
+        'purple-refined-concrete', 'black-refined-concrete', 'brown-refined-concrete', 'cyan-refined-concrete', 'acid-refined-concrete',
+    },
+    ground = {                                      -- 可走地表(各星)
+        -- 母星
+        'grass-1', 'grass-2', 'grass-3', 'grass-4',
+        'dry-dirt', 'dirt-1', 'dirt-2', 'dirt-3', 'dirt-4', 'dirt-5', 'dirt-6', 'dirt-7',
+        'sand-1', 'sand-2', 'sand-3', 'red-desert-0', 'red-desert-1', 'red-desert-2', 'red-desert-3', 'nuclear-ground',
+        -- 火星
+        'volcanic-jagged-ground', 'volcanic-cracks', 'volcanic-cracks-hot', 'volcanic-cracks-warm',
+        'volcanic-folds', 'volcanic-folds-flat', 'volcanic-folds-warm',
+        'volcanic-ash-light', 'volcanic-ash-dark', 'volcanic-ash-flats', 'volcanic-ash-cracks', 'volcanic-ash-soil',
+        'volcanic-pumice-stones', 'volcanic-smooth-stone', 'volcanic-smooth-stone-warm', 'volcanic-soil-dark', 'volcanic-soil-light',
+        -- 雷星
+        'fulgoran-dunes', 'fulgoran-sand', 'fulgoran-rock', 'fulgoran-paving', 'fulgoran-walls', 'fulgoran-conduit', 'fulgoran-machinery',
+        -- 草星
+        'artificial-yumako-soil', 'overgrowth-yumako-soil', 'artificial-jellynut-soil', 'overgrowth-jellynut-soil',
+        'natural-yumako-soil', 'natural-jellynut-soil',
+        'lowland-olive-blubber', 'lowland-olive-blubber-2', 'lowland-olive-blubber-3', 'lowland-brown-blubber',
+        'lowland-pale-green', 'lowland-cream-cauliflower', 'lowland-cream-cauliflower-2', 'lowland-dead-skin', 'lowland-dead-skin-2',
+        'lowland-cream-red', 'lowland-red-vein', 'lowland-red-vein-2', 'lowland-red-vein-3', 'lowland-red-vein-4', 'lowland-red-vein-dead', 'lowland-red-infection',
+        'midland-cracked-lichen', 'midland-cracked-lichen-dull', 'midland-cracked-lichen-dark',
+        'midland-turquoise-bark', 'midland-turquoise-bark-2',
+        'midland-yellow-crust', 'midland-yellow-crust-2', 'midland-yellow-crust-3', 'midland-yellow-crust-4',
+        'highland-dark-rock', 'highland-dark-rock-2', 'highland-yellow-rock', 'pit-rock',
+        'wetland-yumako', 'wetland-jellynut', 'wetland-dead-skin', 'wetland-light-dead-skin',
+        'wetland-green-slime', 'wetland-light-green-slime', 'wetland-red-tentacle', 'wetland-pink-tentacle', 'wetland-blue-slime',
+        -- 极地
+        'snow-flat', 'snow-crests', 'snow-lumpy', 'snow-patchy', 'dust-flat', 'dust-crests', 'dust-lumpy', 'dust-patchy',
+        'ice-rough', 'ice-smooth', 'ice-platform', 'brash-ice', 'brash-ice-2',
+    },
 }
 -- 源家族【按星球分类】：只从该星球实际存在的 tile 里选源（否则像在 Nauvis 替换 Fulgora 地形 → 永不发生）。
--- 每个 = {class(water/ground), tiles=子家族}；替换其一仍保留其他 → 地貌不单调。目标仍用全局 TILE_CLASS（跨星变样）。
+-- 每个 = {class(water/ground), tiles=子家族}；替换其一仍保留其他 → 地貌不单调。目标用全局自动目标池（跨星变样）。
 local PLANET_SRC = {
     nauvis = {
         -- full = 整片替换时的安全目标（只换成仍可泵的真水，排除浅水/泥 → 不会让母星缺水）
@@ -154,13 +184,10 @@ local PLANET_SRC = {
         {class = 'ground', tiles = {'dust-flat', 'dust-lumpy', 'dust-patchy', 'dust-crests'}},
     },
 }
--- 目标类别：同类(自然)高概率，跨类(戏剧)低概率。
-local function pick_target_class(src_class)
-    local r = math.random()
-    if r < 0.65 then return src_class end                                         -- 同类自然替换
-    if r < 0.90 then return src_class == 'water' and 'ground' or 'water' end       -- 水↔地
-    if r < 0.98 then return 'hazard' end                                           -- 熔岩
-    return 'void'                                                                  -- 虚空(最罕见)
+-- 常规自然目标类：同类高概率、水↔地次之（exotic 与 artificial 不在这里——它们各受 mask 限制，见 pick_target）。
+local function pick_natural_class(src_class)
+    if math.random() < 0.7 then return src_class end
+    return src_class == 'water' and 'ground' or 'water'
 end
 -- 运行时按 prototypes.tile 过滤掉无效 tile 名（拼错的自动丢弃，避免 set_tiles/find_tiles 报 unknown tile）。
 -- prototypes 不变 → 建一次缓存。被丢弃的无效名记入 INVALID_TILES，debug 时进游戏打印一次（提示拼错）。
@@ -169,6 +196,7 @@ local INVALID_TILES = {}
 local INVALID_REPORTED = false
 local function valid_pools()
     if VALID_TILES then return VALID_TILES end
+    -- 按 prototypes.tile 过滤白名单(拼错/不存在的丢弃并记入 INVALID_TILES)。
     local function filt(list)
         local out = {}
         for _, n in ipairs(list) do
@@ -176,23 +204,36 @@ local function valid_pools()
         end
         return out
     end
-    VALID_TILES = {class = {}, src = {}}   -- class=全局目标池；src[星球]=该星过滤后的源家族
-    for k, v in pairs(TILE_CLASS) do VALID_TILES.class[k] = filt(v) end
+    -- 目标池：穷举白名单 TILE_CLASS（water/ground/exotic/artificial），过滤后只含存在的 tile。
+    local class = {}
+    for k, v in pairs(TILE_CLASS) do class[k] = filt(v) end
+    -- 源：PLANET_SRC 同样按星球过滤
+    local src = {}
     for planet, families in pairs(PLANET_SRC) do
         local fs = {}
         for _, s in ipairs(families) do
             local t = filt(s.tiles)
             if #t > 0 then fs[#fs + 1] = {class = s.class, tiles = t, full = s.full and filt(s.full)} end
         end
-        VALID_TILES.src[planet] = fs
+        src[planet] = fs
     end
-    if #INVALID_TILES > 0 then log('[endfield] 无效 tile 名(已忽略): ' .. table.concat(INVALID_TILES, ', ')) end
+    VALID_TILES = {class = class, src = src}
+    if #INVALID_TILES > 0 then log('[endfield] 无效源 tile 名(已忽略): ' .. table.concat(INVALID_TILES, ', ')) end
     return VALID_TILES
 end
 local function rand_tile(class)
     local p = valid_pools().class[class]
     if not p or #p == 0 then return nil end
     return p[math.random(#p)]
+end
+
+-- 部分替换(非 all)时选目标，按 mask 限制特殊池：
+--   noise → 一定概率取 exotic(岩浆/油海/氨海/虚空/太空)；ore → 一定概率取 artificial(人造铺装)；
+--   其余走常规自然(水/地)。tree/rock 只会落到自然。
+local function pick_target(src, mask)
+    if mask == 'noise' and math.random() < 0.3 then return rand_tile('exotic') end
+    if mask == 'ore' and math.random() < 0.4 then return rand_tile('artificial') end
+    return rand_tile(pick_natural_class(src.class))
 end
 
 -- 表面新建时只重置 seed（cleared 才会进入完整生成流程）。
@@ -306,12 +347,11 @@ script.on_event(defines.events.on_surface_cleared, function(event)
         local nrules = 1 + math.floor(math.random() ^ 2 * (storage.tile_remap_rules or 3))   -- 偏向少：多半 1 条
         for _ = 1, nrules do
             local src = srcs[math.random(#srcs)]
-            local tclass = pick_target_class(src.class)
-            local natural = (tclass == src.class)
-            local mask = (natural and math.random() < 0.6) and 'all'             -- 自然替换多半整片
-                or ({'noise', 'noise', 'tree', 'rock', 'ore'})[math.random(5)]   -- 否则噪声/跟随树石矿
-            -- 选目标。【约束】整片(all)替换不能让星球缺资源：水源只换成同功能的水(full，仍可泵)、
-            -- 地表只换地表；部分替换(noise/实体)原 tile 仍保留，目标可任意(可条件变重油海/熔岩/虚空)。
+            -- 先定 mask：~45% all(整片自然，安全)，否则 noise/跟随树石矿。
+            local mask = (math.random() < 0.45) and 'all'
+                or ({'noise', 'noise', 'tree', 'rock', 'ore'})[math.random(5)]
+            -- 选目标。【约束】all 整片替换不能让星球缺资源：水源→同功能水(full，仍可泵)、地源→任意地表；
+            -- exotic(岩浆/油海/氨海/虚空) 只走 noise、artificial(人造铺装) 只走 ore，且都是部分替换(原 tile 仍保留)。
             local to
             if mask == 'all' then
                 if src.class == 'water' then
@@ -321,7 +361,7 @@ script.on_event(defines.events.on_surface_cleared, function(event)
                     to = rand_tile('ground')
                 end
             else
-                to = rand_tile(tclass)
+                to = pick_target(src, mask)
             end
             if to then
                 rules[#rules + 1] = {
@@ -515,6 +555,11 @@ script.on_event(defines.events.on_chunk_generated, function(event)
                         local ex, ey = math.floor(e.position.x), math.floor(e.position.y)
                         for dx = -R, R do
                             for dy = -R, R do mark[(ex + dx) .. ':' .. (ey + dy)] = true end
+                        end
+                        -- R+1 处随机点几个 → 软化方块硬边、增加不规则感（不再是大矩形）
+                        for _ = 1, math.random(2, 5) do
+                            local dx, dy = math.random(-(R + 1), R + 1), math.random(-(R + 1), R + 1)
+                            mark[(ex + dx) .. ':' .. (ey + dy)] = true
                         end
                     end
                 end
