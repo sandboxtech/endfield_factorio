@@ -219,14 +219,14 @@ local LOOT_WEIGHTS = {
     },
     -- 铁箱 = 设备箱：实用设备/机器为主，含载具/太空件，少量科技瓶。普通品质、中等数量。
     equipment = {
-        raw = 1,  material = 2,  logistics = 18,  circuit = 8,  power = 14,
-        production = 30,  module = 4,  military = 12,  equipment = 10,  science = 10,
-        gleba = 4,  space = 6,
+        raw = 1,  material = 5,  logistics = 35,  circuit = 8,  power = 14,
+        production = 30,  module = 15,  military = 12,  equipment = 10,  science = 10,
+        gleba = 4,  space = 15,
     },
     -- 永续(无底)箱：基础材料/矿物为主。注意 science>0 = 无限科技瓶(很强，慎调)。
     perp = {
         raw = 90,  material = 120,  logistics = 15,  circuit = 1,  power = 5,
-        production = 2,  module = 1,  military = 1,  equipment = 1,  science = 0,
+        production = 3,  module = 5,  military = 1,  equipment = 1,  science = 0,
         gleba = 1,  space = 1,
     },
 }
@@ -238,6 +238,7 @@ local TREASURE_POOL = {
     'foundry', 'electromagnetic-plant', 'biochamber', 'cryogenic-plant', 'recycler',       -- 星球特产机器
     'big-mining-drill', 'rocket-silo', 'fusion-reactor',                                    -- 顶级生产建筑
     'space-platform-starter-pack',
+    'metallurgic-science-pack',  'electromagnetic-science-pack',  'cryogenic-science-pack',  'promethium-science-pack',
 }
 
 -- 按给定【类权重表】选类、类内等概率选物品。weights[cat] 为 0/nil 即跳过该类。
