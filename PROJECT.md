@@ -30,7 +30,7 @@
 | `science_exp.lua` | `collect`（跃迁结算在线玩家，不移除）/ `settle`（提前结算：换经验**并移除**整组瓶子，防跃迁重复）/ `preview`（预览）。经验按**玩家名**存 `storage.science_exp`。 |
 | `research.lua` | 研究含 `-science-pack` 名（非 trigger）的科技 → 本轮倒计时 +1 小时并公告。 |
 | `map_features.lua` | **每轮地图风味**（手动放置原生做不到的东西）：`M.knobs()` 本轮整局气质连续旋钮；跨星球 `EXOTIC` 异物（稀疏 simplex 散布）；`theme_trees` 改原生树颜色/灰度（连续插值）；加权战利品 + 品质 + 随机木/铁/钢箱 + 罕见**测试箱**（永续/无底，不可开不可拆可摧毁）；`feat_danger` 危险敌群（独立开关 worm/巢/机枪炮塔+弹/地雷/重炮+弹，force=enemy）；`feat_wrecks` 飞船残骸障碍。`M.generate` 逐区块调用。 |
-| `world_fx.lua` | 事件驱动的世界效果（经 `events` 总线）：**复制虫世界**——玩家建筑被虫破坏时原地冒虫（呼应 Comfy infested）。 |
+| `world_fx.lua` | 事件驱动的世界效果（经 `events` 总线）的**注册表**：`register(name,event,run)` 每项带全局开关 `storage.world_fx[name]`（默认开，`/c storage.world_fx.xxx=false` 禁用）。现有 **复制虫**(`replicant`)——玩家建筑被虫破坏时原地冒虫（呼应 Comfy infested）。加新 fx 只动本文件 + `ensure_defaults` 开关列表。 |
 | `surface.lua` | 跃迁后逐星球生成：原生 autoplace 调参 + **气候噪声偏置**（`control:moisture/aux/temperature:bias` 修改原生而非覆盖）+ **世界变体**滚定（染地/tile 替换/危险/事件/战利品风格）+ 圆形虚空边界；逐区块应用 tile 替换与染地精灵；母星放市场。各星球资源/自然/气候由声明式 `PLANET_GEN` 表驱动。debug 时向**管理员**打印每次生成的属性。 |
 | `reset.lua` | 跃迁主流程：收集经验 → 杀玩家 → 清星球(异步) → 重置科技 → 随机参数 → 清地图标记。 |
 | `tick.lua` | `on_gui_click` 与 `on_nth_tick(3600)` 的**唯一注册点**：每分钟在线采样 + 给在线玩家各 +1 金币 + 倒计时/提醒 + **事件世界**(`run_world_events` 按 `WORLD_EVENTS` 分发表：raid/meteor/supply/coinfall)。 |
@@ -71,6 +71,8 @@
   - `debug`(默认 true，向管理员打印每次生成属性)
   - 概率乘数（0=关）：`prob_ground_tint / prob_tile_remap / prob_danger / prob_event`
   - 强度：`danger_density`(敌人/残骸密度) / `event_intensity`(事件落点) / `tile_remap_rules`(最多规则数) / `test_chest_chance`(测试箱概率)
+  - `storage.world_fx.<name>`(默认 true)：事件驱动效果总闸，false 全局禁用（如 `replicant` 复制虫）
+  - `storage.event_types.<raid/meteor/supply/coinfall>`(默认 true)：每分钟事件世界各类型开关，`/c` 设 false 即排除某类型
 
 ## 数据流速览
 
@@ -122,5 +124,5 @@ on_entity_died（world_fx 经总线）: 复制虫世界里玩家建筑被虫毁 
 ## 星球资源档位（`surface.lua`）
 
 每种资源的丰度/面积/频率各抽一个 1~9 整数 N：丰度 `3^(N-7)`、面积 `1.5^(N-6)`、频率 `1.3^(N-5)`，
-再乘全局 `richness_multiplier`(默认 4)/`size_multiplier`(1)/`frequency_multiplier`(1)。底数温和、避免巨型矿区。
+再乘全局 `richness_multiplier`(默认 8)/`size_multiplier`(2)/`frequency_multiplier`(0.5)。**rail world 基线**：矿少而大且富（频率减半、面积/丰度翻倍），逼玩家修铁路连远矿。
 地方特产（铀/钨/废料/gleba 石/aquilo 流体）用 `local_specialty_multiplier` 额外压低丰度。圆半径外铺虚空。

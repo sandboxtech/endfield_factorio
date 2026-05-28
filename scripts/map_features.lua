@@ -128,6 +128,8 @@ for _, l in ipairs(LOOT) do LOOT_TOTAL = LOOT_TOTAL + l.w end
 -- 随机品质（2.0 SA 特性，1.0 战利品没有）：多数 normal，小概率 uncommon/rare → 开箱偶有惊喜。
 local function roll_quality()
     local r = math.random()
+    if r < 0.0003 then return 'legendary' end
+    if r < 0.003 then return 'epic' end
     if r < 0.03 then return 'rare' end
     if r < 0.15 then return 'uncommon' end
     return 'normal'

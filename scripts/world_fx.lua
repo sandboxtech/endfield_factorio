@@ -1,11 +1,24 @@
--- 事件驱动的"世界效果"：监听游戏事件，在带相应主题标记的世界里触发。
--- 走 scripts/events 事件总线订阅 → 不会与其它 on_entity_died 注册互相覆盖。
+-- 事件驱动的"世界效果"(world_fx)：监听游戏事件，在满足条件的世界里触发。
+-- 走 scripts/events 事件总线订阅 → 不会与其它同事件注册互相覆盖。
+-- 每个 fx 有一个【全局开关】storage.world_fx[name]（默认开；游戏内 /c storage.world_fx.xxx=false 即可禁用）。
+-- 开关只是总闸；具体哪一轮/哪颗星出现，仍由各 fx 自身条件（如 danger_theme[星球].replicant）滚定。
+-- 加新 fx：在此 register 一个，并到 constants.ensure_defaults 的 world_fx 默认列表补上同名键。
 local events = require('scripts.events')
 local util = require('scripts.util')
 
--- 复制虫世界（danger_theme[星球].replicant）：玩家建筑被【虫】破坏时，原地冒出新虫 →
+local M = {}
+
+-- 注册一个 world_fx：name=全局开关键；event=监听事件；run=效果逻辑（仅开关开启时调用）。
+local function register(name, event, run)
+    events.on(event, function(e)
+        if storage.world_fx and storage.world_fx[name] == false then return end
+        run(e)
+    end)
+end
+
+-- 复制虫（danger_theme[星球].replicant）：玩家建筑被【虫】破坏时，原地冒出新虫 →
 -- 防御被打穿会滚雪球，呼应 Comfy journey 的 infested/replicant。on_entity_died 高频，先做最便宜的早退。
-events.on(defines.events.on_entity_died, function(e)
+register('replicant', defines.events.on_entity_died, function(e)
     if not storage.danger_theme then return end
     local ent = e.entity
     if not (ent and ent.valid) then return end
@@ -24,4 +37,4 @@ events.on(defines.events.on_entity_died, function(e)
     end
 end)
 
-return {}
+return M

@@ -52,9 +52,9 @@ local M = {
 function M.ensure_defaults()
     -- 标量默认（用 nil 判定，布尔 false/0 也能被正确保留）
     local d = {
-        richness_multiplier = 4,          -- 矿更富（每格储量）
-        size_multiplier = 1,              -- 矿脉大小正常
-        frequency_multiplier = 1,         -- 矿脉数量正常
+        richness_multiplier = 8,          -- 矿更富（每格储量）· rail world：原 4 的 ×2
+        size_multiplier = 2,              -- 矿脉更大 · rail world：原 1 的 ×2
+        frequency_multiplier = 0.5,       -- 矿脉更稀疏 · rail world：原 1 的 ×1/2（少而大的矿，逼玩家修铁路）
         local_specialty_multiplier = 0.25,
         radius = 2048,
         radius_min = 256,
@@ -78,6 +78,19 @@ function M.ensure_defaults()
     for _, key in ipairs({'radius_of', 'science_exp', 'player_stats', 'platform_age',
                           'ground_tint', 'tile_remap', 'danger_theme', 'event_world', 'loot_style'}) do
         storage[key] = storage[key] or {}
+    end
+    -- world_fx 全局开关（默认开；/c storage.world_fx.xxx=false 单独禁用某事件驱动效果）。
+    -- 加新 fx 时在此列表补上同名键，并在 world_fx.lua register 对应逻辑。
+    storage.world_fx = storage.world_fx or {}
+    for _, fx in ipairs({'replicant'}) do
+        if storage.world_fx[fx] == nil then storage.world_fx[fx] = true end
+    end
+    -- 每分钟"事件世界"各类型开关（false=不再被滚到/触发）。运行时也可 /c storage.event_types.xxx=true/false。
+    -- 下表的值即各类型的【初始启用状态】：coinfall(金币雨) 默认禁用，按需改 true/false。
+    storage.event_types = storage.event_types or {}
+    local event_defaults = {raid = true, meteor = true, supply = true, coinfall = true}
+    for et, on in pairs(event_defaults) do
+        if storage.event_types[et] == nil then storage.event_types[et] = on end
     end
 end
 

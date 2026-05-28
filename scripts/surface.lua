@@ -439,9 +439,16 @@ script.on_event(defines.events.on_surface_cleared, function(event)
     --   raid 空降虫 / meteor 矿石陨石雨 / supply 物资空投 / coinfall 金币雨。
     storage.event_world[surface.name] = nil
     if math.random() < constants.balance.event.base * prob('event') then
-        local et = ({'raid', 'meteor', 'supply', 'coinfall'})[math.random(4)]
-        storage.event_world[surface.name] = et
-        dbg[#dbg + 1] = 'event:' .. et
+        -- 只从【已启用】的事件类型里滚（storage.event_types[x]=false 的被排除，如禁用的 coinfall）
+        local pool = {}
+        for _, et in ipairs({'raid', 'meteor', 'supply', 'coinfall'}) do
+            if storage.event_types[et] ~= false then pool[#pool + 1] = et end   -- nil/true 启用，仅显式 false 排除
+        end
+        if #pool > 0 then
+            local et = pool[math.random(#pool)]
+            storage.event_world[surface.name] = et
+            dbg[#dbg + 1] = 'event:' .. et
+        end
     end
 
     -- 战利品风格：每世界【独立】决定出哪些箱体(木/铁/钢) + 是否出测试箱(永续/无底)。

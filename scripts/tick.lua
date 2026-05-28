@@ -49,9 +49,12 @@ local WORLD_EVENTS = {
             surface.spill_item_stack{position = lp, stack = {name = SUPPLY_ITEMS[math.random(#SUPPLY_ITEMS)], count = math.random(10, 40)}, enable_looted = true}
         end
     end,
-    -- coinfall 金币雨(奖励)。
-    coinfall = function(player, _, _, _, k)
-        player.insert{name = 'coin', count = math.max(1, math.floor(8 * k + 0.5))}
+    -- coinfall 金币雨(奖励)：在玩家周围地上像雨点般洒落金币（走过/机器人可拾取），不再直接进背包。
+    coinfall = function(_, surface, ch, _, k)
+        for _ = 1, math.max(1, math.floor(8 * k + 0.5)) do
+            local lp = rand_near(ch, 4, 18)
+            surface.spill_item_stack{position = lp, stack = {name = 'coin', count = 1}, enable_looted = true}
+        end
     end,
 }
 
@@ -63,6 +66,8 @@ local function run_world_events()
     for _, player in pairs(game.connected_players) do
         local ch = player.character
         local et = ch and storage.event_world[player.surface.name]
+        -- 尊重事件类型开关：即便本轮已滚到该类型，禁用后(/c storage.event_types.x=false)也立即停触发
+        if et and storage.event_types and storage.event_types[et] == false then et = nil end
         local handler = et and WORLD_EVENTS[et]
         if handler then handler(player, player.surface, ch, danger, k) end
     end
