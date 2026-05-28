@@ -16,8 +16,46 @@ local function rand_near(ch, lo, hi)
     return {x = ch.position.x + math.cos(ang) * dist, y = ch.position.y + math.sin(ang) * dist}
 end
 
+-- 每分钟事件世界的【分发表】：键 = 事件类型，值 = 处理器(player, surface, ch, danger, k)。
+-- 加新事件类型只需在此表增一项，并在 surface.lua 的 event_world 候选里列上同名键。
+local WORLD_EVENTS = {
+    -- raid 空降虫(危险)：玩家外圈炸开并刷一波随进化度的虫。
+    raid = function(_, surface, ch, danger, k)
+        local evo = game.forces.enemy.get_evolution_factor(surface)
+        for _ = 1, math.max(1, math.floor((1 + danger * 2) * k + 0.5)) do
+            if math.random() < 0.7 then
+                local lp = rand_near(ch, 30, 80)
+                surface.create_entity{name = 'massive-explosion', position = lp}
+                for _ = 1, math.random(3, 6) do
+                    local name = util.evo_biter(evo)
+                    local p = surface.find_non_colliding_position(name, lp, 8, 1)
+                    if p then surface.create_entity{name = name, position = p, force = 'enemy'} end
+                end
+            end
+        end
+    end,
+    -- meteor 矿石陨石雨(奖励)：落点炸开 + 撒一堆矿。
+    meteor = function(_, surface, ch, _, k)
+        for _ = 1, math.max(1, math.floor(3 * k + 0.5)) do
+            local lp = rand_near(ch, 25, 90)
+            surface.create_entity{name = 'big-explosion', position = lp}
+            surface.spill_item_stack{position = lp, stack = {name = METEOR_ORE[math.random(#METEOR_ORE)], count = math.random(20, 80)}, enable_looted = true}
+        end
+    end,
+    -- supply 物资空投(奖励)：玩家附近撒中级材料。
+    supply = function(_, surface, ch, _, k)
+        for _ = 1, math.max(1, math.floor(2 * k + 0.5)) do
+            local lp = rand_near(ch, 8, 28)
+            surface.spill_item_stack{position = lp, stack = {name = SUPPLY_ITEMS[math.random(#SUPPLY_ITEMS)], count = math.random(10, 40)}, enable_looted = true}
+        end
+    end,
+    -- coinfall 金币雨(奖励)。
+    coinfall = function(player, _, _, _, k)
+        player.insert{name = 'coin', count = math.max(1, math.floor(8 * k + 0.5))}
+    end,
+}
+
 -- 每分钟事件世界：按本星 storage.event_world 的事件类型，对该星上每个在线玩家触发。强度随 event_intensity。
---   raid 空降虫(危险) / meteor 矿石陨石雨(奖励) / supply 物资空投(奖励) / coinfall 金币雨(奖励)。
 local function run_world_events()
     if not storage.event_world then return end
     local danger = map_features.knobs().danger
@@ -25,36 +63,8 @@ local function run_world_events()
     for _, player in pairs(game.connected_players) do
         local ch = player.character
         local et = ch and storage.event_world[player.surface.name]
-        if et then
-            local surface = player.surface
-            if et == 'raid' then
-                local evo = game.forces.enemy.get_evolution_factor(surface)
-                for _ = 1, math.max(1, math.floor((1 + danger * 2) * k + 0.5)) do
-                    if math.random() < 0.7 then
-                        local lp = rand_near(ch, 30, 80)
-                        surface.create_entity{name = 'massive-explosion', position = lp}
-                        for _ = 1, math.random(3, 6) do
-                            local name = util.evo_biter(evo)
-                            local p = surface.find_non_colliding_position(name, lp, 8, 1)
-                            if p then surface.create_entity{name = name, position = p, force = 'enemy'} end
-                        end
-                    end
-                end
-            elseif et == 'meteor' then   -- 矿石陨石雨：落点炸开 + 撒一堆矿
-                for _ = 1, math.max(1, math.floor(3 * k + 0.5)) do
-                    local lp = rand_near(ch, 25, 90)
-                    surface.create_entity{name = 'big-explosion', position = lp}
-                    surface.spill_item_stack{position = lp, stack = {name = METEOR_ORE[math.random(#METEOR_ORE)], count = math.random(20, 80)}, enable_looted = true}
-                end
-            elseif et == 'supply' then   -- 物资空投：玩家附近撒中级材料
-                for _ = 1, math.max(1, math.floor(2 * k + 0.5)) do
-                    local lp = rand_near(ch, 8, 28)
-                    surface.spill_item_stack{position = lp, stack = {name = SUPPLY_ITEMS[math.random(#SUPPLY_ITEMS)], count = math.random(10, 40)}, enable_looted = true}
-                end
-            elseif et == 'coinfall' then   -- 金币雨
-                player.insert{name = 'coin', count = math.max(1, math.floor(8 * k + 0.5))}
-            end
-        end
+        local handler = et and WORLD_EVENTS[et]
+        if handler then handler(player, player.surface, ch, danger, k) end
     end
 end
 

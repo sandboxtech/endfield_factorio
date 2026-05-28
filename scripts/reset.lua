@@ -12,6 +12,7 @@ local M = {}
 -- storage.run 从 1 开始计数（on_init 中会调用一次 reset()，对应第 1 轮）。
 function M.reset()
     game.speed = 1
+    constants.ensure_defaults()   -- 补齐默认值：新档初始化 / 老档迁移 / 每轮兜底（幂等，不覆盖已调参数）
     storage.run = (storage.run or 0) + 1
 
     local last_run_ticks = (game.tick - (storage.run_start_tick or game.tick))
@@ -22,9 +23,7 @@ function M.reset()
 
     -- 飞船老化：storage.platform_age[idx] 记录该平台已经历的跃迁次数。
     -- 每次跃迁计数 +1，并在船名前追加一个 skull 作为可视化倒计时；
-    -- 计数超过 storage.platform_lifetime 时摧毁。
-    storage.platform_age = storage.platform_age or {}
-    storage.platform_lifetime = storage.platform_lifetime or 3
+    -- 计数超过 storage.platform_lifetime 时摧毁。（默认值见 constants.ensure_defaults）
     for _, space_platform in pairs(game.forces.player.platforms) do
         local age = (storage.platform_age[space_platform.index] or 0) + 1
         space_platform.name = '[virtual-signal=signal-skull]' .. space_platform.name
@@ -128,8 +127,7 @@ function M.reset()
     game.reset_time_played()
 
     -- 污染/敌人/腐败等【影响玩法节奏】的全局参数：大概率正常值，小概率小幅偏离（util.mostly_normal）。
-    -- 不再大幅随机——极端的污染/虫子/腐败速度会毁掉一局的可玩性。
-    storage.difficulty = storage.difficulty or 1
+    -- 不再大幅随机——极端的污染/虫子/腐败速度会毁掉一局的可玩性。（difficulty 默认值见 constants.ensure_defaults）
     game.forces.enemy.reset_evolution()
     game.map_settings.enemy_expansion.enabled = false
     game.map_settings.pollution.enabled = true

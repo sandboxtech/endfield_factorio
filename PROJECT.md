@@ -11,7 +11,7 @@
 
 ## 顶层文件
 
-- `control.lua`：场景入口，按顺序 require 各子模块，`on_init` 初始化 `storage`（含各调试/概率常量）并执行第一轮跃迁。
+- `control.lua`：场景入口，按顺序 require 各子模块；`on_init` 执行第一轮跃迁、`on_configuration_changed` 兜底老存档迁移，二者的 storage 默认值统一经 `constants.ensure_defaults`（亦在每轮 `reset` 开头调用，幂等）。
 - `info.json` / `description.json`：场景元数据。
 - `locale/`：本地化字符串（`wn.*` 键由代码引用，en + zh-CN）。
 
@@ -19,7 +19,7 @@
 
 | 文件 | 职责 |
 | --- | --- |
-| `constants.lua` | 全局常量：tick 换算、品质→经验倍率、12 种科技瓶顺序。无副作用。 |
+| `constants.lua` | 全局常量：tick 换算、品质→经验倍率、12 种科技瓶顺序；`balance` 表集中各世界变体的出现概率/权重（一眼看全、统一调）；`ensure_defaults()` 设 storage 默认值，是唯一会写 storage 的函数。 |
 | `util.lua` | 通用工具：`readable`、`random_exp` 指数分布、`random_nature`、`mostly_normal`、`evo_biter`（按进化度挑虫）。 |
 | `events.lua` | **事件总线**：同一事件多处 `events.on()` 订阅、内部只 `script.on_event` 注册一次再分发 → 避免单事件被多处注册互相覆盖。可能被多方监听的事件都走它。 |
 | `noise.lua` | 2D simplex + 分形多倍频 + 种子派生变换（旋转/拉伸/缩放）。供运行时手动铺设噪声地物（移植自 ComfyFactorio）。 |
@@ -31,9 +31,9 @@
 | `research.lua` | 研究含 `-science-pack` 名（非 trigger）的科技 → 本轮倒计时 +1 小时并公告。 |
 | `map_features.lua` | **每轮地图风味**（手动放置原生做不到的东西）：`M.knobs()` 本轮整局气质连续旋钮；跨星球 `EXOTIC` 异物（稀疏 simplex 散布）；`theme_trees` 改原生树颜色/灰度（连续插值）；加权战利品 + 品质 + 随机木/铁/钢箱 + 罕见**测试箱**（永续/无底，不可开不可拆可摧毁）；`feat_danger` 危险敌群（独立开关 worm/巢/机枪炮塔+弹/地雷/重炮+弹，force=enemy）；`feat_wrecks` 飞船残骸障碍。`M.generate` 逐区块调用。 |
 | `world_fx.lua` | 事件驱动的世界效果（经 `events` 总线）：**复制虫世界**——玩家建筑被虫破坏时原地冒虫（呼应 Comfy infested）。 |
-| `surface.lua` | 跃迁后逐星球生成：原生 autoplace 调参 + **气候噪声偏置**（`control:moisture/aux/temperature:bias` 修改原生而非覆盖）+ **世界变体**滚定（染地/tile 替换/危险/事件/战利品风格）+ 圆形虚空边界；逐区块应用 tile 替换与染地精灵；母星放市场。debug 时向**管理员**打印每次生成的属性。 |
+| `surface.lua` | 跃迁后逐星球生成：原生 autoplace 调参 + **气候噪声偏置**（`control:moisture/aux/temperature:bias` 修改原生而非覆盖）+ **世界变体**滚定（染地/tile 替换/危险/事件/战利品风格）+ 圆形虚空边界；逐区块应用 tile 替换与染地精灵；母星放市场。各星球资源/自然/气候由声明式 `PLANET_GEN` 表驱动。debug 时向**管理员**打印每次生成的属性。 |
 | `reset.lua` | 跃迁主流程：收集经验 → 杀玩家 → 清星球(异步) → 重置科技 → 随机参数 → 清地图标记。 |
-| `tick.lua` | `on_gui_click` 与 `on_nth_tick(3600)` 的**唯一注册点**：每分钟在线采样 + 给在线玩家各 +1 金币 + 倒计时/提醒 + **事件世界**(`run_world_events`：raid/meteor/supply/coinfall)。 |
+| `tick.lua` | `on_gui_click` 与 `on_nth_tick(3600)` 的**唯一注册点**：每分钟在线采样 + 给在线玩家各 +1 金币 + 倒计时/提醒 + **事件世界**(`run_world_events` 按 `WORLD_EVENTS` 分发表：raid/meteor/supply/coinfall)。 |
 | `player_stats.lua` | 行为统计存储（craft/mining/move/deaths/online_minutes，按玩家名，跨跃迁累积）；递增在 `passives.lua`。 |
 | `rocket.lua` | 发射火箭惩罚：每次 `on_rocket_launched` 令本轮 `warp_hours` -1 分钟，公告 + 打印载荷。 |
 | `commands.lua` | 命令：`/reset`/`/players_gui`/`/exp_clear`（管理员）；`/inspect`(=`/chakan`)、`/countdown`(=`/life`/`/daojishi`)、`/preview`(=`/yulan`)、`/settle`(=`/jiesuan` 提前结算)、`/tutorial`(=`/jiaocheng`)、`/suicide`(=`/zisha`)。自定义指令使用时私聊通知管理员。 |
@@ -67,7 +67,7 @@
 - `storage.last_respawn_run[idx]`：上次复活的 `run`，判"本世界是否首次复活"。
 - 地图：`storage.radius / radius_min / radius_max / radius_of / difficulty / *_multiplier / local_specialty_multiplier`。
 - 世界变体（每星球，每轮重滚）：`ground_tint / tile_remap / danger_theme / event_world / loot_style`。
-- **可调常量**（`control.lua` on_init 设默认，游戏内 `/c storage.xxx=N` 动态调）：
+- **可调常量**（默认值由 `constants.ensure_defaults` 设 —— on_init / on_configuration_changed / 每轮 reset 都调用，幂等不覆盖；游戏内 `/c storage.xxx=N` 动态调）：
   - `debug`(默认 true，向管理员打印每次生成属性)
   - 概率乘数（0=关）：`prob_ground_tint / prob_tile_remap / prob_danger / prob_event`
   - 强度：`danger_density`(敌人/残骸密度) / `event_intensity`(事件落点) / `tile_remap_rules`(最多规则数) / `test_chest_chance`(测试箱概率)

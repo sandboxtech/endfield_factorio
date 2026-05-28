@@ -89,6 +89,7 @@ M.starter_inventory = {
     {name = 'copper-plate',       count = 100},
     {name = 'coal',               count = 50},
     {name = 'stone',              count = 50},
+    {name = 'wood',              count = 50},
 }
 
 local function give_starter_armor(player)

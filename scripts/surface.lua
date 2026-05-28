@@ -3,6 +3,7 @@ local util = require('scripts.util')
 local market = require('scripts.market')
 local map_features = require('scripts.map_features')
 local noise = require('scripts.noise')
+local constants = require('scripts.constants')
 
 -- 各"世界变体"出现概率的可调常量（默认 1，游戏内 /c storage.prob_danger=3 之类即可动态调）。
 local function prob(key) return storage['prob_' .. key] or 1 end
@@ -186,7 +187,7 @@ local PLANET_SRC = {
 }
 -- 常规自然目标类：同类高概率、水↔地次之（exotic 与 artificial 不在这里——它们各受 mask 限制，见 pick_target）。
 local function pick_natural_class(src_class)
-    if math.random() < 0.7 then return src_class end
+    if math.random() < constants.balance.tile_same_class then return src_class end
     return src_class == 'water' and 'ground' or 'water'
 end
 -- 运行时按 prototypes.tile 过滤掉无效 tile 名（拼错的自动丢弃，避免 set_tiles/find_tiles 报 unknown tile）。
@@ -231,10 +232,53 @@ end
 --   noise → 一定概率取 exotic(岩浆/油海/氨海/虚空/太空)；ore → 一定概率取 artificial(人造铺装)；
 --   其余走常规自然(水/地)。tree/rock 只会落到自然。
 local function pick_target(src, mask)
-    if mask == 'noise' and math.random() < 0.3 then return rand_tile('exotic') end
-    if mask == 'ore' and math.random() < 0.4 then return rand_tile('artificial') end
+    if mask == 'noise' and math.random() < constants.balance.tile_to_exotic then return rand_tile('exotic') end
+    if mask == 'ore' and math.random() < constants.balance.tile_to_artificial then return rand_tile('artificial') end
     return rand_tile(pick_natural_class(src.class))
 end
+
+-- 各星球【资源/自然/气候】声明式配置（替代原先每星球一段 if 链）。逐字段含义：
+--   res       普通资源名列表（用全局倍率，set_resource 默认 specialty_mult=1）
+--   specialty {资源名, 额外丰度系数}：丰度再乘 local_specialty_multiplier × 系数（地方特产压低）
+--   water     random_water_mgs（频率/丰度略抬，保证可泵水）
+--   nature    random_nature_mgs（悬崖/火山/岛屿等自然要素）
+--   knob      {autoplace名, 旋钮名}：nature_by_knob，密度随本轮整局气质（树/石/植被）
+--   balance   balance_mgs（敌人巢：大概率正常密度）
+--   peaceful  true → 1/balance.peaceful_one_in 概率开宁和模式
+--   climate   true → bias_climate（仅母星，噪声偏置整星干湿冷热）
+-- 飞船平台等不在表内的表面直接跳过。starting_area_moisture 一律用原版默认（出生区本就湿润）。
+local PLANET_GEN = {
+    nauvis = {
+        peaceful = true,
+        res       = {'iron-ore', 'copper-ore', 'stone', 'coal', 'crude-oil'},
+        specialty = {{'uranium-ore', 1}},
+        water     = {'water'},
+        nature    = {'nauvis_cliff'},
+        knob      = {{'trees', 'verdancy'}, {'rocks', 'rockiness'}},
+        balance   = {'enemy-base'},
+        climate   = true,
+    },
+    vulcanus = {
+        res       = {'vulcanus_coal', 'calcite', 'sulfuric_acid_geyser'},
+        specialty = {{'tungsten_ore', 1}},
+        nature    = {'vulcanus_volcanism'},
+    },
+    fulgora = {
+        specialty = {{'scrap', 1}},
+        nature    = {'fulgora_islands', 'fulgora_cliff'},
+    },
+    gleba = {
+        peaceful  = true,
+        specialty = {{'gleba_stone', 2}},
+        water     = {'gleba_water'},
+        nature    = {'gleba_cliff'},
+        knob      = {{'gleba_plants', 'verdancy'}},
+        balance   = {'gleba_enemy_base'},
+    },
+    aquilo = {
+        specialty = {{'lithium_brine', 0.5}, {'fluorine_vent', 0.5}, {'aquilo_crude_oil', 0.5}},
+    },
+}
 
 -- 表面新建时只重置 seed（cleared 才会进入完整生成流程）。
 script.on_event(defines.events.on_surface_created, function(event)
@@ -298,14 +342,7 @@ script.on_event(defines.events.on_surface_cleared, function(event)
         surface.daytime = 0      -- 永昼
     end
 
-    storage.radius_min = storage.radius_min or 256
-    storage.radius_max = storage.radius_max or 4096
-    storage.radius = storage.radius or 2048
-    -- 全局资源倍率（老存档兜底；新档由 control.lua on_init 设为 4）
-    storage.richness_multiplier = storage.richness_multiplier or 4
-    storage.size_multiplier = storage.size_multiplier or 1
-    storage.frequency_multiplier = storage.frequency_multiplier or 1
-    -- 刷新星球半径，箝制在 [radius_min, radius_max]
+    -- 刷新星球半径，箝制在 [radius_min, radius_max]（默认值见 constants.ensure_defaults）
     local r = storage.radius * util.random_exp(2)
     r = math.max(storage.radius_min, r)
     r = math.min(storage.radius_max, r)
@@ -316,8 +353,6 @@ script.on_event(defines.events.on_surface_cleared, function(event)
     mgs.height = r * 2 + 32
     mgs.starting_area = 1 + 2 * util.random_exp(2)
 
-    if storage.debug == nil then storage.debug = true end   -- 老存档兜底
-
     -- 本轮整局气质（繁茂/岩石/危险/富庶/异物），与 map_features 共用同一套确定性旋钮 → 全局气质一致。
     local knobs = map_features.knobs()
 
@@ -327,9 +362,9 @@ script.on_event(defines.events.on_surface_cleared, function(event)
     -- 染地世界：小概率出现（诡异世界更可能）。出现时 alpha 走立方曲线 → 大概率温和淡染、
     -- 小概率浓重得像 infested。先清掉本表面上一轮的染色精灵，再决定本轮是否/如何染。
     clear_ground_tint(surface)
-    storage.ground_tint = storage.ground_tint or {}
     storage.ground_tint[surface.name] = nil
-    if math.random() < (0.06 + 0.25 * knobs.exotic) * prob('ground_tint') then
+    local bt = constants.balance.ground_tint
+    if math.random() < (bt.base + bt.exotic * knobs.exotic) * prob('ground_tint') then
         local c = GROUND_TINT_PALETTE[math.random(#GROUND_TINT_PALETTE)]
         local a = 0.05 + (math.random() ^ 3) * 0.32   -- 多半 ~0.05–0.12 淡染；极少 ~0.37 浓染(infested 感)
         storage.ground_tint[surface.name] = {r = c.r, g = c.g, b = c.b, a = a}
@@ -339,16 +374,16 @@ script.on_event(defines.events.on_surface_cleared, function(event)
     -- tile 替换世界：较常见（多为自然同类替换），本轮 1~3 条规则。每条 = 源家族 → 目标 tile + 一种 mask：
     --   all  整片换(自然同类多用，不结合噪声)   noise 平滑大团噪声成片
     --   tree/rock/ore 跟随【2.0 原生的树/石/矿分布】替换 → 森林地面/岩屑带/矿脉晕染，非常组织化。
-    storage.tile_remap = storage.tile_remap or {}
     storage.tile_remap[surface.name] = nil
     local srcs = valid_pools().src[surface.name]
-    if srcs and #srcs > 0 and math.random() < (0.5 + 0.4 * knobs.exotic) * prob('tile_remap') then
+    local br = constants.balance.tile_remap
+    if srcs and #srcs > 0 and math.random() < (br.base + br.exotic * knobs.exotic) * prob('tile_remap') then
         local rules = {}
         local nrules = 1 + math.floor(math.random() ^ 2 * (storage.tile_remap_rules or 3))   -- 偏向少：多半 1 条
         for _ = 1, nrules do
             local src = srcs[math.random(#srcs)]
             -- 先定 mask：~45% all(整片自然，安全)，否则 noise/跟随树石矿。
-            local mask = (math.random() < 0.45) and 'all'
+            local mask = (math.random() < constants.balance.tile_mask_all) and 'all'
                 or ({'noise', 'noise', 'tree', 'rock', 'ore'})[math.random(5)]
             -- 选目标。【约束】all 整片替换不能让星球缺资源：水源→同功能水(full，仍可泵)、地源→任意地表；
             -- exotic(岩浆/油海/氨海/虚空) 只走 noise、artificial(人造铺装) 只走 ore，且都是部分替换(原 tile 仍保留)。
@@ -379,18 +414,18 @@ script.on_event(defines.events.on_surface_cleared, function(event)
     -- 危险世界：每星球独立滚（概率 = knobs.danger × prob_danger，prob_danger=0 即关闭）。
     -- 各敌人类型【独立】开关 → 组合多样(只沙虫 / 只机枪炮塔 / 虫+重炮 …)；机枪弹种随危险度；
     -- 35% 还带"复制虫"(建筑被虫破坏冒虫，事件驱动见 world_fx.lua)。具体放置在 map_features.feat_danger。
-    storage.danger_theme = storage.danger_theme or {}
     storage.danger_theme[surface.name] = nil
     if math.random() < knobs.danger * prob('danger') then
         local mags = {'firearm-magazine', 'piercing-rounds-magazine', 'uranium-rounds-magazine'}
+        local bd = constants.balance.danger
         local t = {
-            worm    = math.random() < 0.6,    -- 沙虫炮塔
-            spawner = math.random() < 0.4,    -- 虫巢
-            turret  = math.random() < 0.4,    -- 敌方机枪炮塔(带弹)
-            mine    = math.random() < 0.4,    -- 敌方地雷
-            art     = math.random() < 0.12 + 0.3 * knobs.danger,   -- 敌方重炮(更稀，随危险度)
+            worm    = math.random() < bd.worm,       -- 沙虫炮塔
+            spawner = math.random() < bd.spawner,    -- 虫巢
+            turret  = math.random() < bd.turret,     -- 敌方机枪炮塔(带弹)
+            mine    = math.random() < bd.mine,       -- 敌方地雷
+            art     = math.random() < bd.art_base + bd.art_danger * knobs.danger,   -- 敌方重炮(更稀，随危险度)
             mag     = mags[math.min(#mags, 1 + math.floor(knobs.danger * 3))],
-            replicant = math.random() < 0.35,
+            replicant = math.random() < bd.replicant,
         }
         if not (t.worm or t.spawner or t.turret or t.mine or t.art) then t.worm = true end   -- 至少一种
         storage.danger_theme[surface.name] = t
@@ -402,24 +437,23 @@ script.on_event(defines.events.on_surface_cleared, function(event)
 
     -- 事件世界：每分钟触发一种事件（独立于危险度，奖励/危险皆有）。详见 tick.lua run_world_events。
     --   raid 空降虫 / meteor 矿石陨石雨 / supply 物资空投 / coinfall 金币雨。
-    storage.event_world = storage.event_world or {}
     storage.event_world[surface.name] = nil
-    if math.random() < 0.1 * prob('event') then
+    if math.random() < constants.balance.event.base * prob('event') then
         local et = ({'raid', 'meteor', 'supply', 'coinfall'})[math.random(4)]
         storage.event_world[surface.name] = et
         dbg[#dbg + 1] = 'event:' .. et
     end
 
     -- 战利品风格：每世界【独立】决定出哪些箱体(木/铁/钢) + 是否出测试箱(永续/无底)。
-    storage.loot_style = storage.loot_style or {}
+    local bl = constants.balance.loot
     local chests = {}
-    if math.random() < 0.85 then chests[#chests + 1] = 'wooden-chest' end
-    if math.random() < 0.7 then chests[#chests + 1] = 'iron-chest' end
-    if math.random() < 0.6 then chests[#chests + 1] = 'steel-chest' end
+    if math.random() < bl.wood then chests[#chests + 1] = 'wooden-chest' end
+    if math.random() < bl.iron then chests[#chests + 1] = 'iron-chest' end
+    if math.random() < bl.steel then chests[#chests + 1] = 'steel-chest' end
     if #chests == 0 then chests[1] = 'wooden-chest' end
     storage.loot_style[surface.name] = {
         chests = chests,
-        test = (math.random() < 0.5) and (storage.test_chest_chance or 0.06) or 0,   -- 半数世界才可能出测试箱
+        test = (math.random() < bl.test_world) and storage.test_chest_chance or 0,   -- 半数世界才可能出测试箱
     }
 
     if storage.debug then
@@ -432,65 +466,19 @@ script.on_event(defines.events.on_surface_cleared, function(event)
             #dbg > 0 and table.concat(dbg, ', ') or '普通'))
     end
 
-    -- 母星
-    if surface == game.surfaces.nauvis then
-        surface.peaceful_mode = math.random(1, 5) == 1
-
-        for _, res in pairs({'iron-ore', 'copper-ore', 'stone', 'coal', 'crude-oil'}) do
-            set_resource(res, mgs)
+    -- 按 PLANET_GEN 配置生成各星球资源/自然/气候（飞船平台等不在表内 → 跳过）。
+    local cfg = PLANET_GEN[surface.name]
+    if cfg then
+        if cfg.peaceful then surface.peaceful_mode = math.random(1, constants.balance.peaceful_one_in) == 1 end
+        for _, res in ipairs(cfg.res or {}) do set_resource(res, mgs) end
+        for _, sp in ipairs(cfg.specialty or {}) do
+            set_resource(sp[1], mgs, storage.local_specialty_multiplier * sp[2])
         end
-        for _, res in pairs({'uranium-ore'}) do
-            set_resource(res, mgs, storage.local_specialty_multiplier)
-        end
-        random_water_mgs(mgs, 'water')
-        random_nature_mgs(mgs, 'nauvis_cliff')
-        -- starting_area_moisture 用原版默认（出生区本就湿润），不再随机到极干
-        nature_by_knob(mgs, 'trees', knobs.verdancy)    -- 树：密度随繁茂度，规模多半小偶尔大
-        nature_by_knob(mgs, 'rocks', knobs.rockiness)
-        balance_mgs(mgs, 'enemy-base')   -- 虫巢密度影响难度 → 大概率正常
-
-        -- 本轮气候用噪声【偏置】修改原生（连续，非离散主题）：偏湿→偏绿多树、偏干→偏沙、控温改群系，
-        -- 由原生生成器自然铺开（不再硬抑制某地块家族）。每局母星调色板因此连续渐变。
-        bias_climate(mgs, knobs)
-    end
-
-    -- 火星
-    if surface == game.surfaces.vulcanus then
-        for _, res in pairs({'vulcanus_coal', 'calcite', 'sulfuric_acid_geyser'}) do
-            set_resource(res, mgs)
-        end
-        for _, res in pairs({'tungsten_ore'}) do
-            set_resource(res, mgs, storage.local_specialty_multiplier)
-        end
-        random_nature_mgs(mgs, 'vulcanus_volcanism')
-    end
-
-    -- 雷星
-    if surface == game.surfaces.fulgora then
-        for _, res in pairs({'scrap'}) do
-            set_resource(res, mgs, storage.local_specialty_multiplier)
-        end
-        random_nature_mgs(mgs, 'fulgora_islands')
-        random_nature_mgs(mgs, 'fulgora_cliff')
-    end
-
-    -- 草星
-    if surface == game.surfaces.gleba then
-        surface.peaceful_mode = math.random(1, 5) == 1
-
-        set_resource('gleba_stone', mgs, storage.local_specialty_multiplier * 2)
-
-        balance_mgs(mgs, 'gleba_enemy_base')   -- 五足兽巢密度影响难度 → 大概率正常
-
-        random_water_mgs(mgs, 'gleba_water')
-        nature_by_knob(mgs, 'gleba_plants', knobs.verdancy)   -- 草星植被同样随本轮繁茂度
-        random_nature_mgs(mgs, 'gleba_cliff')
-    end
-
-    if surface == game.surfaces.aquilo then
-        for _, res in pairs({'lithium_brine', 'fluorine_vent', 'aquilo_crude_oil'}) do
-            set_resource(res, mgs, storage.local_specialty_multiplier * 0.5)
-        end
+        for _, w in ipairs(cfg.water or {}) do random_water_mgs(mgs, w) end
+        for _, n in ipairs(cfg.nature or {}) do random_nature_mgs(mgs, n) end
+        for _, kn in ipairs(cfg.knob or {}) do nature_by_knob(mgs, kn[1], knobs[kn[2]]) end
+        for _, b in ipairs(cfg.balance or {}) do balance_mgs(mgs, b) end
+        if cfg.climate then bias_climate(mgs, knobs) end
     end
 
     surface.map_gen_settings = mgs
