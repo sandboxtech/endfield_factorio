@@ -1,7 +1,7 @@
 -- 2D simplex 噪声 + 分形多倍频。control 阶段纯 Lua，可在 on_chunk_generated 里逐格求值，
 -- 用来在场景里"手动"造自然地形/矿脉（场景改不了数据阶段的 map gen，只能这样运行时铺）。
--- simplex 算法：Stefan Gustavson 公有领域实现（移植自 lua-simplexnoise，ComfyFactorio 同款）。
--- 分形 fractal/octaves：仿 ComfyFactorio utils/math/get_noise —— 多层不同频率叠加 → 自然不规则、不重复。
+-- simplex 算法：Stefan Gustavson 公有领域实现。
+-- 分形 fractal/octaves：多层不同频率叠加 → 自然不规则、不重复。
 
 local bit32_band = bit32.band
 local math_floor = math.floor
@@ -69,7 +69,7 @@ end
 local M = {}
 M.d2 = d2
 
--- 倍频模板（modifier=频率，越小团块越大；weight=权重）。仿 Comfy 的 'scrapyard'。
+-- 倍频模板（modifier=频率，越小团块越大；weight=权重）。
 M.octaves = {
     -- 废料：主频偏高(团块中等) + 强细节(打碎巨块、带孔洞)，避免一整片巨型矿
     scrap = {

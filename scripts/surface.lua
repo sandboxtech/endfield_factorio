@@ -78,7 +78,7 @@ local function bias_climate(mgs, knobs)
     pen['control:moisture:frequency'] = tostring(0.6 + math.random() * 0.9)      -- 生物群系斑块大小(连续)
 end
 
--- "染地世界"调色板（学 Comfy journey 'infested'）：在地面层盖半透明染色精灵，不改地块本身
+-- "染地世界"调色板：在地面层盖半透明染色精灵，不改地块本身
 -- （寻路/属性/资源都不变），只改观感 → 属"修改观感"而非"覆盖地形"。
 local GROUND_TINT_PALETTE = {
     {r = 0.75, g = 0.0,  b = 0.15},  -- 血红
@@ -360,13 +360,13 @@ script.on_event(defines.events.on_surface_cleared, function(event)
     local dbg = {}   -- debug 模式下汇总本表面生成的变体属性
 
     -- 染地世界：小概率出现（诡异世界更可能）。出现时 alpha 走立方曲线 → 大概率温和淡染、
-    -- 小概率浓重得像 infested。先清掉本表面上一轮的染色精灵，再决定本轮是否/如何染。
+    -- 小概率浓重。先清掉本表面上一轮的染色精灵，再决定本轮是否/如何染。
     clear_ground_tint(surface)
     storage.ground_tint[surface.name] = nil
     local bt = constants.balance.ground_tint
     if math.random() < (bt.base + bt.exotic * knobs.exotic) * prob('ground_tint') then
         local c = GROUND_TINT_PALETTE[math.random(#GROUND_TINT_PALETTE)]
-        local a = 0.05 + (math.random() ^ 3) * 0.32   -- 多半 ~0.05–0.12 淡染；极少 ~0.37 浓染(infested 感)
+        local a = 0.05 + (math.random() ^ 3) * 0.32   -- 多半 ~0.05–0.12 淡染；极少 ~0.37 浓染
         storage.ground_tint[surface.name] = {r = c.r, g = c.g, b = c.b, a = a}
         dbg[#dbg + 1] = string.format('tint a=%.2f', a)
     end

@@ -104,7 +104,7 @@ local EXOTIC = {
     {name = 'huge-volcanic-rock', off = 321, rare = true, density = 0.06, threshold = 0.86},
 }
 
--- 战利品（坠机点/宝箱）。仿 RedMew 加权表：weight 高=常见便宜，低=稀有贵重；含部分 SA 中后期物品。
+-- 战利品（坠机点/宝箱）加权表：weight 高=常见便宜，低=稀有贵重；含部分 SA 中后期物品。
 local LOOT = {
     {w = 10, name = 'iron-plate', lo = 50, hi = 300},
     {w = 10, name = 'copper-plate', lo = 50, hi = 300},

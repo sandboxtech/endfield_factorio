@@ -53,7 +53,7 @@ function M.ensure_defaults()
     -- 标量默认（用 nil 判定，布尔 false/0 也能被正确保留）
     local d = {
         richness_multiplier = 8,          -- 矿更富（每格储量）· rail world：原 4 的 ×2
-        size_multiplier = 2,              -- 矿脉更大 · rail world：原 1 的 ×2
+        size_multiplier = 4,              -- 矿脉更大 · rail world：原 1 的 ×4
         frequency_multiplier = 0.5,       -- 矿脉更稀疏 · rail world：原 1 的 ×1/2（少而大的矿，逼玩家修铁路）
         local_specialty_multiplier = 0.25,
         radius = 2048,

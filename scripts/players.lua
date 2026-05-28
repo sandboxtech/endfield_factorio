@@ -24,14 +24,15 @@ end
 -- 把 target 的统计数据打印给 viewer：4 项技能 + 在线时长 + 各瓶累计经验。
 function M.print_inspection(target, viewer)
     viewer.print({'wn.inspect-header', target.name})
+    -- 人物等级 = 开局金币 = floor(√在线分钟)；升到下一级需 (等级+1)² 分钟在线
+    local om = passives.get_stat(target.index, 'online_minutes')
+    local lv = respawn_gifts.coin_reward(om)
+    viewer.print({'wn.ability-online', om, lv, (lv + 1) * (lv + 1) - om})
     -- 角色技能（实时值，每次 /inspect 现算）：手搓/移动/挖矿/生命
     for _, ab in ipairs(passives.abilities) do
         local val = passives.get_stat(target.index, ab.stat)
         viewer.print({ab.locale, math.floor(val), ab.fmt(passives.skill_factor(target.index, ab))})
     end
-    -- 累计在线时长 → 开局金币(√在线分钟)
-    local om = passives.get_stat(target.index, 'online_minutes')
-    viewer.print({'wn.ability-online', om, respawn_gifts.coin_reward(om)})
     -- 每种科技瓶：总经验 + 当前发的物资 + 距下一档还差多少经验、升到多少
     for _, pack in ipairs(constants.science_packs) do
         local items = respawn_gifts.pack_gifts[pack]

@@ -1,5 +1,5 @@
 -- 玩家行为统计的数据存储。技能用的统计（craft_count/mining_count/move_distance/deaths）
--- 由 passives.lua 在对应动作事件里递增并即时施加；本文件只负责 get/默认值/迁移 +
+-- 由 passives.lua 在对应动作事件里递增并即时施加；本文件只负责 get/默认值 +
 -- 在线类统计（online_minutes 等）的采样。
 -- 字段：
 --   online_minutes  在线累计分钟数（每分钟采样，在线即 +1 → 金币奖励）

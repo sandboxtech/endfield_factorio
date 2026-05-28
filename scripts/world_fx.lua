@@ -17,7 +17,7 @@ local function register(name, event, run)
 end
 
 -- 复制虫（danger_theme[星球].replicant）：玩家建筑被【虫】破坏时，原地冒出新虫 →
--- 防御被打穿会滚雪球，呼应 Comfy journey 的 infested/replicant。on_entity_died 高频，先做最便宜的早退。
+-- 防御被打穿会滚雪球。on_entity_died 高频，先做最便宜的早退。
 register('replicant', defines.events.on_entity_died, function(e)
     if not storage.danger_theme then return end
     local ent = e.entity
