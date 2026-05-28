@@ -38,13 +38,14 @@ local function random_nature_mgs(mgs, name, value)
     ac.richness  = util.random_exp(value)
 end
 
+-- 水域：frequency/size 保底 0.5，避免 random_exp 抽到极小值（可低至 0.125）导致"缺水世界"。
 local function random_water_mgs(mgs, name, value)
     if not value then value = 3 end
     local ac = mgs.autoplace_controls[name]
     if not ac then return end
-    ac.frequency = util.random_exp(value)+0.25
-    ac.size      = util.random_exp(value)
-    ac.richness  = util.random_exp(value)+0.25
+    ac.frequency = math.max(0.5, util.random_exp(value) + 0.25)
+    ac.size      = math.max(0.5, util.random_exp(value))
+    ac.richness  = util.random_exp(value) + 0.25
 end
 
 -- 影响难度/节奏的要素（敌人巢穴）：大概率正常、小概率小幅偏离，避免随机出"虫海"或"无虫"。
