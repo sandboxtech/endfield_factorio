@@ -33,24 +33,21 @@ function M.print_inspection(target, viewer)
         local val = passives.get_stat(target.index, ab.stat)
         viewer.print({ab.locale, math.floor(val), ab.fmt(passives.skill_factor(target.index, ab))})
     end
-    -- 每种科技瓶：总经验 + 当前发的物资 + 距下一档还差多少经验、升到多少
+    -- 每种科技瓶：等级(0-5) + 当前开局奖励 + 还差多少经验升级（仿人物等级那一行，去掉繁琐的下一档预览）
     for _, pack in ipairs(constants.science_packs) do
         local items = respawn_gifts.pack_gifts[pack]
         if items then
             local pexp = passives.exp_total_for_pack(target.index, pack)
+            local lv = respawn_gifts.pack_level(pexp)
             local cur = {}
             for _, item in ipairs(items) do
                 cur[#cur + 1] = '[img=item/' .. item .. ']×' .. respawn_gifts.gift_count(pexp, item)
             end
-            local nx = respawn_gifts.next_threshold(pexp, items)
+            local nx = respawn_gifts.exp_for_next_level(pexp)
             if nx then
-                local nxt = {}
-                for _, item in ipairs(items) do
-                    nxt[#nxt + 1] = '[img=item/' .. item .. ']×' .. respawn_gifts.gift_count(nx, item)
-                end
-                viewer.print({'wn.exp-detail', pack, pexp, table.concat(cur, ' '), nx - pexp, table.concat(nxt, ' ')})
+                viewer.print({'wn.exp-detail', pack, lv, table.concat(cur, ' '), pexp, nx - pexp})
             else
-                viewer.print({'wn.exp-detail-max', pack, pexp, table.concat(cur, ' ')})
+                viewer.print({'wn.exp-detail-max', pack, lv, table.concat(cur, ' '), pexp})
             end
         end
     end

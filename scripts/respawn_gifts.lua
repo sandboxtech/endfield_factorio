@@ -44,20 +44,20 @@ function M.gift_count(exp, item_name)
     return math.floor(cap * math.sqrt(exp / CAP_EXP))
 end
 
--- 让 items 中任一物品发放数 +1 所需的最小累计经验；全部触顶返回 nil。
--- 由 floor(stack × 5√(e/CAP)) = n+1 反解：e = CAP × ((n+1)/(5×stack))²。
-function M.next_threshold(exp, items)
-    local cur, best = exp or 0, nil
-    for _, item in ipairs(items) do
-        local stack = stack_size(item)
-        local n = M.gift_count(cur, item)
-        if n < 5 * stack then
-            local need = math.ceil(CAP_EXP * ((n + 1) / (5 * stack)) ^ 2)
-            if need <= cur then need = cur + 1 end
-            if not best or need < best then best = need end
-        end
-    end
-    return best
+-- 累计经验 → 等级 0..5（= 组数 5√(exp/CAP) 下取整；满级 5 = 发满 5 组）。
+-- 与 ability-online 的人物等级同理（都是 √ 曲线的整数级）。
+M.MAX_LEVEL = 5
+function M.pack_level(exp)
+    if not exp or exp <= 0 then return 0 end
+    if exp >= CAP_EXP then return M.MAX_LEVEL end
+    return math.floor(M.MAX_LEVEL * math.sqrt(exp / CAP_EXP))
+end
+
+-- 升到下一级所需的累计经验；已满级返回 nil。由 5√(e/CAP)=lv+1 反解：e = CAP × ((lv+1)/5)²。
+function M.exp_for_next_level(exp)
+    local lv = M.pack_level(exp)
+    if lv >= M.MAX_LEVEL then return nil end
+    return math.ceil(CAP_EXP * ((lv + 1) / M.MAX_LEVEL) ^ 2)
 end
 
 -- 挂机/在线金币：每轮首次复活时发放 floor(√在线分钟)。在线越久开局金币越多。
