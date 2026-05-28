@@ -462,6 +462,7 @@ script.on_event(defines.events.on_surface_cleared, function(event)
     storage.loot_style[surface.name] = {
         chests = chests,
         test = (math.random() < bl.test_world) and storage.test_chest_chance or 0,   -- 半数世界才可能出测试箱
+        rate = 0.3 + math.random() ^ 2 * 1.7,   -- 本世界战利品箱密度乘数(恒>0,立方偏低)：每个世界都有箱子,但有的稀有有的遍地
     }
 
     if storage.debug then

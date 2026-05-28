@@ -6,6 +6,7 @@ local reset = require('scripts.reset')
 local player_stats = require('scripts.player_stats')
 local map_features = require('scripts.map_features')
 local util = require('scripts.util')
+local gui = require('scripts.gui')
 
 local METEOR_ORE = {'iron-ore', 'copper-ore', 'stone', 'coal'}
 local SUPPLY_ITEMS = {'electronic-circuit', 'iron-gear-wheel', 'steel-plate', 'advanced-circuit', 'inserter', 'transport-belt', 'fast-inserter'}
@@ -100,6 +101,9 @@ script.on_nth_tick(60 * 60, function()
             if main then main.insert{name = 'coin', count = 1} end
         end
     end
+
+    -- 刷新顶部跃迁倒计时标签（精确到分钟，每分钟一次）。
+    gui.refresh_countdown()
 
     local last_run_ticks = game.tick - (storage.run_start_tick or game.tick)
     local life = (storage.warp_hours or 1) * constants.hour_to_tick - last_run_ticks

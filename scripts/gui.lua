@@ -37,6 +37,22 @@ local function build_skills_tooltip(player)
     return lines
 end
 
+-- 距下次跃迁剩余分钟（与 tick.lua 告警同一公式；精确到分钟，不足 1 分钟显示 0）。
+function M.warp_minutes()
+    local last = game.tick - (storage.run_start_tick or game.tick)
+    local life = (storage.warp_hours or 1) * constants.hour_to_tick - last
+    return math.max(0, math.floor(life / constants.min_to_tick))
+end
+
+-- 刷新所有在线玩家顶部的跃迁倒计时标签（由 tick.lua 每分钟调用）。
+function M.refresh_countdown()
+    local m = M.warp_minutes()
+    for _, player in pairs(game.connected_players) do
+        local el = player.gui.top.warp_countdown
+        if el and el.valid then el.caption = {'wn.warp-countdown', m} end
+    end
+end
+
 -- 渲染单个玩家的 HUD。
 function M.player_gui(player)
     player.gui.top.clear()
@@ -53,6 +69,17 @@ function M.player_gui(player)
     intro.style.maximal_height = 38
     intro.style.minimal_width = 288
     intro.style.padding = -2
+
+    -- 跃迁倒计时（每分钟由 tick.lua 刷新）
+    local cd = player.gui.top.add {
+        type = 'label',
+        name = 'warp_countdown',
+        caption = {'wn.warp-countdown', M.warp_minutes()}
+    }
+    cd.style.font = 'heading-1'
+    cd.style.font_color = {255, 210, 120}
+    cd.style.left_margin = 10
+    cd.style.top_margin = 6
 
     -- 星系词条已删除：每局世界的矿物/昼夜/天色等不摆在 UI 上，让玩家自己探索发现。
 
