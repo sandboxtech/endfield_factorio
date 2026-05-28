@@ -464,14 +464,20 @@ script.on_event(defines.events.on_surface_cleared, function(event)
         test = (math.random() < bl.test_world) and storage.test_chest_chance or 0,   -- 半数世界才可能出测试箱
         rate = 0.3 + math.random() ^ 2 * 1.7,   -- 本世界战利品箱密度乘数(恒>0,立方偏低)：每个世界都有箱子,但有的稀有有的遍地
     }
+    -- debug 摘要：本世界战利品风格——箱体(w木/i铁/s钢)、密度乘数 rate、永续(无底)箱概率 perp。
+    local ls = storage.loot_style[surface.name]
+    local cletters = {}
+    for _, c in ipairs(chests) do cletters[#cletters + 1] = c:sub(1, 1) end
+    dbg[#dbg + 1] = string.format('loot[%s] rate=%.2f perp=%.0f%%', table.concat(cletters), ls.rate, ls.test * 100)
 
     if storage.debug then
         if not INVALID_REPORTED and #INVALID_TILES > 0 then
             INVALID_REPORTED = true
             debug_print('[gen] 无效 tile 名(已忽略): ' .. table.concat(INVALID_TILES, ', '))
         end
-        debug_print(string.format('[gen] %s: verdancy=%.2f danger=%.2f exotic=%.2f | %s',
-            surface.name, knobs.verdancy, knobs.danger, knobs.exotic,
+        debug_print(string.format('[gen] %s r=%d: verdancy=%.2f rockiness=%.2f riches=%.2f danger=%.2f exotic=%.2f | %s',
+            surface.name, storage.radius_of[surface.name] or 0,
+            knobs.verdancy, knobs.rockiness, knobs.riches, knobs.danger, knobs.exotic,
             #dbg > 0 and table.concat(dbg, ', ') or '普通'))
     end
 

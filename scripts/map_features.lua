@@ -197,13 +197,13 @@ local LOOT = {
         'overgrowth-jellynut-soil',  'overgrowth-yumako-soil',
     }},
     -- 太空/平台
-    {cat = 'space',      w =  1, items = {
+    {cat = 'space',      w =  5, items = {
         'foundation',  'space-platform-foundation',  'space-platform-starter-pack',  'ice-platform',  'cargo-bay',
         'cargo-landing-pad',  'asteroid-collector',  'thruster',
         -- 'satellite' 已被 Space Age 删除(base-data-updates.lua 置 nil)，移出；item_ok 兜底其它失效名。
     }},
     -- 载具
-    {cat = 'vehicle',    w =  1, items = {
+    {cat = 'vehicle',    w =  5, items = {
         'car',  'tank',  'spidertron',
     }},
 }
@@ -235,10 +235,10 @@ end
 -- 随机品质（2.0 SA 特性，1.0 战利品没有）：多数 normal，小概率 uncommon/rare → 开箱偶有惊喜。
 local function roll_quality()
     local r = math.random()
-    if r < 0.0003 then return 'legendary' end
-    if r < 0.003 then return 'epic' end
-    if r < 0.03 then return 'rare' end
-    if r < 0.15 then return 'uncommon' end
+    if r < 0.0001 then return 'legendary' end
+    if r < 0.001 then return 'epic' end
+    if r < 0.01 then return 'rare' end
+    if r < 0.1 then return 'uncommon' end
     return 'normal'
 end
 

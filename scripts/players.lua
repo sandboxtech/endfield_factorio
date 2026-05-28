@@ -3,23 +3,8 @@ local constants = require('scripts.constants')
 local gui = require('scripts.gui')
 local passives = require('scripts.passives')
 local respawn_gifts = require('scripts.respawn_gifts')
-local science_exp = require('scripts.science_exp')
 
 local M = {}
-
--- 列出玩家所有非零科技瓶经验。broadcast=true 时用 game.print 让所有人看到。
--- 没有任何经验时静默（不打印空提示）。
-function M.print_science_exp(player, broadcast)
-    local sink = broadcast and game or player
-    local prefix = broadcast and (player.name .. ' ') or ''
-    local exp = science_exp.player_exp(player)
-    if not exp then return end
-    for pack, val in pairs(exp) do
-        if val > 0 then
-            sink.print({'wn.exp-entry', prefix, pack, val})
-        end
-    end
-end
 
 -- 把 target 的统计数据打印给 viewer：4 项技能 + 在线时长 + 各瓶累计经验。
 function M.print_inspection(target, viewer)
@@ -188,8 +173,6 @@ script.on_event(defines.events.on_player_joined_game, function(event)
         welcome = {'wn.welcome-new-player', player.name, player.locale}
     end
     game.print(welcome)
-
-    M.print_science_exp(player, true)
 end)
 
 return M
