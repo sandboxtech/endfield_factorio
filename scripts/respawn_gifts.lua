@@ -27,9 +27,9 @@ M.pack_gifts = {
 }
 
 -- 等级 = floor(√经验)，封顶 1000（与人物等级 floor(√在线分钟) 同一公式；升下一级需 (lv+1)² 经验）。
--- 组数 = ceil(等级/100)，封顶 10（1 级=1 组、100 级=1 组、101 级=2 组、1000 级=10 组上限）。
--- 每组 = 该物品的堆叠数(50/10…)：堆叠小的物品同组下绝对数量更少（更稀有）。每件赠品上限 10 组。
+-- 【赠品数量】= ceil(堆叠数 × 等级/100)：随等级连续增长——等级 100 = 1 组、等级 1000(封顶) = 10 组。
 -- 满级(1000 级)需该瓶累计 1,000,000 经验；100 级(1 组)需 10,000 经验。
+-- 注：level_groups(阶梯式 ceil(等级/100)，封顶 10) 现仅用于【背包格数加成】，与赠品数量公式分离。
 M.MAX_LEVEL = 1000
 M.MAX_GROUPS = 10
 local LEVELS_PER_GROUP = 100
@@ -58,9 +58,12 @@ function M.exp_for_next_level(exp)
     return (lv + 1) * (lv + 1)
 end
 
--- 发放数 = 组数 × 堆叠数（组数随等级阶梯：每 100 级 +1 组，封顶 10 组 = 10 × 堆叠数）。
+-- 发放数 = ceil(堆叠数 × 等级/100)：随等级【连续】缩放（不再每 100 级阶梯跳整组）。
+--   等级 0 → 0 件；等级 1 → ceil(堆叠×0.01)（多为 1 件）；等级 100 → 1 整组；等级 1000(封顶) → 10 组。
 function M.gift_count(exp, item_name)
-    return M.level_groups(M.pack_level(exp)) * stack_size(item_name)
+    local level = M.pack_level(exp)
+    if level <= 0 then return 0 end
+    return math.ceil(stack_size(item_name) * level / 100)
 end
 
 -- 玩家所有开局赠品总组数（每件 = 其瓶组数 × 件数）。供背包格数加成用。

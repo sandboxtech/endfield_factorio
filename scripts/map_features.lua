@@ -199,7 +199,8 @@ local LOOT = {
     -- 太空/平台
     {cat = 'space',      w =  1, items = {
         'foundation',  'space-platform-foundation',  'space-platform-starter-pack',  'ice-platform',  'cargo-bay',
-        'cargo-landing-pad',  'asteroid-collector',  'thruster',  'satellite',
+        'cargo-landing-pad',  'asteroid-collector',  'thruster',
+        -- 'satellite' 已被 Space Age 删除(base-data-updates.lua 置 nil)，移出；item_ok 兜底其它失效名。
     }},
     -- 载具
     {cat = 'vehicle',    w =  1, items = {
@@ -244,27 +245,55 @@ end
 -- 可机器人拆除的随机箱体：木/铁/钢（不再只钢箱）。
 local CHESTS = {'wooden-chest', 'iron-chest', 'steel-chest'}
 
+-- 物品名有效性校验：LOOT 表是手动穷举的，某些名字会随 DLC/版本失效
+-- （如 Space Age 删了 'satellite'），运行时 insert 不存在的物品会报 "unknown item name" 崩档。
+-- 此处统一拦截：无效则跳过，并把名字报告给所有【在线管理员】（同名只报一次，避免刷屏）。
+local function item_ok(name)
+    if prototypes.item[name] then return true end
+    storage.bad_items = storage.bad_items or {}
+    if not storage.bad_items[name] then
+        storage.bad_items[name] = true
+        log('endfield: 跳过无效战利品物品名: ' .. tostring(name))
+        for _, p in pairs(game.players) do
+            if p.connected and p.admin then
+                p.print('[战利品] 跳过无效物品名（LOOT 表需更新）: ' .. tostring(name))
+            end
+        end
+    end
+    return false
+end
+
 local function fill_loot(chest, n)
     local inv = chest.get_inventory(defines.inventory.chest)
     if not inv then return end
     n = math.min(n, #inv)   -- 抽取次数不超过箱子格数：小箱(木16)也能装满，又不溢出浪费
     for _ = 1, n do
         local name = pick_loot()
-        inv.insert{name = name, count = loot_count(name), quality = roll_quality()}
+        if item_ok(name) then
+            inv.insert{name = name, count = loot_count(name), quality = roll_quality()}
+        end
     end
 end
 
 -- 永续箱奖励（罕见）：随机一种物品无限供应。设为【不可打开/不可拆走、可摧毁】，
 -- 防止滥用又能就地用（接机械臂/传送带）。force=neutral（不进蓝图；机械臂仍可从中抽货）。
+-- 返回 true=成功放置（可继续放守卫），false=失败（已清理，不放守卫）。
 local function spawn_perpetual_chest(surface, pos)
     local chest = surface.create_entity{name = 'infinity-chest', force = 'neutral', position = pos}
-    if not chest then return end
-    local item = pick_loot('science')   -- 永续箱不出科技瓶
-    local ss = prototypes.item[item] and prototypes.item[item].stack_size or 50
+    if not chest then return false end
+    -- 永续箱不出科技瓶；选到无效物品名（item_ok 会报告管理员）就重抽，全失败则不放永续箱。
+    local item
+    for _ = 1, 8 do
+        local cand = pick_loot('science')
+        if item_ok(cand) then item = cand; break end
+    end
+    if not item then chest.destroy(); return false end
+    local ss = prototypes.item[item].stack_size
     chest.infinity_container_filters = {{index = 1, name = item, count = ss, mode = 'exactly'}}
     chest.operable = false        -- 不可打开/重配
     chest.minable_flag = false    -- 不可拆走
     chest.destructible = true     -- 可摧毁
+    return true
 end
 
 -- 永续箱守卫：只在【永续箱】四周放敌人(force=enemy)，普通箱【不放】。从 机枪炮塔/沙虫/地雷/重炮 随机抽，数量较多。
@@ -276,7 +305,9 @@ local PERP_GUARD_POOL = {
     {name = 'artillery-turret', ammo = 'artillery-shell', n = 4},  -- 重炮（炮弹）
 }
 local function guard_perpetual(surface, pos)
-    local dist = math.sqrt(pos.x * pos.x + pos.y * pos.y)
+    -- pos 可能是数组式 {x,y}（feat_crash_site/feat_treasure 传入）也可能是 {x=,y=}，统一取坐标。
+    local cx, cy = pos.x or pos[1], pos.y or pos[2]
+    local dist = math.sqrt(cx * cx + cy * cy)
     if dist < 64 then return end                          -- 出生点保护半径内不放
     local theme = storage.danger_theme and storage.danger_theme[surface.name]
     local mag = theme and theme.mag                       -- 本星弹种
@@ -284,7 +315,7 @@ local function guard_perpetual(surface, pos)
         local def = PERP_GUARD_POOL[math.random(#PERP_GUARD_POOL)]
         local name = type(def) == 'table' and def.name or def
         local ang, r = math.random() * 2 * math.pi, 3 + math.random() * 5
-        local gp = {x = pos.x + math.cos(ang) * r, y = pos.y + math.sin(ang) * r}
+        local gp = {x = cx + math.cos(ang) * r, y = cy + math.sin(ang) * r}
         local sp = surface.find_non_colliding_position(name, gp, 5, 1)
         if sp then
             local e = surface.create_entity{name = name, force = 'enemy', position = sp}
@@ -305,8 +336,9 @@ local function place_loot_chest(surface, pos, n, test_scale)
     local chests = (style and style.chests) or CHESTS
     local test = ((style and style.test) or (storage.test_chest_chance or 0.06)) * (test_scale or 1)   -- 0 也是合法值(本世界不出永续箱)
     if math.random() < test then
-        spawn_perpetual_chest(surface, pos)
-        guard_perpetual(surface, pos)   -- 只有永续箱周围放敌人
+        if spawn_perpetual_chest(surface, pos) then
+            guard_perpetual(surface, pos)   -- 只有永续箱周围放敌人
+        end
     else
         local chest = surface.create_entity{name = chests[math.random(#chests)], force = 'neutral', position = pos}
         if chest then fill_loot(chest, n) end
@@ -444,5 +476,51 @@ function M.generate(surface, lt)
     feat_danger(surface, lt, A, S, Z, W)
     feat_wrecks(surface, lt, W)
 end
+
+-- ============================================================================
+-- 【临时校验命令 /check_loot —— 测完把这一整段删掉】
+-- 校验本模块引用的【所有物品/实体名】是否都存在于 prototypes，列出缺失项（防 satellite 那类崩档）。
+-- 控制台或任意玩家可调用；结果打给调用者（控制台则写 log）。
+-- ============================================================================
+commands.add_command('check_loot', '校验 map_features 引用的物品/实体名是否存在', function(cmd)
+    local p = cmd.player_index and game.get_player(cmd.player_index)
+    local say = function(s) if p then p.print(s) else log(s) end end
+
+    -- 物品名：LOOT 全类 + 代码里 insert 的弹药
+    local items, seen = {}, {}
+    local function add_item(name, tag)
+        if not seen[name] then seen[name] = true; items[#items + 1] = {name = name, tag = tag} end
+    end
+    for _, cat in ipairs(LOOT) do
+        for _, name in ipairs(cat.items) do add_item(name, cat.cat) end
+    end
+    for _, name in ipairs({'firearm-magazine', 'artillery-shell'}) do add_item(name, 'ammo') end
+
+    -- 实体名：EXOTIC / 箱 / 永续箱守卫池 / 飞船残骸 / 危险池
+    local ents, eseen = {}, {}
+    local function add_ent(name)
+        if name and not eseen[name] then eseen[name] = true; ents[#ents + 1] = name end
+    end
+    for _, d in ipairs(EXOTIC) do add_ent(d.name) end
+    for _, n in ipairs(CHESTS) do add_ent(n) end
+    for _, d in ipairs(PERP_GUARD_POOL) do add_ent(type(d) == 'table' and d.name or d) end
+    for _, n in ipairs(WRECKS) do add_ent(n) end
+    for _, n in ipairs({'infinity-chest', 'biter-spawner', 'spitter-spawner',
+                        'small-worm-turret', 'medium-worm-turret', 'big-worm-turret',
+                        'gun-turret', 'artillery-turret', 'land-mine'}) do add_ent(n) end
+
+    local bad_i, bad_e = {}, {}
+    for _, it in ipairs(items) do
+        if not prototypes.item[it.name] then bad_i[#bad_i + 1] = it.tag .. '/' .. it.name end
+    end
+    for _, name in ipairs(ents) do
+        if not prototypes.entity[name] then bad_e[#bad_e + 1] = name end
+    end
+
+    say(('[check_loot] 物品 %d 个(缺 %d)，实体 %d 个(缺 %d)'):format(#items, #bad_i, #ents, #bad_e))
+    if #bad_i > 0 then say('缺失物品: ' .. table.concat(bad_i, ', ')) end
+    if #bad_e > 0 then say('缺失实体: ' .. table.concat(bad_e, ', ')) end
+    if #bad_i == 0 and #bad_e == 0 then say('全部存在，无缺失') end
+end)
 
 return M

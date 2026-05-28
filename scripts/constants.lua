@@ -59,7 +59,7 @@ function M.ensure_defaults()
         radius = 2048,
         radius_min = 256,
         radius_max = 4096,
-        platform_lifetime = 3,
+        platform_lifetime = 5,
         difficulty = 1,
         debug = true,                     -- 向管理员打印每次世界生成的属性
         prob_ground_tint = 1,             -- 染地世界出现概率乘数（0=关）
