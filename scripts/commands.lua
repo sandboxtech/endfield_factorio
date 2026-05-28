@@ -5,6 +5,7 @@ local gui = require('scripts.gui')
 local reset = require('scripts.reset')
 local players = require('scripts.players')
 local science_exp = require('scripts.science_exp')
+local util = require('scripts.util')
 
 -- 包装：仅管理员可执行；返回 player 或 nil（控制台也算管理员）
 local function require_admin(command)
@@ -81,9 +82,10 @@ end)
 local function countdown_cmd(command)
     local player = command.player_index and game.get_player(command.player_index)
     local last_run_ticks = game.tick - (storage.run_start_tick or game.tick)
-    local total_hours = storage.warp_hours or 1
-    local life_hours = (total_hours * constants.hour_to_tick - last_run_ticks) / constants.hour_to_tick
-    local msg = {'wn.life-status', math.floor(life_hours * 100) / 100, total_hours}
+    local total_ticks = (storage.warp_hours or 1) * constants.hour_to_tick
+    local rh, rm = util.hm(total_ticks - last_run_ticks)   -- 剩余
+    local th, tm = util.hm(total_ticks)                    -- 本轮共
+    local msg = {'wn.life-status', rh, rm, th, tm}
     if player then player.print(msg) else game.print(msg) end
 end
 
@@ -156,7 +158,8 @@ local function suicide_cmd(command)
     local last_run_ticks = game.tick - (storage.run_start_tick or game.tick)
     local life = (storage.warp_hours or 1) * constants.hour_to_tick - last_run_ticks
     players.kill_on_nauvis(player)
-    game.print({'wn.suicide-notice', player.name, math.floor(100 * life / constants.hour_to_tick) / 100})
+    local h, m = util.hm(life)
+    game.print({'wn.suicide-notice', player.name, h, m})
 end
 
 add_command('suicide', {'wn.suicide-help'}, suicide_cmd)

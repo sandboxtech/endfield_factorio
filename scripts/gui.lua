@@ -2,6 +2,7 @@
 local constants = require('scripts.constants')
 local passives = require('scripts.passives')
 local respawn_gifts = require('scripts.respawn_gifts')
+local util = require('scripts.util')
 
 local M = {}
 
@@ -37,19 +38,18 @@ local function build_skills_tooltip(player)
     return lines
 end
 
--- 距下次跃迁剩余分钟（与 tick.lua 告警同一公式；精确到分钟，不足 1 分钟显示 0）。
-function M.warp_minutes()
+-- 距下次跃迁剩余（整数小时, 整数分钟）；与 tick.lua 告警同一公式。
+function M.warp_hm()
     local last = game.tick - (storage.run_start_tick or game.tick)
-    local life = (storage.warp_hours or 1) * constants.hour_to_tick - last
-    return math.max(0, math.floor(life / constants.min_to_tick))
+    return util.hm((storage.warp_hours or 1) * constants.hour_to_tick - last)
 end
 
 -- 刷新所有在线玩家顶部的跃迁倒计时标签（由 tick.lua 每分钟调用）。
 function M.refresh_countdown()
-    local m = M.warp_minutes()
+    local h, m = M.warp_hm()
     for _, player in pairs(game.connected_players) do
         local el = player.gui.top.warp_countdown
-        if el and el.valid then el.caption = {'wn.warp-countdown', m} end
+        if el and el.valid then el.caption = {'wn.warp-countdown', h, m} end
     end
 end
 
@@ -74,7 +74,7 @@ function M.player_gui(player)
     local cd = player.gui.top.add {
         type = 'label',
         name = 'warp_countdown',
-        caption = {'wn.warp-countdown', M.warp_minutes()}
+        caption = {'wn.warp-countdown', M.warp_hm()}
     }
     cd.style.font = 'heading-1'
     cd.style.font_color = {255, 210, 120}

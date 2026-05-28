@@ -4,6 +4,7 @@
 -- pod 往往还没挂上货（读出来是空），所以改在 on_cargo_pod_finished_ascending 读——此刻 pod 已带货
 -- 升空完成、尚未在目的地卸货；其 launched_by_rocket 字段又能精确区分"火箭发射"与玩家手动 pod 旅行。
 local constants = require('scripts.constants')
+local util = require('scripts.util')
 
 local M = {}
 
@@ -28,12 +29,12 @@ script.on_event(defines.events.on_cargo_pod_finished_ascending, function(event)
     storage.warp_hours = (storage.warp_hours or 1) - PENALTY_MINUTES / 60
 
     local last_run_ticks = game.tick - (storage.run_start_tick or game.tick)
-    local life_hours = (storage.warp_hours * constants.hour_to_tick - last_run_ticks) / constants.hour_to_tick
+    local rh, rm = util.hm(storage.warp_hours * constants.hour_to_tick - last_run_ticks)
 
     game.print({'wn.rocket-penalty',
                 payload_text(event.cargo_pod),
                 PENALTY_MINUTES,
-                math.floor(life_hours * 100) / 100})
+                rh, rm})
 end)
 
 return M

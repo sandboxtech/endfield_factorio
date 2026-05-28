@@ -1,5 +1,13 @@
 -- 通用工具函数。除了读写 storage 外无副作用。
+local constants = require('scripts.constants')
+
 local M = {}
+
+-- 剩余 ticks → (整数小时, 整数分钟)；负数按 0。倒计时统一显示"X 小时 Y 分钟"，不要小数小时。
+function M.hm(ticks)
+    local t = math.max(0, ticks)
+    return math.floor(t / constants.hour_to_tick), math.floor((t % constants.hour_to_tick) / constants.min_to_tick)
+end
 
 -- 数字格式化为人类可读的"档位"。
 function M.readable(x)
