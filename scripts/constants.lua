@@ -39,8 +39,6 @@ local M = {
         -- 危险世界各敌人类型【独立开关】概率
         danger = {worm = 0.6, spawner = 0.4, turret = 0.4, mine = 0.4,
                   art_base = 0.12, art_danger = 0.3, replicant = 0.35},
-        -- 战利品箱体出现概率 + 测试箱世界资格
-        loot = {wood = 0.85, iron = 0.7, steel = 0.6},
         -- 母星/草星【宁和模式】抽奖：1/N 概率开启
         peaceful_one_in = 5,
     },
