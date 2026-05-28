@@ -87,11 +87,11 @@ local function try_gift_first_in_world(player)
     respawn_gifts.on_first_respawn(player)
 end
 
--- 死亡复活落点：按权重随机一个星球（母星 30% / 火星·草星·雷星各 20% / 极地 10%）。
+-- 死亡复活落点：按权重随机一个星球（母星 69% / 火星·雷星·草星各 10% / 冰星 1%）。权重和需 = 100。
 -- 确保该星球出生区已生成，传送过去，并 chart 周围 128。出生点附近无落脚处则回母星兜底。
 local RESPAWN_WEIGHTS = {
-    {name = 'nauvis', w = 30}, {name = 'vulcanus', w = 20}, {name = 'gleba', w = 20},
-    {name = 'fulgora', w = 20}, {name = 'aquilo', w = 10},
+    {name = 'nauvis', w = 69}, {name = 'vulcanus', w = 10}, {name = 'gleba', w = 10},
+    {name = 'fulgora', w = 10}, {name = 'aquilo', w = 1},
 }
 
 local function place_on_random_planet(player)
@@ -138,7 +138,6 @@ script.on_event(defines.events.on_pre_player_left_game, function(event)
     end
 
     if player.character then
-        science_exp.settle(player)   -- 离线前自动结算：把背包瓶子转成经验（杀角色前），不让坚持不到跃迁就下线的玩家白干
         M.kill_on_nauvis(player)
         -- 删除可能落在飞船原点附近的尸体
         for _, space_platform in pairs(game.forces.player.platforms) do

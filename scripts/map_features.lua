@@ -156,7 +156,7 @@ local LOOT = {
         'electric-furnace',  'electric-mining-drill',  'big-mining-drill',  'burner-mining-drill',  'pumpjack',
         'oil-refinery',  'chemical-plant',  'centrifuge',  'lab',  'biolab',
         'beacon',  'foundry',  'recycler',  'electromagnetic-plant',  'cryogenic-plant',
-        'biochamber',  'crusher',  'agricultural-tower',  'captive-biter-spawner',  'rocket-silo',
+        'biochamber',  'crusher',  'agricultural-tower',  'rocket-silo',
     }},
     -- 模块
     {cat = 'module',     w =  15, items = {
@@ -186,17 +186,15 @@ local LOOT = {
         'fusion-reactor-equipment',  'toolbelt-equipment',
     }},
     -- 科技瓶(永续箱不出)
-    {cat = 'science',    w =  36, items = {
+    {cat = 'science',    w =  36, items = {   -- 已删可腐的 agricultural-science-pack
         'automation-science-pack',  'logistic-science-pack',  'military-science-pack',  'chemical-science-pack',  'production-science-pack',
-        'utility-science-pack',  'space-science-pack',  'metallurgic-science-pack',  'electromagnetic-science-pack',  'agricultural-science-pack',
+        'utility-science-pack',  'space-science-pack',  'metallurgic-science-pack',  'electromagnetic-science-pack',
         'cryogenic-science-pack',  'promethium-science-pack',
     }},
-    -- 生物/农业(可腐)
+    -- 生物/农业（已删蛋与一切可腐物，只留不腐烂的种子/土壤）
     {cat = 'gleba',      w =  5, items = {
-        'jelly',  'jellynut',  'jellynut-seed',  'yumako',  'yumako-mash',
-        'yumako-seed',  'tree-seed',  'bioflux',  'nutrients',  'spoilage',
-        'pentapod-egg',  'biter-egg',  'copper-bacteria',  'iron-bacteria',  'artificial-jellynut-soil',
-        'artificial-yumako-soil',  'overgrowth-jellynut-soil',  'overgrowth-yumako-soil',
+        'jellynut-seed',  'yumako-seed',  'tree-seed',  'artificial-jellynut-soil',  'artificial-yumako-soil',
+        'overgrowth-jellynut-soil',  'overgrowth-yumako-soil',
     }},
     -- 太空/平台
     {cat = 'space',      w =  1, items = {

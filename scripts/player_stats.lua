@@ -1,4 +1,4 @@
--- 玩家行为统计的数据存储。技能用的统计（craft_count/mining_count/move_distance/deaths）
+-- 玩家行为统计的数据存储。技能用的统计（craft_count/mining_count/move_distance）
 -- 由 passives.lua 在对应动作事件里递增并即时施加；本文件只负责 get/默认值 +
 -- 在线类统计（online_minutes 等）的采样。
 -- 字段：
@@ -6,7 +6,6 @@
 --   craft_count     手搓完成的物品数（→ 手搓速度技能）
 --   mining_count    手动采矿/拆除次数（→ 挖矿速度技能）
 --   move_distance   移动累计格数（→ 移动速度技能）
---   deaths          死亡次数（→ 生命上限技能）
 -- 数据跨跃迁保留（终身累积）。
 
 local M = {}
@@ -16,7 +15,6 @@ local DEFAULTS = {
     craft_count    = 0,
     mining_count   = 0,
     move_distance  = 0,
-    deaths         = 0,
 }
 
 -- 统计按【玩家名】存储：名字跨 index 稳定，被删玩家用同名回归即自动继承，删玩家时无需动 storage。

@@ -147,30 +147,7 @@ end
 add_command('preview', {'wn.preview-help'}, preview_cmd)
 add_command('yulan', {'wn.preview-help'}, preview_cmd)
 
--- /settle（/jiesuan 同功能）：提前结算——把当前背包整组科技瓶换成经验【并消耗掉】，
--- 本轮已结算的不会在跃迁时再算一次。给坚持不到跃迁就要下线的玩家用（下线也会自动结算）。
-local function settle_cmd(command)
-    local player = command.player_index and game.get_player(command.player_index)
-    if not player then return end
-    local gain = science_exp.settle(player)
-    local total, parts = 0, {}
-    if gain then
-        for _, pack in ipairs(constants.science_packs) do
-            if (gain[pack] or 0) > 0 then
-                total = total + gain[pack]
-                parts[#parts + 1] = '[img=item/' .. pack .. ']+' .. gain[pack]
-            end
-        end
-    end
-    if total > 0 then
-        player.print({'wn.settle-done', total, table.concat(parts, '  ')})
-    else
-        player.print({'wn.settle-none'})
-    end
-end
-
-add_command('settle', {'wn.settle-help'}, settle_cmd)
-add_command('jiesuan', {'wn.settle-help'}, settle_cmd)
+-- （/settle、/jiesuan 已移除：只有【自动跃迁】才结算科技瓶经验，不再支持提前手动结算。）
 
 -- /suicide（/zisha 同功能）：自杀脱困。死后按权重随机在某个星球复活（见 players.lua）。
 local function suicide_cmd(command)
@@ -198,17 +175,21 @@ end
 add_command('member', {'wn.member-help'}, member_grant_cmd)
 add_command('huiyuan', {'wn.member-help'}, member_grant_cmd)
 
--- /unmember <玩家名>（/quhuiyuan 同功能）：解除会员资格。仅会员/管理员可用。
+-- /unmember <玩家名>（/chehuiyuan 同功能）：撤销会员资格。【仅管理员】，可撤销任何会员。
 local function member_revoke_cmd(command)
-    local _, target, sink = member_cmd_targets(command)
-    if not target then return end
+    local actor = command.player_index and game.get_player(command.player_index)
+    if actor and not actor.admin then actor.print(constants.not_admin_text); return end   -- 仅管理员可撤销
+    local name = arg_name(command)
+    local target = name and game.get_player(name)
+    local sink = actor or game
+    if not target then sink.print({'wn.member-no-such', name or ''}); return end
     if not (storage.members and storage.members[target.name]) then sink.print({'wn.member-not', target.name}); return end
     storage.members[target.name] = nil
     game.print({'wn.member-revoked', target.name})
 end
 
 add_command('unmember', {'wn.unmember-help'}, member_revoke_cmd)
-add_command('quhuiyuan', {'wn.unmember-help'}, member_revoke_cmd)
+add_command('chehuiyuan', {'wn.unmember-help'}, member_revoke_cmd)
 
 -- /kickout <玩家名>（/tichu 同功能）：踢出一名【非会员】玩家。仅会员/管理员可用。不能踢自己/会员/管理员。
 local function member_kick_cmd(command)

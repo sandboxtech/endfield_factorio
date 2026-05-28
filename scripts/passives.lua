@@ -1,9 +1,9 @@
 -- 角色被动技能：边玩边练，动作即时升级。
---   手搓 → 手搓速度；移动(移动) → 移动速度；采矿/拆除 → 挖矿速度；死亡 → 生命上限。
+--   手搓 → 手搓速度；移动(步行) → 移动速度；采矿/拆除 → 挖矿速度。
 -- 曲线自带 -50% 下限：对应统计为 0 时该项 -50%，做动作累计后爬升、超过原版。
 -- 科技瓶经验由 science_exp 累积，只用于"下次开局的初始物品"，不驱动技能。
--- 本模块独占 on_player_crafted_item / on_player_mined_entity / on_player_changed_position /
--- on_player_died（player_stats 不再注册这些，避免双重注册互相覆盖）。
+-- 本模块独占 on_player_crafted_item / on_player_mined_entity / on_player_changed_position
+-- （player_stats 不再注册这些，避免双重注册互相覆盖）。
 local player_stats = require('scripts.player_stats')
 local science_exp = require('scripts.science_exp')
 
@@ -30,15 +30,10 @@ end
 local function speed_curve(to_zero)
     return function(stat) return -0.5 + 0.5 * math.log(1 + 9 * stat / to_zero) / LOG10 end
 end
--- 生命（加法系）：死亡越多上限越高。deaths<1 → 0；否则 0.5×(log10(deaths)+1)，×250 HP。
-local function health_curve(deaths)
-    if deaths < 1 then return 0 else return 0.5 * (math.log(deaths) / LOG10 + 1) end
-end
 
-local function pct(f)  return string.format('%+d%%', math.floor(f * 100 + 0.5)) end
-local function flat(f) return string.format('%+d',   math.floor(250 * f + 0.5)) end
+local function pct(f) return string.format('%+d%%', math.floor(f * 100 + 0.5)) end
 
--- 4 个技能。factor(stat) → 修正系数。★ to_zero（达到 0% 所需统计）越大越慢，按需调。
+-- 3 个技能（手搓/移动/挖矿）。factor(stat) → 修正系数。★ to_zero（达到 0% 所需统计）越大越慢，按需调。
 M.abilities = {
     {locale = 'wn.ability-crafting', stat = 'craft_count',  factor = speed_curve(5000),
      apply = function(p, f) p.character_crafting_speed_modifier = f end, fmt = pct},
@@ -46,8 +41,6 @@ M.abilities = {
      apply = function(p, f) p.character_running_speed_modifier = f end, fmt = pct},
     {locale = 'wn.ability-mining',   stat = 'mining_count',  factor = speed_curve(5000),
      apply = function(p, f) p.character_mining_speed_modifier = f end, fmt = pct},
-    {locale = 'wn.ability-health',   stat = 'deaths',        factor = health_curve,
-     apply = function(p, f) p.character_health_bonus = 250 * f end, fmt = flat},
 }
 
 -- 某玩家某技能当前的修正系数 f。cap 存在则封顶（移动速度封 +100%，避免走路过快）。
@@ -103,11 +96,6 @@ script.on_event(defines.events.on_player_changed_position, function(e)
         end
     end
     storage.move_pos[p.index] = {x = pos.x, y = pos.y, si = si}
-end)
-
-script.on_event(defines.events.on_player_died, function(e)
-    player_stats.get(e.player_index).deaths = player_stats.get(e.player_index).deaths + 1
-    -- 生命上限在复活后(新角色)由 players.lua 的 passives.apply 生效。
 end)
 
 return M

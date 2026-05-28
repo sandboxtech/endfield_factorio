@@ -7,6 +7,20 @@ local player_stats = require('scripts.player_stats')
 local map_features = require('scripts.map_features')
 local util = require('scripts.util')
 local gui = require('scripts.gui')
+local events = require('scripts.events')
+
+-- 消灭虫巢(unit-spawner)：原地爆少量随机科技瓶 + 金币（落地可捡）。on_entity_died 高频 → 先按类型早退；
+-- 走事件总线，不与 world_fx 的 on_entity_died 互相覆盖。多人各端确定性一致（死亡事件+math.random 同步）。
+events.on(defines.events.on_entity_died, function(e)
+    local ent = e.entity
+    if not (ent and ent.valid) or ent.type ~= 'unit-spawner' or ent.force.name ~= 'enemy' then return end
+    local surface, pos = ent.surface, ent.position
+    surface.spill_item_stack{position = pos, stack = {name = 'coin', count = math.random(2, 10)}, enable_looted = true}
+    for _ = 1, math.random(1, 2) do
+        local pack = constants.science_packs[math.random(#constants.science_packs)]
+        surface.spill_item_stack{position = pos, stack = {name = pack, count = math.random(1, 6)}, enable_looted = true}
+    end
+end)
 
 local METEOR_ORE = {'iron-ore', 'copper-ore', 'stone', 'coal'}
 local SUPPLY_ITEMS = {'electronic-circuit', 'iron-gear-wheel', 'steel-plate', 'advanced-circuit', 'inserter', 'transport-belt', 'fast-inserter'}
