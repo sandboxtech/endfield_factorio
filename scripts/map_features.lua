@@ -111,9 +111,8 @@ local LOOT = {
     {cat = 'raw',        items = {
         'iron-ore',  'copper-ore',  'uranium-ore',  'tungsten-ore',  'holmium-ore',   -- 金属矿
         'coal',  'stone',  'calcite',  'lithium',                                      -- 非金属/化工矿
-        'scrap',  'carbon',  'wood',  'raw-fish',                                      -- 其它原料
-        -- 'ice',  'carbonic-asteroid-chunk',
-        -- 'metallic-asteroid-chunk',  'oxide-asteroid-chunk',  'promethium-asteroid-chunk',
+        'scrap',  'carbon',  'wood',  'raw-fish',  'ice',                                      -- 其它原料
+        -- 'carbonic-asteroid-chunk', 'metallic-asteroid-chunk',  'oxide-asteroid-chunk',  'promethium-asteroid-chunk',
     }},
     -- 材料/中间品
     {cat = 'material',   items = {
@@ -187,7 +186,7 @@ local LOOT = {
         'solar-panel-equipment',  'fission-reactor-equipment',  'fusion-reactor-equipment',  'battery-equipment',  'battery-mk2-equipment',  'battery-mk3-equipment',  -- 能源/蓄电装备
         'energy-shield-equipment',  'energy-shield-mk2-equipment',  'personal-laser-defense-equipment',  'discharge-defense-equipment',  -- 护盾/防御装备
         'exoskeleton-equipment',  'personal-roboport-equipment',  'personal-roboport-mk2-equipment',  'belt-immunity-equipment',  'night-vision-equipment',  'toolbelt-equipment',  -- 功能装备
-        'spidertron',  'tank',                                                          -- 重型载具
+        'spidertron',  'tank',  'car',                                                        -- 重型载具
     }},
     -- 科技瓶(永续箱不出)
     {cat = 'science',    items = {   -- 已删可腐的 agricultural-science-pack
@@ -206,10 +205,6 @@ local LOOT = {
         'foundation',  'space-platform-foundation',  'ice-platform',                   -- 平台地基
         'cargo-bay',  'cargo-landing-pad',  'asteroid-collector',  'thruster',          -- 平台部件
     }},
-    -- 载具（战斗载具 tank/spidertron 已归 military）
-    {cat = 'vehicle',    items = {
-        'car',
-    }},
 }
 
 -- 各【按外观区分】的箱子对 LOOT 各【类】的权重：先按权重选类、再类内等概率选物品。
@@ -218,21 +213,21 @@ local LOOT = {
 local LOOT_WEIGHTS = {
     -- 钢箱 = 材料箱：基础材料/原料 + 大概率普通科技瓶。普通品质、常见、装得多。
     material = {
-        raw = 25, material = 40, logistics = 5,  circuit = 0,  power = 0,
-        production = 0,  module = 0,  military = 0,  equipment = 0,  science = 30,
-        gleba = 0,  space = 0,  vehicle = 0,
+        raw = 25, material = 60, logistics = 10,  circuit = 1,  power = 1,
+        production = 0,  module = 2,  military = 0,  equipment = 1,  science = 3,
+        gleba = 1,  space = 1,
     },
     -- 铁箱 = 设备箱：实用设备/机器为主，含载具/太空件，少量科技瓶。普通品质、中等数量。
     equipment = {
-        raw = 0,  material = 0,  logistics = 18,  circuit = 8,  power = 14,
+        raw = 1,  material = 2,  logistics = 18,  circuit = 8,  power = 14,
         production = 30,  module = 4,  military = 12,  equipment = 10,  science = 10,
-        gleba = 4,  space = 6,  vehicle = 6,
+        gleba = 4,  space = 6,
     },
     -- 永续(无底)箱：基础材料/矿物为主。注意 science>0 = 无限科技瓶(很强，慎调)。
     perp = {
-        raw = 60,  material = 40,  logistics = 0,  circuit = 0,  power = 0,
-        production = 0,  module = 0,  military = 0,  equipment = 0,  science = 5,
-        gleba = 0,  space = 0,  vehicle = 0,
+        raw = 90,  material = 120,  logistics = 15,  circuit = 1,  power = 5,
+        production = 2,  module = 1,  military = 1,  equipment = 1,  science = 0,
+        gleba = 1,  space = 1,
     },
 }
 
@@ -242,6 +237,7 @@ local TREASURE_POOL = {
     'productivity-module-3', 'speed-module-3', 'efficiency-module-3', 'quality-module-3',  -- 顶级插件
     'foundry', 'electromagnetic-plant', 'biochamber', 'cryogenic-plant', 'recycler',       -- 星球特产机器
     'big-mining-drill', 'rocket-silo', 'fusion-reactor',                                    -- 顶级生产建筑
+    'space-platform-starter-pack',
 }
 
 -- 按给定【类权重表】选类、类内等概率选物品。weights[cat] 为 0/nil 即跳过该类。
