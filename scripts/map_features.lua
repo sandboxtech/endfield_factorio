@@ -369,32 +369,54 @@ local function spawn_perpetual_chest(surface, pos)
     return true
 end
 
--- 永续箱守卫：只在【永续箱】四周放敌人(force=enemy)，普通箱【不放】。从 机枪炮塔/沙虫/地雷/重炮 随机抽，数量较多。
---   机枪炮塔用本星弹种(theme.mag，兜底机枪弹)、重炮用炮弹；沙虫/地雷不用弹。出生点附近(<64格)不放（保护新手）。
-local PERP_GUARD_POOL = {
-    {name = 'gun-turret', mag = true, n = 20},                     -- 机枪炮塔（本星弹）
-    'small-worm-turret', 'medium-worm-turret', 'big-worm-turret',  -- 沙虫
-    'land-mine',                                                   -- 地雷
-    {name = 'artillery-turret', ammo = 'artillery-shell', n = 4},  -- 重炮（炮弹）
+-- 永续箱守卫【可选种类】：每个永续箱只用其中【1~2 种】（同箱守卫种类统一），同种内可有尺寸变体(如沙虫三档)。
+--   机枪炮塔用本星弹种(theme.mag，兜底机枪弹)；沙虫/地雷不用弹。
+--   重炮不在内——其自动索敌只打建筑、不会攻击靠近的玩家，当守卫等于没有。
+local GUARD_KINDS = {
+    worm   = {'small-worm-turret', 'medium-worm-turret', 'big-worm-turret'},  -- 沙虫（三档随机）
+    turret = {{name = 'gun-turret', mag = true, n = 20}},                     -- 机枪炮塔（本星弹）
+    mine   = {'land-mine'},                                                   -- 地雷
 }
+local GUARD_KIND_NAMES = {'worm', 'turret', 'mine'}
+
+-- 永续箱守卫：只在【永续箱】四周放敌人(force=enemy)，普通箱【不放】。出生点附近(<64格)不放（保护新手）。
+--   种类：本箱随机选 1~2 种，之后所有守卫只从这几种里出 → 同箱统一。
+--   数量：随【离地图中心距离】半随机缩放——近中心少(约 2~3)、越往边缘越多(可到十来个)。
 local function guard_perpetual(surface, pos)
     -- pos 可能是数组式 {x,y}（feat_perpetual 传入）也可能是 {x=,y=}，统一取坐标。
     local cx, cy = pos.x or pos[1], pos.y or pos[2]
     local dist = math.sqrt(cx * cx + cy * cy)
     if dist < 64 then return end                          -- 出生点保护半径内不放
+
+    -- 选 1~2 种：对 GUARD_KIND_NAMES 做部分洗牌取前 pick 个，合并其变体成候选实体表。
+    local names = {}
+    for i, k in ipairs(GUARD_KIND_NAMES) do names[i] = k end
+    local pick = math.random(1, 2)
+    local variants = {}
+    for i = 1, pick do
+        local j = math.random(i, #names)
+        names[i], names[j] = names[j], names[i]
+        for _, v in ipairs(GUARD_KINDS[names[i]]) do variants[#variants + 1] = v end
+    end
+
+    -- 数量随离中心比例 frac∈[0,1] 增长：均值 2(中心)→10(边缘)，叠三角抖动 ±~3，下限 2。
+    local R = storage.radius_of[surface.name] or storage.radius or 2048
+    local frac = math.min(1, dist / R)
+    local mean = 2 + frac * 8
+    local count = math.max(2, math.floor(mean + (math.random() - math.random()) * 3 + 0.5))
+
     local theme = storage.danger_theme and storage.danger_theme[surface.name]
     local mag = theme and theme.mag                       -- 本星弹种
-    for _ = 1, math.random(6, 12) do
-        local def = PERP_GUARD_POOL[math.random(#PERP_GUARD_POOL)]
+    for _ = 1, count do
+        local def = variants[math.random(#variants)]
         local name = type(def) == 'table' and def.name or def
         local ang, r = math.random() * 2 * math.pi, 3 + math.random() * 5
         local gp = {x = cx + math.cos(ang) * r, y = cy + math.sin(ang) * r}
         local sp = surface.find_non_colliding_position(name, gp, 5, 1)
         if sp then
             local e = surface.create_entity{name = name, force = 'enemy', position = sp}
-            if e and type(def) == 'table' then
-                local ammo = def.mag and (mag or 'firearm-magazine') or def.ammo   -- 机枪用本星弹；重炮用炮弹
-                if ammo then e.insert{name = ammo, count = def.n} end
+            if e and type(def) == 'table' and def.mag then
+                e.insert{name = mag or 'firearm-magazine', count = def.n}   -- 机枪炮塔填本星弹种
             end
         end
     end
