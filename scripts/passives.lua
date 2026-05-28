@@ -6,6 +6,7 @@
 -- （player_stats 不再注册这些，避免双重注册互相覆盖）。
 local player_stats = require('scripts.player_stats')
 local science_exp = require('scripts.science_exp')
+local events = require('scripts.events')
 
 local M = {}
 
@@ -97,6 +98,20 @@ script.on_event(defines.events.on_player_changed_position, function(e)
         end
     end
     storage.move_pos[p.index] = {x = pos.x, y = pos.y, si = si}
+end)
+
+-- 个人成就统计：仅记录【玩家角色亲手】击杀的敌人（炮塔/机器人击杀不计），虫巢额外记 nest_count。
+-- 只写 storage、不驱动技能、不展示。走事件总线（on_entity_died 多方监听）。
+events.on(defines.events.on_entity_died, function(e)
+    local ent = e.entity
+    if not (ent and ent.valid) or ent.force.name ~= 'enemy' then return end
+    local cause = e.cause
+    if not (cause and cause.valid and cause.type == 'character') then return end
+    local p = cause.player
+    if not p then return end
+    local s = player_stats.get(p.index)
+    s.kill_count = s.kill_count + 1
+    if ent.type == 'unit-spawner' then s.nest_count = s.nest_count + 1 end
 end)
 
 return M

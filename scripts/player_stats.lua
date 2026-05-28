@@ -6,6 +6,13 @@
 --   craft_count     手搓完成的物品数（→ 手搓速度技能）
 --   mining_count    手动采矿/拆除次数（→ 挖矿速度技能）
 --   move_distance   移动累计格数（→ 移动速度技能）
+-- 个人成就类统计（只记录、不驱动技能、不展示，将来做成就/奖励再用）：
+--   kill_count      亲手击杀敌人数
+--   nest_count      亲手摧毁虫巢数（kill_count 的子集）
+--   death_count     真实死亡数（被敌人/环境打死；脚本击杀不计）
+--   warps           在线时经历的跃迁次数
+--   research        在线时完成的科技研究次数
+--   key_research    在线时完成的关键科技（科技瓶/延长跃迁时间）次数
 -- 数据跨跃迁保留（终身累积）。
 
 local M = {}
@@ -15,6 +22,12 @@ local DEFAULTS = {
     craft_count    = 0,
     mining_count   = 0,
     move_distance  = 0,
+    kill_count     = 0,
+    nest_count     = 0,
+    death_count    = 0,
+    warps          = 0,
+    research       = 0,
+    key_research   = 0,
 }
 
 -- 统计按【玩家名】存储：名字跨 index 稳定，被删玩家用同名回归即自动继承，删玩家时无需动 storage。
@@ -29,6 +42,20 @@ function M.get(player_index)
         storage.player_stats[key] = s
     end
     return s
+end
+
+-- 某玩家某统计项 +n（默认 +1），返回累计值。供成就类统计在事件处直接调用。
+function M.bump(player_index, key, n)
+    local s = M.get(player_index)
+    s[key] = (s[key] or 0) + (n or 1)
+    return s[key]
+end
+
+-- 所有在线玩家某统计项 +1：用于世界级事件（跃迁/研究）按"在线即记一次"分摊给每个在线玩家。
+function M.bump_connected(key)
+    for _, player in pairs(game.connected_players) do
+        M.bump(player.index, key)
+    end
 end
 
 -- 每分钟采样一次：所有在线玩家 online_minutes +1。

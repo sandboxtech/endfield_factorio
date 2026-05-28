@@ -3,8 +3,11 @@ local constants = require('scripts.constants')
 local gui = require('scripts.gui')
 local passives = require('scripts.passives')
 local respawn_gifts = require('scripts.respawn_gifts')
+local player_stats = require('scripts.player_stats')
 
 local M = {}
+
+local RESPAWN_TICKS = 180   -- 复活等待时间：180 tick = 3 秒（原版默认 10 秒）
 
 -- 把 target 的统计数据打印给 viewer：4 项技能 + 在线时长 + 各瓶累计经验。
 function M.print_inspection(target, viewer)
@@ -105,6 +108,14 @@ local function place_on_random_planet(player)
     surface.force_generate_chunk_requests()
     player.force.chart(surface, {{pos.x - 256, pos.y - 256}, {pos.x + 256, pos.y + 256}})
 end
+
+-- 死亡：把复活倒计时压到 3 秒；只把【有 cause 的真实死亡】（被敌人/环境打死）计入该玩家 death_count，
+-- 跃迁清场 / 离场 / 自杀脱困走的是脚本 die()（cause 为 nil），不计入。
+script.on_event(defines.events.on_player_died, function(event)
+    local player = game.get_player(event.player_index)
+    if player then player.ticks_to_respawn = RESPAWN_TICKS end
+    if event.cause then player_stats.bump(event.player_index, 'death_count') end
+end)
 
 script.on_event(defines.events.on_player_respawned, function(event)
     local player = game.get_player(event.player_index)

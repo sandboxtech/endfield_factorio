@@ -6,6 +6,7 @@ local players = require('scripts.players')
 local passives = require('scripts.passives')
 local science_exp = require('scripts.science_exp')
 local respawn_gifts = require('scripts.respawn_gifts')
+local player_stats = require('scripts.player_stats')
 
 local M = {}
 
@@ -15,6 +16,7 @@ function M.reset()
     game.speed = 1
     constants.ensure_defaults()   -- 补齐默认值：新档初始化 / 老档迁移 / 每轮兜底（幂等，不覆盖已调参数）
     storage.run = (storage.run or 0) + 1
+    player_stats.bump_connected('warps')   -- 给当前在线玩家各记一次"经历的跃迁"
 
     local last_run_ticks = (game.tick - (storage.run_start_tick or game.tick))
     game.print({'wn.warp-success-time',
