@@ -65,8 +65,9 @@ end
 -- ---------------------------------------------------------------------------
 script.on_event(defines.events.on_player_crafted_item, function(e)
     local s = player_stats.get(e.player_index)
-    local st = e.item_stack
-    s.craft_count = s.craft_count + ((st and st.valid_for_read and st.count) or 1)
+    -- 手搓技能按【配方基础时间】(recipe.energy，速度=1 时的秒数) 累积，而非物品数量：
+    -- 搓慢/复杂的配方涨得多、刷便宜快件涨得少。stat 键仍叫 craft_count（不改名，避免老存档清零）。
+    s.craft_count = s.craft_count + ((e.recipe and e.recipe.energy) or 0)
     apply_one(game.get_player(e.player_index), M.abilities[1])
 end)
 
