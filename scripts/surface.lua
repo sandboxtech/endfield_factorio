@@ -88,13 +88,10 @@ local GROUND_TINT_PALETTE = {
     {r = 0.35, g = 0.2,  b = 0.0},   -- 锈褐
 }
 
--- 销毁某表面上现存的染地精灵（换图前清理，避免跨轮累积）。
-local function clear_ground_tint(surface)
-    for _, obj in pairs(rendering.get_all_objects()) do
-        if obj.valid and obj.surface and obj.surface.index == surface.index then
-            obj.destroy()
-        end
-    end
+-- 清理染地精灵（换图前调用，避免跨轮累积）。染地 sprite 是本场景【唯一】的 rendering 对象，
+-- 故直接一次清空全部即可，不必按 surface 过滤；新一轮的染色在 on_chunk_generated 重绘。
+local function clear_ground_tint()
+    rendering.clear()
 end
 
 -- ── tile 替换（世界变体）──────────────────────────────────────────────────────
@@ -362,7 +359,7 @@ script.on_event(defines.events.on_surface_cleared, function(event)
 
     -- 染地世界：小概率出现（诡异世界更可能）。出现时 alpha 走立方曲线 → 大概率温和淡染、
     -- 小概率浓重。先清掉本表面上一轮的染色精灵，再决定本轮是否/如何染。
-    clear_ground_tint(surface)
+    clear_ground_tint()
     storage.ground_tint[surface.name] = nil
     local bt = constants.balance.ground_tint
     if math.random() < (bt.base + bt.exotic * knobs.exotic) * prob('ground_tint') then
@@ -526,7 +523,7 @@ script.on_event(defines.events.on_chunk_generated, function(event)
                 end
             end
         end
-        if table_size(tiles) > 0 then
+        if #tiles > 0 then   -- tiles 是 table.insert 连续数组、无空洞，# 与 table_size 等价且更快
             surface.set_tiles(tiles)
         end
     end

@@ -72,9 +72,11 @@ function M.ensure_defaults()
     for k, v in pairs(d) do
         if storage[k] == nil then storage[k] = v end
     end
-    -- 必需表（累积数据 / 每星球状态），缺失则建空表
+    -- 必需表（累积数据 / 每星球状态 / 运行时缓存），缺失则建空表。
+    -- 这是所有 storage 表的【唯一出生地】——各模块不再各自 `storage.x = storage.x or {}`，统一在此补齐。
     for _, key in ipairs({'radius_of', 'science_exp', 'player_stats', 'platform_age',
-                          'ground_tint', 'tile_remap', 'danger_theme', 'event_world', 'loot_style', 'members'}) do
+                          'ground_tint', 'tile_remap', 'danger_theme', 'event_world', 'loot_style', 'members',
+                          'last_respawn_run', 'move_pos', 'bad_items'}) do
         storage[key] = storage[key] or {}
     end
     -- world_fx 全局开关（默认开；/c storage.world_fx.xxx=false 单独禁用某事件驱动效果）。

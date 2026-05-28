@@ -47,15 +47,23 @@ local function arg_name(command)
     return command.parameter and string.match(command.parameter, '%S+')
 end
 
+-- 解析参数里的目标玩家；找不到则向 sink 打印 member-no-such 并返回 nil。
+-- 会员授予/撤销/踢人三处共用，避免各写一遍取名+查玩家+报错。
+local function resolve_target(command, sink)
+    local name = arg_name(command)
+    local target = name and game.get_player(name)
+    if not target then sink.print({'wn.member-no-such', name or ''}); return end
+    return target
+end
+
 -- 会员命令通用入口：校验执行者是会员 + 解析目标玩家。
 --   返回 actor(控制台为 nil), target, sink(打印对象)；执行者非会员或目标不存在则返回 nil。
 local function member_cmd_targets(command)
     local actor = command.player_index and game.get_player(command.player_index)
     local sink = actor or game
     if actor and not is_member(actor) then actor.print({'wn.not-member'}); return end
-    local name = arg_name(command)
-    local target = name and game.get_player(name)
-    if not target then sink.print({'wn.member-no-such', name or ''}); return end
+    local target = resolve_target(command, sink)
+    if not target then return end
     return actor, target, sink
 end
 
@@ -170,7 +178,6 @@ local function member_grant_cmd(command)
     local _, target, sink = member_cmd_targets(command)
     if not target then return end
     if is_member(target) then sink.print({'wn.member-already', target.name}); return end
-    storage.members = storage.members or {}
     storage.members[target.name] = true
     game.print({'wn.member-granted', target.name})
 end
@@ -182,11 +189,10 @@ add_command('huiyuan', {'wn.member-help'}, member_grant_cmd)
 local function member_revoke_cmd(command)
     local actor = command.player_index and game.get_player(command.player_index)
     if actor and not actor.admin then actor.print(constants.not_admin_text); return end   -- 仅管理员可撤销
-    local name = arg_name(command)
-    local target = name and game.get_player(name)
     local sink = actor or game
-    if not target then sink.print({'wn.member-no-such', name or ''}); return end
-    if not (storage.members and storage.members[target.name]) then sink.print({'wn.member-not', target.name}); return end
+    local target = resolve_target(command, sink)
+    if not target then return end
+    if not storage.members[target.name] then sink.print({'wn.member-not', target.name}); return end
     storage.members[target.name] = nil
     game.print({'wn.member-revoked', target.name})
 end

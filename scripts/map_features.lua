@@ -16,7 +16,12 @@ local function wseed(off) return (storage.run or 0) * 1009 + off end
 -- 每轮整体氛围（繁茂↔荒芜、危险↔安宁、富庶↔贫瘠、寻常↔诡异）都是渐变的。
 -- 同时供 surface.lua 调【2.0 原生 autoplace】(树/石密度) 与本模块手动特征门控共用 → 全局气质一致。
 --   verdancy 植被繁茂  rockiness 岩石  danger 虫群危险(偏低)  riches 战利品(偏低)  exotic 异物倾向(很罕见)
+-- 按 run 号缓存：knobs() 会被【每个区块】调用，但结果整轮恒定（纯派生自 storage.run）。
+-- 算一次即可，省下每区块 ~10 次 sin。多人各端/存档重载都会算出同值 → 缓存对确定性无影响。
+local knobs_cache, knobs_cache_run
 function M.knobs()
+    local run = storage.run or 0
+    if knobs_cache and knobs_cache_run == run then return knobs_cache end
     local function k(off, power)
         local v = noise.hash01(wseed(off) * 6.1)
         return power and v ^ power or v
@@ -26,7 +31,7 @@ function M.knobs()
         return 0.5 + (noise.hash01(wseed(off) * 6.1) - noise.hash01(wseed(off) * 3.7)) * 0.5
     end
     local exotic = k(809, 3)   -- 跨星球异物倾向（立方偏置，诡异世界很罕见）
-    return {
+    knobs_cache = {
         verdancy  = kc(801),      -- 树/草繁茂度（中心化：多半正常，极干/极茂罕见）
         rockiness = kc(803),      -- 岩石密度（中心化）
         riches    = k(807, 1.6),  -- 战利品丰度倾向（仅打印给管理员参考；箱子密度已改由 loot_style 三类独立 random^2 决定）
@@ -34,6 +39,20 @@ function M.knobs()
         -- 危险度：曲线偏低 + 与异物倾向【正相关】（诡异世界往往也更危险）。
         danger    = math.min(1, k(805, 2) * 0.7 + exotic * 0.7),
     }
+    knobs_cache_run = run
+    return knobs_cache
+end
+
+-- 本轮【全局共享】的噪声变换(朝向/拉伸/缩放)同样整轮恒定，按 run 缓存——也被每区块调用。
+local xform_cache, xform_cache_run
+local function run_transform()
+    local run = storage.run or 0
+    if xform_cache and xform_cache_run == run then
+        return xform_cache[1], xform_cache[2], xform_cache[3]
+    end
+    local a, s, z = noise.seeded_transform(wseed(7))
+    xform_cache, xform_cache_run = {a, s, z}, run
+    return a, s, z
 end
 
 -- 本轮该特征强度：~60% 为 0(不出现)；出现时走【立方偏置】——绝大多数小规模、极小概率大规模。
@@ -288,15 +307,11 @@ local function roll_treasure_quality()
     return 'normal'
 end
 
--- 三种普通箱体名（供 /check_loot 校验实体名用；箱子外观=内容由各 feat 固定指定，不再随机选）。
-local CHESTS = {'wooden-chest', 'iron-chest', 'steel-chest'}
-
 -- 物品名有效性校验：LOOT 表是手动穷举的，某些名字会随 DLC/版本失效
 -- （如 Space Age 删了 'satellite'），运行时 insert 不存在的物品会报 "unknown item name" 崩档。
 -- 此处统一拦截：无效则跳过，并把名字报告给所有【在线管理员】（同名只报一次，避免刷屏）。
 local function item_ok(name)
     if prototypes.item[name] then return true end
-    storage.bad_items = storage.bad_items or {}
     if not storage.bad_items[name] then
         storage.bad_items[name] = true
         log('endfield: 跳过无效战利品物品名: ' .. tostring(name))
@@ -541,7 +556,7 @@ function M.generate(surface, lt)
     if not REAL_PLANETS[surface.name] then return end   -- 飞船平台等跳过
     local W = M.knobs()
     -- 本轮【全局共享】的朝向/拉伸/缩放：各特征方向一致、不互相打架（绝大多数圆团，~15% 轮次才整体拉长）
-    local A, S, Z = noise.seeded_transform(wseed(7))
+    local A, S, Z = run_transform()
     local home = PLANET[surface.name]
     if home then
         for _, def in ipairs(home) do place_feature(surface, lt, def, A, S, Z, W) end
@@ -557,52 +572,5 @@ function M.generate(surface, lt)
     feat_danger(surface, lt, A, S, Z, W)
     feat_wrecks(surface, lt, W)
 end
-
--- ============================================================================
--- 【临时校验命令 /check_loot —— 测完把这一整段删掉】
--- 校验本模块引用的【所有物品/实体名】是否都存在于 prototypes，列出缺失项（防 satellite 那类崩档）。
--- 控制台或任意玩家可调用；结果打给调用者（控制台则写 log）。
--- ============================================================================
-commands.add_command('check_loot', '校验 map_features 引用的物品/实体名是否存在', function(cmd)
-    local p = cmd.player_index and game.get_player(cmd.player_index)
-    local say = function(s) if p then p.print(s) else log(s) end end
-
-    -- 物品名：LOOT 全类 + 代码里 insert 的弹药
-    local items, seen = {}, {}
-    local function add_item(name, tag)
-        if not seen[name] then seen[name] = true; items[#items + 1] = {name = name, tag = tag} end
-    end
-    for _, cat in ipairs(LOOT) do
-        for _, name in ipairs(cat.items) do add_item(name, cat.cat) end
-    end
-    for _, name in ipairs(TREASURE_POOL) do add_item(name, 'treasure') end
-    for _, name in ipairs({'firearm-magazine', 'artillery-shell'}) do add_item(name, 'ammo') end
-
-    -- 实体名：EXOTIC / 箱 / 永续箱守卫池 / 飞船残骸 / 危险池
-    local ents, eseen = {}, {}
-    local function add_ent(name)
-        if name and not eseen[name] then eseen[name] = true; ents[#ents + 1] = name end
-    end
-    for _, d in ipairs(EXOTIC) do add_ent(d.name) end
-    for _, n in ipairs(CHESTS) do add_ent(n) end
-    for _, d in ipairs(PERP_GUARD_POOL) do add_ent(type(d) == 'table' and d.name or d) end
-    for _, n in ipairs(WRECKS) do add_ent(n) end
-    for _, n in ipairs({'infinity-chest', 'biter-spawner', 'spitter-spawner',
-                        'small-worm-turret', 'medium-worm-turret', 'big-worm-turret',
-                        'gun-turret', 'artillery-turret', 'land-mine'}) do add_ent(n) end
-
-    local bad_i, bad_e = {}, {}
-    for _, it in ipairs(items) do
-        if not prototypes.item[it.name] then bad_i[#bad_i + 1] = it.tag .. '/' .. it.name end
-    end
-    for _, name in ipairs(ents) do
-        if not prototypes.entity[name] then bad_e[#bad_e + 1] = name end
-    end
-
-    say(('[check_loot] 物品 %d 个(缺 %d)，实体 %d 个(缺 %d)'):format(#items, #bad_i, #ents, #bad_e))
-    if #bad_i > 0 then say('缺失物品: ' .. table.concat(bad_i, ', ')) end
-    if #bad_e > 0 then say('缺失实体: ' .. table.concat(bad_e, ', ')) end
-    if #bad_i == 0 and #bad_e == 0 then say('全部存在，无缺失') end
-end)
 
 return M
