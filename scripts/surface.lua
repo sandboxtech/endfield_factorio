@@ -110,8 +110,8 @@ local TILE_CLASS = {
         'water', 'deepwater', 'water-green', 'deepwater-green', 'water-shallow', 'water-mud', 'gleba-deep-lake',
     },
     exotic = {  -- 危险/异界液体 + 虚空太空（合并 hazard+void）：仅 noise mask 作目标，成片部分替换
-        'lava', 'lava-hot', 'lava-2',                       -- 岩浆
-        'oil-ocean-deep', 'oil-ocean-shallow', 'oil-deep',  -- 油海
+        'lava', 'lava-hot',                                 -- 岩浆（lava-2 是 tile-effect 不是 tile，勿加）
+        'oil-ocean-deep', 'oil-ocean-shallow',              -- 油海（oil-deep 是 tile-effect 不是 tile）
         'ammoniacal-ocean', 'ammoniacal-ocean-2',           -- 氨海
         'empty-space', 'out-of-map',                        -- 虚空/太空
     },
@@ -148,7 +148,7 @@ local TILE_CLASS = {
         'wetland-green-slime', 'wetland-light-green-slime', 'wetland-red-tentacle', 'wetland-pink-tentacle', 'wetland-blue-slime',
         -- 极地
         'snow-flat', 'snow-crests', 'snow-lumpy', 'snow-patchy', 'dust-flat', 'dust-crests', 'dust-lumpy', 'dust-patchy',
-        'ice-rough', 'ice-smooth', 'ice-platform', 'brash-ice', 'brash-ice-2',
+        'ice-rough', 'ice-smooth', 'ice-platform', 'brash-ice',   -- brash-ice-2 是 tile-effect 不是 tile
     },
 }
 -- 源家族【按星球分类】：只从该星球实际存在的 tile 里选源（否则像在 Nauvis 替换 Fulgora 地形 → 永不发生）。
@@ -163,7 +163,7 @@ local PLANET_SRC = {
         {class = 'ground', tiles = {'sand-1', 'sand-2', 'sand-3', 'red-desert-0', 'red-desert-1', 'red-desert-2', 'red-desert-3'}},
     },
     vulcanus = {
-        {class = 'water',  tiles = {'lava', 'lava-hot', 'lava-2'}},
+        {class = 'water',  tiles = {'lava', 'lava-hot'}},
         {class = 'ground', tiles = {'volcanic-ash-flats', 'volcanic-ash-dark', 'volcanic-ash-light', 'volcanic-ash-soil'}},
         {class = 'ground', tiles = {'volcanic-soil-dark', 'volcanic-soil-light', 'volcanic-jagged-ground', 'volcanic-pumice-stones', 'volcanic-smooth-stone'}},
         {class = 'ground', tiles = {'volcanic-cracks', 'volcanic-cracks-hot', 'volcanic-cracks-warm', 'volcanic-folds', 'volcanic-folds-flat', 'volcanic-folds-warm'}},
@@ -182,7 +182,7 @@ local PLANET_SRC = {
     aquilo = {
         {class = 'water',  tiles = {'ammoniacal-ocean', 'ammoniacal-ocean-2'}},
         {class = 'ground', tiles = {'snow-flat', 'snow-lumpy', 'snow-patchy', 'snow-crests'}},
-        {class = 'ground', tiles = {'ice-rough', 'ice-smooth', 'brash-ice', 'brash-ice-2', 'ice-platform'}},
+        {class = 'ground', tiles = {'ice-rough', 'ice-smooth', 'brash-ice', 'ice-platform'}},
         {class = 'ground', tiles = {'dust-flat', 'dust-lumpy', 'dust-patchy', 'dust-crests'}},
     },
 }
