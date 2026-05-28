@@ -109,129 +109,139 @@ local EXOTIC = {
 local LOOT = {
     -- 原料/矿
     {cat = 'raw',        items = {
-        'iron-ore',  'copper-ore',  'coal',  'stone',  'uranium-ore',
-        'holmium-ore',  'tungsten-ore',  'lithium',  'calcite',  'scrap',
-        'raw-fish',  'carbon',  'wood',  
+        'iron-ore',  'copper-ore',  'uranium-ore',  'tungsten-ore',  'holmium-ore',   -- 金属矿
+        'coal',  'stone',  'calcite',  'lithium',                                      -- 非金属/化工矿
+        'scrap',  'carbon',  'wood',  'raw-fish',                                      -- 其它原料
         -- 'ice',  'carbonic-asteroid-chunk',
         -- 'metallic-asteroid-chunk',  'oxide-asteroid-chunk',  'promethium-asteroid-chunk',
     }},
     -- 材料/中间品
     {cat = 'material',   items = {
-        'iron-plate',  'copper-plate',  'steel-plate',  'plastic-bar',  'stone-brick',
-        'iron-gear-wheel',  'copper-cable',  'iron-stick',  'electronic-circuit',  'advanced-circuit',
-        'processing-unit',  'engine-unit',  'electric-engine-unit',  'flying-robot-frame',  'low-density-structure',
-        'rocket-fuel',  'solid-fuel',  'battery',  'explosives',  'sulfur',
-        'uranium-235',  'uranium-238',  'uranium-fuel-cell',  'depleted-uranium-fuel-cell',  'fusion-power-cell',
-        'tungsten-carbide',  'tungsten-plate',  'holmium-plate',  'lithium-plate',  'carbon-fiber',
-        'superconductor',  'supercapacitor',  'quantum-processor',  'concrete',  'refined-concrete',
-        'hazard-concrete',  'refined-hazard-concrete',  'landfill',  'barrel',  'nuclear-fuel',
+        'iron-plate',  'copper-plate',  'steel-plate',  'plastic-bar',  'stone-brick',  -- 基础板材
+        'iron-gear-wheel',  'copper-cable',  'iron-stick',  'engine-unit',  'electric-engine-unit',  -- 基础中间件
+        'electronic-circuit',  'advanced-circuit',  'processing-unit',  'quantum-processor',  -- 电路
+        'flying-robot-frame',  'low-density-structure',  'battery',  'explosives',  'sulfur',  -- 高级中间件
+        'rocket-fuel',  'solid-fuel',  'nuclear-fuel',                                   -- 燃料
+        'uranium-235',  'uranium-238',  'uranium-fuel-cell',  'depleted-uranium-fuel-cell',  'fusion-power-cell',  -- 核
+        'tungsten-carbide',  'tungsten-plate',  'holmium-plate',  'lithium-plate',  'carbon-fiber',  'superconductor',  'supercapacitor',  -- 星球特产材料
+        'concrete',  'refined-concrete',  'hazard-concrete',  'refined-hazard-concrete',  'landfill',  -- 铺地
+        'barrel',                                                                       -- 杂项
     }},
     -- 物流(带/臂/管/箱/轨/机器人)
     {cat = 'logistics',  items = {
-        'transport-belt',  'fast-transport-belt',  'express-transport-belt',  'turbo-transport-belt',  'underground-belt',
-        'fast-underground-belt',  'express-underground-belt',  'turbo-underground-belt',  'splitter',  'fast-splitter',
-        'express-splitter',  'turbo-splitter',  'loader',  'fast-loader',  'express-loader',
-        'inserter',  'burner-inserter',  'long-handed-inserter',  'fast-inserter',  'bulk-inserter',
-        'stack-inserter',  'pipe',  'pipe-to-ground',  'pump',  'offshore-pump',
-        'storage-tank',  'wooden-chest',  'iron-chest',  'steel-chest',  'active-provider-chest',
-        'passive-provider-chest',  'storage-chest',  'buffer-chest',  'requester-chest',  'construction-robot',
-        'logistic-robot',  'roboport',  'rail',  'rail-signal',  'rail-chain-signal',
-        'rail-ramp',  'rail-support',  'train-stop',  'locomotive',  'cargo-wagon',
-        'fluid-wagon',  'repair-pack',
+        'transport-belt',  'fast-transport-belt',  'express-transport-belt',  'turbo-transport-belt',  -- 传送带
+        'underground-belt',  'fast-underground-belt',  'express-underground-belt',  'turbo-underground-belt',  -- 地下带
+        'splitter',  'fast-splitter',  'express-splitter',  'turbo-splitter',           -- 分流器
+        'loader',  'fast-loader',  'express-loader',                                    -- 装卸器
+        'inserter',  'burner-inserter',  'long-handed-inserter',  'fast-inserter',  'bulk-inserter',  'stack-inserter',  -- 机械臂
+        'pipe',  'pipe-to-ground',  'pump',  'offshore-pump',  'storage-tank',          -- 管道/流体
+        'wooden-chest',  'iron-chest',  'steel-chest',  'active-provider-chest',  'passive-provider-chest',  'storage-chest',  'buffer-chest',  'requester-chest',  -- 箱
+        'construction-robot',  'logistic-robot',  'roboport',  'repair-pack',            -- 机器人
+        'rail',  'rail-signal',  'rail-chain-signal',  'rail-ramp',  'rail-support',  'train-stop',  'locomotive',  'cargo-wagon',  'fluid-wagon',  -- 铁路
     }},
     -- 电路信号
     {cat = 'circuit',    items = {
-        'arithmetic-combinator',  'decider-combinator',  'constant-combinator',  'selector-combinator',  'programmable-speaker', 'display-panel', 'small-lamp',
+        'arithmetic-combinator',  'decider-combinator',  'constant-combinator',  'selector-combinator',  -- 组合器
+        'programmable-speaker',  'display-panel',  'small-lamp',                         -- 信号输出
     }},
     -- 电力(发电/蓄电/电杆/热)
     {cat = 'power',      items = {
-        'boiler',  'steam-engine',  'steam-turbine',  'heat-exchanger',  'heat-pipe',
-        'nuclear-reactor',  'solar-panel',  'accumulator',  'fusion-reactor',  'fusion-generator',
-        'power-switch',  'small-electric-pole',  'medium-electric-pole',  'big-electric-pole',  'substation',
-        'lightning-collector',  'lightning-rod',  'heating-tower',
+        'boiler',  'steam-engine',  'steam-turbine',  'heat-exchanger',  'heat-pipe',  'heating-tower',  -- 蒸汽/热
+        'nuclear-reactor',  'fusion-reactor',  'fusion-generator',                      -- 核/聚变
+        'solar-panel',  'accumulator',                                                  -- 太阳能/蓄电
+        'lightning-collector',  'lightning-rod',                                        -- 雷电(Fulgora)
+        'power-switch',  'small-electric-pole',  'medium-electric-pole',  'big-electric-pole',  'substation',  -- 电杆/开关
     }},
     -- 生产机器
     {cat = 'production', items = {
-        'assembling-machine-1',  'assembling-machine-2',  'assembling-machine-3',  'stone-furnace',  'steel-furnace',
-        'electric-furnace',  'electric-mining-drill',  'big-mining-drill',  'burner-mining-drill',  'pumpjack',
-        'oil-refinery',  'chemical-plant',  'centrifuge',  'lab',  'biolab',
-        'beacon',  'foundry',  'recycler',  'electromagnetic-plant',  'cryogenic-plant',
-        'biochamber',  'crusher',  'agricultural-tower',  'rocket-silo',
+        'assembling-machine-1',  'assembling-machine-2',  'assembling-machine-3',      -- 组装机
+        'stone-furnace',  'steel-furnace',  'electric-furnace',                         -- 熔炉
+        'burner-mining-drill',  'electric-mining-drill',  'big-mining-drill',  'pumpjack',  -- 采矿
+        'oil-refinery',  'chemical-plant',  'centrifuge',  'crusher',                   -- 化工/处理
+        'lab',  'biolab',  'beacon',                                                    -- 实验室/信标
+        'foundry',  'recycler',  'electromagnetic-plant',  'cryogenic-plant',  'biochamber',  'agricultural-tower',  -- 星球特产机器
+        'rocket-silo',                                                                  -- 火箭发射井
     }},
     -- 模块
     {cat = 'module',     items = {
-        'speed-module',  'speed-module-2',  'speed-module-3',  'efficiency-module',  'efficiency-module-2',
-        'efficiency-module-3',  'productivity-module',  'productivity-module-2',  'productivity-module-3',  'quality-module',
-        'quality-module-2',  'quality-module-3',
+        'speed-module',  'speed-module-2',  'speed-module-3',                           -- 速度
+        'efficiency-module',  'efficiency-module-2',  'efficiency-module-3',            -- 节能
+        'productivity-module',  'productivity-module-2',  'productivity-module-3',      -- 产能
+        'quality-module',  'quality-module-2',  'quality-module-3',                     -- 品质
     }},
     -- 军事(炮塔/枪/弹/胶囊/墙)
     {cat = 'military',   items = {
-        'gun-turret',  'laser-turret',  'flamethrower-turret',  'artillery-turret',  'rocket-turret',
-        'railgun-turret',  'tesla-turret',  'land-mine',  'stone-wall',  'gate',
-        'radar',  'artillery-wagon',  'pistol',  'submachine-gun',  'shotgun',
-        'combat-shotgun',  'flamethrower',  'rocket-launcher',  'railgun',  'teslagun',
-        'firearm-magazine',  'piercing-rounds-magazine',  'uranium-rounds-magazine',  'shotgun-shell',  'piercing-shotgun-shell',
-        'cannon-shell',  'explosive-cannon-shell',  'uranium-cannon-shell',  'explosive-uranium-cannon-shell',  'rocket',
-        'explosive-rocket',  'flamethrower-ammo',  'artillery-shell',  'railgun-ammo',  'tesla-ammo',
-        'atomic-bomb',  'grenade',  'cluster-grenade',  'poison-capsule',  'slowdown-capsule',
-        'defender-capsule',  'distractor-capsule',  'destroyer-capsule',  'capture-robot-rocket',  'cliff-explosives',
-        'discharge-defense-remote',  'artillery-targeting-remote',
+        'gun-turret',  'laser-turret',  'flamethrower-turret',  'artillery-turret',  'rocket-turret',  'railgun-turret',  'tesla-turret',  'artillery-wagon',  -- 炮塔/火炮车
+        'stone-wall',  'gate',  'radar',  'land-mine',                                  -- 防御工事
+        'pistol',  'submachine-gun',  'shotgun',  'combat-shotgun',  'flamethrower',  'rocket-launcher',  'railgun',  'teslagun',  -- 武器
+        'firearm-magazine',  'piercing-rounds-magazine',  'uranium-rounds-magazine',  'shotgun-shell',  'piercing-shotgun-shell',  -- 枪弹
+        'cannon-shell',  'explosive-cannon-shell',  'uranium-cannon-shell',  'explosive-uranium-cannon-shell',  -- 炮弹
+        'rocket',  'explosive-rocket',  'flamethrower-ammo',  'artillery-shell',  'railgun-ammo',  'tesla-ammo',  'atomic-bomb',  -- 弹药/导弹
+        'grenade',  'cluster-grenade',  'poison-capsule',  'slowdown-capsule',  'defender-capsule',  'distractor-capsule',  'destroyer-capsule',  'capture-robot-rocket',  -- 投掷/胶囊
+        'cliff-explosives',  'discharge-defense-remote',  'artillery-targeting-remote',  -- 工具/遥控
     }},
     -- 护甲与装备
+    -- 护甲与装备（含重型载具）
     {cat = 'equipment',  items = {
-        'light-armor',  'heavy-armor',  'modular-armor',  'power-armor',  'power-armor-mk2',
-        'mech-armor',  'solar-panel-equipment',  'battery-equipment',  'battery-mk2-equipment',  'battery-mk3-equipment',
-        'belt-immunity-equipment',  'energy-shield-equipment',  'energy-shield-mk2-equipment',  'exoskeleton-equipment',  'personal-roboport-equipment',
-        'personal-roboport-mk2-equipment',  'personal-laser-defense-equipment',  'night-vision-equipment',  'discharge-defense-equipment',  'fission-reactor-equipment',
-        'fusion-reactor-equipment',  'toolbelt-equipment',
+        'light-armor',  'heavy-armor',  'modular-armor',  'power-armor',  'power-armor-mk2',  'mech-armor',  -- 护甲
+        'solar-panel-equipment',  'fission-reactor-equipment',  'fusion-reactor-equipment',  'battery-equipment',  'battery-mk2-equipment',  'battery-mk3-equipment',  -- 能源/蓄电装备
+        'energy-shield-equipment',  'energy-shield-mk2-equipment',  'personal-laser-defense-equipment',  'discharge-defense-equipment',  -- 护盾/防御装备
+        'exoskeleton-equipment',  'personal-roboport-equipment',  'personal-roboport-mk2-equipment',  'belt-immunity-equipment',  'night-vision-equipment',  'toolbelt-equipment',  -- 功能装备
+        'spidertron',  'tank',                                                          -- 重型载具
     }},
     -- 科技瓶(永续箱不出)
     {cat = 'science',    items = {   -- 已删可腐的 agricultural-science-pack
-        'automation-science-pack',  'logistic-science-pack',  'military-science-pack',  'chemical-science-pack',  'production-science-pack',
-        'utility-science-pack',  'space-science-pack',  'metallurgic-science-pack',  'electromagnetic-science-pack',
-        'cryogenic-science-pack',  'promethium-science-pack',
+        'automation-science-pack',  'logistic-science-pack',  'military-science-pack',  'chemical-science-pack',  -- 基础四瓶(红绿黑蓝)
+        'production-science-pack',  'utility-science-pack',  'space-science-pack',      -- 紫/黄/白
+        'metallurgic-science-pack',  'electromagnetic-science-pack',  'cryogenic-science-pack',  'promethium-science-pack',  -- 星球科技瓶
     }},
     -- 生物/农业（已删蛋与一切可腐物，只留不腐烂的种子/土壤）
     {cat = 'gleba',      items = {
-        'jellynut-seed',  'yumako-seed',  'tree-seed',  'artificial-jellynut-soil',  'artificial-yumako-soil',
-        'overgrowth-jellynut-soil',  'overgrowth-yumako-soil',
+        'jellynut-seed',  'yumako-seed',  'tree-seed',                                  -- 种子
+        'artificial-jellynut-soil',  'artificial-yumako-soil',  'overgrowth-jellynut-soil',  'overgrowth-yumako-soil',  -- 土壤
     }},
     -- 太空/平台
     {cat = 'space',      items = {
-        'foundation',  'space-platform-foundation',  'space-platform-starter-pack',  'ice-platform',  'cargo-bay',
-        'cargo-landing-pad',  'asteroid-collector',  'thruster',
-        -- 'satellite' 已被 Space Age 删除(base-data-updates.lua 置 nil)，移出；item_ok 兜底其它失效名。
+        'space-platform-starter-pack',                                                 -- 平台起步包
+        'foundation',  'space-platform-foundation',  'ice-platform',                   -- 平台地基
+        'cargo-bay',  'cargo-landing-pad',  'asteroid-collector',  'thruster',          -- 平台部件
     }},
-    -- 载具
+    -- 载具（战斗载具 tank/spidertron 已归 military）
     {cat = 'vehicle',    items = {
-        'car',  'tank',  'spidertron',
+        'car',
     }},
 }
 
--- 各【按外观区分】的箱子对 LOOT 各【类】的权重：先按权重选类、再类内等概率选物品。权重 0/缺省 = 不出此类。
--- 木箱(宝箱)走单独精选池 TREASURE_POOL，不在这里。改这里即可独立调各箱掉落构成（LOOT 已无全局 w）。
+-- 各【按外观区分】的箱子对 LOOT 各【类】的权重：先按权重选类、再类内等概率选物品。
+-- 每表都【列全所有类】(顺序同 LOOT)，不要的标 0 方便手调——0 与省略等价，不影响运算。
+-- 木箱(宝箱)走单独精选池 TREASURE_POOL，不在这里。
 local LOOT_WEIGHTS = {
-    -- 钢箱 = 材料箱：各种基础材料 + 原料，大概率普通科技瓶。普通品质、常见、装得多。
+    -- 钢箱 = 材料箱：基础材料/原料 + 大概率普通科技瓶。普通品质、常见、装得多。
     material = {
-        raw = 25, material = 40, science = 30, logistics = 5,
+        raw = 25, material = 40, logistics = 5,  circuit = 0,  power = 0,
+        production = 0,  module = 0,  military = 0,  equipment = 0,  science = 30,
+        gleba = 0,  space = 0,  vehicle = 0,
     },
-    -- 铁箱 = 设备箱：实用设备/机器为主（生产机/物流/电力/电路），少量军事/装备/农业。居中。
+    -- 铁箱 = 设备箱：实用设备/机器为主，含载具/太空件，少量科技瓶。普通品质、中等数量。
     equipment = {
-        production = 30, logistics = 18, power = 14, circuit = 8,
-        military = 12, equipment = 10, module = 4, gleba = 4,
+        raw = 0,  material = 0,  logistics = 18,  circuit = 8,  power = 14,
+        production = 30,  module = 4,  military = 12,  equipment = 10,  science = 10,
+        gleba = 4,  space = 6,  vehicle = 6,
     },
-    -- 永续(无底)箱：无限供应，只出【基础材料/矿物】。不出科技瓶/装备/军事等高价值无限。
+    -- 永续(无底)箱：基础材料/矿物为主。注意 science>0 = 无限科技瓶(很强，慎调)。
     perp = {
-        raw = 60, material = 40,
+        raw = 60,  material = 40,  logistics = 0,  circuit = 0,  power = 0,
+        production = 0,  module = 0,  military = 0,  equipment = 0,  science = 5,
+        gleba = 0,  space = 0,  vehicle = 0,
     },
 }
 
--- 木箱(宝箱)精选池：每箱 1~2 件高品质高价值物品 —— 顶级插件(3级)/星球特产机器/顶级装备载具。
+-- 木箱(宝箱)精选池：每箱 1~2 件高品质高价值物品 —— 顶级插件(3级) + 星球特产机器/顶级生产建筑。
+-- (mech-armor/power-armor-mk2/spidertron/tank 已归 equipment，beacon 归 production)
 local TREASURE_POOL = {
-    'productivity-module-3', 'speed-module-3', 'efficiency-module-3', 'quality-module-3',
-    'foundry', 'electromagnetic-plant', 'biochamber', 'cryogenic-plant', 'recycler',
-    'big-mining-drill', 'beacon', 'rocket-silo', 'fusion-reactor',
-    'mech-armor', 'power-armor-mk2', 'spidertron', 'tank',
+    'productivity-module-3', 'speed-module-3', 'efficiency-module-3', 'quality-module-3',  -- 顶级插件
+    'foundry', 'electromagnetic-plant', 'biochamber', 'cryogenic-plant', 'recycler',       -- 星球特产机器
+    'big-mining-drill', 'rocket-silo', 'fusion-reactor',                                    -- 顶级生产建筑
 }
 
 -- 按给定【类权重表】选类、类内等概率选物品。weights[cat] 为 0/nil 即跳过该类。
