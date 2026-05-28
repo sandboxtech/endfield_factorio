@@ -260,11 +260,12 @@ local function pick_loot(weights)
     return LOOT[1].items[1]   -- 浮点误差兜底
 end
 
--- 单件数量：1 到该物品 1 组(堆叠数)，按 random()² 偏低分布（多数小堆，偶尔接近满堆）。
-local function loot_count(name)
+-- 单件数量：1 到该物品 1 组(堆叠数) × random^exp。exp 越大越偏低：
+--   exp=1 均匀(偏多，钢箱)、exp=2 偏低(铁箱)、exp=4 极偏低(多为几个，木箱)。
+local function loot_count(name, exp)
     local proto = prototypes.item[name]
     local ss = (proto and proto.stack_size) or 1
-    return math.max(1, math.ceil(ss * math.random() ^ 2))
+    return math.max(1, math.ceil(ss * math.random() ^ (exp or 2)))
 end
 
 -- 普通品质（材料箱/设备箱用）：多数 normal，小概率 uncommon/rare → 开箱偶有惊喜。
@@ -277,13 +278,14 @@ local function roll_quality()
     return 'normal'
 end
 
--- 宝箱(木箱)专用品质：恒为 uncommon 及以上（高品质惊喜，与"宝"匹配）。
+-- 宝箱(木箱)专用品质（高品质惊喜，与"宝"匹配）。
 local function roll_treasure_quality()
     local r = math.random()
-    if r < 0.05 then return 'legendary' end
-    if r < 0.20 then return 'epic' end
-    if r < 0.55 then return 'rare' end
-    return 'uncommon'
+    if r < 0.00081 then return 'legendary' end
+    if r < 0.0027 then return 'epic' end
+    if r < 0.09 then return 'rare' end
+    if r < 0.3 then return 'uncommon' end
+    return 'normal'
 end
 
 -- 三种普通箱体名（供 /check_loot 校验实体名用；箱子外观=内容由各 feat 固定指定，不再随机选）。
@@ -307,15 +309,26 @@ local function item_ok(name)
     return false
 end
 
--- 按【类权重表 weights】往箱子塞 n 件普通品质战利品（材料箱/设备箱用）。
-local function fill_loot(chest, n, weights)
+-- 往箱子塞普通品质战利品：抽 n 次，每次 count = loot_count(name, exp)。
+--   kinds 给定 → 先选定 kinds 种物品，n 次都在这几种里抽（少种类、同种叠多组 → 材料箱）；
+--   kinds 为 nil → 每次重新抽（种类杂 → 设备箱）。
+local function fill_loot(chest, n, weights, exp, kinds)
     local inv = chest.get_inventory(defines.inventory.chest)
     if not inv then return end
     n = math.min(n, #inv)   -- 抽取次数不超过箱子格数：小箱(木16)也能装满，又不溢出浪费
+    local pool
+    if kinds then
+        pool = {}
+        for _ = 1, kinds do
+            local name = pick_loot(weights)
+            if item_ok(name) then pool[#pool + 1] = name end
+        end
+        if #pool == 0 then return end
+    end
     for _ = 1, n do
-        local name = pick_loot(weights)
+        local name = pool and pool[math.random(#pool)] or pick_loot(weights)
         if item_ok(name) then
-            inv.insert{name = name, count = loot_count(name), quality = roll_quality()}
+            inv.insert{name = name, count = loot_count(name, exp), quality = roll_quality()}
         end
     end
 end
@@ -373,10 +386,10 @@ local function guard_perpetual(surface, pos)
 end
 
 -- 放一个【指定外观】的箱子(外观=内容含义) 并按类权重填充。force=neutral（可开/可拿/可手拆，不进蓝图）。
-local function place_filled_chest(surface, pos, chest_name, n, weights)
+local function place_filled_chest(surface, pos, chest_name, n, weights, exp, kinds)
     if not surface.can_place_entity{name = chest_name, position = pos} then return end
     local chest = surface.create_entity{name = chest_name, force = 'neutral', position = pos}
-    if chest then fill_loot(chest, n, weights) end
+    if chest then fill_loot(chest, n, weights, exp, kinds) end
 end
 
 -- 区块级确定性随机 [0,1)：点状稀有风味用。
@@ -395,21 +408,21 @@ local function spawn_chance(surface, kind)
     return wd * LOOT_FREQ[kind] * (storage.loot_density or 1)
 end
 
--- 钢箱 = 材料箱：常见。各种基础材料 + 原料，大概率普通科技瓶。普通品质、装得【多】(24~50格)。
+-- 钢箱 = 材料箱：常见。【1~2 种物品、很多组】(同种叠多格)。每件 count = ss×random^1(偏多)，普通品质。
 local function feat_material(surface, lt)
     if chunk_rng(lt, 503) > spawn_chance(surface, 'material') then return end
     place_filled_chest(surface, {lt.x + math.random(7, 25) + 0.5, lt.y + math.random(7, 25) + 0.5},
-        'steel-chest', math.random(24, 50), LOOT_WEIGHTS.material)
+        'steel-chest', math.random(24, 50), LOOT_WEIGHTS.material, 1, math.random(1, 2))
 end
 
--- 铁箱 = 设备箱：居中。实用设备/机器为主。普通品质、中等数量(10~24格)。
+-- 铁箱 = 设备箱：居中、【种类最杂】。抽 10~24 次不同物品，每件 count = ss×random^2，普通品质。
 local function feat_equipment(surface, lt)
     if chunk_rng(lt, 557) > spawn_chance(surface, 'equipment') then return end
     place_filled_chest(surface, {lt.x + math.random(5, 27) + 0.5, lt.y + math.random(5, 27) + 0.5},
-        'iron-chest', math.random(10, 24), LOOT_WEIGHTS.equipment)
+        'iron-chest', math.random(10, 24), LOOT_WEIGHTS.equipment, 2)
 end
 
--- 木箱 = 宝箱：稀有。1~2 件高价值物品(顶级插件/星球特产机器/顶级装备)，恒 uncommon 及以上高品质，每件 1~2 个。
+-- 木箱 = 宝箱：稀有。1~2 种高价值物品，每件【几个】(count = ss×random^4，极偏低)
 local function feat_treasure(surface, lt)
     if chunk_rng(lt, 601) > spawn_chance(surface, 'treasure') then return end
     local pos = {lt.x + math.random(2, 29) + 0.5, lt.y + math.random(2, 29) + 0.5}
@@ -420,7 +433,7 @@ local function feat_treasure(surface, lt)
     for _ = 1, math.random(1, 2) do
         local name = TREASURE_POOL[math.random(#TREASURE_POOL)]
         if item_ok(name) then
-            inv.insert{name = name, count = math.random(1, 2), quality = roll_treasure_quality()}
+            inv.insert{name = name, count = loot_count(name, 4), quality = roll_treasure_quality()}
         end
     end
 end
