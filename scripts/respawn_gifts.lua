@@ -26,38 +26,60 @@ M.pack_gifts = {
     ['military-science-pack']        = {'gun-turret', 'firearm-magazine'},
 }
 
--- 发放数随累计经验增长，所有物品在 CAP_EXP（约几万）同时触顶到各自的 5 组(5 × 堆叠数)：
---   组数 = 5 × √(exp / CAP_EXP)（对所有物品一致，触顶 = 5 组）
---   单种数量 = floor(堆叠数 × 组数)，封顶 = 5 × 堆叠数。
--- 堆叠数动态取自 prototypes.item[name].stack_size：堆叠小的物品同经验下绝对数量更少（更稀有）。
+-- 等级 0..1000：累计经验门槛走 √ 曲线（升级越来越慢），CAP_EXP 处达满级 1000。
+-- 组数 = ceil(等级/100)，封顶 10（每 100 级 +1 组；1 级即 1 组、100 级 1 组、101 级 2 组、1000 级 10 组）。
+-- 每组 = 该物品的堆叠数(50/10…)：堆叠小的物品同组下绝对数量更少（更稀有）。每件赠品上限 10 组。
 local CAP_EXP = 100000
+M.MAX_LEVEL = 1000
+M.MAX_GROUPS = 10
+local LEVELS_PER_GROUP = 100
 
 local function stack_size(item_name)
     local proto = prototypes.item[item_name]
     return (proto and proto.stack_size) or 1
 end
 
-function M.gift_count(exp, item_name)
-    if not exp or exp <= 0 then return 0 end
-    local cap = 5 * stack_size(item_name)
-    if exp >= CAP_EXP then return cap end
-    return math.floor(cap * math.sqrt(exp / CAP_EXP))
-end
-
--- 累计经验 → 等级 0..5（= 组数 5√(exp/CAP) 下取整；满级 5 = 发满 5 组）。
--- 与 ability-online 的人物等级同理（都是 √ 曲线的整数级）。
-M.MAX_LEVEL = 5
+-- 累计经验 → 等级 0..1000（= 1000√(exp/CAP) 下取整）。与 ability-online 的人物等级同理(√曲线)。
 function M.pack_level(exp)
     if not exp or exp <= 0 then return 0 end
     if exp >= CAP_EXP then return M.MAX_LEVEL end
     return math.floor(M.MAX_LEVEL * math.sqrt(exp / CAP_EXP))
 end
 
--- 升到下一级所需的累计经验；已满级返回 nil。由 5√(e/CAP)=lv+1 反解：e = CAP × ((lv+1)/5)²。
+-- 等级 → 组数：ceil(等级/100)，封顶 10。等级 0 → 0 组。
+function M.level_groups(level)
+    if level <= 0 then return 0 end
+    return math.min(M.MAX_GROUPS, math.ceil(level / LEVELS_PER_GROUP))
+end
+
+-- 升到下一级所需累计经验；已满级返回 nil。由 1000√(e/CAP)=lv+1 反解：e = CAP × ((lv+1)/1000)²。
 function M.exp_for_next_level(exp)
     local lv = M.pack_level(exp)
     if lv >= M.MAX_LEVEL then return nil end
     return math.ceil(CAP_EXP * ((lv + 1) / M.MAX_LEVEL) ^ 2)
+end
+
+-- 发放数 = 组数 × 堆叠数（组数随等级阶梯：每 100 级 +1 组，封顶 10 组 = 10 × 堆叠数）。
+function M.gift_count(exp, item_name)
+    return M.level_groups(M.pack_level(exp)) * stack_size(item_name)
+end
+
+-- 玩家所有开局赠品总组数（每件 = 其瓶组数 × 件数）。供背包格数加成用。
+function M.total_gift_groups(player_index)
+    local total = 0
+    for _, pack in ipairs(constants.science_packs) do
+        local items = M.pack_gifts[pack]
+        if items then
+            total = total + M.level_groups(M.pack_level(passives.exp_total_for_pack(player_index, pack))) * #items
+        end
+    end
+    return total
+end
+
+-- 背包格数加成 = 开局赠品总组数（每 1 组 +1 格）。每次复活/开局重设（新角色加成会清零）。
+function M.apply_inventory_bonus(player)
+    if not player or not player.character then return end
+    player.character_inventory_slots_bonus = M.total_gift_groups(player.index)
 end
 
 -- 挂机/在线金币：每轮首次复活时发放 floor(√在线分钟)。在线越久开局金币越多。

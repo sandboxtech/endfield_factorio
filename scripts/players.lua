@@ -33,7 +33,7 @@ function M.print_inspection(target, viewer)
         local val = passives.get_stat(target.index, ab.stat)
         viewer.print({ab.locale, math.floor(val), ab.fmt(passives.skill_factor(target.index, ab))})
     end
-    -- 每种科技瓶：等级(0-5) + 当前开局奖励 + 还差多少经验升级（仿人物等级那一行，去掉繁琐的下一档预览）
+    -- 每种科技瓶：等级(0-1000) + 当前开局奖励 + 还差多少经验升级（仿人物等级那一行，去掉繁琐的下一档预览）
     for _, pack in ipairs(constants.science_packs) do
         local items = respawn_gifts.pack_gifts[pack]
         if items then
@@ -126,6 +126,7 @@ script.on_event(defines.events.on_player_respawned, function(event)
     place_on_random_planet(player)   -- 随机星球落点 + chart 128
     player.disable_flashlight()
     passives.apply(player)
+    respawn_gifts.apply_inventory_bonus(player)   -- 背包格数加成（按赠品总组数，每组 +1 格）
     try_gift_first_in_world(player)
 end)
 
@@ -161,6 +162,7 @@ script.on_event(defines.events.on_player_created, function(event)
     M.player_reset(player)
     gui.player_gui(player)
     passives.apply(player)
+    respawn_gifts.apply_inventory_bonus(player)   -- 背包格数加成（按赠品总组数，每组 +1 格）
     try_gift_first_in_world(player)
 end)
 

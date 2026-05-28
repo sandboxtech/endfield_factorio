@@ -15,26 +15,47 @@ local function require_admin(command)
     return nil
 end
 
--- 任何自定义指令被使用时，私聊通知所有在线管理员：谁用了什么指令（含参数）。
--- 控制台调用（无 player_index）不通知；不通知使用者本人（即便他是管理员）。
-local function notify_admins(command)
+-- 任何自定义指令被使用时，公告给【所有在线玩家】：谁用了什么指令（含参数）。
+-- 控制台调用（无 player_index）不公告。
+local function announce_command(command)
     local player = command.player_index and game.get_player(command.player_index)
     if not player then return end
     local what = '/' .. command.name
     if command.parameter then what = what .. ' ' .. command.parameter end
-    for _, admin in pairs(game.connected_players) do
-        if admin.admin and admin.index ~= player.index then
-            admin.print({'wn.cmd-used', player.name, what})
-        end
-    end
+    game.print({'wn.cmd-used', player.name, what})
 end
 
--- 用本函数代替 commands.add_command 注册：执行前先向管理员审计一条"谁用了什么"。
+-- 用本函数代替 commands.add_command 注册：执行前先公告一条"谁用了什么"给全体玩家。
 local function add_command(name, help, fn)
     commands.add_command(name, help, function(command)
-        notify_admins(command)
+        announce_command(command)
         fn(command)
     end)
+end
+
+-- ── 会员系统 ───────────────────────────────────────────────────────────────
+-- 会员名单存 storage.members[玩家名]=true。管理员永远算会员（用来发展第一批会员）。
+local function is_member(player)
+    if not player then return false end
+    if player.admin then return true end
+    return (storage.members and storage.members[player.name]) or false
+end
+
+-- 取参数里的第一个玩家名。
+local function arg_name(command)
+    return command.parameter and string.match(command.parameter, '%S+')
+end
+
+-- 会员命令通用入口：校验执行者是会员 + 解析目标玩家。
+--   返回 actor(控制台为 nil), target, sink(打印对象)；执行者非会员或目标不存在则返回 nil。
+local function member_cmd_targets(command)
+    local actor = command.player_index and game.get_player(command.player_index)
+    local sink = actor or game
+    if actor and not is_member(actor) then actor.print({'wn.not-member'}); return end
+    local name = arg_name(command)
+    local target = name and game.get_player(name)
+    if not target then sink.print({'wn.member-no-such', name or ''}); return end
+    return actor, target, sink
 end
 
 add_command('reset', {'wn.run-reset-help'}, function(command)
@@ -163,3 +184,43 @@ end
 
 add_command('suicide', {'wn.suicide-help'}, suicide_cmd)
 add_command('zisha', {'wn.suicide-help'}, suicide_cmd)
+
+-- /member <玩家名>（/huiyuan 同功能）：授予会员资格。仅会员/管理员可用。
+local function member_grant_cmd(command)
+    local _, target, sink = member_cmd_targets(command)
+    if not target then return end
+    if is_member(target) then sink.print({'wn.member-already', target.name}); return end
+    storage.members = storage.members or {}
+    storage.members[target.name] = true
+    game.print({'wn.member-granted', target.name})
+end
+
+add_command('member', {'wn.member-help'}, member_grant_cmd)
+add_command('huiyuan', {'wn.member-help'}, member_grant_cmd)
+
+-- /unmember <玩家名>（/quhuiyuan 同功能）：解除会员资格。仅会员/管理员可用。
+local function member_revoke_cmd(command)
+    local _, target, sink = member_cmd_targets(command)
+    if not target then return end
+    if not (storage.members and storage.members[target.name]) then sink.print({'wn.member-not', target.name}); return end
+    storage.members[target.name] = nil
+    game.print({'wn.member-revoked', target.name})
+end
+
+add_command('unmember', {'wn.unmember-help'}, member_revoke_cmd)
+add_command('quhuiyuan', {'wn.unmember-help'}, member_revoke_cmd)
+
+-- /kickout <玩家名>（/tichu 同功能）：踢出一名【非会员】玩家。仅会员/管理员可用。不能踢自己/会员/管理员。
+local function member_kick_cmd(command)
+    local actor, target, sink = member_cmd_targets(command)
+    if not target then return end
+    if actor and target.index == actor.index then sink.print({'wn.kickout-self'}); return end
+    if is_member(target) then sink.print({'wn.kickout-protected', target.name}); return end
+    if not target.connected then sink.print({'wn.kickout-offline', target.name}); return end
+    local by = actor and actor.name or '<console>'
+    game.kick_player(target, {'wn.kickout-reason', by})
+    game.print({'wn.member-kicked', target.name, by})
+end
+
+add_command('kickout', {'wn.kickout-help'}, member_kick_cmd)
+add_command('tichu', {'wn.kickout-help'}, member_kick_cmd)

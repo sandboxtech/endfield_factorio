@@ -76,7 +76,7 @@ function M.ensure_defaults()
     end
     -- 必需表（累积数据 / 每星球状态），缺失则建空表
     for _, key in ipairs({'radius_of', 'science_exp', 'player_stats', 'platform_age',
-                          'ground_tint', 'tile_remap', 'danger_theme', 'event_world', 'loot_style'}) do
+                          'ground_tint', 'tile_remap', 'danger_theme', 'event_world', 'loot_style', 'members'}) do
         storage[key] = storage[key] or {}
     end
     -- world_fx 全局开关（默认开；/c storage.world_fx.xxx=false 单独禁用某事件驱动效果）。
