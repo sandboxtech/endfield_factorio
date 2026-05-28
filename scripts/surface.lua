@@ -28,12 +28,22 @@ local function set_resource(name, mgs, specialty_mult)
 end
 
 -- 自然要素（水/悬崖/火山/岛屿）。
-local function random_nature_mgs(mgs, name)
+local function random_nature_mgs(mgs, name, value)
+    if not value then value = 3 end
     local ac = mgs.autoplace_controls[name]
     if not ac then return end
-    ac.frequency = util.random_nature()
-    ac.size      = util.random_nature()
-    ac.richness  = util.random_nature()
+    ac.frequency = util.random_exp(value)
+    ac.size      = util.random_exp(value)
+    ac.richness  = util.random_exp(value)
+end
+
+local function random_water_mgs(mgs, name, value)
+    if not value then value = 3 end
+    local ac = mgs.autoplace_controls[name]
+    if not ac then return end
+    ac.frequency = util.random_exp(value)+0.25
+    ac.size      = util.random_exp(value)
+    ac.richness  = util.random_exp(value)+0.25
 end
 
 -- 影响难度/节奏的要素（敌人巢穴）：大概率正常、小概率小幅偏离，避免随机出"虫海"或"无虫"。
@@ -392,7 +402,7 @@ script.on_event(defines.events.on_surface_cleared, function(event)
         for _, res in pairs({'uranium-ore'}) do
             set_resource(res, mgs, storage.local_specialty_multiplier)
         end
-        random_nature_mgs(mgs, 'water')
+        random_water_mgs(mgs, 'water')
         random_nature_mgs(mgs, 'nauvis_cliff')
         -- starting_area_moisture 用原版默认（出生区本就湿润），不再随机到极干
         nature_by_knob(mgs, 'trees', knobs.verdancy)    -- 树：密度随繁茂度，规模多半小偶尔大
@@ -432,7 +442,7 @@ script.on_event(defines.events.on_surface_cleared, function(event)
 
         balance_mgs(mgs, 'gleba_enemy_base')   -- 五足兽巢密度影响难度 → 大概率正常
 
-        random_nature_mgs(mgs, 'gleba_water')
+        random_water_mgs(mgs, 'gleba_water')
         nature_by_knob(mgs, 'gleba_plants', knobs.verdancy)   -- 草星植被同样随本轮繁茂度
         random_nature_mgs(mgs, 'gleba_cliff')
     end

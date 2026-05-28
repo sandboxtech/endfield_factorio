@@ -25,11 +25,6 @@ function M.random_exp(x)
     return math.pow(2, (math.random() - math.random()) * x)
 end
 
--- 自然要素的随机倍率（纯表现 / 常规地图变化，可大幅浮动）
--- 用于树/石/水/悬崖/湿度/植物等——长歪了也只是地貌不同，不破坏节奏。就是指数分布 x=4。
-function M.random_nature()
-    return M.random_exp(3)
-end
 
 -- 按敌人进化度挑一种虫（空降/复制虫等共用）。
 function M.evo_biter(evo)
