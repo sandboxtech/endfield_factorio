@@ -1,4 +1,4 @@
-[space-age] [color=acid]《异星工厂·终末地旅行》Spaceage Warptorio[/color]。
+[space-age] [color=acid]《异星工厂·无尽旅行》Spaceage Warptorio[/color]。
 。
 [img=space-location/solar-system-edge]全服每几小时集体[color=yellow]跃迁[/color]逃往新星系，无尽的新世界     [img=virtual-signal/signal-science-pack]。
 。

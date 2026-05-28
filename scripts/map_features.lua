@@ -104,118 +104,134 @@ local EXOTIC = {
     {name = 'huge-volcanic-rock', off = 321, rare = true, density = 0.06, threshold = 0.86},
 }
 
--- 战利品数量分组：每项只引用一个组(a=...)，开箱数量 = math.random(1, 组值)。统一在此调量。
---   bulk 大宗原料 · common 常见中间品/弹药/科技瓶 · parts 零件小件 · unit 机器/炮塔 · rare 高级机器/模块 · one 单件(装甲/装备/载具)
-local AMOUNT = {bulk = 300, common = 120, parts = 40, unit = 10, rare = 3, one = 1}
-
--- 战利品（坠机点/宝箱）加权表：weight 高=常见便宜，低=稀有贵重。分四档——
---   ① 基础物料(权重最高,最常见)  ② 常用机械/物流/电力/军事(居中)  ③ 进阶(低)  ④ 稀有/SA后期/装备(惊喜,数量少)。
+-- 战利品池：手动穷举的全物品名单（从游戏数据导出，不在运行时枚举 prototypes），按【类】分组。
+-- 每类一个权重 w：先按 w 选类，再类内等概率选物品。【改 w 即调该类整体掉率】。永续箱排除 'science' 类。
 local LOOT = {
-    -- ① 基础物料 / 早期中间品（最常见）
-    {w = 10, name = 'iron-plate', a = 'bulk'},
-    {w = 10, name = 'copper-plate', a = 'bulk'},
-    {w = 8,  name = 'coal', a = 'bulk'},
-    {w = 8,  name = 'stone', a = 'bulk'},
-    {w = 6,  name = 'iron-ore', a = 'bulk'},
-    {w = 6,  name = 'copper-ore', a = 'bulk'},
-    {w = 6,  name = 'steel-plate', a = 'common'},
-    {w = 6,  name = 'electronic-circuit', a = 'common'},
-    {w = 6,  name = 'plastic-bar', a = 'common'},
-    {w = 5,  name = 'stone-brick', a = 'common'},
-    {w = 5,  name = 'iron-gear-wheel', a = 'common'},
-    {w = 5,  name = 'copper-cable', a = 'bulk'},
-    {w = 4,  name = 'wood', a = 'common'},
-    {w = 4,  name = 'pipe', a = 'common'},
-    {w = 4,  name = 'iron-stick', a = 'common'},
-    {w = 4,  name = 'sulfur', a = 'common'},
-    {w = 3,  name = 'advanced-circuit', a = 'common'},
-    -- ② 常用物流 / 机械 / 电力 / 军事（居中）
-    {w = 4,  name = 'transport-belt', a = 'common'},
-    {w = 4,  name = 'inserter', a = 'parts'},
-    {w = 4,  name = 'firearm-magazine', a = 'common'},
-    {w = 4,  name = 'small-electric-pole', a = 'parts'},
-    {w = 3,  name = 'fast-transport-belt', a = 'parts'},
-    {w = 3,  name = 'underground-belt', a = 'unit'},
-    {w = 3,  name = 'splitter', a = 'unit'},
-    {w = 3,  name = 'fast-inserter', a = 'parts'},
-    {w = 3,  name = 'long-handed-inserter', a = 'parts'},
-    {w = 3,  name = 'stone-furnace', a = 'unit'},
-    {w = 3,  name = 'electric-mining-drill', a = 'unit'},
-    {w = 3,  name = 'medium-electric-pole', a = 'parts'},
-    {w = 3,  name = 'small-lamp', a = 'parts'},
-    {w = 3,  name = 'repair-pack', a = 'parts'},
-    {w = 3,  name = 'pipe-to-ground', a = 'parts'},
-    {w = 3,  name = 'stone-wall', a = 'parts'},
-    {w = 2,  name = 'assembling-machine-2', a = 'rare'},
-    {w = 2,  name = 'steel-furnace', a = 'unit'},
-    {w = 2,  name = 'solar-panel', a = 'unit'},
-    {w = 2,  name = 'accumulator', a = 'unit'},
-    {w = 2,  name = 'battery', a = 'parts'},
-    {w = 2,  name = 'engine-unit', a = 'parts'},
-    {w = 2,  name = 'express-transport-belt', a = 'parts'},
-    {w = 2,  name = 'fast-underground-belt', a = 'unit'},
-    {w = 2,  name = 'fast-splitter', a = 'unit'},
-    {w = 2,  name = 'piercing-rounds-magazine', a = 'parts'},
-    {w = 2,  name = 'grenade', a = 'parts'},
-    {w = 2,  name = 'boiler', a = 'unit'},
-    {w = 2,  name = 'steam-engine', a = 'unit'},
-    {w = 2,  name = 'radar', a = 'unit'},
-    {w = 2,  name = 'gun-turret', a = 'unit'},
-    {w = 2,  name = 'gate', a = 'parts'},
-    {w = 2,  name = 'automation-science-pack', a = 'common'},
-    {w = 2,  name = 'logistic-science-pack', a = 'common'},
-    -- ③ 进阶（低权重）
-    {w = 1,  name = 'processing-unit', a = 'unit'},
-    {w = 1,  name = 'speed-module', a = 'rare'},
-    {w = 1,  name = 'productivity-module', a = 'rare'},
-    {w = 1,  name = 'efficiency-module', a = 'rare'},
-    {w = 1,  name = 'construction-robot', a = 'unit'},
-    {w = 1,  name = 'logistic-robot', a = 'unit'},
-    {w = 1,  name = 'bulk-inserter', a = 'unit'},
-    {w = 1,  name = 'stack-inserter', a = 'unit'},
-    {w = 1,  name = 'assembling-machine-3', a = 'rare'},
-    {w = 1,  name = 'electric-furnace', a = 'rare'},
-    {w = 1,  name = 'substation', a = 'unit'},
-    {w = 1,  name = 'big-electric-pole', a = 'unit'},
-    {w = 1,  name = 'chemical-plant', a = 'unit'},
-    {w = 1,  name = 'oil-refinery', a = 'rare'},
-    {w = 1,  name = 'lab', a = 'unit'},
-    {w = 1,  name = 'low-density-structure', a = 'parts'},
-    {w = 1,  name = 'rocket-fuel', a = 'parts'},
-    {w = 1,  name = 'flying-robot-frame', a = 'unit'},
-    {w = 1,  name = 'electric-engine-unit', a = 'unit'},
-    {w = 1,  name = 'uranium-rounds-magazine', a = 'parts'},
-    {w = 1,  name = 'military-science-pack', a = 'parts'},
-    {w = 1,  name = 'chemical-science-pack', a = 'parts'},
-    {w = 1,  name = 'express-underground-belt', a = 'unit'},
-    {w = 1,  name = 'express-splitter', a = 'unit'},
-    {w = 1,  name = 'laser-turret', a = 'unit'},
-    {w = 1,  name = 'car', a = 'one'},
-    {w = 1,  name = 'light-armor', a = 'one'},
-    -- ④ 稀有 / SA 后期 / 装备（惊喜，数量很少）
-    {w = 1,  name = 'speed-module-2', a = 'rare'},
-    {w = 1,  name = 'productivity-module-2', a = 'rare'},
-    {w = 1,  name = 'efficiency-module-2', a = 'rare'},
-    {w = 1,  name = 'roboport', a = 'rare'},
-    {w = 1,  name = 'exoskeleton-equipment', a = 'one'},
-    {w = 1,  name = 'personal-roboport-equipment', a = 'one'},
-    {w = 1,  name = 'energy-shield-equipment', a = 'one'},
-    {w = 1,  name = 'night-vision-equipment', a = 'one'},
-    {w = 1,  name = 'battery-equipment', a = 'one'},
-    {w = 1,  name = 'modular-armor', a = 'one'},
-    {w = 1,  name = 'tungsten-plate', a = 'unit'},
-    {w = 1,  name = 'tungsten-carbide', a = 'unit'},
-    {w = 1,  name = 'holmium-plate', a = 'unit'},
-    {w = 1,  name = 'carbon-fiber', a = 'unit'},
-    {w = 1,  name = 'lithium-plate', a = 'unit'},
-    {w = 1,  name = 'calcite', a = 'parts'},
-    {w = 1,  name = 'superconductor', a = 'unit'},
-    {w = 1,  name = 'supercapacitor', a = 'unit'},
-    {w = 1,  name = 'quantum-processor', a = 'rare'},
-    {w = 1,  name = 'nuclear-fuel', a = 'rare'},
+    -- 原料/矿
+    {cat = 'raw',        w = 10, items = {
+        'iron-ore',  'copper-ore',  'coal',  'stone',  'uranium-ore',
+        'holmium-ore',  'tungsten-ore',  'lithium',  'calcite',  'scrap',
+        'raw-fish',  'carbon',  'wood',  
+        -- 'ice',  'carbonic-asteroid-chunk',
+        -- 'metallic-asteroid-chunk',  'oxide-asteroid-chunk',  'promethium-asteroid-chunk',
+    }},
+    -- 材料/中间品
+    {cat = 'material',   w = 30, items = {
+        'iron-plate',  'copper-plate',  'steel-plate',  'plastic-bar',  'stone-brick',
+        'iron-gear-wheel',  'copper-cable',  'iron-stick',  'electronic-circuit',  'advanced-circuit',
+        'processing-unit',  'engine-unit',  'electric-engine-unit',  'flying-robot-frame',  'low-density-structure',
+        'rocket-fuel',  'solid-fuel',  'battery',  'explosives',  'sulfur',
+        'uranium-235',  'uranium-238',  'uranium-fuel-cell',  'depleted-uranium-fuel-cell',  'fusion-power-cell',
+        'tungsten-carbide',  'tungsten-plate',  'holmium-plate',  'lithium-plate',  'carbon-fiber',
+        'superconductor',  'supercapacitor',  'quantum-processor',  'concrete',  'refined-concrete',
+        'hazard-concrete',  'refined-hazard-concrete',  'landfill',  'barrel',  'nuclear-fuel',
+    }},
+    -- 物流(带/臂/管/箱/轨/机器人)
+    {cat = 'logistics',  w =  15, items = {
+        'transport-belt',  'fast-transport-belt',  'express-transport-belt',  'turbo-transport-belt',  'underground-belt',
+        'fast-underground-belt',  'express-underground-belt',  'turbo-underground-belt',  'splitter',  'fast-splitter',
+        'express-splitter',  'turbo-splitter',  'loader',  'fast-loader',  'express-loader',
+        'inserter',  'burner-inserter',  'long-handed-inserter',  'fast-inserter',  'bulk-inserter',
+        'stack-inserter',  'pipe',  'pipe-to-ground',  'pump',  'offshore-pump',
+        'storage-tank',  'wooden-chest',  'iron-chest',  'steel-chest',  'active-provider-chest',
+        'passive-provider-chest',  'storage-chest',  'buffer-chest',  'requester-chest',  'construction-robot',
+        'logistic-robot',  'roboport',  'rail',  'rail-signal',  'rail-chain-signal',
+        'rail-ramp',  'rail-support',  'train-stop',  'locomotive',  'cargo-wagon',
+        'fluid-wagon',  'repair-pack',
+    }},
+    -- 电路信号
+    {cat = 'circuit',    w =  2, items = {
+        'arithmetic-combinator',  'decider-combinator',  'constant-combinator',  'selector-combinator',  'programmable-speaker', 'display-panel', 'small-lamp',
+    }},
+    -- 电力(发电/蓄电/电杆/热)
+    {cat = 'power',      w =  7, items = {
+        'boiler',  'steam-engine',  'steam-turbine',  'heat-exchanger',  'heat-pipe',
+        'nuclear-reactor',  'solar-panel',  'accumulator',  'fusion-reactor',  'fusion-generator',
+        'power-switch',  'small-electric-pole',  'medium-electric-pole',  'big-electric-pole',  'substation',
+        'lightning-collector',  'lightning-rod',  'heating-tower',
+    }},
+    -- 生产机器
+    {cat = 'production', w =  15, items = {
+        'assembling-machine-1',  'assembling-machine-2',  'assembling-machine-3',  'stone-furnace',  'steel-furnace',
+        'electric-furnace',  'electric-mining-drill',  'big-mining-drill',  'burner-mining-drill',  'pumpjack',
+        'oil-refinery',  'chemical-plant',  'centrifuge',  'lab',  'biolab',
+        'beacon',  'foundry',  'recycler',  'electromagnetic-plant',  'cryogenic-plant',
+        'biochamber',  'crusher',  'agricultural-tower',  'captive-biter-spawner',  'rocket-silo',
+    }},
+    -- 模块
+    {cat = 'module',     w =  15, items = {
+        'speed-module',  'speed-module-2',  'speed-module-3',  'efficiency-module',  'efficiency-module-2',
+        'efficiency-module-3',  'productivity-module',  'productivity-module-2',  'productivity-module-3',  'quality-module',
+        'quality-module-2',  'quality-module-3',
+    }},
+    -- 军事(炮塔/枪/弹/胶囊/墙)
+    {cat = 'military',   w =  8, items = {
+        'gun-turret',  'laser-turret',  'flamethrower-turret',  'artillery-turret',  'rocket-turret',
+        'railgun-turret',  'tesla-turret',  'land-mine',  'stone-wall',  'gate',
+        'radar',  'artillery-wagon',  'pistol',  'submachine-gun',  'shotgun',
+        'combat-shotgun',  'flamethrower',  'rocket-launcher',  'railgun',  'teslagun',
+        'firearm-magazine',  'piercing-rounds-magazine',  'uranium-rounds-magazine',  'shotgun-shell',  'piercing-shotgun-shell',
+        'cannon-shell',  'explosive-cannon-shell',  'uranium-cannon-shell',  'explosive-uranium-cannon-shell',  'rocket',
+        'explosive-rocket',  'flamethrower-ammo',  'artillery-shell',  'railgun-ammo',  'tesla-ammo',
+        'atomic-bomb',  'grenade',  'cluster-grenade',  'poison-capsule',  'slowdown-capsule',
+        'defender-capsule',  'distractor-capsule',  'destroyer-capsule',  'capture-robot-rocket',  'cliff-explosives',
+        'discharge-defense-remote',  'artillery-targeting-remote',
+    }},
+    -- 护甲与装备
+    {cat = 'equipment',  w =  3, items = {
+        'light-armor',  'heavy-armor',  'modular-armor',  'power-armor',  'power-armor-mk2',
+        'mech-armor',  'solar-panel-equipment',  'battery-equipment',  'battery-mk2-equipment',  'battery-mk3-equipment',
+        'belt-immunity-equipment',  'energy-shield-equipment',  'energy-shield-mk2-equipment',  'exoskeleton-equipment',  'personal-roboport-equipment',
+        'personal-roboport-mk2-equipment',  'personal-laser-defense-equipment',  'night-vision-equipment',  'discharge-defense-equipment',  'fission-reactor-equipment',
+        'fusion-reactor-equipment',  'toolbelt-equipment',
+    }},
+    -- 科技瓶(永续箱不出)
+    {cat = 'science',    w =  36, items = {
+        'automation-science-pack',  'logistic-science-pack',  'military-science-pack',  'chemical-science-pack',  'production-science-pack',
+        'utility-science-pack',  'space-science-pack',  'metallurgic-science-pack',  'electromagnetic-science-pack',  'agricultural-science-pack',
+        'cryogenic-science-pack',  'promethium-science-pack',
+    }},
+    -- 生物/农业(可腐)
+    {cat = 'gleba',      w =  5, items = {
+        'jelly',  'jellynut',  'jellynut-seed',  'yumako',  'yumako-mash',
+        'yumako-seed',  'tree-seed',  'bioflux',  'nutrients',  'spoilage',
+        'pentapod-egg',  'biter-egg',  'copper-bacteria',  'iron-bacteria',  'artificial-jellynut-soil',
+        'artificial-yumako-soil',  'overgrowth-jellynut-soil',  'overgrowth-yumako-soil',
+    }},
+    -- 太空/平台
+    {cat = 'space',      w =  1, items = {
+        'foundation',  'space-platform-foundation',  'space-platform-starter-pack',  'ice-platform',  'cargo-bay',
+        'cargo-landing-pad',  'asteroid-collector',  'thruster',  'satellite',
+    }},
+    -- 载具
+    {cat = 'vehicle',    w =  1, items = {
+        'car',  'tank',  'spidertron',
+    }},
 }
-local LOOT_TOTAL = 0
-for _, l in ipairs(LOOT) do LOOT_TOTAL = LOOT_TOTAL + l.w end
+
+-- 按【类权重 w】选类、类内等概率选物品；skip_cat 跳过某类（永续箱传 'science' → 不出科技瓶）。
+-- 用 ipairs 顺序确定 → 多人各端一致，math.random 取值不会 desync。
+local function pick_loot(skip_cat)
+    local total = 0
+    for _, c in ipairs(LOOT) do
+        if c.cat ~= skip_cat then total = total + c.w end
+    end
+    local roll = math.random() * total
+    for _, c in ipairs(LOOT) do
+        if c.cat ~= skip_cat then
+            roll = roll - c.w
+            if roll <= 0 then return c.items[math.random(#c.items)] end
+        end
+    end
+    return LOOT[1].items[1]   -- 理论到不了的兜底
+end
+
+-- 单件数量：1 到该物品 1 组(堆叠数)，按 random()² 偏低分布（多数小堆，偶尔接近满堆）。
+local function loot_count(name)
+    local proto = prototypes.item[name]
+    local ss = (proto and proto.stack_size) or 1
+    return math.max(1, math.ceil(ss * math.random() ^ 2))
+end
 
 -- 随机品质（2.0 SA 特性，1.0 战利品没有）：多数 normal，小概率 uncommon/rare → 开箱偶有惊喜。
 local function roll_quality()
@@ -235,23 +251,17 @@ local function fill_loot(chest, n)
     if not inv then return end
     n = math.min(n, #inv)   -- 抽取次数不超过箱子格数：小箱(木16)也能装满，又不溢出浪费
     for _ = 1, n do
-        local roll, acc = math.random() * LOOT_TOTAL, 0
-        for _, l in ipairs(LOOT) do
-            acc = acc + l.w
-            if roll <= acc then
-                inv.insert{name = l.name, count = math.random(1, AMOUNT[l.a] or 1), quality = roll_quality()}
-                break
-            end
-        end
+        local name = pick_loot()
+        inv.insert{name = name, count = loot_count(name), quality = roll_quality()}
     end
 end
 
 -- 永续箱奖励（罕见）：随机一种物品无限供应。设为【不可打开/不可拆走、可摧毁】，
--- 防止滥用又能就地用（接机械臂/传送带）。force=player。
+-- 防止滥用又能就地用（接机械臂/传送带）。force=neutral（不进蓝图；机械臂仍可从中抽货）。
 local function spawn_perpetual_chest(surface, pos)
-    local chest = surface.create_entity{name = 'infinity-chest', force = 'player', position = pos}
+    local chest = surface.create_entity{name = 'infinity-chest', force = 'neutral', position = pos}
     if not chest then return end
-    local item = LOOT[math.random(#LOOT)].name
+    local item = pick_loot('science')   -- 永续箱不出科技瓶
     local ss = prototypes.item[item] and prototypes.item[item].stack_size or 50
     chest.infinity_container_filters = {{index = 1, name = item, count = ss, mode = 'exactly'}}
     chest.operable = false        -- 不可打开/重配
@@ -259,42 +269,50 @@ local function spawn_perpetual_chest(surface, pos)
     chest.destructible = true     -- 可摧毁
 end
 
--- 战利品箱守卫（随机）：越值钱的箱子越【可能有】、【越多】、【越高级】的敌方虫炮(worm turret, force=enemy)守在四周。
---   value：普通箱≈装载次数 n，永续箱给高值。出生点附近(<64格)不放（保护新手）；越值钱/越远 → 越可能高级虫。
-local GUARD_WORMS = {'small-worm-turret', 'medium-worm-turret', 'big-worm-turret'}
-local function guard_chest(surface, pos, value)
+-- 永续箱守卫：只在【永续箱】四周放敌人(force=enemy)，普通箱【不放】。从 机枪炮塔/沙虫/地雷/重炮 随机抽，数量较多。
+--   机枪炮塔用本星弹种(theme.mag，兜底机枪弹)、重炮用炮弹；沙虫/地雷不用弹。出生点附近(<64格)不放（保护新手）。
+local PERP_GUARD_POOL = {
+    {name = 'gun-turret', mag = true, n = 20},                     -- 机枪炮塔（本星弹）
+    'small-worm-turret', 'medium-worm-turret', 'big-worm-turret',  -- 沙虫
+    'land-mine',                                                   -- 地雷
+    {name = 'artillery-turret', ammo = 'artillery-shell', n = 4},  -- 重炮（炮弹）
+}
+local function guard_perpetual(surface, pos)
     local dist = math.sqrt(pos.x * pos.x + pos.y * pos.y)
-    if dist < 64 then return end                                      -- 出生点保护半径内不放守卫
-    if math.random() > math.min(0.8, value * 0.045) then return end   -- 越值钱越可能有守卫
-    local tier_bias = math.min(1, value / 30 + dist / 1200)           -- 越值钱/越远 → 越可能中/大型虫
-    for _ = 1, math.random(1, math.min(5, math.ceil(value / 4))) do
-        local ang, r = math.random() * 2 * math.pi, 3 + math.random() * 3
+    if dist < 64 then return end                          -- 出生点保护半径内不放
+    local theme = storage.danger_theme and storage.danger_theme[surface.name]
+    local mag = theme and theme.mag                       -- 本星弹种
+    for _ = 1, math.random(6, 12) do
+        local def = PERP_GUARD_POOL[math.random(#PERP_GUARD_POOL)]
+        local name = type(def) == 'table' and def.name or def
+        local ang, r = math.random() * 2 * math.pi, 3 + math.random() * 5
         local gp = {x = pos.x + math.cos(ang) * r, y = pos.y + math.sin(ang) * r}
-        local tier = (math.random() < tier_bias) and ((math.random() < tier_bias) and 3 or 2) or 1
-        local name = GUARD_WORMS[tier]
-        local sp = surface.find_non_colliding_position(name, gp, 4, 1)
-        if sp then surface.create_entity{name = name, force = 'enemy', position = sp} end
+        local sp = surface.find_non_colliding_position(name, gp, 5, 1)
+        if sp then
+            local e = surface.create_entity{name = name, force = 'enemy', position = sp}
+            if e and type(def) == 'table' then
+                local ammo = def.mag and (mag or 'firearm-magazine') or def.ammo   -- 机枪用本星弹；重炮用炮弹
+                if ammo then e.insert{name = ammo, count = def.n} end
+            end
+        end
     end
 end
 
--- 放一个战利品箱：小概率是永续箱奖励，否则普通木/铁/钢箱 + 加权战利品。pos = {x+0.5, y+0.5}。
--- test_scale(默认1)缩放本次永续箱概率：宝箱传 <1 让它更难刷出永续箱。放完按价值随机加敌人守卫。
+-- 放一个战利品箱：小概率是永续箱奖励(四周放敌人守卫)，否则普通木/铁/钢箱 + 战利品(不放敌人)。pos = {x+0.5, y+0.5}。
+-- test_scale(默认1)缩放本次永续箱概率：宝箱传 <1 让它更难刷出永续箱。
 local function place_loot_chest(surface, pos, n, test_scale)
     if not surface.can_place_entity{name = 'steel-chest', position = pos} then return end
     -- 每世界独立的战利品风格（surface.lua 滚定）：哪些箱体 + 永续箱概率。无则兜底默认。
     local style = storage.loot_style and storage.loot_style[surface.name]
     local chests = (style and style.chests) or CHESTS
     local test = ((style and style.test) or (storage.test_chest_chance or 0.06)) * (test_scale or 1)   -- 0 也是合法值(本世界不出永续箱)
-    local value
     if math.random() < test then
         spawn_perpetual_chest(surface, pos)
-        value = 16                  -- 永续箱按高价值算守卫（最值钱）
+        guard_perpetual(surface, pos)   -- 只有永续箱周围放敌人
     else
-        local chest = surface.create_entity{name = chests[math.random(#chests)], force = 'player', position = pos}
+        local chest = surface.create_entity{name = chests[math.random(#chests)], force = 'neutral', position = pos}
         if chest then fill_loot(chest, n) end
-        value = n                   -- 普通箱价值 = 装载次数 n（物资箱多→守卫多）
     end
-    guard_chest(surface, pos, value)
 end
 
 -- 区块级确定性随机 [0,1)：点状稀有风味用。
@@ -308,17 +326,18 @@ local function loot_rate(surface)
     return (style and style.rate) or 1
 end
 
--- 物资箱（原"坠机点"）：战利品多、装得满。force=player。频率随【本世界密度 × 富庶度】渐变（每世界都有，概率不等）。
+-- 物资箱（原"坠机点"）：战利品多、装得满。箱子 force=neutral（可开/可拿/可手拆，但不进蓝图；永续箱接机械臂照常）。
+-- 频率随【本世界密度 × 富庶度】渐变（每世界都有，概率不等）。
 local function feat_crash_site(surface, lt, W)
     if chunk_rng(lt, 503) > loot_rate(surface) * (0.02 + 0.06 * (W and W.riches or 0)) then return end
-    place_loot_chest(surface, {lt.x + math.random(7, 25) + 0.5, lt.y + math.random(7, 25) + 0.5}, math.random(10, 18))
+    place_loot_chest(surface, {lt.x + math.random(7, 25) + 0.5, lt.y + math.random(7, 25) + 0.5}, math.random(24, 50))
 end
 
--- 宝箱缓存（单个箱）：更稀有但也装得满些。force=player。频率随【本世界密度 × 富庶度】渐变。
+-- 宝箱缓存（单个箱）：更稀有但也装得满些。箱子 force=neutral。频率随【本世界密度 × 富庶度】渐变。
 -- 永续箱概率额外 ×0.3（比物资箱更难出永续箱）。
 local function feat_treasure(surface, lt, W)
     if chunk_rng(lt, 601) > loot_rate(surface) * (0.015 + 0.05 * (W and W.riches or 0)) then return end
-    place_loot_chest(surface, {lt.x + math.random(2, 29) + 0.5, lt.y + math.random(2, 29) + 0.5}, math.random(5, 9), 0.3)
+    place_loot_chest(surface, {lt.x + math.random(2, 29) + 0.5, lt.y + math.random(2, 29) + 0.5}, math.random(12, 28), 0.3)
 end
 
 -- 按本星【独立开关】theme 构建敌人池（worm/spawner/turret/mine/art 各自有无）。
