@@ -25,7 +25,7 @@
 | `noise.lua` | 2D simplex + 分形多倍频 + 种子派生变换（旋转/拉伸/缩放）。供运行时手动铺设噪声地物（移植自 ComfyFactorio）。 |
 | `players.lua` | 玩家生命周期（创建/加入/离开/复活/死亡）；**所有死亡一律回母星 nauvis 出生点复活**（`place_on_nauvis`，不再随机散落各星球）并 chart；`print_inspection` 面板。 |
 | `respawn_gifts.lua` | 每世界首次复活时发：起手护甲 + 起手物资 + **每瓶 2 种代表物资**（随经验、按堆叠封顶 5 组）+ **开局金币**(`√在线分钟`)。 |
-| `market.lua` | 母星出生点的**一个**金币市场（不可摧毁/挖取）。`surface.lua` 在 clear 结算后放置。 |
+| `market.lua` | 母星出生点的**一个**金币市场（不可摧毁/挖取）。`surface.lua` 在 clear 结算后放置。同时做**出生点保底**：中心抽 16 点，>8 不可通行(`collides_with('player')`：水/熔岩/油海/虚空…)就铺 64×64 精炼混凝土，防水/exotic 世界开局无立足之地。 |
 | `passives.lua` | **动作即时升级的 4 技能**：手搓/移动(封顶 +100%)/挖矿/生命上限。曲线 -50% 下限、log 缓升。独占 craft/mine/changed_position/died 事件。 |
 | `science_exp.lua` | `collect`（跃迁结算在线玩家，不移除）/ `settle`（提前结算：换经验**并移除**整组瓶子，防跃迁重复）/ `preview`（预览）。经验按**玩家名**存 `storage.science_exp`。 |
 | `research.lua` | 研究含 `-science-pack` 名（非 trigger）的科技 → 本轮倒计时 +1 小时并公告。 |
