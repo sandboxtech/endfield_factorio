@@ -30,7 +30,7 @@ end
 
 -- 指数分布，方差由 x 控制。
 function M.random_exp(x)
-    return math.pow(2, (math.random() - math.random()) * x)
+    return 2 ^ ((math.random() - math.random()) * x)
 end
 
 

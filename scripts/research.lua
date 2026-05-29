@@ -2,7 +2,7 @@ local constants = require('scripts.constants')
 local util = require('scripts.util')
 local player_stats = require('scripts.player_stats')
 
--- 研究完成时：给在线玩家各记一次研究；若该科技名以 -science-pack 结尾（关键科技），额外记一次并把本轮跃迁倒计时延长 1 小时（含 SA 的 trigger 解锁瓶）。
+-- 研究完成时：给在线玩家各记一次研究；若该科技名以 -science-pack 结尾（关键科技），额外记一次并把本轮跃迁倒计时延长一段（分钟数按 warp_extend_minutes 各瓶配置，缺省 warp_extend_default_minutes；含 SA 的 trigger 解锁瓶）。
 script.on_event(defines.events.on_research_finished, function(event)
     if event.by_script then
         return
@@ -25,5 +25,5 @@ script.on_event(defines.events.on_research_finished, function(event)
     local total_ticks = storage.warp_hours * constants.hour_to_tick
     local th, tm = util.hm(total_ticks)                 -- 本轮共
     local rh, rm = util.hm(total_ticks - last_run_ticks)   -- 剩余
-    game.print({'wn.warp-extend-tech', research.name, th, tm, rh, rm})
+    game.print({'wn.warp-extend-tech', research.name, add_min, th, tm, rh, rm})
 end)
