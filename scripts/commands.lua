@@ -226,6 +226,7 @@ local function warp_cmd(command)
     player.ticks_to_respawn = storage.warp_push_respawn_ticks or 5400   -- 复活等待；覆盖 on_player_died 默认值
     local rh, rm = util.hm(storage.warp_hours * constants.hour_to_tick - last_run_ticks)
     game.print({'wn.warp-push', player.name, push_ticks / constants.min_to_tick, rh, rm})
+    gui.refresh_countdown()   -- 倒计时已变 → 立刻刷新所有人头顶 UI（不等每分钟那次）
 end
 add_command('warp', '主动跃迁：自动跃迁倒计时-1分钟，本人复活等待90秒；剩余≤3分钟不生效', warp_cmd)
 add_command('yueqian', '主动跃迁：自动跃迁倒计时-1分钟，本人复活等待90秒；剩余≤3分钟不生效', warp_cmd)

@@ -5,6 +5,7 @@
 -- 升空完成、尚未在目的地卸货；其 launched_by_rocket 字段又能精确区分"火箭发射"与玩家手动 pod 旅行。
 local constants = require('scripts.constants')
 local util = require('scripts.util')
+local gui = require('scripts.gui')
 
 local M = {}
 
@@ -35,6 +36,7 @@ script.on_event(defines.events.on_cargo_pod_finished_ascending, function(event)
                 payload_text(event.cargo_pod),
                 PENALTY_MINUTES,
                 rh, rm})
+    gui.refresh_countdown()   -- 倒计时已变 → 立刻刷新所有人头顶 UI
 end)
 
 return M

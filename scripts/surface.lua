@@ -331,13 +331,15 @@ script.on_event(defines.events.on_surface_cleared, function(event)
     -- 阳光强度影响太阳能发电（玩法）→ 大概率正常、小概率小幅偏离
     surface.solar_power_multiplier = util.mostly_normal()
 
-    -- aquilo 不参与永夜/永昼抽奖（本来就极地气候）
-    if math.random(1, 6) == 1 and surface ~= game.surfaces.aquilo then
-        surface.freeze_daytime = true
-        surface.daytime = 0.56   -- 永夜
-    elseif math.random(1, 4) == 1 then
+    -- aquilo 不参与永夜/永昼抽奖（本来就极地气候）。永昼优先且概率更高，永夜更稀有：
+    --   永昼 ≈ 1/3；永夜 ≈ (剩余 2/3) × 1/10 ≈ 6.7%；其余为正常昼夜循环。
+    local polar = surface == game.surfaces.aquilo
+    if not polar and math.random(1, 3) == 1 then
         surface.freeze_daytime = true
         surface.daytime = 0      -- 永昼
+    elseif not polar and math.random(1, 10) == 1 then
+        surface.freeze_daytime = true
+        surface.daytime = 0.56   -- 永夜
     end
 
     -- 刷新星球半径，箝制在 [radius_min, radius_max]（默认值见 constants.ensure_defaults）
