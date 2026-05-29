@@ -505,7 +505,7 @@ local function feat_treasure(surface, lt)
         if item_ok(pack) then
             local proto = prototypes.item[pack]
             local ss = (proto and proto.stack_size) or 200
-            local groups = 1 + math.floor(math.random() ^ 2 * 5)   -- 1~5 组（random^2 偏低）
+            local groups = 1 + math.floor(math.random() ^ 2 * 3)   -- 1~3 组（random^2 偏低）
             inv.insert{name = pack, count = groups * ss, quality = roll_treasure_quality()}
         end
     end
