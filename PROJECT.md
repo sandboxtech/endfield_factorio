@@ -57,6 +57,7 @@
 - **危险世界** `danger_theme[星球]`：各敌人类型**独立开关**（worm/spawner/机枪炮塔+弹/地雷/重炮+弹）+ 机枪弹种(随危险度) + 35% 复制虫。`map_features.feat_danger` 远离出生点采样放置（force=enemy）。（`feat_wrecks` 残骸已独立成自己的 25% 世界滚定，不再绑危险世界。）
 - **每分钟事件世界** `event_world[星球]`（`tick.run_world_events`）：`raid` 空降虫 / `meteor` 矿石陨石雨 / `supply` 物资空投 / `coinfall` 金币雨 / `drones` 敌方战斗机器人(defender/distractor/destroyer) / `barrage` 重炮落点(artillery-projectile，会砸自家建筑)。
 - **战利品风格** `loot_style[星球]`：独立决定出哪些箱体(木/铁/钢) + 测试箱概率。
+- **同类实体替换** `tree_remap` / `obstacle_remap[星球]`：小概率把本星所有【树→另一种树】/【石头→另一种石头】整体换皮(全星统一一种目标)。目标池运行时按 `prototypes.entity` 校验；`map_features.feat_tree_remap/feat_obstacle_remap` 区块内原位替换(放不下留空)。**不做矿石替换。**
 
 ## 关键 storage 字段
 
@@ -66,7 +67,7 @@
 - `storage.player_stats[玩家名]`：行为统计（驱动技能 + 金币）。
 - `storage.last_respawn_run[idx]`：上次复活的 `run`，判"本世界是否首次复活"。
 - 地图：`storage.radius / radius_min / radius_max / radius_of / difficulty / *_multiplier / local_specialty_multiplier`。
-- 世界变体（每星球，每轮重滚）：`ground_tint / tile_remap / danger_theme / event_world / loot_style`。
+- 世界变体（每星球，每轮重滚）：`ground_tint / tile_remap / danger_theme / event_world / loot_style / tree_remap / obstacle_remap / wreck_density`。
 - **可调常量**（默认值由 `constants.ensure_defaults` 设 —— on_init / on_configuration_changed / 每轮 reset 都调用，幂等不覆盖；游戏内 `/c storage.xxx=N` 动态调）：
   - `debug`(默认 true，向管理员打印每次生成属性)
   - 概率乘数（0=关）：`prob_ground_tint / prob_tile_remap / prob_danger / prob_event`

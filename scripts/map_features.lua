@@ -476,11 +476,31 @@ local function spawn_chance(surface, kind)
     return wd * LOOT_FREQ[kind] * (storage.loot_density or 1)
 end
 
--- 钢箱 = 材料箱：常见。【1~2 种物品、很多组】(同种叠多格)。每件 count = ss×random^1(偏多)，普通品质。
+-- 钢箱 = 材料箱：常见。1~3 种材料、接近装满。高效填法：每种【一次性 insert 满堆叠×分到的格数】，
+-- 整箱只需 1~3 次 insert（不逐格、不卡）。普通品质（每种各滚一次）。
 local function feat_material(surface, lt)
     if chunk_rng(lt, 503) > spawn_chance(surface, 'material') then return end
-    place_filled_chest(surface, {lt.x + math.random(7, 25) + 0.5, lt.y + math.random(7, 25) + 0.5},
-        'steel-chest', math.random(24, 50), LOOT_WEIGHTS.material, 1, math.random(1, 2))
+    local pos = {lt.x + math.random(7, 25) + 0.5, lt.y + math.random(7, 25) + 0.5}
+    if not surface.can_place_entity{name = 'steel-chest', position = pos} then return end
+    local chest = surface.create_entity{name = 'steel-chest', force = 'neutral', position = pos}
+    local inv = chest and chest.get_inventory(defines.inventory.chest)
+    if not inv then return end
+    -- 选 1~3 种材料（无效名跳过）
+    local kinds = {}
+    for _ = 1, math.random(1, 3) do
+        local name = pick_loot(LOOT_WEIGHTS.material)
+        if item_ok(name) then kinds[#kinds + 1] = name end
+    end
+    if #kinds == 0 then return end
+    -- 接近装满：填 random(0.85~1.0) 比例的格子，按种类均分（最后一种吃余数）
+    local slots = #inv
+    local fill = math.max(#kinds, math.floor(slots * (0.85 + math.random() * 0.15) + 0.5))
+    local per = math.floor(fill / #kinds)
+    for i, name in ipairs(kinds) do
+        local n_slots = (i == #kinds) and (fill - per * (#kinds - 1)) or per   -- 最后一种吃掉余数
+        local ss = prototypes.item[name].stack_size
+        if n_slots > 0 then inv.insert{name = name, count = ss * n_slots, quality = roll_quality()} end
+    end
 end
 
 -- 铁箱 = 设备箱：居中、【种类最杂】。抽 10~24 次不同物品，每件 count = ss×random^2，普通品质。
@@ -677,6 +697,56 @@ local function theme_trees(surface, lt)
     end
 end
 
+-- ── 同类实体替换世界变体（树换树 / 障碍换障碍）──────────────────────────────
+-- 每世界小概率滚定一个目标原型(surface.lua 存 storage.tree_remap/obstacle_remap[星球])，
+-- 区块内把所有同类实体原位换成该目标。目标池运行时按 prototypes.entity 校验(拼错/缺失自动剔除)。
+local TREE_TARGETS = {
+    'tree-01', 'tree-02', 'tree-03', 'tree-04', 'tree-05', 'tree-06', 'tree-07', 'tree-08', 'tree-09',  -- nauvis 各色
+    'dead-tree-desert', 'dead-grey-trunk', 'dry-tree', 'dry-hairy-tree', 'dead-dry-hairy-tree',          -- 枯/荒漠
+    'ashland-lichen-tree',                                                                                -- vulcanus
+    'boompuff', 'cuttlepop', 'funneltrunk', 'hairyclubnub', 'lickmaw', 'slipstack', 'stingfrond', 'sunnycomb', 'teflilly',  -- gleba（不含需水的 water-cane）
+}
+-- 石头/障碍：既是替换【源】(find 用)也是【目标】候选。
+local ROCK_CANDIDATES = {'big-rock', 'huge-rock', 'big-sand-rock', 'huge-volcanic-rock', 'medium-rock', 'small-rock', 'tiny-rock'}
+
+local function build_pool(names)
+    local out = {}
+    for _, n in ipairs(names) do if prototypes.entity[n] then out[#out + 1] = n end end
+    return out
+end
+local tree_pool, rock_pool   -- 懒构建的有效名缓存（prototypes 不变，建一次）
+local function trees_pool() tree_pool = tree_pool or build_pool(TREE_TARGETS); return tree_pool end
+local function rocks_pool() rock_pool = rock_pool or build_pool(ROCK_CANDIDATES); return rock_pool end
+function M.pick_tree_target() local p = trees_pool(); return #p > 0 and p[math.random(#p)] or nil end
+function M.pick_obstacle_target() local p = rocks_pool(); return #p > 0 and p[math.random(#p)] or nil end
+
+-- 把 found 里每个实体原位换成 target（先 destroy 再 can_place→create；放不下则留空，不强塞）。
+local function replace_each(surface, found, target)
+    for _, e in pairs(found) do
+        if e.valid and e.name ~= target then
+            local pos = e.position
+            e.destroy()
+            if surface.can_place_entity{name = target, position = pos} then
+                surface.create_entity{name = target, position = pos}
+            end
+        end
+    end
+end
+
+local function feat_tree_remap(surface, lt)
+    local target = storage.tree_remap and storage.tree_remap[surface.name]
+    if not target then return end
+    replace_each(surface, surface.find_entities_filtered{area = {{lt.x, lt.y}, {lt.x + 32, lt.y + 32}}, type = 'tree'}, target)
+end
+
+local function feat_obstacle_remap(surface, lt)
+    local target = storage.obstacle_remap and storage.obstacle_remap[surface.name]
+    if not target then return end
+    local src = rocks_pool()
+    if #src == 0 then return end
+    replace_each(surface, surface.find_entities_filtered{area = {{lt.x, lt.y}, {lt.x + 32, lt.y + 32}}, name = src}, target)
+end
+
 local REAL_PLANETS = {nauvis = true, vulcanus = true, fulgora = true, gleba = true, aquilo = true}
 
 -- 每个真实星球的圆内区块都调用。只做原生做不到的事：母星废料/跨星异物(手动) + 树木调色(改原生树) +
@@ -691,6 +761,8 @@ function M.generate(surface, lt)
         for _, def in ipairs(home) do place_feature(surface, lt, def, A, S, Z, W) end
     end
     for _, def in ipairs(EXOTIC) do place_feature(surface, lt, def, A, S, Z, W) end
+    feat_tree_remap(surface, lt)      -- 树换树（在调色前，让换出来的新树也被 theme_trees 调色）
+    feat_obstacle_remap(surface, lt)  -- 石头换石头（同类障碍替换）
     theme_trees(surface, lt)
     -- 四类箱子各自独立(外观=内容)：每世界密度 random^2（surface.lua 滚定），频率互不相关。
     feat_material(surface, lt)    -- 钢箱：材料

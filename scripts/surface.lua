@@ -489,6 +489,18 @@ script.on_event(defines.events.on_surface_cleared, function(event)
         dbg[#dbg + 1] = string.format('wrecks=%.2f', storage.wreck_density[surface.name])
     end
 
+    -- 树换树 / 障碍换障碍：各自小概率把本星【所有树/所有石头】整体换成另一种【同类】原型（全星统一一种）。
+    storage.tree_remap[surface.name] = nil
+    if math.random() < constants.balance.tree_remap.base * prob('tree_remap') then
+        storage.tree_remap[surface.name] = map_features.pick_tree_target()
+        if storage.tree_remap[surface.name] then dbg[#dbg + 1] = 'tree→' .. storage.tree_remap[surface.name] end
+    end
+    storage.obstacle_remap[surface.name] = nil
+    if math.random() < constants.balance.obstacle_remap.base * prob('obstacle_remap') then
+        storage.obstacle_remap[surface.name] = map_features.pick_obstacle_target()
+        if storage.obstacle_remap[surface.name] then dbg[#dbg + 1] = 'rock→' .. storage.obstacle_remap[surface.name] end
+    end
+
     -- 本表面生成摘要：【始终】缓存进 storage.gen_debug[星球]（与 storage.debug 无关），
     -- 供管理员随时用 /gen 查看（不公告其他玩家）。storage.debug 仅控制是否【实时】打给在线管理员。
     local summary = string.format('[gen] %s r=%d: verdancy=%.2f rockiness=%.2f riches=%.2f danger=%.2f exotic=%.2f | %s',

@@ -34,6 +34,8 @@ local M = {
         -- 各变体【出现概率】（再乘动态乘数 storage.prob_xxx）
         ground_tint = {base = 0.06, exotic = 0.25},   -- 出现率 = base + exotic × knobs.exotic
         tile_remap  = {base = 0.5,  exotic = 0.4},    -- 出现率 = base + exotic × knobs.exotic
+        tree_remap     = {base = 0.12},               -- 树换树世界出现率（大概率不换）
+        obstacle_remap = {base = 0.12},               -- 障碍换障碍世界出现率
         -- 出现率 = base；选中哪种事件按 weights 加权(缺省 1)，drones 更低 → 无人机世界更罕见
         event       = {base = 0.1, weights = {drones = 0.3}},
         -- tile 替换内部权重
@@ -67,6 +69,8 @@ function M.ensure_defaults()
         debug = true,                     -- 向管理员打印每次世界生成的属性
         prob_ground_tint = 2,             -- 染地世界出现概率乘数（0=关）
         prob_tile_remap = 3,              -- tile 替换世界
+        prob_tree_remap = 1,              -- 树换树世界（0=关）
+        prob_obstacle_remap = 1,          -- 障碍换障碍世界（0=关）
         prob_danger = 1,                  -- 危险世界
         prob_event = 1,                   -- 每分钟事件世界
         danger_density = 1,               -- 危险世界里敌人/残骸的密度
@@ -105,7 +109,8 @@ function M.ensure_defaults()
     -- 这是所有 storage 表的【唯一出生地】——各模块不再各自 `storage.x = storage.x or {}`，统一在此补齐。
     for _, key in ipairs({'radius_of', 'science_exp', 'player_stats', 'platform_age',
                           'ground_tint', 'tile_remap', 'danger_theme', 'event_world', 'loot_style', 'members',
-                          'last_respawn_run', 'move_pos', 'bad_items', 'gen_debug', 'warp_vote', 'wreck_density'}) do
+                          'last_respawn_run', 'move_pos', 'bad_items', 'gen_debug', 'warp_vote', 'wreck_density',
+                          'tree_remap', 'obstacle_remap'}) do
         storage[key] = storage[key] or {}
     end
     -- world_fx 全局开关（默认开；/c storage.world_fx.xxx=false 单独禁用某事件驱动效果）。
