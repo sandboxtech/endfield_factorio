@@ -10,6 +10,32 @@ local player_stats = require('scripts.player_stats')
 
 local M = {}
 
+-- ── 飞船命数前缀（剩余跃迁次数的可视化）─────────────────────────────────────
+local HEART = '[virtual-signal=signal-heart]'
+-- 数字 → parameter 物品图标串（逐位）：4 → [item=parameter-4]；10 → [item=parameter-1][item=parameter-0]。
+local function life_prefix(n)
+    local s, out = tostring(n), {}
+    for i = 1, #s do out[i] = '[item=parameter-' .. s:sub(i, i) .. ']' end
+    return table.concat(out) .. HEART
+end
+-- 反复剥掉船名开头的【命数(parameter)/心】前缀，以及老存档遗留的【骷髅】串 → 得到纯船名。
+local function strip_life_prefix(name)
+    local pats = {
+        '^%[item=parameter%-%d+%]',
+        '^%[virtual%-signal=signal%-heart%]',
+        '^%[virtual%-signal=signal%-skull%]',   -- 兼容旧版累积的骷髅前缀
+    }
+    local again = true
+    while again do
+        again = false
+        for _, p in ipairs(pats) do
+            local n, cnt = name:gsub(p, '', 1)
+            if cnt > 0 then name = n; again = true end
+        end
+    end
+    return name
+end
+
 -- 每次跃迁后所有星球被清空、重建，玩家死亡，飞船保留一周期。
 -- storage.run 从 1 开始计数（on_init 中会调用一次 reset()，对应第 1 轮）。
 function M.reset()
@@ -24,18 +50,21 @@ function M.reset()
                 math.floor(last_run_ticks / constants.min_to_tick) % 60})
     storage.run_start_tick = game.tick
 
-    -- 飞船老化：storage.platform_age[idx] 记录该平台已经历的跃迁次数。
-    -- 每次跃迁计数 +1，并在船名前追加一个 skull 作为可视化倒计时；
-    -- 计数超过 storage.platform_lifetime 时摧毁。（默认值见 constants.ensure_defaults）
+    -- 飞船老化：storage.platform_age[idx] 记录该平台已经历的跃迁次数。每次跃迁 +1。
+    -- 在船名前打【剩余命数 + 心】前缀(如 [item=parameter-4][virtual-signal=signal-heart] = 还剩 4 条命)，
+    -- 直观且只占一格；已有旧前缀(命数/心，或老存档遗留的骷髅串)则先剥掉再换新。
+    -- 命数 = lifetime - age + 1（在世恒 ≥1）；age 超过 lifetime 即摧毁。（默认值见 constants.ensure_defaults）
     for _, space_platform in pairs(game.forces.player.platforms) do
         local age = (storage.platform_age[space_platform.index] or 0) + 1
-        space_platform.name = '[virtual-signal=signal-skull]' .. space_platform.name
+        local base = strip_life_prefix(space_platform.name)
         if age > storage.platform_lifetime then
             storage.platform_age[space_platform.index] = nil
             space_platform.destroy()
-            game.print({'wn.platform-destroyed', space_platform.name})
+            game.print({'wn.platform-destroyed', base})
         else
             storage.platform_age[space_platform.index] = age
+            local lives = storage.platform_lifetime - age + 1
+            space_platform.name = life_prefix(lives) .. base
             game.print({'wn.platform-aged', space_platform.name})
         end
     end

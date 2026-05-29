@@ -761,8 +761,8 @@ function M.pick_entity_target() local p = obstacles_pool(); return #p > 0 and p[
 -- 统一【障碍互换】：把现地所有带碰撞盒障碍（type=tree/simple-entity：树/石/遗迹/冰山/叠层岩…）按噪声门控原位
 -- 替换——不看脚下 tile。源天然自限（find 只命中本星球现有实体），目标跨类（可树↔石↔遗迹）。
 --   rm = storage.obstacle_remap[星球]，本轮该星滚定（surface.lua）：
---     · {seed, threshold}      → 噪声区内每个各自随机换成【另一种】（默认；跨类大杂烩异界带）
---     · {to=名, seed, threshold} → 噪声区内统一换成同一种（单一主题斑块）
+--     · {to=名, seed, threshold} → 噪声区内统一换成同一种（大概率；单一主题斑块、协调）
+--     · {seed, threshold}      → 噪声区内每个各自随机换成【另一种】（小概率；跨类大杂烩异界带）
 --     · 纯字符串（老存档旧格式） → 全替换成该名、无噪声（兼容）
 local function feat_entity_remap(surface, lt)
     local rm = storage.obstacle_remap and storage.obstacle_remap[surface.name]
