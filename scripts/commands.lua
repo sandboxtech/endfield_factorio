@@ -206,6 +206,29 @@ end
 add_command('suicide', {'wn.suicide-help'}, suicide_cmd)
 add_command('zisha', {'wn.suicide-help'}, suicide_cmd)
 
+-- /warp（/yueqian 同功能）：主动跃迁——把本轮【自动跃迁倒计时】-1 分钟（像火箭惩罚一样提前世界跃迁）。
+-- 代价：本人立即死亡、复活等待 90 秒（比普通自杀 3 秒长得多）。
+-- 倒计时剩余 ≤10 分钟时不生效（防临门一脚白嫖，也避免减成负数立即触发跃迁）。
+local WARP_PUSH_MINUTES = 1            -- 每次主动跃迁把倒计时提前的分钟数
+local WARP_RESPAWN_TICKS = 90 * 60    -- 主动跃迁的复活等待：90 秒
+local function warp_cmd(command)
+    local player = command.player_index and game.get_player(command.player_index)
+    if not player or not player.character then return end
+    local last_run_ticks = game.tick - (storage.run_start_tick or game.tick)
+    local remain = (storage.warp_hours or 1) * constants.hour_to_tick - last_run_ticks
+    if remain <= 10 * constants.min_to_tick then
+        player.print('距跃迁不足 10 分钟，主动跃迁不生效。')
+        return
+    end
+    storage.warp_hours = (storage.warp_hours or 1) - WARP_PUSH_MINUTES / 60
+    players.kill_on_nauvis(player)
+    player.ticks_to_respawn = WARP_RESPAWN_TICKS   -- 覆盖 on_player_died 设的默认值，改成 90 秒
+    local rh, rm = util.hm(storage.warp_hours * constants.hour_to_tick - last_run_ticks)
+    game.print({'wn.warp-push', player.name, WARP_PUSH_MINUTES, rh, rm})
+end
+add_command('warp', '主动跃迁：自动跃迁倒计时-1分钟，本人复活等待90秒；剩余≤10分钟不生效', warp_cmd)
+add_command('yueqian', '主动跃迁：自动跃迁倒计时-1分钟，本人复活等待90秒；剩余≤10分钟不生效', warp_cmd)
+
 -- /member <玩家名>（/huiyuan 同功能）：授予会员资格。仅会员/管理员可用。
 local function member_grant_cmd(command)
     local _, target, sink = member_cmd_targets(command)
