@@ -119,20 +119,7 @@ end
 commands.add_command('fixstats', '修复旧存档玩家统计记录的缺失字段（仅管理员）', fix_stats_cmd)
 commands.add_command('xiufutongji', '修复旧存档玩家统计记录的缺失字段（仅管理员）', fix_stats_cmd)
 
--- 显示距下次自动跃迁的剩余时间。主名 /countdown，/life 作旧别名保留。
-local function countdown_cmd(command)
-    local player = command.player_index and game.get_player(command.player_index)
-    local last_run_ticks = game.tick - (storage.run_start_tick or game.tick)
-    local total_ticks = (storage.warp_hours or 1) * constants.hour_to_tick
-    local rh, rm = util.hm(total_ticks - last_run_ticks)   -- 剩余
-    local th, tm = util.hm(total_ticks)                    -- 本轮共
-    local msg = {'wn.life-status', rh, rm, th, tm}
-    if player then gui.show_popup(player, {'wn.countdown-title'}, {msg}) else game.print(msg) end
-end
-
-add_command('countdown', {'wn.life-help'}, countdown_cmd)
-add_command('daojishi', {'wn.life-help'}, countdown_cmd)
-add_command('life', {'wn.life-help'}, countdown_cmd)
+-- （/countdown、/daojishi、/life 已移除：顶部 HUD 常驻显示跃迁倒计时，无需再用命令查询。）
 
 -- （/exp 已删除：与 /inspect（无参数=看自己）重复。print_science_exp 仍由玩家加入时的广播使用。）
 
