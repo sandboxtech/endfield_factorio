@@ -89,20 +89,26 @@ add_command('players_gui', {'wn.players-gui-help'}, function(command)
 end)
 
 -- /gen（/shengcheng 同功能）：管理员查看各星球【最近一次世界生成】缓存的 debug 摘要。
--- 故意用【原始】commands.add_command 注册（不走 add_command 的公告包装）→ 查看【不告知其他玩家】，
--- 结果只打给调用的管理员。摘要在 surface.lua 生成时始终缓存进 storage.gen_debug，与 storage.debug 无关。
+-- 故意用【原始】commands.add_command 注册（不走 add_command 的公告包装）→ 查看【不告知其他玩家】。
+-- 输出【只走 GUI 弹窗】(gui.show_popup，每行可换行、可关闭，同 /inspect /preview)；控制台(无玩家)不打印。
+-- 摘要在 surface.lua 生成时始终缓存进 storage.gen_debug（每星球一个【多行数组】），与 storage.debug 无关。
 local GEN_DEBUG_PLANETS = {'nauvis', 'vulcanus', 'fulgora', 'gleba', 'aquilo'}
 local function gen_debug_cmd(command)
     local player = command.player_index and game.get_player(command.player_index)
-    if player and not player.admin then player.print(constants.not_admin_text); return end
-    local sink = player or game
-    sink.print({'wn.gen-debug-header', storage.run or 0})
-    local any = false
+    if not player then return end          -- 只弹窗给玩家，控制台不打印
+    if not player.admin then player.print(constants.not_admin_text); return end
+    -- 各星球缓存的多行数组直接逐行铺开（每个变体已各占一行）。
+    local lines = {}
     for _, name in ipairs(GEN_DEBUG_PLANETS) do
-        local line = storage.gen_debug and storage.gen_debug[name]
-        if line then any = true; sink.print(line) end
+        local entry = storage.gen_debug and storage.gen_debug[name]
+        if type(entry) == 'table' then
+            for _, l in ipairs(entry) do lines[#lines + 1] = l end
+        elseif type(entry) == 'string' then
+            lines[#lines + 1] = entry        -- 老存档旧格式（单行字符串）兼容
+        end
     end
-    if not any then sink.print({'wn.gen-debug-none'}) end
+    if #lines == 0 then lines[1] = {'wn.gen-debug-none'} end
+    gui.show_popup(player, {'wn.gen-debug-header', storage.run or 0}, lines)
 end
 commands.add_command('gen', {'wn.gen-debug-help'}, gen_debug_cmd)
 commands.add_command('shengcheng', {'wn.gen-debug-help'}, gen_debug_cmd)
