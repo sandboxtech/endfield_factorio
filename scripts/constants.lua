@@ -34,8 +34,9 @@ local M = {
         -- 各变体【出现概率】（再乘动态乘数 storage.prob_xxx）
         ground_tint = {base = 0.06, exotic = 0.25},   -- 出现率 = base + exotic × knobs.exotic
         tile_remap  = {base = 0.5,  exotic = 0.4},    -- 出现率 = base + exotic × knobs.exotic
-        tree_remap     = {base = 0.35},               -- 树换树世界出现率（跨星球互换：nauvis/gleba/vulcanus 树互转）
-        obstacle_remap = {base = 0.35},               -- 障碍换障碍世界出现率（跨星球：石头/火山石/锂冰/雷击熔岩/叠层岩互转）
+        -- 源天然自限（find 只命中该星球实际存在的障碍），目标跨类/跨星球 → 概率可放高，不会误伤。
+        tree_remap     = {base = 0.60},               -- 【已并入 obstacle_remap】保留仅为兼容，未再使用
+        obstacle_remap = {base = 0.60},               -- 统一障碍互换世界出现率（树/石/遗迹/冰山/叠层岩跨类，噪声门控）
         -- 出现率 = base；选中哪种事件按 weights 加权(缺省 1)，drones 更低 → 无人机世界更罕见
         event       = {base = 0.1, weights = {drones = 0.3}},
         -- tile 替换内部权重

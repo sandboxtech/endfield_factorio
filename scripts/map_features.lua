@@ -698,9 +698,10 @@ local function theme_trees(surface, lt)
     end
 end
 
--- ── 同类实体替换世界变体（树换树 / 障碍换障碍）──────────────────────────────
--- 每世界小概率滚定一个目标原型(surface.lua 存 storage.tree_remap/obstacle_remap[星球])，
--- 区块内把所有同类实体原位换成该目标。目标池运行时按 prototypes.entity 校验(拼错/缺失自动剔除)。
+-- ── 障碍互换世界变体（树/石/遗迹/冰山 跨类互换，噪声门控）────────────────────
+-- 每世界小概率滚定一条规则(surface.lua 存 storage.obstacle_remap[星球]={seed,threshold[,to]})；
+-- 区块内把现地带碰撞盒障碍在噪声大团里原位换成另一种(跨类)。目标池运行时按 entity_ok 校验(无效报告管理员并剔除)。
+-- 下面三表(TREE_TARGETS/ROCK_CANDIDATES/OTHER_OBSTACLES)合并成 OBSTACLE_TARGETS 作为【目标】候选。
 local TREE_TARGETS = {
     -- nauvis（含 -red/-brown 色变体，原只列了 tree-01..09 主色）
     'tree-01', 'tree-02', 'tree-02-red', 'tree-03', 'tree-04', 'tree-05',
@@ -720,6 +721,16 @@ local ROCK_CANDIDATES = {
     'copper-stromatolite', 'iron-stromatolite',                                  -- gleba 铜/铁叠层岩（铜铁石头）
     'lithium-iceberg-big', 'lithium-iceberg-huge',                               -- aquilo 锂冰
 }
+-- 其它带碰撞盒障碍（非树非石）：fulgora 遗迹（simple-entity；-tiny 是装饰物、-attractor 是避雷针，已排除）。
+local OTHER_OBSTACLES = {
+    'fulgoran-ruin-small', 'fulgoran-ruin-medium', 'fulgoran-ruin-big', 'fulgoran-ruin-huge',
+}
+-- 统一【障碍目标池】= 树 + 石/障碍 + 其它障碍。源不靠此表（feat_entity_remap 按 type 过滤现地实体），
+-- 此表只决定"换成什么"，可跨类互换（树↔石↔遗迹↔冰山…）。运行时按 entity_ok 校验。
+local OBSTACLE_TARGETS = {}
+for _, list in ipairs({TREE_TARGETS, ROCK_CANDIDATES, OTHER_OBSTACLES}) do
+    for _, n in ipairs(list) do OBSTACLE_TARGETS[#OBSTACLE_TARGETS + 1] = n end
+end
 
 -- 替换池实体名【运行时校验】：池是手动穷举的，DLC/版本变动或拼错会让某些名失效。
 -- 无效则跳过，并报告给所有【在线管理员】（同名只报一次，逻辑同 item_ok）。
@@ -743,37 +754,38 @@ local function build_pool(names)
     for _, n in ipairs(names) do if entity_ok(n) then out[#out + 1] = n end end
     return out
 end
-local tree_pool, rock_pool   -- 懒构建的有效名缓存（prototypes 不变，建一次）
-local function trees_pool() tree_pool = tree_pool or build_pool(TREE_TARGETS); return tree_pool end
-local function rocks_pool() rock_pool = rock_pool or build_pool(ROCK_CANDIDATES); return rock_pool end
-function M.pick_tree_target() local p = trees_pool(); return #p > 0 and p[math.random(#p)] or nil end
-function M.pick_obstacle_target() local p = rocks_pool(); return #p > 0 and p[math.random(#p)] or nil end
+local obstacle_pool   -- 懒构建的有效名缓存（prototypes 不变，建一次）
+local function obstacles_pool() obstacle_pool = obstacle_pool or build_pool(OBSTACLE_TARGETS); return obstacle_pool end
+function M.pick_entity_target() local p = obstacles_pool(); return #p > 0 and p[math.random(#p)] or nil end
 
--- 把 found 里每个实体原位换成 target（先 destroy 再 can_place→create；放不下则留空，不强塞）。
-local function replace_each(surface, found, target)
-    for _, e in pairs(found) do
-        if e.valid and e.name ~= target then
-            local pos = e.position
-            e.destroy()
-            if surface.can_place_entity{name = target, position = pos} then
-                surface.create_entity{name = target, position = pos}
+-- 统一【障碍互换】：把现地所有带碰撞盒障碍（type=tree/simple-entity：树/石/遗迹/冰山/叠层岩…）按噪声门控原位
+-- 替换——不看脚下 tile。源天然自限（find 只命中本星球现有实体），目标跨类（可树↔石↔遗迹）。
+--   rm = storage.obstacle_remap[星球]，本轮该星滚定（surface.lua）：
+--     · {seed, threshold}      → 噪声区内每个各自随机换成【另一种】（默认；跨类大杂烩异界带）
+--     · {to=名, seed, threshold} → 噪声区内统一换成同一种（单一主题斑块）
+--     · 纯字符串（老存档旧格式） → 全替换成该名、无噪声（兼容）
+local function feat_entity_remap(surface, lt)
+    local rm = storage.obstacle_remap and storage.obstacle_remap[surface.name]
+    if not rm then return end
+    if type(rm) == 'string' then rm = {to = rm} end   -- 老存档兜底：旧格式是纯目标名、全替换、无噪声
+    local pool = obstacles_pool()
+    if #pool == 0 then return end
+    local seed, thr = rm.seed, rm.threshold or 0
+    for _, e in pairs(surface.find_entities_filtered{area = {{lt.x, lt.y}, {lt.x + 32, lt.y + 32}}, type = {'tree', 'simple-entity'}}) do
+        if e.valid then
+            local p = e.position
+            -- 无 seed(旧格式) → 全替换；有 seed → 仅噪声大团内替换（成片斑块，多半小、极少大）
+            if (not seed) or noise.fractal(noise.octaves.smooth, p.x, p.y, seed) > thr then
+                local to = rm.to or pool[math.random(#pool)]   -- 固定目标 或 每个随机取另一种
+                if to ~= e.name and prototypes.entity[to] then
+                    e.destroy()
+                    if surface.can_place_entity{name = to, position = p} then
+                        surface.create_entity{name = to, position = p}
+                    end
+                end
             end
         end
     end
-end
-
-local function feat_tree_remap(surface, lt)
-    local target = storage.tree_remap and storage.tree_remap[surface.name]
-    if not target then return end
-    replace_each(surface, surface.find_entities_filtered{area = {{lt.x, lt.y}, {lt.x + 32, lt.y + 32}}, type = 'tree'}, target)
-end
-
-local function feat_obstacle_remap(surface, lt)
-    local target = storage.obstacle_remap and storage.obstacle_remap[surface.name]
-    if not target then return end
-    local src = rocks_pool()
-    if #src == 0 then return end
-    replace_each(surface, surface.find_entities_filtered{area = {{lt.x, lt.y}, {lt.x + 32, lt.y + 32}}, name = src}, target)
 end
 
 local REAL_PLANETS = {nauvis = true, vulcanus = true, fulgora = true, gleba = true, aquilo = true}
@@ -790,8 +802,7 @@ function M.generate(surface, lt)
         for _, def in ipairs(home) do place_feature(surface, lt, def, A, S, Z, W) end
     end
     for _, def in ipairs(EXOTIC) do place_feature(surface, lt, def, A, S, Z, W) end
-    feat_tree_remap(surface, lt)      -- 树换树（在调色前，让换出来的新树也被 theme_trees 调色）
-    feat_obstacle_remap(surface, lt)  -- 石头换石头（同类障碍替换）
+    feat_entity_remap(surface, lt)    -- 统一障碍互换（树/石/遗迹跨类，噪声门控）；在调色前，让换出来的新树也被 theme_trees 调色
     theme_trees(surface, lt)
     -- 四类箱子各自独立(外观=内容)：每世界密度 random^2（surface.lua 滚定），频率互不相关。
     feat_material(surface, lt)    -- 钢箱：材料
