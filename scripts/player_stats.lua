@@ -39,14 +39,26 @@ function M.get(player_index)
     local s = storage.player_stats[key]
     if not s then
         s = {}
+        for k, v in pairs(DEFAULTS) do s[k] = v end   -- 新建记录填全默认
         storage.player_stats[key] = s
     end
-    -- 补齐缺失的默认键：新增字段（如 kill_count/nest_count）对老存档里已存在的表也生效，
-    -- 否则 s.<新字段> 会是 nil → 自增时 nil + 1 报错。
-    for k, v in pairs(DEFAULTS) do
-        if s[k] == nil then s[k] = v end
-    end
     return s
+end
+
+-- 旧存档兼容修复：给【已存在】的玩家记录补齐缺失的默认字段。新增统计字段（如 kill_count/
+-- nest_count）上线前创建的记录没有这些键 → 直接 `s.kill_count + 1` 会 nil+1 崩档。
+-- get() 只给【新建】记录填默认、不每次扫；老档需手动跑一次本迁移（见 /fixstats 命令）。
+-- 返回 扫描记录数, 补齐字段数。
+function M.migrate()
+    storage.player_stats = storage.player_stats or {}
+    local records, fields = 0, 0
+    for _, s in pairs(storage.player_stats) do
+        records = records + 1
+        for k, v in pairs(DEFAULTS) do
+            if s[k] == nil then s[k] = v; fields = fields + 1 end
+        end
+    end
+    return records, fields
 end
 
 -- 某玩家某统计项 +n（默认 +1），返回累计值。供成就类统计在事件处直接调用。

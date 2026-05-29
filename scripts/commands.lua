@@ -5,6 +5,7 @@ local gui = require('scripts.gui')
 local reset = require('scripts.reset')
 local players = require('scripts.players')
 local science_exp = require('scripts.science_exp')
+local player_stats = require('scripts.player_stats')
 local util = require('scripts.util')
 
 -- 包装：仅管理员可执行；返回 player 或 nil（控制台也算管理员）
@@ -105,6 +106,18 @@ local function gen_debug_cmd(command)
 end
 commands.add_command('gen', {'wn.gen-debug-help'}, gen_debug_cmd)
 commands.add_command('shengcheng', {'wn.gen-debug-help'}, gen_debug_cmd)
+
+-- /fixstats（/xiufutongji 同功能）：管理员手动修复旧存档——给已存在的玩家统计记录补齐
+-- 新增字段（如 kill_count/nest_count），消除直接自增时 nil+1 崩档。结果只打给调用者。
+local function fix_stats_cmd(command)
+    local player = command.player_index and game.get_player(command.player_index)
+    if player and not player.admin then player.print(constants.not_admin_text); return end
+    local sink = player or game
+    local records, fields = player_stats.migrate()
+    sink.print('[统计修复] 扫描 ' .. records .. ' 条玩家记录，补齐 ' .. fields .. ' 个缺失字段。')
+end
+commands.add_command('fixstats', '修复旧存档玩家统计记录的缺失字段（仅管理员）', fix_stats_cmd)
+commands.add_command('xiufutongji', '修复旧存档玩家统计记录的缺失字段（仅管理员）', fix_stats_cmd)
 
 -- 显示距下次自动跃迁的剩余时间。主名 /countdown，/life 作旧别名保留。
 local function countdown_cmd(command)
