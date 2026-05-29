@@ -442,18 +442,29 @@ script.on_event(defines.events.on_surface_cleared, function(event)
     end
 
     -- 事件世界：每分钟触发一种事件（独立于危险度，奖励/危险皆有）。详见 tick.lua run_world_events。
-    --   raid 空降虫 / meteor 矿石陨石雨 / supply 物资空投 / coinfall 金币雨。
+    --   raid 空降虫 / meteor 矿石陨石雨 / supply 物资空投 / coinfall 金币雨 / drones 无人机来袭 / barrage 重炮落点。
     storage.event_world[surface.name] = nil
     if math.random() < constants.balance.event.base * prob('event') then
-        -- 只从【已启用】的事件类型里滚（storage.event_types[x]=false 的被排除，如禁用的 coinfall）
-        local pool = {}
-        for _, et in ipairs({'raid', 'meteor', 'supply', 'coinfall'}) do
-            if storage.event_types[et] ~= false then pool[#pool + 1] = et end   -- nil/true 启用，仅显式 false 排除
+        -- 只从【已启用】的事件类型里【按权重】滚（false 排除；权重见 balance.event.weights，缺省 1，drones 更低 → 更罕见）
+        local weights = constants.balance.event.weights or {}
+        local pool, total = {}, 0
+        for _, et in ipairs({'raid', 'meteor', 'supply', 'coinfall', 'drones', 'barrage'}) do
+            if storage.event_types[et] ~= false then   -- nil/true 启用，仅显式 false 排除
+                local w = weights[et] or 1
+                pool[#pool + 1] = {et = et, w = w}
+                total = total + w
+            end
         end
-        if #pool > 0 then
-            local et = pool[math.random(#pool)]
-            storage.event_world[surface.name] = et
-            dbg[#dbg + 1] = 'event:' .. et
+        if total > 0 then
+            local r, acc = math.random() * total, 0
+            for _, e in ipairs(pool) do
+                acc = acc + e.w
+                if r <= acc then
+                    storage.event_world[surface.name] = e.et
+                    dbg[#dbg + 1] = 'event:' .. e.et
+                    break
+                end
+            end
         end
     end
 

@@ -23,7 +23,7 @@
 | `util.lua` | 通用工具：`readable`、`random_exp` 指数分布、`random_nature`、`mostly_normal`、`evo_biter`（按进化度挑虫）。 |
 | `events.lua` | **事件总线**：同一事件多处 `events.on()` 订阅、内部只 `script.on_event` 注册一次再分发 → 避免单事件被多处注册互相覆盖。可能被多方监听的事件都走它。 |
 | `noise.lua` | 2D simplex + 分形多倍频 + 种子派生变换（旋转/拉伸/缩放）。供运行时手动铺设噪声地物（移植自 ComfyFactorio）。 |
-| `players.lua` | 玩家生命周期（创建/加入/离开/复活/死亡）；复活随机落到各星球并 chart；**离线前自动 `settle` 结算瓶子**；`print_inspection` 面板。 |
+| `players.lua` | 玩家生命周期（创建/加入/离开/复活/死亡）；**所有死亡一律回母星 nauvis 出生点复活**（`place_on_nauvis`，不再随机散落各星球）并 chart；`print_inspection` 面板。 |
 | `respawn_gifts.lua` | 每世界首次复活时发：起手护甲 + 起手物资 + **每瓶 2 种代表物资**（随经验、按堆叠封顶 5 组）+ **开局金币**(`√在线分钟`)。 |
 | `market.lua` | 母星出生点的**一个**金币市场（不可摧毁/挖取）。`surface.lua` 在 clear 结算后放置。 |
 | `passives.lua` | **动作即时升级的 4 技能**：手搓/移动(封顶 +100%)/挖矿/生命上限。曲线 -50% 下限、log 缓升。独占 craft/mine/changed_position/died 事件。 |
@@ -33,7 +33,7 @@
 | `world_fx.lua` | 事件驱动的世界效果（经 `events` 总线）的**注册表**：`register(name,event,run)` 每项带全局开关 `storage.world_fx[name]`（默认开，`/c storage.world_fx.xxx=false` 禁用）。现有 **复制虫**(`replicant`)——玩家建筑被虫破坏时原地冒虫（呼应 Comfy infested）。加新 fx 只动本文件 + `ensure_defaults` 开关列表。 |
 | `surface.lua` | 跃迁后逐星球生成：原生 autoplace 调参 + **气候噪声偏置**（`control:moisture/aux/temperature:bias` 修改原生而非覆盖）+ **世界变体**滚定（染地/tile 替换/危险/事件/战利品风格）+ 圆形虚空边界；逐区块应用 tile 替换与染地精灵；母星放市场。各星球资源/自然/气候由声明式 `PLANET_GEN` 表驱动。debug 时向**管理员**打印每次生成的属性。 |
 | `reset.lua` | 跃迁主流程：收集经验 → 杀玩家 → 清星球(异步) → 重置科技 → 随机参数 → 清地图标记。 |
-| `tick.lua` | `on_gui_click` 与 `on_nth_tick(3600)` 的**唯一注册点**：每分钟在线采样 + 给在线玩家各 +1 金币 + 倒计时/提醒 + **事件世界**(`run_world_events` 按 `WORLD_EVENTS` 分发表：raid/meteor/supply/coinfall)。 |
+| `tick.lua` | `on_gui_click` 与 `on_nth_tick(3600)` 的**唯一注册点**：每分钟在线采样 + 给在线玩家各 +1 金币 + 倒计时/提醒 + **事件世界**(`run_world_events` 按 `WORLD_EVENTS` 分发表：raid/meteor/supply/coinfall/drones/barrage)。 |
 | `player_stats.lua` | 行为统计存储（craft/mining/move/deaths/online_minutes，按玩家名，跨跃迁累积）；递增在 `passives.lua`。 |
 | `rocket.lua` | 发射火箭惩罚：每次 `on_rocket_launched` 令本轮 `warp_hours` -1 分钟，公告 + 打印载荷。 |
 | `commands.lua` | 命令：`/reset`/`/players_gui`/`/exp_clear`（管理员）；`/inspect`(=`/chakan`)、`/countdown`(=`/life`/`/daojishi`)、`/preview`(=`/yulan`)、`/settle`(=`/jiesuan` 提前结算)、`/tutorial`(=`/jiaocheng`)、`/suicide`(=`/zisha`)。自定义指令使用时私聊通知管理员。 |
@@ -55,7 +55,7 @@
   - mask：`all`(整片，仅安全自然：水→可泵水、地→任意地) / `noise`(平滑成片，**exotic 仅此可选**) / `tree`/`rock`/`ore`(跟随原生树/石/矿分布，**artificial 仅 ore 可选**)。规则数与覆盖面非线性偏小。
   - 约束：整片替换不让星球缺资源；exotic/artificial 只部分替换（原 tile 仍保留）。
 - **危险世界** `danger_theme[星球]`：各敌人类型**独立开关**（worm/spawner/机枪炮塔+弹/地雷/重炮+弹）+ 机枪弹种(随危险度) + 35% 复制虫。`map_features.feat_danger` 远离出生点采样放置（force=enemy），`feat_wrecks` 偶现残骸障碍。
-- **每分钟事件世界** `event_world[星球]`（`tick.run_world_events`）：`raid` 空降虫 / `meteor` 矿石陨石雨 / `supply` 物资空投 / `coinfall` 金币雨。
+- **每分钟事件世界** `event_world[星球]`（`tick.run_world_events`）：`raid` 空降虫 / `meteor` 矿石陨石雨 / `supply` 物资空投 / `coinfall` 金币雨 / `drones` 敌方战斗机器人(defender/distractor/destroyer) / `barrage` 重炮落点(artillery-projectile，会砸自家建筑)。
 - **战利品风格** `loot_style[星球]`：独立决定出哪些箱体(木/铁/钢) + 测试箱概率。
 
 ## 关键 storage 字段
@@ -72,7 +72,7 @@
   - 概率乘数（0=关）：`prob_ground_tint / prob_tile_remap / prob_danger / prob_event`
   - 强度：`danger_density`(敌人/残骸密度) / `event_intensity`(事件落点) / `tile_remap_rules`(最多规则数) / `test_chest_chance`(测试箱概率)
   - `storage.world_fx.<name>`(默认 true)：事件驱动效果总闸，false 全局禁用（如 `replicant` 复制虫）
-  - `storage.event_types.<raid/meteor/supply/coinfall>`(默认 true)：每分钟事件世界各类型开关，`/c` 设 false 即排除某类型
+  - `storage.event_types.<raid/meteor/supply/coinfall/drones/barrage>`(默认 true)：每分钟事件世界各类型开关，`/c` 设 false 即排除某类型
 
 ## 数据流速览
 

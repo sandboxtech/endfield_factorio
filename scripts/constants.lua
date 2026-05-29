@@ -34,7 +34,8 @@ local M = {
         -- 各变体【出现概率】（再乘动态乘数 storage.prob_xxx）
         ground_tint = {base = 0.06, exotic = 0.25},   -- 出现率 = base + exotic × knobs.exotic
         tile_remap  = {base = 0.5,  exotic = 0.4},    -- 出现率 = base + exotic × knobs.exotic
-        event       = {base = 0.1},                   -- 出现率 = base
+        -- 出现率 = base；选中哪种事件按 weights 加权(缺省 1)，drones 更低 → 无人机世界更罕见
+        event       = {base = 0.1, weights = {drones = 0.3}},
         -- tile 替换内部权重
         tile_mask_all      = 0.45,   -- mask 取 all(整片) 的概率，否则 noise/tree/rock/ore
         tile_to_exotic     = 0.3,    -- noise mask 下目标取 exotic(岩浆/油海/虚空) 的概率
@@ -115,7 +116,7 @@ function M.ensure_defaults()
     -- 每分钟"事件世界"各类型开关（false=不再被滚到/触发）。运行时也可 /c storage.event_types.xxx=true/false。
     -- 下表的值即各类型的【初始启用状态】：coinfall(金币雨) 默认禁用，按需改 true/false。
     storage.event_types = storage.event_types or {}
-    local event_defaults = {raid = true, meteor = true, supply = true, coinfall = true}
+    local event_defaults = {raid = true, meteor = true, supply = true, coinfall = true, drones = true, barrage = true}
     for et, on in pairs(event_defaults) do
         if storage.event_types[et] == nil then storage.event_types[et] = on end
     end

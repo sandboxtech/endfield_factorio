@@ -68,13 +68,14 @@
 
 现有 `raid/meteor/supply/coinfall`。新增两类，走同一分发表 + `storage.event_types.<name>` 开关。
 
-- [ ] **敌方无人机来袭**
-  每分钟事件：在远离出生点处刷敌对无人机/小队（spitter/小飞机式），向玩家推进。
-  落点：`tick.lua`（`WORLD_EVENTS` 加 `drones`）+ `constants.ensure_defaults`（`event_types.drones=true`）。
+- [x] **敌方无人机来袭** (`drones`)
+  在玩家附近(攻击射程内)投放敌方战斗机器人 `defender`/`distractor`/`destroyer`(enemy force)，
+  靠自身 AI 自动攻击玩家方、寿命到自然消失。**不设 owner/target**(运行时只读) → 无崩溃。
+  落点 `tick.lua:WORLD_EVENTS.drones` + `constants` `event_types.drones=true` + `surface.lua` 候选池。
 
-- [ ] **重炮落点**
-  每分钟事件：在玩家附近随机落点来一发重炮/陨石式爆炸（呼应 `feat_danger` 的重炮）。
-  强度跟 `storage.event_intensity`。落点同上（`WORLD_EVENTS` 加 `barrage`）。
+- [x] **重炮落点** (`barrage`)
+  玩家周围 20–60 格落几发真炮弹 `artillery-projectile`(从上方飞入)，范围伤害+爆炸(会砸自家建筑)。
+  数量随 `event_intensity` × 危险度。落点同上(`WORLD_EVENTS.barrage`)。
 
 ---
 

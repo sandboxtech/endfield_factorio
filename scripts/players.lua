@@ -76,34 +76,18 @@ local function try_gift_first_in_world(player)
     respawn_gifts.on_first_respawn(player)
 end
 
--- 死亡复活落点：按权重随机一个星球（母星 69% / 火星·雷星·草星各 10% / 冰星 1%）。权重和需 = 100。
--- 确保该星球出生区已生成，传送过去，并 chart 周围 128。出生点附近无落脚处则回母星兜底。
-local RESPAWN_WEIGHTS = {
-    {name = 'nauvis', w = 69}, {name = 'vulcanus', w = 10}, {name = 'gleba', w = 10},
-    {name = 'fulgora', w = 10}, {name = 'aquilo', w = 1},
-}
-
-local function place_on_random_planet(player)
+-- 死亡复活落点：一律回母星 nauvis 出生点（不再随机散落到各星球）——
+-- 被杀/下线/自杀/warp 死亡的玩家都回家集结。确保出生区已生成，传送过去并 chart 周围 256。
+local function place_on_nauvis(player)
     if not player or not player.character then return end
-    local roll, acc, target = math.random(1, 100), 0, 'nauvis'
-    for _, p in ipairs(RESPAWN_WEIGHTS) do
-        acc = acc + p.w
-        if roll <= acc then target = p.name break end
-    end
-    local function settle(s)
-        local origin = player.force.get_spawn_position(s)
-        s.request_to_generate_chunks(origin, 3)
-        s.force_generate_chunk_requests()
-        return s.find_non_colliding_position('character', origin, 128, 1)
-    end
-    local surface = game.surfaces[target] or game.surfaces.nauvis
-    local pos = settle(surface)
-    if not pos then   -- 该星球出生点附近无落脚处 → 回母星兜底
-        surface = game.surfaces.nauvis
-        pos = settle(surface) or player.force.get_spawn_position(surface)
-    end
+    local surface = game.surfaces.nauvis
+    if not surface then return end
+    local origin = player.force.get_spawn_position(surface)
+    surface.request_to_generate_chunks(origin, 3)
+    surface.force_generate_chunk_requests()
+    local pos = surface.find_non_colliding_position('character', origin, 128, 1) or origin
     player.teleport(pos, surface)
-    -- chart 只揭示【已生成】的区块；新星球除出生点外都没生成，所以先强制生成 ±256 再 chart。
+    -- chart 只揭示【已生成】的区块，先强制生成 ±256 再 chart。
     -- （生成母星区块会触发 map_features，较重；嫌卡把这里的 8 调小，如 4=±128。）
     surface.request_to_generate_chunks(pos, 8)   -- 8 区块 ≈ 256 格
     surface.force_generate_chunk_requests()
@@ -130,7 +114,7 @@ end)
 
 script.on_event(defines.events.on_player_respawned, function(event)
     local player = game.get_player(event.player_index)
-    place_on_random_planet(player)   -- 随机星球落点 + chart 128
+    place_on_nauvis(player)   -- 一律回母星出生点 + chart 256
     player.disable_flashlight()
     passives.apply(player)
     respawn_gifts.apply_inventory_bonus(player)   -- 背包格数加成（按赠品总组数，每组 +1 格）
