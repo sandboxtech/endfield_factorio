@@ -403,6 +403,13 @@ local GUARD_KINDS = {
 }
 local GUARD_KIND_NAMES = {'worm', 'turret', 'mine', 'art'}
 
+-- 防御据点(feat_outpost)的守卫塔：激光(靠据点自带子电网供电)/喷火(灌油)/机枪(填弹)，全 enemy。
+local OUTPOST_GUARDS = {
+    {name = 'laser-turret'},                              -- 激光：electric-turret，靠 substation+供电接口子电网
+    {name = 'flamethrower-turret', fluid = 'crude-oil'},  -- 喷火：fluid_box 无 filter，灌原油即可开火
+    {name = 'gun-turret', mag = true},                    -- 机枪：per 个随机弹种、加满
+}
+
 -- 永续箱守卫：只在【永续箱】四周放敌人(force=enemy)，普通箱【不放】。出生点附近(<64格)不放（保护新手）。
 --   种类：本箱随机选 1~2 种，之后所有守卫只从这几种里出 → 同箱统一。
 --   数量：随【离地图中心距离】半随机缩放——近中心少(约 2~3)、越往边缘越多(可到十来个)。
@@ -518,6 +525,53 @@ local function feat_perpetual(surface, lt)
     if not surface.can_place_entity{name = 'steel-chest', position = pos} then return end
     if spawn_perpetual_chest(surface, pos) then
         guard_perpetual(surface, pos)   -- 永续箱周围放敌人守卫
+    end
+end
+
+-- 防御据点：远离出生点的【无限箱 + 自带子电网 + 一圈守卫塔】，给探索奖励。罕见，仅 >OUTPOST_MIN_DIST 才刷。
+--   子电网：enemy 的 substation + electric-energy-interface(满缓冲+发电) → 给激光炮塔供电。
+--   守卫塔(enemy 激光/喷火/机枪)全放在 substation 供电范围内(半径≤7)，数量随离中心距离增长。
+--   无限箱 neutral(可取货)；守卫 enemy(打靠近者，构成挑战)。
+local OUTPOST_MIN_DIST = 300                     -- 距出生点小于此不刷（据点是远征奖励）
+local function feat_outpost(surface, lt)
+    if chunk_rng(lt, 701) > 0.004 * (storage.loot_density or 1) then return end
+    local ccx, ccy = lt.x + 16, lt.y + 16
+    if ccx * ccx + ccy * ccy < OUTPOST_MIN_DIST * OUTPOST_MIN_DIST then return end
+    -- 子电网核心 substation：放不下就整个放弃（据点必须有电网）
+    local center = {x = lt.x + math.random(10, 21) + 0.5, y = lt.y + math.random(10, 21) + 0.5}
+    local sp = surface.find_non_colliding_position('substation', center, 5, 1)
+    if not sp then return end
+    if not surface.create_entity{name = 'substation', force = 'enemy', position = sp} then return end
+    -- 供电接口：满缓冲 + 持续发电 + 满能量 → 激光炮塔有电可打（数值给足，单位无论 W/帧都够）
+    local ip = surface.find_non_colliding_position('electric-energy-interface', sp, 4, 1)
+    if ip then
+        local eei = surface.create_entity{name = 'electric-energy-interface', force = 'enemy', position = ip}
+        if eei then
+            eei.electric_buffer_size = 1e9
+            eei.power_production = 1e6
+            eei.energy = 1e9
+        end
+    end
+    -- 无限箱（奖励），挨着子电网
+    local chp = surface.find_non_colliding_position('steel-chest', sp, 4, 1)
+    if chp then spawn_perpetual_chest(surface, chp) end
+    -- 守卫塔环：全在 substation 供电半径内（≤7），数量随离中心距离 3→9 增长
+    local danger = M.knobs().danger
+    local R = storage.radius_of[surface.name] or storage.radius or 2048
+    local frac = math.min(1, math.sqrt(ccx * ccx + ccy * ccy) / R)
+    local count = math.floor(3 + frac * 6 + 0.5)
+    for _ = 1, count do
+        local def = OUTPOST_GUARDS[math.random(#OUTPOST_GUARDS)]
+        local ang, r = math.random() * 2 * math.pi, 3 + math.random() * 4
+        local gp = {x = sp.x + math.cos(ang) * r, y = sp.y + math.sin(ang) * r}
+        local gsp = surface.find_non_colliding_position(def.name, gp, 3, 1)
+        if gsp then
+            local e = surface.create_entity{name = def.name, force = 'enemy', position = gsp}
+            if e then
+                if def.mag then fill_turret_ammo(e, pick_mag(danger)) end
+                if def.fluid then e.insert_fluid{name = def.fluid, amount = 100} end
+            end
+        end
     end
 end
 
@@ -641,6 +695,7 @@ function M.generate(surface, lt)
     feat_equipment(surface, lt)   -- 铁箱：设备
     feat_treasure(surface, lt)    -- 木箱：宝箱
     feat_perpetual(surface, lt)   -- 永续箱：基础材料/矿物
+    feat_outpost(surface, lt)     -- 防御据点：远处的无限箱+子电网+激光/喷火/机枪守卫
     -- 危险世界（按 W.danger，与 exotic 正相关）：成簇敌方实体 + 偶现飞船残骸障碍。原版 enemy-base 仍自然出虫。
     feat_danger(surface, lt, A, S, Z, W)
     feat_wrecks(surface, lt, W)

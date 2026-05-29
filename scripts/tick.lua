@@ -43,6 +43,11 @@ end
 -- 跳过概率：<100 完全不刷；100→1000 格线性从 MAX 降到 MIN；1000 格起维持 MIN(最容易刷)。
 local DRONE_NO_SPAWN_RADIUS = 100    -- 此格内完全不刷
 local DRONE_RAMP_FAR        = 1000   -- 跳过概率降到最低的距离
+-- 落点附近(半径4)已有散落物品(item-on-ground)则 true → 跳过本次 spill，避免物品越堆越多/卡顿/难看。
+local function has_ground_items(surface, lp)
+    return surface.count_entities_filtered{position = lp, radius = 4, type = 'item-entity', limit = 1} > 0
+end
+
 local DRONE_SKIP_MAX        = 1.0    -- 100 格处跳过概率（最不容易刷）
 local DRONE_SKIP_MIN        = 0.2    -- 1000 格及更远跳过概率（最容易刷）
 local DRONE_MAX             = 10     -- 单次最多无人机数（距离越远越接近上限）
@@ -65,12 +70,15 @@ local WORLD_EVENTS = {
             end
         end
     end,
-    -- meteor 矿石陨石雨(奖励)：落点炸开 + 撒一堆矿。
+    -- meteor 矿石陨石雨(奖励)：落点炸开 + 撒一堆矿。落点半径立方分布 → 大概率近(好捡)、小概率远(范围大)。
+    -- 落点已有散落物则跳过这一发，避免矿越堆越多。
     meteor = function(_, surface, ch, _, k)
         for _ = 1, math.max(1, math.floor(3 * k + 0.5)) do
-            local lp = rand_near(ch, 25, 90)
-            surface.create_entity{name = 'big-explosion', position = lp}
-            surface.spill_item_stack{position = lp, stack = {name = METEOR_ORE[math.random(#METEOR_ORE)], count = math.random(20, 80)}, enable_looted = true}
+            local lp = rand_near_cubic(ch, 90)
+            if not has_ground_items(surface, lp) then
+                surface.create_entity{name = 'big-explosion', position = lp}
+                surface.spill_item_stack{position = lp, stack = {name = METEOR_ORE[math.random(#METEOR_ORE)], count = math.random(20, 80)}, enable_looted = true}
+            end
         end
     end,
     -- supply 物资空投(奖励)：玩家附近撒中级材料。
@@ -81,10 +89,13 @@ local WORLD_EVENTS = {
         end
     end,
     -- coinfall 金币雨(奖励)：在玩家周围地上像雨点般洒落金币（走过/机器人可拾取），不再直接进背包。
+    -- 落点已有散落物则跳过这一次，避免金币越堆越多。
     coinfall = function(_, surface, ch, _, k)
         for _ = 1, math.max(1, math.floor(8 * k + 0.5)) do
             local lp = rand_near(ch, 4, 18)
-            surface.spill_item_stack{position = lp, stack = {name = 'coin', count = 1}, enable_looted = true}
+            if not has_ground_items(surface, lp) then
+                surface.spill_item_stack{position = lp, stack = {name = 'coin', count = 1}, enable_looted = true}
+            end
         end
     end,
     -- drones 无人机来袭(危险)：投放敌方战斗机器人(defender/distractor/destroyer，enemy force)。

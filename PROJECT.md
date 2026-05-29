@@ -29,7 +29,7 @@
 | `passives.lua` | **动作即时升级的 4 技能**：手搓/移动(封顶 +100%)/挖矿/生命上限。曲线 -50% 下限、log 缓升。独占 craft/mine/changed_position/died 事件。 |
 | `science_exp.lua` | `collect`（跃迁结算在线玩家，不移除）/ `settle`（提前结算：换经验**并移除**整组瓶子，防跃迁重复）/ `preview`（预览）。经验按**玩家名**存 `storage.science_exp`。 |
 | `research.lua` | 研究含 `-science-pack` 名（非 trigger）的科技 → 本轮倒计时 +1 小时并公告。 |
-| `map_features.lua` | **每轮地图风味**（手动放置原生做不到的东西）：`M.knobs()` 本轮整局气质连续旋钮；跨星球 `EXOTIC` 异物（稀疏 simplex 散布）；`theme_trees` 改原生树颜色/灰度（连续插值）；加权战利品 + 品质 + 随机木/铁/钢箱 + 罕见**测试箱**（永续/无底，不可开不可拆可摧毁）；`feat_danger` 危险敌群（独立开关 worm/巢/机枪炮塔+弹/地雷/重炮+弹，force=enemy）；`feat_wrecks` 飞船残骸障碍。`M.generate` 逐区块调用。 |
+| `map_features.lua` | **每轮地图风味**（手动放置原生做不到的东西）：`M.knobs()` 本轮整局气质连续旋钮；跨星球 `EXOTIC` 异物（稀疏 simplex 散布）；`theme_trees` 改原生树颜色/灰度（连续插值）；加权战利品 + 品质 + 随机木/铁/钢箱 + 罕见**测试箱**（永续/无底，不可开不可拆可摧毁）+ 远处**防御据点** `feat_outpost`（无限箱 + enemy 子电网 substation/供电接口 + 激光/喷火/机枪守卫塔）；`feat_danger` 危险敌群（独立开关 worm/巢/机枪炮塔+弹/地雷/重炮+弹，force=enemy）；`feat_wrecks` 飞船残骸障碍。`M.generate` 逐区块调用。 |
 | `world_fx.lua` | 事件驱动的世界效果（经 `events` 总线）的**注册表**：`register(name,event,run)` 每项带全局开关 `storage.world_fx[name]`（默认开，`/c storage.world_fx.xxx=false` 禁用）。现有 **复制虫**(`replicant`)——玩家建筑被虫破坏时原地冒虫（呼应 Comfy infested）。加新 fx 只动本文件 + `ensure_defaults` 开关列表。 |
 | `surface.lua` | 跃迁后逐星球生成：原生 autoplace 调参 + **气候噪声偏置**（`control:moisture/aux/temperature:bias` 修改原生而非覆盖）+ **世界变体**滚定（染地/tile 替换/危险/事件/战利品风格）+ 圆形虚空边界；逐区块应用 tile 替换与染地精灵；母星放市场。各星球资源/自然/气候由声明式 `PLANET_GEN` 表驱动。debug 时向**管理员**打印每次生成的属性。 |
 | `reset.lua` | 跃迁主流程：收集经验 → 杀玩家 → 清星球(异步) → 重置科技 → 随机参数 → 清地图标记。 |

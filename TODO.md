@@ -81,11 +81,12 @@
 
 ## P2 — 防御设施 / 测试箱周边（复用 map_features 战利品箱逻辑）
 
-- [ ] **无限箱 + 守卫塔，可放远**
-  在现有"测试箱"（永续无底）基础上，偶发生成一个**无限箱 + 守卫**的据点，刻意放离出生点远一点（给探索奖励）。
-  守卫塔类型：激光炮塔 / 喷火炮塔（带燃料），force 设中立或敌对待定。
-  落点：`map_features.lua`（战利品/测试箱段旁加 `feat_outpost`）+ `constants.balance` 概率。
-  验收：能在远处区块刷出，守卫会攻击靠近的敌人/或作为挑战。
+- [x] **无限箱 + 守卫塔据点** (`feat_outpost`)
+  距出生点 >300 格、约 0.4%/区块罕见生成。组成：enemy `substation`+`electric-energy-interface`
+  (满缓冲+发电)子电网 → 给 enemy `laser-turret` 供电；enemy `flamethrower-turret`(灌原油)/`gun-turret`(填弹)；
+  neutral `infinity-chest` 奖励。守卫全在供电半径内、数量随离中心距离 3→9 增长。
+  落点 `map_features.lua:feat_outpost` + 接入 `M.generate`。
+  ⚠️ 待游戏内验证：enemy 激光塔在 enemy 子电网下是否真能持续开火。
 
 ---
 
