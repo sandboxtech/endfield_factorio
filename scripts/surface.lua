@@ -229,8 +229,10 @@ end
 -- 部分替换(非 all)时选目标，按 mask 限制特殊池：
 --   noise → 一定概率取 exotic(岩浆/油海/氨海/虚空/太空)；ore → 一定概率取 artificial(人造铺装)；
 --   其余走常规自然(水/地)。tree/rock 只会落到自然。
-local function pick_target(src, mask)
-    if mask == 'noise' and math.random() < constants.balance.tile_to_exotic then return rand_tile('exotic') end
+local function pick_target(src, mask, surface_name)
+    -- 母星走专属(更高)的 exotic 命中率，其它星球用全局值。
+    local p_exotic = (surface_name == 'nauvis' and constants.balance.nauvis_exotic.to_exotic) or constants.balance.tile_to_exotic
+    if mask == 'noise' and math.random() < p_exotic then return rand_tile('exotic') end
     if mask == 'ore' and math.random() < constants.balance.tile_to_artificial then return rand_tile('artificial') end
     return rand_tile(pick_natural_class(src.class))
 end
@@ -389,8 +391,9 @@ script.on_event(defines.events.on_surface_cleared, function(event)
         local nrules = 1 + math.floor(math.random() ^ 2 * (storage.tile_remap_rules or 3))   -- 偏向少：多半 1 条
         for _ = 1, nrules do
             local src = srcs[math.random(#srcs)]
-            -- 先定 mask：~45% all(整片自然，安全)，否则 noise/跟随树石矿。
-            local mask = (math.random() < constants.balance.tile_mask_all) and 'all'
+            -- 先定 mask：~45% all(整片自然，安全)，否则 noise/跟随树石矿。母星用更低的 mask_all → 更易走 noise(exotic 入口)。
+            local mask_all = (surface.name == 'nauvis' and constants.balance.nauvis_exotic.mask_all) or constants.balance.tile_mask_all
+            local mask = (math.random() < mask_all) and 'all'
                 or ({'noise', 'noise', 'tree', 'rock', 'ore'})[math.random(5)]
             -- 选目标。【约束】all 整片替换不能让星球缺资源：水源→同功能水(full，仍可泵)、地源→任意地表；
             -- exotic(岩浆/油海/氨海/虚空) 只走 noise、artificial(人造铺装) 只走 ore，且都是部分替换(原 tile 仍保留)。
@@ -403,7 +406,7 @@ script.on_event(defines.events.on_surface_cleared, function(event)
                     to = rand_tile('ground')
                 end
             else
-                to = pick_target(src, mask)
+                to = pick_target(src, mask, surface.name)
             end
             if to then
                 rules[#rules + 1] = {

@@ -34,13 +34,16 @@ local M = {
         -- 各变体【出现概率】（再乘动态乘数 storage.prob_xxx）
         ground_tint = {base = 0.06, exotic = 0.25},   -- 出现率 = base + exotic × knobs.exotic
         tile_remap  = {base = 0.5,  exotic = 0.4},    -- 出现率 = base + exotic × knobs.exotic
-        tree_remap     = {base = 0.12},               -- 树换树世界出现率（大概率不换）
-        obstacle_remap = {base = 0.12},               -- 障碍换障碍世界出现率
+        tree_remap     = {base = 0.35},               -- 树换树世界出现率（跨星球互换：nauvis/gleba/vulcanus 树互转）
+        obstacle_remap = {base = 0.35},               -- 障碍换障碍世界出现率（跨星球：石头/火山石/锂冰/雷击熔岩/叠层岩互转）
         -- 出现率 = base；选中哪种事件按 weights 加权(缺省 1)，drones 更低 → 无人机世界更罕见
         event       = {base = 0.1, weights = {drones = 0.3}},
         -- tile 替换内部权重
-        tile_mask_all      = 0.45,   -- mask 取 all(整片) 的概率，否则 noise/tree/rock/ore
-        tile_to_exotic     = 0.3,    -- noise mask 下目标取 exotic(岩浆/油海/虚空) 的概率
+        tile_mask_all      = 0.35,   -- mask 取 all(整片) 的概率，否则 noise/tree/rock/ore（调低→更多 noise→更多 exotic）
+        tile_to_exotic     = 0.55,   -- noise mask 下目标取 exotic(岩浆/油海/氨海/虚空) 的概率（调高→岩浆海/重油海更常见）
+        -- 母星(nauvis)异界地貌【专属加成】：原版母星无岩浆/油海等，单独给它更高 exotic 出现率（其它星球本就有异貌，不加成）。
+        --   mask_all 调低→更易抽中 noise(exotic 唯一入口)；to_exotic 调高→noise 时更可能落 exotic。两者相乘决定母星单条规则出 exotic 的概率。
+        nauvis_exotic      = {mask_all = 0.15, to_exotic = 0.90},
         tile_to_artificial = 0.4,    -- ore mask 下目标取 artificial(人造铺装) 的概率
         tile_same_class    = 0.7,    -- 部分替换时目标保持同类(水↔水/地↔地) 的概率
         -- 危险世界各敌人类型【独立开关】概率
@@ -109,7 +112,7 @@ function M.ensure_defaults()
     -- 这是所有 storage 表的【唯一出生地】——各模块不再各自 `storage.x = storage.x or {}`，统一在此补齐。
     for _, key in ipairs({'radius_of', 'science_exp', 'player_stats', 'platform_age',
                           'ground_tint', 'tile_remap', 'danger_theme', 'event_world', 'loot_style', 'members',
-                          'last_respawn_run', 'move_pos', 'bad_items', 'gen_debug', 'warp_vote', 'wreck_density',
+                          'last_respawn_run', 'move_pos', 'bad_items', 'bad_entities', 'gen_debug', 'warp_vote', 'wreck_density',
                           'tree_remap', 'obstacle_remap'}) do
         storage[key] = storage[key] or {}
     end

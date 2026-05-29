@@ -144,8 +144,8 @@ local LOOT = {
         'uranium-235',  'uranium-238',  'uranium-fuel-cell',  'depleted-uranium-fuel-cell',  'fusion-power-cell',  -- 核
         'tungsten-carbide',  'tungsten-plate',  'holmium-plate',  'lithium-plate',  'carbon-fiber',  'superconductor',  'supercapacitor',  -- 星球特产材料
         'concrete',  'refined-concrete',  'hazard-concrete',  'refined-hazard-concrete',  'landfill',  -- 铺地
-        'barrel', 'water-barrel', 'crude-oil-barrel',  'petroleum-gas-barrelel',  'light-oil-barrel',  
-        'lubricant-barrel',  'sulfuric-acid-barrel', 'fluoroketone-hot-barrel', 'fluoroketone-cold-barrel',                                                                       -- 杂项
+        'barrel', 'water-barrel', 'crude-oil-barrel',  'heavy-oil-barrel',  'light-oil-barrel',  'petroleum-gas-barrel',
+        'lubricant-barrel',  'sulfuric-acid-barrel', 'fluoroketone-hot-barrel', 'fluoroketone-cold-barrel',                                                                       -- 桶装液体（仅这 9 种有桶：base 7 种 + 草星 fluoroketone 冷热 2 种；lava/氨/molten 等 auto_barrel=false 无桶）
     }},
     -- 物流(带/臂/管/箱/轨/机器人)
     {cat = 'logistics',  items = {
@@ -702,17 +702,45 @@ end
 -- 每世界小概率滚定一个目标原型(surface.lua 存 storage.tree_remap/obstacle_remap[星球])，
 -- 区块内把所有同类实体原位换成该目标。目标池运行时按 prototypes.entity 校验(拼错/缺失自动剔除)。
 local TREE_TARGETS = {
-    'tree-01', 'tree-02', 'tree-03', 'tree-04', 'tree-05', 'tree-06', 'tree-07', 'tree-08', 'tree-09',  -- nauvis 各色
-    'dead-tree-desert', 'dead-grey-trunk', 'dry-tree', 'dry-hairy-tree', 'dead-dry-hairy-tree',          -- 枯/荒漠
-    'ashland-lichen-tree',                                                                                -- vulcanus
+    -- nauvis（含 -red/-brown 色变体，原只列了 tree-01..09 主色）
+    'tree-01', 'tree-02', 'tree-02-red', 'tree-03', 'tree-04', 'tree-05',
+    'tree-06', 'tree-06-brown', 'tree-07', 'tree-08', 'tree-08-brown', 'tree-08-red',
+    'tree-09', 'tree-09-brown', 'tree-09-red',
+    'dead-tree-desert', 'dead-grey-trunk', 'dry-tree', 'dry-hairy-tree', 'dead-dry-hairy-tree',  -- 枯/荒漠
+    'ashland-lichen-tree', 'ashland-lichen-tree-flaming',                                         -- vulcanus（含燃烧态）
     'boompuff', 'cuttlepop', 'funneltrunk', 'hairyclubnub', 'lickmaw', 'slipstack', 'stingfrond', 'sunnycomb', 'teflilly',  -- gleba（不含需水的 water-cane）
 }
--- 石头/障碍：既是替换【源】(find 用)也是【目标】候选。
-local ROCK_CANDIDATES = {'big-rock', 'huge-rock', 'big-sand-rock', 'huge-volcanic-rock', 'medium-rock', 'small-rock', 'tiny-rock'}
+-- 石头/障碍：既是替换【源】(find 用)也是【目标】候选。跨星球互换 → 母星可冒出锂冰/火山石/雷击熔岩等异星障碍。
+-- 注：medium/small/tiny-rock 是 optimized-decorative【不是 entity】，已移除（曾被静默丢弃，现 build_pool 会报告管理员）。
+local ROCK_CANDIDATES = {
+    'big-rock', 'huge-rock', 'big-sand-rock',                                    -- nauvis
+    'big-volcanic-rock', 'huge-volcanic-rock',                                   -- vulcanus 火山石
+    'vulcanus-chimney', 'vulcanus-chimney-cold', 'vulcanus-chimney-faded', 'vulcanus-chimney-short', 'vulcanus-chimney-truncated',  -- vulcanus 烟囱石
+    'fulgurite', 'fulgurite-small',                                              -- fulgora 雷击熔岩（雷击木）
+    'copper-stromatolite', 'iron-stromatolite',                                  -- gleba 铜/铁叠层岩（铜铁石头）
+    'lithium-iceberg-big', 'lithium-iceberg-huge',                               -- aquilo 锂冰
+}
+
+-- 替换池实体名【运行时校验】：池是手动穷举的，DLC/版本变动或拼错会让某些名失效。
+-- 无效则跳过，并报告给所有【在线管理员】（同名只报一次，逻辑同 item_ok）。
+local function entity_ok(name)
+    if prototypes.entity[name] then return true end
+    storage.bad_entities = storage.bad_entities or {}
+    if not storage.bad_entities[name] then
+        storage.bad_entities[name] = true
+        log('endfield: 跳过无效替换实体名: ' .. tostring(name))
+        for _, p in pairs(game.players) do
+            if p.connected and p.admin then
+                p.print('[替换] 跳过无效实体名（替换池需更新）: ' .. tostring(name))
+            end
+        end
+    end
+    return false
+end
 
 local function build_pool(names)
     local out = {}
-    for _, n in ipairs(names) do if prototypes.entity[n] then out[#out + 1] = n end end
+    for _, n in ipairs(names) do if entity_ok(n) then out[#out + 1] = n end end
     return out
 end
 local tree_pool, rock_pool   -- 懒构建的有效名缓存（prototypes 不变，建一次）
