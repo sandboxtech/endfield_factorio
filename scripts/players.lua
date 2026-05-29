@@ -7,7 +7,8 @@ local player_stats = require('scripts.player_stats')
 
 local M = {}
 
-local RESPAWN_TICKS = 180   -- 复活等待时间：180 tick = 3 秒（原版默认 10 秒）
+-- 复活等待时间改由 storage 配置（可 /c storage.respawn_ticks / enemy_respawn_ticks 热改、持久、同步）；
+-- 默认值见 constants.ensure_defaults（respawn_ticks=180=3 秒，enemy_respawn_ticks=1800=30 秒）。
 
 -- 把 target 的统计数据打印给 viewer：4 项技能 + 在线时长 + 各瓶累计经验。
 function M.print_inspection(target, viewer)
@@ -113,8 +114,17 @@ end
 -- 跃迁清场 / 离场 / 自杀脱困走的是脚本 die()（cause 为 nil），不计入。
 script.on_event(defines.events.on_player_died, function(event)
     local player = game.get_player(event.player_index)
-    if player then player.ticks_to_respawn = RESPAWN_TICKS end
-    if event.cause then player_stats.bump(event.player_index, 'death_count') end
+    local cause = event.cause
+    -- 被【敌方】打死 → 30 秒复活惩罚；脚本死亡(跃迁清场/离场/自杀, cause 为 nil)与环境死亡 → 默认 3 秒。
+    local by_enemy = cause and cause.valid and cause.force and cause.force.name == 'enemy'
+    if player then
+        player.ticks_to_respawn = by_enemy and (storage.enemy_respawn_ticks or 1800) or (storage.respawn_ticks or 180)
+    end
+    if by_enemy then
+        -- 被敌方打死：本轮跃迁倒计时提前（默认 1 分钟，可 /c storage.enemy_death_push_minutes 热改）
+        storage.warp_hours = (storage.warp_hours or 1) - (storage.enemy_death_push_minutes or 1) / 60
+    end
+    if cause then player_stats.bump(event.player_index, 'death_count') end
 end)
 
 script.on_event(defines.events.on_player_respawned, function(event)

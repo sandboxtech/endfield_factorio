@@ -118,9 +118,9 @@ function M.reset()
     force.reset()
     force.friendly_fire = true
 
-    -- 跃迁倒计时重置为初始值（constants.warp_initial_minutes 分钟）；研究科技瓶科技按
-    -- constants.warp_extend_minutes 各自延长。内部以小时记账，故 /60。
-    storage.warp_hours = constants.warp_initial_minutes / 60
+    -- 跃迁倒计时重置为初始值（storage.warp_initial_minutes 分钟，可 /c 热改）；研究科技瓶科技按
+    -- storage.warp_extend_minutes 各自延长。内部以小时记账，故 /60。
+    storage.warp_hours = (storage.warp_initial_minutes or 10) / 60
 
     -- 飞船全部瞬移回母星轨道并暂停
     for _, platform in pairs(force.platforms) do

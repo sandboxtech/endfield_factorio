@@ -7,6 +7,7 @@
 --   · 通用风味：worm 虫群(force='enemy',仅母星)、随机木/铁/钢战利品箱(force='player',加权+品质)。
 -- 由 surface.lua 的 on_chunk_generated 对各真实星球圆内区块调用 M.generate。
 local noise = require('scripts.noise')
+local constants = require('scripts.constants')
 
 local M = {}
 
@@ -483,6 +484,8 @@ local function feat_equipment(surface, lt)
 end
 
 -- 木箱 = 宝箱：稀有。1~2 种高价值物品，每件【几个】(count = ss×random^4，极偏低)
+local TREASURE_BOTTLE_CHANCE = 0.5   -- 木箱额外掉【科技瓶】的概率
+
 local function feat_treasure(surface, lt)
     if chunk_rng(lt, 601) > spawn_chance(surface, 'treasure') then return end
     local pos = {lt.x + math.random(2, 29) + 0.5, lt.y + math.random(2, 29) + 0.5}
@@ -494,6 +497,16 @@ local function feat_treasure(surface, lt)
         local name = TREASURE_POOL[math.random(#TREASURE_POOL)]
         if item_ok(name) then
             inv.insert{name = name, count = loot_count(name, 4), quality = roll_treasure_quality()}
+        end
+    end
+    -- 可能额外给某种科技瓶：1~5 组(满堆叠)，组数走 random^2(偏低，多为 1~2 组)，随机(宝箱)品质。
+    if math.random() < TREASURE_BOTTLE_CHANCE then
+        local pack = constants.science_packs[math.random(#constants.science_packs)]
+        if item_ok(pack) then
+            local proto = prototypes.item[pack]
+            local ss = (proto and proto.stack_size) or 200
+            local groups = 1 + math.floor(math.random() ^ 2 * 5)   -- 1~5 组（random^2 偏低）
+            inv.insert{name = pack, count = groups * ss, quality = roll_treasure_quality()}
         end
     end
 end

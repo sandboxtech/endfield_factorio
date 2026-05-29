@@ -103,4 +103,56 @@ function M.players_gui()
     end
 end
 
+-- ── 临时弹窗 ────────────────────────────────────────────────────────────────
+-- 把信息类指令(教程/查看/倒计时/预览)的输出从聊天框搬到屏幕中央的独立窗口：不刷屏、可关闭。
+-- 关闭方式：点右上 × 或按 Esc/E（on_gui_closed）。重复打开自动替换旧窗，不堆叠。
+local POPUP_NAME = 'wn_popup'
+M.POPUP_NAME = POPUP_NAME
+M.POPUP_CLOSE_NAME = POPUP_NAME .. '_close'
+
+-- title：localised string 或纯文本；lines：数组，每项一行（localised string 或纯文本）。
+function M.show_popup(player, title, lines)
+    if not (player and player.valid) then return end
+    local screen = player.gui.screen
+    if screen[POPUP_NAME] then screen[POPUP_NAME].destroy() end   -- 重开即替换
+
+    local frame = screen.add{type = 'frame', name = POPUP_NAME, direction = 'vertical'}
+    -- 标题栏：标题 + 可拖动空白 + 关闭按钮
+    local bar = frame.add{type = 'flow', direction = 'horizontal'}
+    bar.drag_target = frame
+    bar.add{type = 'label', caption = title, style = 'frame_title', ignored_by_interaction = true}
+    local drag = bar.add{type = 'empty-widget', style = 'draggable_space_header', ignored_by_interaction = true}
+    drag.style.horizontally_stretchable = true
+    drag.style.height = 24
+    drag.style.right_margin = 4
+    bar.add{type = 'sprite-button', name = M.POPUP_CLOSE_NAME, sprite = 'utility/close',
+            style = 'frame_action_button', tooltip = {'gui.close'}}
+    -- 内容：滚动区，每行一个可换行 label
+    local pane = frame.add{type = 'scroll-pane', direction = 'vertical'}
+    pane.style.maximal_height = 460
+    pane.style.minimal_width = 380
+    for _, line in ipairs(lines) do
+        pane.add{type = 'label', caption = line}.style.single_line = false
+    end
+    frame.force_auto_center()
+    player.opened = frame   -- Esc/E 关闭
+
+    return frame
+end
+
+function M.close_popup(player)
+    if player and player.valid then
+        local f = player.gui.screen[POPUP_NAME]
+        if f and f.valid then f.destroy() end
+    end
+end
+
+-- "打印汇集器"：仿 player/game 的 .print(msg)，把行收集进 sink.lines，交给 show_popup。
+-- 让原本 viewer.print 多行的函数(如 players.print_inspection)无需改写即可输出到弹窗。
+function M.popup_sink()
+    local sink = {lines = {}}
+    function sink.print(msg) sink.lines[#sink.lines + 1] = msg end
+    return sink
+end
+
 return M

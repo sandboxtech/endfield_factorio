@@ -24,26 +24,9 @@ local M = {
         'cryogenic-science-pack', 'promethium-science-pack', 'military-science-pack',
     },
 
-    -- 跃迁倒计时配置（单位：分钟）。每轮开局倒计时 = warp_initial_minutes；之后每完成一种【科技瓶科技】
-    -- （-science-pack 结尾，含 SA trigger 解锁瓶）→ 按下表给本轮倒计时 +对应分钟数；表里没有的瓶用
-    -- warp_extend_default_minutes。改这里即可单独平衡各瓶价值。
-    -- 注：内部 storage.warp_hours 仍以【小时】记账（被 gui/tick/rocket/commands 共用），加时按 /60 换算。
-    warp_initial_minutes = 10,
-    warp_extend_default_minutes = 60,
-    warp_extend_minutes = {
-        ['automation-science-pack']      = 20,
-        ['logistic-science-pack']        = 30,
-        ['military-science-pack']        = 60,
-        ['chemical-science-pack']        = 60,
-        ['production-science-pack']      = 60,
-        ['utility-science-pack']         = 60,
-        ['space-science-pack']           = 60,
-        ['metallurgic-science-pack']     = 60,
-        ['electromagnetic-science-pack'] = 60,
-        ['agricultural-science-pack']    = 60,
-        ['cryogenic-science-pack']       = 120,
-        ['promethium-science-pack']      = 120,
-    },
+    -- 跃迁计时相关的可调值【不在这里】——它们放进 storage（见 ensure_defaults），以便 /c 热改、持久、同步：
+    --   storage.warp_initial_minutes / warp_extend_default_minutes / warp_extend_minutes[瓶] / warp_push_ticks / warp_push_respawn_ticks
+    -- 常量表 M 里的值是模块级 Lua 数据，/c 改了不持久(读档复位)且多人会 desync，故跃迁可调值一律入 storage。
 
     -- 世界变体调参【一览表】：概率/权重的硬编码基数集中于此，方便统一调平衡。
     -- 纯表现性的内部曲线（染地 alpha 立方、noise threshold、亮度/昼夜抖动）留在 surface.lua 原地。
@@ -89,9 +72,32 @@ function M.ensure_defaults()
         loot_density = 1,                  -- 战利品箱(物资/宝/永续)全局密度乘数：2 更多、0.5 更少
         event_intensity = 1,              -- 每分钟事件的落点数
         tile_remap_rules = 6,             -- tile 替换世界最多几条规则
+        -- 跃迁计时（全部可 /c storage.xxx 热改、持久、多人同步）：
+        warp_initial_minutes = 10,        -- 每轮开局跃迁倒计时（分钟）
+        warp_extend_default_minutes = 60, -- 完成未列入 warp_extend_minutes 的科技瓶科技 → 延长分钟数
+        warp_push_ticks = 3600,           -- /warp 主动跃迁每次把倒计时提前的 tick（3600 = 1 分钟）
+        warp_push_respawn_ticks = 5400,   -- /warp 使用后本人复活等待 tick（5400 = 90 秒）
+        -- 复活等待 tick（可 /c 热改）：脚本死亡(跃迁清场/离场/自杀)与环境死亡用 respawn_ticks；被敌方打死用 enemy_respawn_ticks。
+        respawn_ticks = 180,              -- 默认复活：180 tick = 3 秒
+        enemy_respawn_ticks = 1800,       -- 被敌方打死：1800 tick = 30 秒
+        enemy_death_push_minutes = 1,     -- 被敌方打死时本轮跃迁倒计时提前的分钟数
     }
     for k, v in pairs(d) do
         if storage[k] == nil then storage[k] = v end
+    end
+    -- 各科技瓶【解锁延长跃迁的分钟数】。缺失才补 → 保留管理员 /c 的调整，并自动纳入将来新增的瓶。
+    -- 热改示例：/c storage.warp_extend_minutes['cryogenic-science-pack'] = 90
+    storage.warp_extend_minutes = storage.warp_extend_minutes or {}
+    local warp_ext = {
+        ['automation-science-pack'] = 20, ['logistic-science-pack'] = 30,
+        ['military-science-pack'] = 60,   ['chemical-science-pack'] = 60,
+        ['production-science-pack'] = 60, ['utility-science-pack'] = 60,
+        ['space-science-pack'] = 60,      ['metallurgic-science-pack'] = 60,
+        ['electromagnetic-science-pack'] = 60, ['agricultural-science-pack'] = 60,
+        ['cryogenic-science-pack'] = 120, ['promethium-science-pack'] = 120,
+    }
+    for pack, m in pairs(warp_ext) do
+        if storage.warp_extend_minutes[pack] == nil then storage.warp_extend_minutes[pack] = m end
     end
     -- 必需表（累积数据 / 每星球状态 / 运行时缓存），缺失则建空表。
     -- 这是所有 storage 表的【唯一出生地】——各模块不再各自 `storage.x = storage.x or {}`，统一在此补齐。
