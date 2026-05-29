@@ -61,11 +61,11 @@ function M.ensure_defaults()
         radius = 2048,
         radius_min = 256,
         radius_max = 4096,
-        platform_lifetime = 5,
+        platform_lifetime = 10,
         difficulty = 1,
         debug = true,                     -- 向管理员打印每次世界生成的属性
-        prob_ground_tint = 1,             -- 染地世界出现概率乘数（0=关）
-        prob_tile_remap = 1,              -- tile 替换世界
+        prob_ground_tint = 2,             -- 染地世界出现概率乘数（0=关）
+        prob_tile_remap = 3,              -- tile 替换世界
         prob_danger = 1,                  -- 危险世界
         prob_event = 1,                   -- 每分钟事件世界
         danger_density = 1,               -- 危险世界里敌人/残骸的密度

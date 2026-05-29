@@ -306,24 +306,31 @@ script.on_event(defines.events.on_surface_cleared, function(event)
     -- 星球昼夜与气候
     surface.always_day = false
     surface.freeze_daytime = false
-    surface.daytime = math.random()   -- 随机当地时间：到达时清晨/正午/黄昏/深夜随机（下方永昼/永夜会覆盖）
+    -- 随机当地时间作为本轮起点（非冻结世界之后照常昼夜循环）：大概率落在白天，避免一跃迁就摸黑。
+    -- daytime：0=正午最亮，0.5=午夜最暗，0.25/0.75≈晨昏。（下方永昼/永夜分支会覆盖此值）
+    if math.random() < 0.8 then
+        surface.daytime = ((math.random() - 0.5) * 0.3) % 1   -- 80%：落在正午附近 [0,0.15]∪[0.85,1) = 全白天
+    else
+        surface.daytime = math.random()                       -- 20%：完全随机（含晨昏/夜，保留多样性）
+    end
     surface.wind_speed = 0.02 * (0.5 + math.random())
     surface.wind_orientation = math.random()
     surface.wind_orientation_change = 0.0001 * (0.5 + math.random())
 
-    -- 外观随机（纯表现，可大幅浮动）：每颗星每次跃迁"长相"都不同，强化旅行新鲜感。
-    --   brightness_visual_weights：按 RGB 给白天光照染色，是运行时最接近"改土地颜色"的手段。
-    --   大部分时候低饱和（三通道围绕同一亮度小幅抖动，只是淡淡色调）；1/6 概率夸张（血红/幽绿/冷蓝）。
+    -- 外观随机（纯表现）：brightness_visual_weights = 昼夜明暗(brightness)对各通道 LUT 的【影响权重】。
+    --   引擎公式 LUT ×= (1-w) + brightness×w：w 越大 → 画面越紧贴昼夜曲线、非正午越暗；
+    --   默认 {0,0,0} = 完全不受影响、永远全亮。【所以权重越大越暗，不是越亮】——故只取很小的值：
+    --   常态白天基本全亮、只在晨昏/夜里透出极淡色调；1/6 概率色调略强（仍只在非正午显现）。
     local cr, cg, cb
     if math.random(1, 6) == 1 then
-        cr = 0.35 + math.random()   -- 0.35~1.35 各自独立 → 高饱和强色调
-        cg = 0.35 + math.random()
-        cb = 0.35 + math.random()
+        cr = 0.15 + math.random() * 0.5   -- 0.15~0.65 各自独立 → 通道差异大 = 较强色调（晨昏/夜显现）
+        cg = 0.15 + math.random() * 0.5
+        cb = 0.15 + math.random() * 0.5
     else
-        local base = 0.9 + 0.2 * math.random()   -- 共同亮度 0.9~1.1
-        cr = base + (math.random() - 0.5) * 0.12  -- ±0.06 抖动 → 低饱和
-        cg = base + (math.random() - 0.5) * 0.12
-        cb = base + (math.random() - 0.5) * 0.12
+        local base = 0.08 + 0.12 * math.random()   -- 0.08~0.20 极弱影响 → 白天几乎全亮
+        cr = base + (math.random() - 0.5) * 0.10    -- 通道间小幅错开 → 极淡色调
+        cg = base + (math.random() - 0.5) * 0.10
+        cb = base + (math.random() - 0.5) * 0.10
     end
     surface.brightness_visual_weights = {r = cr, g = cg, b = cb}
     surface.min_brightness = 0.4 * math.random()         -- 夜晚黑暗程度 0~0.4（0=漆黑），纯表现

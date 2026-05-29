@@ -131,7 +131,7 @@ local LOOT = {
     {cat = 'raw',        items = {
         'iron-ore',  'copper-ore',  'uranium-ore',  'tungsten-ore',  'holmium-ore',   -- 金属矿
         'coal',  'stone',  'calcite',  'lithium',                                      -- 非金属/化工矿
-        'scrap',  'carbon',  'wood',  'raw-fish',  'ice',                                      -- 其它原料
+        'scrap',  'carbon',  'wood',  'raw-fish',  'ice',  'spoilage',                          -- 其它原料（spoilage 不腐烂、可作化学燃料）
         -- 'carbonic-asteroid-chunk', 'metallic-asteroid-chunk',  'oxide-asteroid-chunk',  'promethium-asteroid-chunk',
     }},
     -- 材料/中间品

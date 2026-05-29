@@ -74,6 +74,9 @@ end)
 
 script.on_event(defines.events.on_player_mined_entity, function(e)
     if not e.player_index then return end
+    -- 拆蓝图虚影/虚影地块不算"采矿"（它本就没实体、不产物）→ 不练拆除技能。
+    local ent = e.entity
+    if ent and (ent.type == 'entity-ghost' or ent.type == 'tile-ghost') then return end
     local s = player_stats.get(e.player_index)
     s.mining_count = s.mining_count + 1
     apply_one(game.get_player(e.player_index), M.abilities[3])
