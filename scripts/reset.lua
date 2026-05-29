@@ -11,7 +11,7 @@ local player_stats = require('scripts.player_stats')
 local M = {}
 
 -- ── 飞船命数前缀（剩余跃迁次数的可视化）─────────────────────────────────────
-local HEART = '[virtual-signal=signal-heart]'
+local HEART = '[img=virtual-signal/signal-heart]'
 -- 数字 → parameter 物品图标串（逐位）：4 → [item=parameter-4]；10 → [item=parameter-1][item=parameter-0]。
 -- 最多两位（parameter 图标只有 0~9）；>99 一律按 99 显示。
 local function life_prefix(n)
@@ -23,9 +23,9 @@ end
 -- 反复剥掉船名开头的【命数(parameter)/心】前缀，以及老存档遗留的【骷髅】串 → 得到纯船名。
 local function strip_life_prefix(name)
     local pats = {
-        '^%[item=parameter%-%d+%]',
-        '^%[virtual%-signal=signal%-heart%]',
-        '^%[virtual%-signal=signal%-skull%]',   -- 兼容旧版累积的骷髅前缀
+        '^%[img=parameter%/%d+%]',
+        '^%[img=virtual%-signal/signal%-heart%]',
+        '^%[img=virtual%-signal/signal%-skull%]',   -- 兼容旧版累积的骷髅前缀
     }
     local again = true
     while again do
