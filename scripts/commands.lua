@@ -168,7 +168,11 @@ end)
 local function tutorial_cmd(command)
     local viewer = command.player_index and game.get_player(command.player_index)
     if not viewer then return end
-    gui.show_popup(viewer, {'wn.tutorial-title'}, {{'wn.tutorial'}})
+    -- 教程文案里的【起步分钟】【飞船寿命】等数字由 storage 实时填入（/c 热改后教程同步变）。
+    local body = {'wn.tutorial',
+                  storage.warp_initial_minutes or 10,   -- __1__ 跃迁倒计时起步分钟
+                  storage.platform_lifetime or 10}      -- __2__ 飞船最多保留的跃迁次数
+    gui.show_popup(viewer, {'wn.tutorial-title'}, {body})
 end
 
 add_command('tutorial', {'wn.tutorial-help'}, tutorial_cmd)
