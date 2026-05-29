@@ -40,11 +40,8 @@ local M = {
         -- 出现率 = base；选中哪种事件按 weights 加权(缺省 1)，drones 更低 → 无人机世界更罕见
         event       = {base = 0.1, weights = {drones = 0.3}},
         -- tile 替换内部权重
-        tile_mask_all      = 0.35,   -- mask 取 all(整片) 的概率，否则 noise/tree/rock/ore（调低→更多 noise→更多 exotic）
-        tile_to_exotic     = 0.55,   -- noise mask 下目标取 exotic(岩浆/油海/氨海/虚空) 的概率（调高→岩浆海/重油海更常见）
-        -- 母星(nauvis)异界地貌【专属加成】：原版母星无岩浆/油海等，单独给它更高 exotic 出现率（其它星球本就有异貌，不加成）。
-        --   mask_all 调低→更易抽中 noise(exotic 唯一入口)；to_exotic 调高→noise 时更可能落 exotic。两者相乘决定母星单条规则出 exotic 的概率。
-        nauvis_exotic      = {mask_all = 0.15, to_exotic = 0.90},
+        tile_mask_all      = 0.45,   -- mask 取 all(整片) 的概率，否则 noise/tree/rock/ore
+        tile_to_exotic     = 0.3,    -- noise mask 下目标取 exotic(岩浆/油海/氨海/虚空) 的概率（全星统一，母星不额外加成）
         tile_to_artificial = 0.4,    -- ore mask 下目标取 artificial(人造铺装) 的概率
         tile_same_class    = 0.7,    -- 部分替换时目标保持同类(水↔水/地↔地) 的概率
         -- 危险世界各敌人类型【独立开关】概率

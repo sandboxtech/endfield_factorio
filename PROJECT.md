@@ -53,8 +53,7 @@
   - 源 `PLANET_SRC[星球]`：只取该星实际存在的 tile 子家族（否则空转）。
   - 目标白名单 `TILE_CLASS` 四类：`water`(常规水) / `ground`(自然地表) / `exotic`(岩浆·油海·氨海·虚空·太空) / `artificial`(混凝土系+9 色套色+铺路/landfill/地基)。`valid_pools` 按 `prototypes.tile` 过滤拼错名。
   - mask：`all`(整片，仅安全自然：水→可泵水、地→任意地) / `noise`(平滑成片，**exotic 仅此可选**) / `tree`/`rock`/`ore`(跟随原生树/石/矿分布，**artificial 仅 ore 可选**)。规则数与覆盖面非线性偏小。
-  - 约束：整片替换不让星球缺资源；exotic/artificial 只部分替换（原 tile 仍保留）。
-  - **母星专属 exotic 加成** `balance.nauvis_exotic`：原版 nauvis 无岩浆/油海，给它更低 `mask_all`(更多 noise) + 更高 `to_exotic` → 显著提高冒出异界液体海(岩浆/油海/氨海/虚空)的概率（其它星球本就有异貌，不加成）。
+  - 约束：整片替换不让星球缺资源；exotic/artificial 只部分替换（原 tile 仍保留）。exotic 出现率全星统一（`tile_mask_all` × `tile_to_exotic`），母星不额外加成。
 - **危险世界** `danger_theme[星球]`：各敌人类型**独立开关**（worm/spawner/机枪炮塔+弹/地雷/重炮+弹）+ 机枪弹种(随危险度) + 35% 复制虫。`map_features.feat_danger` 远离出生点采样放置（force=enemy）。（`feat_wrecks` 残骸已独立成自己的 25% 世界滚定，不再绑危险世界。）
 - **每分钟事件世界** `event_world[星球]`（`tick.run_world_events`）：`raid` 空降虫 / `meteor` 矿石陨石雨 / `supply` 物资空投 / `coinfall` 金币雨 / `drones` 敌方战斗机器人(defender/distractor/destroyer) / `barrage` 重炮落点(artillery-projectile，会砸自家建筑)。
 - **战利品风格** `loot_style[星球]`：每星独立滚 4 类箱(材料/设备/宝/永续)各自密度(random²)；某类某区块出现率 = 密度 × `LOOT_FREQ` × `loot_density`。

@@ -97,6 +97,11 @@ end
 -- 色相 h∈[0,1] → 粗略中文色名（仅 debug 显示用，12 档）。
 local HUE_NAMES = {'红', '橙', '黄', '黄绿', '绿', '青', '青蓝', '蓝', '靛', '紫', '品红', '红'}
 local function hue_name(h) return HUE_NAMES[(math.floor(h * 12) % 12) + 1] end
+-- 大概率落常规区间 [lo,hi]（线性），极小概率(p_wild)放飞到全 [0,1] → 偶尔出现近灰/死黑/荧光等"离谱"色。
+local function band_or_wild(lo, hi, p_wild)
+    if math.random() < p_wild then return math.random() end
+    return lo + math.random() * (hi - lo)
+end
 
 -- 清理染地精灵（换图前调用，避免跨轮累积）。染地 sprite 是本场景【唯一】的 rendering 对象，
 -- 故直接一次清空全部即可，不必按 surface 过滤；新一轮的染色在 on_chunk_generated 重绘。
@@ -239,10 +244,8 @@ end
 -- 部分替换(非 all)时选目标，按 mask 限制特殊池：
 --   noise → 一定概率取 exotic(岩浆/油海/氨海/虚空/太空)；ore → 一定概率取 artificial(人造铺装)；
 --   其余走常规自然(水/地)。tree/rock 只会落到自然。
-local function pick_target(src, mask, surface_name)
-    -- 母星走专属(更高)的 exotic 命中率，其它星球用全局值。
-    local p_exotic = (surface_name == 'nauvis' and constants.balance.nauvis_exotic.to_exotic) or constants.balance.tile_to_exotic
-    if mask == 'noise' and math.random() < p_exotic then return rand_tile('exotic') end
+local function pick_target(src, mask)
+    if mask == 'noise' and math.random() < constants.balance.tile_to_exotic then return rand_tile('exotic') end
     if mask == 'ore' and math.random() < constants.balance.tile_to_artificial then return rand_tile('artificial') end
     return rand_tile(pick_natural_class(src.class))
 end
@@ -391,11 +394,12 @@ script.on_event(defines.events.on_surface_cleared, function(event)
     storage.ground_tint[surface.name] = nil
     local bt = constants.balance.ground_tint
     if math.random() < (bt.base + bt.exotic * knobs.exotic) * prob('ground_tint') then
-        local a = 0.05 + (math.random() ^ 3) * 0.32   -- 多半 ~0.05–0.12 淡染；极少 ~0.37 浓染
-        -- 颜色【随机色相】：色相全谱随机，饱和度偏高、明度中等 → 每轮都可能不同色、仍是染色感（不发灰/不刺眼）。
+        -- alpha 很关键：大概率淡染、小概率浓染（立方偏小 + 长尾），[0.05,0.50]，多半 ~0.05–0.13。
+        local a = 0.02 + (math.random() ^ 3) * 0.68
+        -- 颜色：色相【纯随机】；饱和度/明度大概率在好看区间，极小概率(8%)放飞到离谱(近灰/死黑/荧光)。
         local h = math.random()
-        local s = 0.55 + math.random() * 0.45         -- 饱和 [0.55,1.0]
-        local v = 0.40 + math.random() * 0.45         -- 明度 [0.40,0.85]
+        local s = band_or_wild(0.55, 1.0, 0.08)
+        local v = band_or_wild(0.40, 0.85, 0.08)
         local r, g, b = hsv2rgb(h, s, v)
         storage.ground_tint[surface.name] = {r = r, g = g, b = b, a = a}
         dbg_add('染地', string.format('%s a=%.2f rgb(%d,%d,%d)', hue_name(h), a,
@@ -413,9 +417,8 @@ script.on_event(defines.events.on_surface_cleared, function(event)
         local nrules = 1 + math.floor(math.random() ^ 2 * (storage.tile_remap_rules or 3))   -- 偏向少：多半 1 条
         for _ = 1, nrules do
             local src = srcs[math.random(#srcs)]
-            -- 先定 mask：~45% all(整片自然，安全)，否则 noise/跟随树石矿。母星用更低的 mask_all → 更易走 noise(exotic 入口)。
-            local mask_all = (surface.name == 'nauvis' and constants.balance.nauvis_exotic.mask_all) or constants.balance.tile_mask_all
-            local mask = (math.random() < mask_all) and 'all'
+            -- 先定 mask：~45% all(整片自然，安全)，否则 noise/跟随树石矿。
+            local mask = (math.random() < constants.balance.tile_mask_all) and 'all'
                 or ({'noise', 'noise', 'tree', 'rock', 'ore'})[math.random(5)]
             -- 选目标。【约束】all 整片替换不能让星球缺资源：水源→同功能水(full，仍可泵)、地源→任意地表；
             -- exotic(岩浆/油海/氨海/虚空) 只走 noise、artificial(人造铺装) 只走 ore，且都是部分替换(原 tile 仍保留)。
@@ -428,7 +431,7 @@ script.on_event(defines.events.on_surface_cleared, function(event)
                     to = rand_tile('ground')
                 end
             else
-                to = pick_target(src, mask, surface.name)
+                to = pick_target(src, mask)
             end
             if to then
                 rules[#rules + 1] = {
