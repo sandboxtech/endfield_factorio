@@ -481,6 +481,14 @@ script.on_event(defines.events.on_surface_cleared, function(event)
     dbg[#dbg + 1] = string.format('loot material=%.2f equip=%.2f treasure=%.2f perp=%.2f',
         ls.material, ls.equipment, ls.treasure, ls.perp)
 
+    -- 飞船残骸：仅 25% 世界出现；本世界密度 = random()^3（大概率小、小概率大）。独立于危险世界。
+    storage.wreck_density[surface.name] = nil
+    if math.random() < 0.25 then
+        local d = math.random()
+        storage.wreck_density[surface.name] = d * d * d
+        dbg[#dbg + 1] = string.format('wrecks=%.2f', storage.wreck_density[surface.name])
+    end
+
     -- 本表面生成摘要：【始终】缓存进 storage.gen_debug[星球]（与 storage.debug 无关），
     -- 供管理员随时用 /gen 查看（不公告其他玩家）。storage.debug 仅控制是否【实时】打给在线管理员。
     local summary = string.format('[gen] %s r=%d: verdancy=%.2f rockiness=%.2f riches=%.2f danger=%.2f exotic=%.2f | %s',

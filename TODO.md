@@ -41,26 +41,25 @@
 
 ---
 
-## P2 — 世界变体扩展（复用 map_features / surface 的 remap 框架）
+## P2 — 世界变体扩展：同类实体替换（每世界概率规则）
 
-现有只有 `tile_remap`。按同样"源家族 → 目标 + mask + 非线性偏小概率"模式扩 3 类 remap。
+把整片原生实体**整体换成另一种【同类】原型**（不混类）。每世界独立滚：大概率不换、换则全星统一一种目标，
+debug 打印给管理员。**不做 ore_remap（矿石不换）。**
 
-- [ ] **ore_remap：矿物替换**
-  某种原生矿 + 噪声 → 替换为另一种矿，小概率外星矿。
-  复用 `tile_remap` 的 `mask=ore`（跟随原生矿分布）思路，但替换的是 resource 实体而非 tile。
-  落点：`surface.lua`（滚定 + `PLANET_GEN`/`PLANET_SRC` 风格的源池）+ `map_features.lua`（区块内执行）+ `constants.balance` 加概率/`prob_ore_remap`。
-  约束：别把保命矿（铁/铜）整片换没，沿用 tile_remap"不让星球缺资源"约束。
+- [ ] **tree_remap：树换树**
+  本世界以一定概率把所有原生【树】替换成另一种树原型（nauvis/gleba/vulcanus 等树）。同类换同类。
+  滚定：`surface.lua` 存 `storage.tree_remap[星球] = 目标树名`（无则不换）。
+  执行：`map_features.lua` 区块内 `find_entities_filtered{type='tree'}`，逐棵在原位换成目标树（`can_place` 才换）。
+  目标池用 `prototypes.entity` 过滤实际存在的树名，防拼错空转。比 `theme_trees`（只调色）更进一步。
 
-- [ ] **tree_remap：树木换皮**
-  navis 原生树 → gleba / vulcanus 的树。比现有 `theme_trees`（只调色）更进一步，换实体原型。
-  落点：`map_features.lua`（现有 `theme_trees` 旁加 `tree_remap`）+ `constants.balance`。
-  源/目标用 `prototypes.entity` 过滤实际存在的树原型，防拼错空转。
+- [ ] **obstacle_remap：障碍换障碍**
+  本世界以一定概率把所有原生【障碍】（石/巨石）替换成另一种障碍原型（huge-volcanic-rock、外星石/树桩等）。同类换同类。
+  滚定：`surface.lua` 存 `storage.obstacle_remap[星球] = 目标障碍名`。
+  执行：`map_features.lua` 区块内 `find_entities_filtered{type='simple-entity'}`（母星石头）逐个原位替换。
+  目标池同样用 `prototypes.entity` 过滤。
 
-- [ ] **障碍物 / 装饰 remap**
-  母星石头 / 树 → 外星障碍（vulcanus 雷击木、gleba 树、巨型石等）。
-  与 tree_remap 同框架，目标池扩到障碍类实体。落点同上。
-
-> 三者都接 `surface.lua` 滚定 + debug 时给管理员打印（与现有变体一致），并进 P0 的"世界特征提示文字"。
+> 两者都接 `surface.lua` 滚定 + `constants.ensure_defaults` 加 storage 表/概率 + debug 打印（与现有变体一致）。
+> 概率曲线沿用"大概率不出现、出现则温和"原则。
 
 ---
 
@@ -94,16 +93,11 @@
 
 让"何时跃迁"部分交给玩家，做成两个"会员/角色能力"（命名 `yueqian` / `tingliu`）。
 
-- [ ] **`yueqian`：提前发起跃迁**
-  当本轮已有 ≥ 1/5 在线玩家同意启动跃迁程序时，可触发跃迁。
-  需要：投票状态 storage（`storage.warp_vote`）、命令/GUI 投票入口、达阈值调 `reset.reset()`。
-
-- [ ] **`tingliu`：否决跃迁**
-  当投否决的人数 > 存活玩家的 1/5 时，阻止/推迟本次跃迁。
-  与 yueqian 共用投票状态，否决优先级高于同意。
-
-  落点：新增 `scripts/warp_vote.lua`（生命周期 + 阈值判定）+ `commands.lua` 投票命令 + `gui.lua` 投票按钮 + `reset.lua` 接入触发 + `constants.ensure_defaults` 默认值。
-  注意：阈值用"在线/存活玩家数"动态算；处理 0 人、单人、整除取整等边界。
+- [x] **跃迁投票（命令式，无 GUI）**
+  `/yueqian`(=`/warp`) 投同意、`/tingliu` 投反对；不投=忽视。票存 `storage.warp_vote[名]='agree'|'oppose'`，
+  reset 时清空。每次投票后 `warp_vote_eval`：净同意(同意−反对) > ceil(在线人数 / `storage.warp_vote_divisor`[默认5=1/5])
+  → 倒计时 −1 分钟 + **所有投同意者死亡**(传回母星，复活等待 90 秒) + 清空票(需重投再推)。剩余 ≤3 分钟不推。
+  落点 `commands.lua`(投票命令+结算) + `constants`(默认值) + `reset.lua`(清空) + locale(`warp-vote-status/pass`)。
 
 ---
 

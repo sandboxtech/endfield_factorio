@@ -29,14 +29,14 @@
 | `passives.lua` | **动作即时升级的 4 技能**：手搓/移动(封顶 +100%)/挖矿/生命上限。曲线 -50% 下限、log 缓升。独占 craft/mine/changed_position/died 事件。 |
 | `science_exp.lua` | `collect`（跃迁结算在线玩家，不移除）/ `settle`（提前结算：换经验**并移除**整组瓶子，防跃迁重复）/ `preview`（预览）。经验按**玩家名**存 `storage.science_exp`。 |
 | `research.lua` | 研究含 `-science-pack` 名（非 trigger）的科技 → 本轮倒计时 +1 小时并公告。 |
-| `map_features.lua` | **每轮地图风味**（手动放置原生做不到的东西）：`M.knobs()` 本轮整局气质连续旋钮；跨星球 `EXOTIC` 异物（稀疏 simplex 散布）；`theme_trees` 改原生树颜色/灰度（连续插值）；加权战利品 + 品质 + 随机木/铁/钢箱 + 罕见**测试箱**（永续/无底，不可开不可拆可摧毁）+ 远处**防御据点** `feat_outpost`（无限箱 + enemy 子电网 substation/供电接口 + 激光/喷火/机枪守卫塔）；`feat_danger` 危险敌群（独立开关 worm/巢/机枪炮塔+弹/地雷/重炮+弹，force=enemy）；`feat_wrecks` 飞船残骸障碍。`M.generate` 逐区块调用。 |
+| `map_features.lua` | **每轮地图风味**（手动放置原生做不到的东西）：`M.knobs()` 本轮整局气质连续旋钮；跨星球 `EXOTIC` 异物（稀疏 simplex 散布）；`theme_trees` 改原生树颜色/灰度（连续插值）；加权战利品 + 品质 + 随机木/铁/钢箱 + 罕见**测试箱**（永续/无底，不可开不可拆可摧毁）+ 远处**防御据点** `feat_outpost`（无限箱 + enemy 子电网 substation/供电接口 + 激光/喷火/机枪守卫塔）；`feat_danger` 危险敌群（独立开关 worm/巢/机枪炮塔+弹/地雷/重炮+弹，force=enemy）；`feat_wrecks` 飞船残骸障碍（仅 25% 世界、密度 random³ 偏小，独立于危险世界，见 `storage.wreck_density`）。`M.generate` 逐区块调用。 |
 | `world_fx.lua` | 事件驱动的世界效果（经 `events` 总线）的**注册表**：`register(name,event,run)` 每项带全局开关 `storage.world_fx[name]`（默认开，`/c storage.world_fx.xxx=false` 禁用）。现有 **复制虫**(`replicant`)——玩家建筑被虫破坏时原地冒虫（呼应 Comfy infested）。加新 fx 只动本文件 + `ensure_defaults` 开关列表。 |
 | `surface.lua` | 跃迁后逐星球生成：原生 autoplace 调参 + **气候噪声偏置**（`control:moisture/aux/temperature:bias` 修改原生而非覆盖）+ **世界变体**滚定（染地/tile 替换/危险/事件/战利品风格）+ 圆形虚空边界；逐区块应用 tile 替换与染地精灵；母星放市场。各星球资源/自然/气候由声明式 `PLANET_GEN` 表驱动。debug 时向**管理员**打印每次生成的属性。 |
 | `reset.lua` | 跃迁主流程：收集经验 → 杀玩家 → 清星球(异步) → 重置科技 → 随机参数 → 清地图标记。 |
 | `tick.lua` | `on_gui_click` 与 `on_nth_tick(3600)` 的**唯一注册点**：每分钟在线采样 + 给在线玩家各 +1 金币 + 倒计时/提醒 + **事件世界**(`run_world_events` 按 `WORLD_EVENTS` 分发表：raid/meteor/supply/coinfall/drones/barrage)。 |
 | `player_stats.lua` | 行为统计存储（craft/mining/move/deaths/online_minutes，按玩家名，跨跃迁累积）；递增在 `passives.lua`。 |
 | `rocket.lua` | 发射火箭惩罚：每次 `on_rocket_launched` 令本轮 `warp_hours` -1 分钟，公告 + 打印载荷。 |
-| `commands.lua` | 命令：`/reset`/`/players_gui`/`/exp_clear`（管理员）；`/inspect`(=`/chakan`)、`/countdown`(=`/life`/`/daojishi`)、`/preview`(=`/yulan`)、`/settle`(=`/jiesuan` 提前结算)、`/tutorial`(=`/jiaocheng`)、`/suicide`(=`/zisha`)。自定义指令使用时私聊通知管理员。 |
+| `commands.lua` | 命令：管理员 `/reset`/`/players_gui`/`/exp_clear`/`/gen`(=`/shengcheng`,查生成)/`/fixstats`(=`/xiufutongji`)；玩家 `/inspect`(=`/chakan`)、`/preview`(=`/yulan`)、`/tutorial`(=`/jiaocheng`)、`/suicide`(=`/zisha`)；**跃迁投票** `/warp`(=`/yueqian` 同意)/`/tingliu`(反对) → `warp_vote_eval` 结算；会员 `/member`(=`/huiyuan`)/`/unmember`(=`/chehuiyuan`)/`/kickout`(=`/tichu`)。自定义指令使用时公告全体。 |
 | `gui.lua` | 左上角 HUD：轮次按钮、星系词条、🧪 面板、在线名册、管理员按钮。 |
 
 ## 世界变体系统（`surface.lua` + `map_features.lua` + `noise.lua` + `tick.lua` + `world_fx.lua`）
@@ -54,7 +54,7 @@
   - 目标白名单 `TILE_CLASS` 四类：`water`(常规水) / `ground`(自然地表) / `exotic`(岩浆·油海·氨海·虚空·太空) / `artificial`(混凝土系+9 色套色+铺路/landfill/地基)。`valid_pools` 按 `prototypes.tile` 过滤拼错名。
   - mask：`all`(整片，仅安全自然：水→可泵水、地→任意地) / `noise`(平滑成片，**exotic 仅此可选**) / `tree`/`rock`/`ore`(跟随原生树/石/矿分布，**artificial 仅 ore 可选**)。规则数与覆盖面非线性偏小。
   - 约束：整片替换不让星球缺资源；exotic/artificial 只部分替换（原 tile 仍保留）。
-- **危险世界** `danger_theme[星球]`：各敌人类型**独立开关**（worm/spawner/机枪炮塔+弹/地雷/重炮+弹）+ 机枪弹种(随危险度) + 35% 复制虫。`map_features.feat_danger` 远离出生点采样放置（force=enemy），`feat_wrecks` 偶现残骸障碍。
+- **危险世界** `danger_theme[星球]`：各敌人类型**独立开关**（worm/spawner/机枪炮塔+弹/地雷/重炮+弹）+ 机枪弹种(随危险度) + 35% 复制虫。`map_features.feat_danger` 远离出生点采样放置（force=enemy）。（`feat_wrecks` 残骸已独立成自己的 25% 世界滚定，不再绑危险世界。）
 - **每分钟事件世界** `event_world[星球]`（`tick.run_world_events`）：`raid` 空降虫 / `meteor` 矿石陨石雨 / `supply` 物资空投 / `coinfall` 金币雨 / `drones` 敌方战斗机器人(defender/distractor/destroyer) / `barrage` 重炮落点(artillery-projectile，会砸自家建筑)。
 - **战利品风格** `loot_style[星球]`：独立决定出哪些箱体(木/铁/钢) + 测试箱概率。
 

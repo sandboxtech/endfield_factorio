@@ -633,9 +633,11 @@ local WRECKS = {
     'crash-site-spaceship-wreck-medium-1', 'crash-site-spaceship-wreck-medium-2', 'crash-site-spaceship-wreck-medium-3',
     'crash-site-spaceship-wreck-small-1', 'crash-site-spaceship-wreck-small-2', 'crash-site-spaceship-wreck-small-3',
 }
-local function feat_wrecks(surface, lt, W)
-    if not (storage.danger_theme and storage.danger_theme[surface.name]) then return end
-    if chunk_rng(lt, 813) > 0.05 * W.danger * (storage.danger_density or 1) then return end
+-- 残骸：本世界密度由 surface.lua 滚定（仅 25% 世界有，density=random^3 大概率小）。独立于危险世界。
+local function feat_wrecks(surface, lt)
+    local wd = storage.wreck_density and storage.wreck_density[surface.name]
+    if not wd then return end
+    if chunk_rng(lt, 813) > 0.05 * wd * (storage.danger_density or 1) then return end
     local name = WRECKS[math.random(#WRECKS)]
     local pos = surface.find_non_colliding_position(name, {lt.x + math.random(4, 27), lt.y + math.random(4, 27)}, 12, 1)
     if pos then surface.create_entity{name = name, position = pos, force = 'neutral'} end
@@ -698,7 +700,7 @@ function M.generate(surface, lt)
     feat_outpost(surface, lt)     -- 防御据点：远处的无限箱+子电网+激光/喷火/机枪守卫
     -- 危险世界（按 W.danger，与 exotic 正相关）：成簇敌方实体 + 偶现飞船残骸障碍。原版 enemy-base 仍自然出虫。
     feat_danger(surface, lt, A, S, Z, W)
-    feat_wrecks(surface, lt, W)
+    feat_wrecks(surface, lt)      -- 飞船残骸：仅 25% 世界、密度立方偏小（独立于危险世界）
 end
 
 return M

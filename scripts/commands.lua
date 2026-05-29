@@ -195,28 +195,56 @@ end
 add_command('suicide', {'wn.suicide-help'}, suicide_cmd)
 add_command('zisha', {'wn.suicide-help'}, suicide_cmd)
 
--- /warp（/yueqian 同功能）：主动跃迁——把本轮【自动跃迁倒计时】-1 分钟（像火箭惩罚一样提前世界跃迁）。
--- 代价：本人立即死亡、复活等待 90 秒（比普通自杀 3 秒长得多）。
--- 倒计时剩余 ≤10 分钟时不生效（防临门一脚白嫖，也避免减成负数立即触发跃迁）。
-local function warp_cmd(command)
-    local player = command.player_index and game.get_player(command.player_index)
-    if not player or not player.character then return end
-    local last_run_ticks = game.tick - (storage.run_start_tick or game.tick)
-    local remain = (storage.warp_hours or 1) * constants.hour_to_tick - last_run_ticks
-    if remain <= 3 * constants.min_to_tick then
-        player.print('距跃迁不足 3 分钟，主动跃迁不生效。')
-        return
+-- ── 跃迁投票 ───────────────────────────────────────────────────────────────
+-- 不建 GUI，纯命令投票"本世界是否提前跃迁"：/yueqian(=/warp) 同意、/tingliu 反对。不投票=忽视。
+-- 票存 storage.warp_vote[玩家名]='agree'|'oppose'（再投覆盖；跃迁 reset 时清空）。
+-- 结算（每次投票后）：净同意 = 同意人数 - 反对人数（每个反对抵消 1 个同意）；
+--   净同意 > ceil(在线人数 / storage.warp_vote_divisor[默认5]) → 倒计时 -1 分钟、【所有投同意者死亡】(传回母星，复活等待默认90秒)，
+--   并【清空所有票】（需重新投票才能再推一次）。剩余 ≤3 分钟时不再推（避免减成负数/临门白干）。
+local function warp_vote_eval()
+    storage.warp_vote = storage.warp_vote or {}
+    local agree, oppose = 0, 0
+    for _, v in pairs(storage.warp_vote) do
+        if v == 'agree' then agree = agree + 1 elseif v == 'oppose' then oppose = oppose + 1 end
     end
-    local push_ticks = storage.warp_push_ticks or 3600   -- 可 /c storage.warp_push_ticks 热改
-    storage.warp_hours = (storage.warp_hours or 1) - push_ticks / constants.hour_to_tick
-    players.kill_on_nauvis(player)
-    player.ticks_to_respawn = storage.warp_push_respawn_ticks or 5400   -- 复活等待；覆盖 on_player_died 默认值
-    local rh, rm = util.hm(storage.warp_hours * constants.hour_to_tick - last_run_ticks)
-    game.print({'wn.warp-push', player.name, push_ticks / constants.min_to_tick, rh, rm})
-    gui.refresh_countdown()   -- 倒计时已变 → 立刻刷新所有人头顶 UI（不等每分钟那次）
+    local n = #game.connected_players
+    local threshold = math.ceil(n / (storage.warp_vote_divisor or 5))   -- 默认 1/5，可 /c storage.warp_vote_divisor 热改
+    local net = agree - oppose
+    game.print({'wn.warp-vote-status', agree, oppose, net, threshold})
+    if net > threshold then
+        local last = game.tick - (storage.run_start_tick or game.tick)
+        local remain = (storage.warp_hours or 1) * constants.hour_to_tick - last
+        if remain > 3 * constants.min_to_tick then
+            local push = storage.warp_push_ticks or 3600   -- 可 /c storage.warp_push_ticks 热改
+            storage.warp_hours = (storage.warp_hours or 1) - push / constants.hour_to_tick
+            -- 同意者付代价：传回母星死亡、复活等待（默认 90 秒，可 /c storage.warp_push_respawn_ticks 热改）
+            for _, p in pairs(game.connected_players) do
+                if storage.warp_vote[p.name] == 'agree' and p.character then
+                    players.kill_on_nauvis(p)
+                    p.ticks_to_respawn = storage.warp_push_respawn_ticks or 5400
+                end
+            end
+            local rh, rm = util.hm(storage.warp_hours * constants.hour_to_tick - last)
+            game.print({'wn.warp-vote-pass', push / constants.min_to_tick, rh, rm})
+            gui.refresh_countdown()
+        end
+        storage.warp_vote = {}   -- 推进后清空，需重新投票才能再推
+    end
 end
-add_command('warp', '主动跃迁：自动跃迁倒计时-1分钟，本人复活等待90秒；剩余≤3分钟不生效', warp_cmd)
-add_command('yueqian', '主动跃迁：自动跃迁倒计时-1分钟，本人复活等待90秒；剩余≤3分钟不生效', warp_cmd)
+
+-- 投票命令工厂：vote = 'agree' / 'oppose'。
+local function warp_vote_cmd(vote)
+    return function(command)
+        local player = command.player_index and game.get_player(command.player_index)
+        if not player then return end
+        storage.warp_vote = storage.warp_vote or {}
+        storage.warp_vote[player.name] = vote
+        warp_vote_eval()
+    end
+end
+add_command('warp', '投票【同意】本世界提前跃迁：净同意超过在线人数1/5时倒计时-1分钟、同意者死亡', warp_vote_cmd('agree'))
+add_command('yueqian', '投票【同意】本世界提前跃迁：净同意超过在线人数1/5时倒计时-1分钟、同意者死亡', warp_vote_cmd('agree'))
+add_command('tingliu', '投票【反对】本世界跃迁：每个反对抵消1个同意', warp_vote_cmd('oppose'))
 
 -- /member <玩家名>（/huiyuan 同功能）：授予会员资格。仅会员/管理员可用。
 local function member_grant_cmd(command)
