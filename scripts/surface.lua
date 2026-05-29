@@ -533,6 +533,21 @@ script.on_event(defines.events.on_surface_cleared, function(event)
         dbg_add('障碍', rule.to and ('→' .. rule.to) or 'mixed(每个随机)')
     end
 
+    -- 流体资源互换：小概率激活；激活时【二选一】门控——产流体的资源(原油/锂卤水/氟喷口/硫酸喷泉)变成随机另一种喷口。
+    --   模式A 每喷口各自小概率 p (零星散布，每星每世界 p 不同)；模式B noise 大团内整体突变 (成片)。应用见 map_features.feat_fluid_remap。
+    storage.fluid_remap = storage.fluid_remap or {}          -- 老存档兜底
+    storage.fluid_remap[surface.name] = nil
+    if math.random() < constants.balance.fluid_remap.base * prob('fluid_remap') then
+        local rule
+        if math.random() < 0.5 then
+            rule = {p = 0.08 + math.random() ^ 2 * 0.8}   -- 模式A：单喷口突变概率 [0.08,0.88]，偏小
+        else
+            rule = {seed = math.random(1, 4294967295), threshold = 0.45 - math.random() ^ 3 * 0.6}   -- 模式B：noise 成片(多半小斑块)
+        end
+        storage.fluid_remap[surface.name] = rule
+        dbg_add('喷口', rule.p and string.format('p=%.2f', rule.p) or 'noise')
+    end
+
     -- 本表面生成摘要：【始终】缓存进 storage.gen_debug[星球]（与 storage.debug 无关），供 /gen 弹窗查看。
     -- 缓存为【多行数组】：首行 = 星球+半径+气质旋钮；其后每个变体各占一行（缩进）→ 窗口里逐行换行，不再逗号挤一行。
     local head = string.format('%s r=%d  verdancy=%.2f rockiness=%.2f riches=%.2f danger=%.2f exotic=%.2f',

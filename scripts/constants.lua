@@ -37,6 +37,7 @@ local M = {
         -- 源天然自限（find 只命中该星球实际存在的障碍），目标跨类/跨星球 → 概率可放高，不会误伤。
         tree_remap     = {base = 0.60},               -- 【已并入 obstacle_remap】保留仅为兼容，未再使用
         obstacle_remap = {base = 0.60},               -- 统一障碍互换世界出现率（树/石/遗迹/冰山/叠层岩跨类，噪声门控）
+        fluid_remap    = {base = 0.12},               -- 流体资源互换世界出现率（原油/锂卤水/氟喷口/硫酸喷泉 整星换成另一种喷口，小概率）
         -- 出现率 = base；选中哪种事件按 weights 加权(缺省 1)，drones 更低 → 无人机世界更罕见
         event       = {base = 0.1, weights = {drones = 0.3}},
         -- tile 替换内部权重
@@ -72,6 +73,7 @@ function M.ensure_defaults()
         prob_tile_remap = 3,              -- tile 替换世界
         prob_tree_remap = 1,              -- 树换树世界（0=关）
         prob_obstacle_remap = 1,          -- 障碍换障碍世界（0=关）
+        prob_fluid_remap = 1,             -- 流体资源互换世界（0=关）
         prob_danger = 1,                  -- 危险世界
         prob_event = 1,                   -- 每分钟事件世界
         danger_density = 1,               -- 危险世界里敌人/残骸的密度
@@ -111,7 +113,7 @@ function M.ensure_defaults()
     for _, key in ipairs({'radius_of', 'science_exp', 'player_stats', 'platform_age',
                           'ground_tint', 'tile_remap', 'danger_theme', 'event_world', 'loot_style', 'members',
                           'last_respawn_run', 'move_pos', 'bad_items', 'bad_entities', 'gen_debug', 'warp_vote', 'wreck_density',
-                          'tree_remap', 'obstacle_remap'}) do
+                          'tree_remap', 'obstacle_remap', 'fluid_remap'}) do
         storage[key] = storage[key] or {}
     end
     -- world_fx 全局开关（默认开；/c storage.world_fx.xxx=false 单独禁用某事件驱动效果）。

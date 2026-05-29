@@ -788,6 +788,56 @@ local function feat_entity_remap(surface, lt)
     end
 end
 
+-- 流体资源互换：小概率把本星【所有产流体的资源】(原油/锂卤水/氟喷口/硫酸喷泉)整体换成另一种喷口。
+-- 源自动识别（find resource → 开采产物含 fluid 的才算，固体矿/废料不动）；目标由本星本轮滚定(surface.lua)。
+-- 含量【按目标喷口的最小值生成】(minimum × 1.5~5.5 随机)，量级随目标自适应、不受源贫富影响。
+local FLUID_RESOURCES = {'crude-oil', 'sulfuric-acid-geyser', 'fluorine-vent', 'lithium-brine'}
+local fluid_pool   -- 懒构建有效名缓存
+local function fluids_pool() fluid_pool = fluid_pool or build_pool(FLUID_RESOURCES); return fluid_pool end
+-- 从有效喷口池里随机取一个【不是 current 的】其它喷口。
+local function pick_other_fluid(current)
+    local pool, others = fluids_pool(), {}
+    for _, n in ipairs(pool) do if n ~= current then others[#others + 1] = n end end
+    return #others > 0 and others[math.random(#others)] or nil
+end
+
+-- 该资源原型开采是否产流体（区分喷口 vs 固体矿；比 resource_category 命名可靠）。
+local function yields_fluid(proto)
+    local mp = proto.mineable_properties
+    for _, pr in ipairs(mp and mp.products or {}) do
+        if pr.type == 'fluid' then return true end
+    end
+    return false
+end
+
+-- 流体资源互换：rm = storage.fluid_remap[星球]（surface.lua 滚定），命中的喷口变成【随机另一种】喷口。
+--   两种门控二选一：
+--     · {p=概率}        → 每个产流体资源【各自】以概率 p 突变（零星散布，每星每世界 p 不同）
+--     · {seed,threshold} → 仅落在 noise 大团内的喷口整体突变（成片，多半小斑块）
+--   含量按目标喷口 minimum × 1.5~5.5 生成（量级随目标自适应）。同片油田可能混出多种喷口。
+local function feat_fluid_remap(surface, lt)
+    local rm = storage.fluid_remap and storage.fluid_remap[surface.name]
+    if not rm then return end
+    if type(rm) == 'number' then rm = {p = rm} end   -- 兼容：曾短暂存过裸 p 数值
+    for _, e in pairs(surface.find_entities_filtered{area = {{lt.x, lt.y}, {lt.x + 32, lt.y + 32}}, type = 'resource'}) do
+        if e.valid and yields_fluid(e.prototype) then
+            local pos = e.position
+            local hit = rm.p and (math.random() < rm.p)
+                or (rm.seed and noise.fractal(noise.octaves.smooth, pos.x, pos.y, rm.seed) > (rm.threshold or 0))
+            if hit then
+                local target = pick_other_fluid(e.name)
+                if target and prototypes.entity[target] then
+                    local amount = math.floor((prototypes.entity[target].minimum_resource_amount or 1) * (1.5 + math.random() * 4))
+                    e.destroy()
+                    if surface.can_place_entity{name = target, position = pos} then
+                        surface.create_entity{name = target, position = pos, amount = amount}
+                    end
+                end
+            end
+        end
+    end
+end
+
 local REAL_PLANETS = {nauvis = true, vulcanus = true, fulgora = true, gleba = true, aquilo = true}
 
 -- 每个真实星球的圆内区块都调用。只做原生做不到的事：母星废料/跨星异物(手动) + 树木调色(改原生树) +
@@ -803,6 +853,7 @@ function M.generate(surface, lt)
     end
     for _, def in ipairs(EXOTIC) do place_feature(surface, lt, def, A, S, Z, W) end
     feat_entity_remap(surface, lt)    -- 统一障碍互换（树/石/遗迹跨类，噪声门控）；在调色前，让换出来的新树也被 theme_trees 调色
+    feat_fluid_remap(surface, lt)     -- 流体资源互换（原油/锂卤水/氟喷口/硫酸喷泉 小概率整星换成另一种）
     theme_trees(surface, lt)
     -- 四类箱子各自独立(外观=内容)：每世界密度 random^2（surface.lua 滚定），频率互不相关。
     feat_material(surface, lt)    -- 钢箱：材料

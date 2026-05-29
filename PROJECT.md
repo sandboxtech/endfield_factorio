@@ -57,7 +57,8 @@
 - **危险世界** `danger_theme[星球]`：各敌人类型**独立开关**（worm/spawner/机枪炮塔+弹/地雷/重炮+弹）+ 机枪弹种(随危险度) + 35% 复制虫。`map_features.feat_danger` 远离出生点采样放置（force=enemy）。（`feat_wrecks` 残骸已独立成自己的 25% 世界滚定，不再绑危险世界。）
 - **每分钟事件世界** `event_world[星球]`（`tick.run_world_events`）：`raid` 空降虫 / `meteor` 矿石陨石雨 / `supply` 物资空投 / `coinfall` 金币雨 / `drones` 敌方战斗机器人(defender/distractor/destroyer) / `barrage` 重炮落点(artillery-projectile，会砸自家建筑)。
 - **战利品风格** `loot_style[星球]`：每星独立滚 4 类箱(材料/设备/宝/永续)各自密度(random²)；某类某区块出现率 = 密度 × `LOOT_FREQ` × `loot_density`。
-- **障碍互换** `obstacle_remap[星球]`（原 `tree_remap` 已并入）：把本星【现地所有带碰撞盒障碍：树/石/遗迹/冰山/叠层岩…】(`type=tree/simple-entity`)在**噪声大团**内**跨类**原位替换——树↔石↔遗迹皆可，不看脚下 tile。**大概率(85%)整片统一换成同一种**(单一主题、协调)，小概率(15%)每个各自随机换成另一种(跨类大杂烩)。源天然自限(`find` 只命中本星现有实体)、目标跨星球。目标池 `OBSTACLE_TARGETS`(树+石+fulgora 遗迹) 运行时按 `entity_ok` 校验(无效**报告管理员**并剔除)。见 `map_features.feat_entity_remap`。**不做矿石替换。**
+- **障碍互换** `obstacle_remap[星球]`（原 `tree_remap` 已并入）：把本星【现地所有带碰撞盒障碍：树/石/遗迹/冰山/叠层岩…】(`type=tree/simple-entity`)在**噪声大团**内**跨类**原位替换——树↔石↔遗迹皆可，不看脚下 tile。**大概率(85%)整片统一换成同一种**(单一主题、协调)，小概率(15%)每个各自随机换成另一种(跨类大杂烩)。源天然自限(`find` 只命中本星现有实体)、目标跨星球。目标池 `OBSTACLE_TARGETS`(树+石+fulgora 遗迹) 运行时按 `entity_ok` 校验(无效**报告管理员**并剔除)。见 `map_features.feat_entity_remap`。**不做固体矿替换。**
+- **流体资源互换** `fluid_remap[星球]`（小概率激活）：把产流体的资源(原油/锂卤水/氟喷口/硫酸喷泉)变成**随机另一种喷口**，二选一门控——`{p}` 每喷口各自以概率 p 突变(零星，p∈[0.08,0.88] 每星每世界不同) 或 `{seed,threshold}` noise 大团内整体突变(成片)。源自动识别(`type=resource` 且开采产物含 `fluid`，固体矿/废料不动)；含量按目标喷口 `minimum_resource_amount × 1.5~5.5` 生成。同片油田可能混出多种。见 `map_features.feat_fluid_remap`。
 
 ## 关键 storage 字段
 
@@ -67,10 +68,10 @@
 - `storage.player_stats[玩家名]`：行为统计（驱动技能 + 金币）。
 - `storage.last_respawn_run[idx]`：上次复活的 `run`，判"本世界是否首次复活"。
 - 地图：`storage.radius / radius_min / radius_max / radius_of / difficulty / *_multiplier / local_specialty_multiplier`。
-- 世界变体（每星球，每轮重滚）：`ground_tint / tile_remap / danger_theme / event_world / loot_style / obstacle_remap({seed,threshold[,to]}) / wreck_density`（`tree_remap` 已并入 `obstacle_remap`，仅兼容保留）。
+- 世界变体（每星球，每轮重滚）：`ground_tint / tile_remap / danger_theme / event_world / loot_style / obstacle_remap({seed,threshold[,to]}) / fluid_remap / wreck_density`（`tree_remap` 已并入 `obstacle_remap`，仅兼容保留）。
 - **可调常量**（默认值由 `constants.ensure_defaults` 设 —— on_init / on_configuration_changed / 每轮 reset 都调用，幂等不覆盖；游戏内 `/c storage.xxx=N` 动态调）：
   - `debug`(默认 true，向管理员打印每次生成属性)
-  - 概率乘数（0=关）：`prob_ground_tint / prob_tile_remap / prob_obstacle_remap / prob_danger / prob_event`（`prob_tree_remap` 已并入障碍）
+  - 概率乘数（0=关）：`prob_ground_tint / prob_tile_remap / prob_obstacle_remap / prob_fluid_remap / prob_danger / prob_event`（`prob_tree_remap` 已并入障碍）
   - 强度：`danger_density`(敌人/残骸密度) / `loot_density`(战利品箱全局密度) / `event_intensity`(事件落点) / `tile_remap_rules`(最多规则数)
   - `storage.world_fx.<name>`(默认 true)：事件驱动效果总闸，false 全局禁用（如 `replicant` 复制虫）
   - `storage.event_types.<raid/meteor/supply/coinfall/drones/barrage>`(默认 true)：每分钟事件世界各类型开关，`/c` 设 false 即排除某类型
