@@ -24,6 +24,27 @@ local M = {
         'cryogenic-science-pack', 'promethium-science-pack', 'military-science-pack',
     },
 
+    -- 跃迁倒计时配置（单位：分钟）。每轮开局倒计时 = warp_initial_minutes；之后每完成一种【科技瓶科技】
+    -- （-science-pack 结尾，含 SA trigger 解锁瓶）→ 按下表给本轮倒计时 +对应分钟数；表里没有的瓶用
+    -- warp_extend_default_minutes。改这里即可单独平衡各瓶价值。
+    -- 注：内部 storage.warp_hours 仍以【小时】记账（被 gui/tick/rocket/commands 共用），加时按 /60 换算。
+    warp_initial_minutes = 10,
+    warp_extend_default_minutes = 60,
+    warp_extend_minutes = {
+        ['automation-science-pack']      = 20,
+        ['logistic-science-pack']        = 30,
+        ['military-science-pack']        = 60,
+        ['chemical-science-pack']        = 60,
+        ['production-science-pack']      = 60,
+        ['utility-science-pack']         = 60,
+        ['space-science-pack']           = 60,
+        ['metallurgic-science-pack']     = 60,
+        ['electromagnetic-science-pack'] = 60,
+        ['agricultural-science-pack']    = 60,
+        ['cryogenic-science-pack']       = 120,
+        ['promethium-science-pack']      = 120,
+    },
+
     -- 世界变体调参【一览表】：概率/权重的硬编码基数集中于此，方便统一调平衡。
     -- 纯表现性的内部曲线（染地 alpha 立方、noise threshold、亮度/昼夜抖动）留在 surface.lua 原地。
     balance = {

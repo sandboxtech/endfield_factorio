@@ -86,18 +86,30 @@ script.on_event(defines.events.on_player_changed_position, function(e)
     storage.move_pos = storage.move_pos or {}
     local pos, si = p.position, p.surface.index
     local a = storage.move_pos[p.index]
-    if a and a.si == si and not p.vehicle then
-        -- 曼哈顿距离 |dx|+|dy|，免开方。
-        local d = math.abs(pos.x - a.x) + math.abs(pos.y - a.y)
-        -- 阈值放宽到 50：传奇装甲+大量机械腿单 tick 也就几格，远低于 50；
-        -- 真正的瞬移（跃迁/死亡传送回出生点）通常几百上千格、或换 surface（已被 si 过滤）。
-        if d < MOVE_MAX_STEP then
-            local s = player_stats.get(p.index)
-            s.move_distance = s.move_distance + d
-            apply_one(p, M.abilities[2])
+    if a and a.si == si then
+        if not p.vehicle then
+            -- 曼哈顿距离 |dx|+|dy|，免开方。
+            local d = math.abs(pos.x - a.x) + math.abs(pos.y - a.y)
+            -- 阈值放宽到 50：传奇装甲+大量机械腿单 tick 也就几格，远低于 50；
+            -- 真正的瞬移（跃迁/死亡传送回出生点）通常几百上千格、或换 surface（已被 si 过滤）。
+            if d < MOVE_MAX_STEP then
+                local s = player_stats.get(p.index)   -- (a) 只取一次；直接用 s.move_distance 算修正，不再二次 get
+                s.move_distance = s.move_distance + d
+                -- (c) 移动技能修正随距离 log 缓升，单 tick 变化肉眼不可见 → 仅当较上次施加值变动 ≥0.1%
+                -- 才写引擎 modifier，省掉每走一 tick 的 math.log + modifier 写入。a.f 记上次已施加值。
+                local ab = M.abilities[2]
+                local f = ab.factor(s.move_distance)
+                if ab.cap and f > ab.cap then f = ab.cap end
+                if not a.f or f - a.f >= 0.001 then
+                    ab.apply(p, f)
+                    a.f = f
+                end
+            end
         end
+        a.x, a.y = pos.x, pos.y   -- (b) 原地更新坐标，复用同一张表（不再每 tick 新建表，省 GC）
+    else
+        storage.move_pos[p.index] = {x = pos.x, y = pos.y, si = si}
     end
-    storage.move_pos[p.index] = {x = pos.x, y = pos.y, si = si}
 end)
 
 -- 个人成就统计：仅记录【玩家角色亲手】击杀的敌人（炮塔/机器人击杀不计），虫巢额外记 nest_count。

@@ -17,7 +17,9 @@ script.on_event(defines.events.on_research_finished, function(event)
     end
 
     player_stats.bump_connected('key_research')   -- 关键科技：解锁科技瓶 → 延长跃迁时间
-    storage.warp_hours = (storage.warp_hours or 1) + 1
+    -- 每种瓶延长的分钟数可在 constants.warp_extend_minutes 单独配置；表里没有的用默认值。
+    local add_min = constants.warp_extend_minutes[research.name] or constants.warp_extend_default_minutes
+    storage.warp_hours = (storage.warp_hours or (constants.warp_initial_minutes / 60)) + add_min / 60
     local last_run_ticks = game.tick - (storage.run_start_tick or game.tick)
     local total_ticks = storage.warp_hours * constants.hour_to_tick
     local th, tm = util.hm(total_ticks)                 -- 本轮共

@@ -139,7 +139,7 @@ local LOOT = {
         'iron-gear-wheel',  'copper-cable',  'iron-stick',  'engine-unit',  'electric-engine-unit',  -- 基础中间件
         'electronic-circuit',  'advanced-circuit',  'processing-unit',  'quantum-processor',  -- 电路
         'flying-robot-frame',  'low-density-structure',  'battery',  'explosives',  'sulfur',  -- 高级中间件
-        'rocket-fuel',  'solid-fuel',  'nuclear-fuel',                                   -- 燃料
+        'rocket-fuel',  'solid-fuel',  'nuclear-fuel',                                -- 燃料
         'uranium-235',  'uranium-238',  'uranium-fuel-cell',  'depleted-uranium-fuel-cell',  'fusion-power-cell',  -- 核
         'tungsten-carbide',  'tungsten-plate',  'holmium-plate',  'lithium-plate',  'carbon-fiber',  'superconductor',  'supercapacitor',  -- 星球特产材料
         'concrete',  'refined-concrete',  'hazard-concrete',  'refined-hazard-concrete',  'landfill',  -- 铺地
@@ -233,7 +233,7 @@ local LOOT_WEIGHTS = {
     -- 钢箱 = 材料箱：基础材料/原料 + 大概率普通科技瓶。普通品质、常见、装得多。
     material = {
         raw = 25, material = 60, logistics = 10,  circuit = 1,  power = 1,
-        production = 0,  module = 2,  military = 0,  equipment = 1,  science = 3,
+        production = 0,  module = 2,  military = 1,  equipment = 1,  science = 3,
         gleba = 1,  space = 1,
     },
     -- 铁箱 = 设备箱：实用设备/机器为主，含载具/太空件，少量科技瓶。普通品质、中等数量。
@@ -250,14 +250,16 @@ local LOOT_WEIGHTS = {
     },
 }
 
--- 木箱(宝箱)精选池：每箱 1~2 件高品质高价值物品 —— 顶级插件(3级) + 星球特产机器/顶级生产建筑。
+-- 木箱(宝箱)精选池：每箱 1~2 件高品质高价值物品。只放【玩家初始奖励(respawn_gifts.pack_gifts)里
+-- 没有的】顶级物品 —— 顶级插件(3级，初始奖励只给基础级) + rocket-silo。
+-- foundry/electromagnetic-plant/biochamber/cryogenic-plant/recycler/big-mining-drill 已作为初始
+-- 奖励发放，宝箱再给等于重复 → 移除。不放科技瓶(瓶子走科技瓶经验体系，不作宝箱奖励)。
 -- (mech-armor/power-armor-mk2/spidertron/tank 已归 equipment，beacon 归 production)
 local TREASURE_POOL = {
+    'rocket-fuel', 'processing-unit','low-density-structure',   
+    'productivity-module-2', 'speed-module-2', 'efficiency-module-2', 'quality-module-2',  -- 顶级插件
     'productivity-module-3', 'speed-module-3', 'efficiency-module-3', 'quality-module-3',  -- 顶级插件
-    'foundry', 'electromagnetic-plant', 'biochamber', 'cryogenic-plant', 'recycler',       -- 星球特产机器
-    'big-mining-drill', 'rocket-silo', 'fusion-reactor',                                    -- 顶级生产建筑
-    'space-platform-starter-pack',
-    'metallurgic-science-pack',  'electromagnetic-science-pack',  'cryogenic-science-pack',  'promethium-science-pack',
+    'rocket-silo',
 }
 
 -- 按给定【类权重表】选类、类内等概率选物品。weights[cat] 为 0/nil 即跳过该类。
