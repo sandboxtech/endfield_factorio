@@ -827,7 +827,11 @@ local function feat_fluid_remap(surface, lt)
             if hit then
                 local target = pick_other_fluid(e.name)
                 if target and prototypes.entity[target] then
-                    local amount = math.floor((prototypes.entity[target].minimum_resource_amount or 1) * (1.5 + math.random() * 4))
+                    -- 含量基于目标喷口 normal（恒正：油/硫酸 30万、氟 10万、锂卤 5万）；硬下限保证 >0。
+                    -- 注意 minimum_resource_amount 可能为 0，且 Lua 中 0 是真值、`or` 兜不住 → 必须 max(1,…)。
+                    local base = prototypes.entity[target].normal_resource_amount
+                    if not base or base <= 0 then base = 100000 end
+                    local amount = math.max(1, math.floor(base * (0.5 + math.random())))   -- normal × 0.5~1.5
                     e.destroy()
                     if surface.can_place_entity{name = target, position = pos} then
                         surface.create_entity{name = target, position = pos, amount = amount}
