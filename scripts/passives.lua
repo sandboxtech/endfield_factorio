@@ -83,6 +83,7 @@ end)
 script.on_event(defines.events.on_player_changed_position, function(e)
     local p = game.get_player(e.player_index)
     if not (p and p.character) then return end
+    storage.move_pos = storage.move_pos or {}
     local pos, si = p.position, p.surface.index
     local a = storage.move_pos[p.index]
     if a and a.si == si and not p.vehicle then

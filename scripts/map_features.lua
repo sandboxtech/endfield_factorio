@@ -312,6 +312,7 @@ end
 -- 此处统一拦截：无效则跳过，并把名字报告给所有【在线管理员】（同名只报一次，避免刷屏）。
 local function item_ok(name)
     if prototypes.item[name] then return true end
+    storage.bad_items = storage.bad_items or {}
     if not storage.bad_items[name] then
         storage.bad_items[name] = true
         log('endfield: 跳过无效战利品物品名: ' .. tostring(name))

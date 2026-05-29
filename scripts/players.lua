@@ -69,6 +69,7 @@ end
 -- 同时被 on_player_created（开局直接领）和 on_player_respawned（跃迁后第一次死亡复活）调用。
 local function try_gift_first_in_world(player)
     if not player or not player.character then return end
+    storage.last_respawn_run = storage.last_respawn_run or {}
     if storage.last_respawn_run[player.index] == storage.run then return end
     storage.last_respawn_run[player.index] = storage.run
     respawn_gifts.on_first_respawn(player)

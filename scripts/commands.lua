@@ -37,9 +37,10 @@ end
 -- ── 会员系统 ───────────────────────────────────────────────────────────────
 -- 会员名单存 storage.members[玩家名]=true。管理员永远算会员（用来发展第一批会员）。
 local function is_member(player)
+    storage.members = storage.members or {}
     if not player then return false end
     if player.admin then return true end
-    return (storage.members and storage.members[player.name]) or false
+    return storage.members[player.name] or false
 end
 
 -- 取参数里的第一个玩家名。
@@ -211,6 +212,7 @@ local function member_revoke_cmd(command)
     local sink = actor or game
     local target = resolve_target(command, sink)
     if not target then return end
+    storage.members = storage.members or {}
     if not storage.members[target.name] then sink.print({'wn.member-not', target.name}); return end
     storage.members[target.name] = nil
     game.print({'wn.member-revoked', target.name})

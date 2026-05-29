@@ -511,7 +511,7 @@ script.on_event(defines.events.on_chunk_generated, function(event)
     local surface = event.surface
     local left_top = event.area.left_top
 
-    local r = storage.radius_of[surface.name] or storage.radius
+    local r = storage.radius_of[surface.name] or storage.radius or 2048
 
     -- 圆外格子铺虚空（整块都在圆内则跳过此段）
     if left_top.x * left_top.x + left_top.y * left_top.y >= r * r / 2 then

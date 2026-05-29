@@ -33,13 +33,18 @@ local DEFAULTS = {
 -- 统计按【玩家名】存储：名字跨 index 稳定，被删玩家用同名回归即自动继承，删玩家时无需动 storage。
 -- storage.player_stats 由 constants.ensure_defaults 保证存在（on_init/on_configuration_changed）。
 function M.get(player_index)
+    storage.player_stats = storage.player_stats or {}
     local player = game.get_player(player_index)
     local key = player and player.name or player_index
     local s = storage.player_stats[key]
     if not s then
         s = {}
-        for k, v in pairs(DEFAULTS) do s[k] = v end
         storage.player_stats[key] = s
+    end
+    -- 补齐缺失的默认键：新增字段（如 kill_count/nest_count）对老存档里已存在的表也生效，
+    -- 否则 s.<新字段> 会是 nil → 自增时 nil + 1 报错。
+    for k, v in pairs(DEFAULTS) do
+        if s[k] == nil then s[k] = v end
     end
     return s
 end

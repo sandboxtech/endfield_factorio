@@ -5,6 +5,7 @@ local M = {}
 -- 取某玩家的累计经验表（按【玩家名】存储）。create=true 时确保表存在（用于写入）；
 -- 否则没经验时返回 nil。
 function M.player_exp(player, create)
+    storage.science_exp = storage.science_exp or {}
     local exp = storage.science_exp[player.name]
     if not exp and create then
         exp = {}
