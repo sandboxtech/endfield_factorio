@@ -289,3 +289,17 @@ end
 
 add_command('kickout', {'wn.kickout-help'}, member_kick_cmd)
 add_command('tichu', {'wn.kickout-help'}, member_kick_cmd)
+
+-- ── 中文命令名（与拼音/英文同功能）────────────────────────────────────────────
+-- 命令名是 UTF-8 字符串，中文可注册；玩家需用输入法在控制台敲中文。
+-- 用 pcall 兜底：万一某版本/环境不接受中文命令名，只是中文别名不生效，不影响其余命令与场景加载。
+local function zh_alias(name, help, fn) pcall(add_command, name, help, fn) end
+zh_alias('教程', {'wn.tutorial-help'}, tutorial_cmd)
+zh_alias('查看', {'wn.inspect-help'}, inspect_cmd)
+zh_alias('预览', {'wn.preview-help'}, preview_cmd)
+zh_alias('自杀', {'wn.suicide-help'}, suicide_cmd)
+zh_alias('跃迁', '投票同意本世界提前跃迁（够票则倒计时-1分钟、同意者死亡）', warp_vote_cmd('agree'))
+zh_alias('停留', '投票反对本世界跃迁（每个反对抵消1个同意）', warp_vote_cmd('oppose'))
+zh_alias('给会员', {'wn.member-help'}, member_grant_cmd)
+zh_alias('撤会员', {'wn.unmember-help'}, member_revoke_cmd)
+zh_alias('踢出', {'wn.kickout-help'}, member_kick_cmd)

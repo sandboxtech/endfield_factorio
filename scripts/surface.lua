@@ -482,6 +482,7 @@ script.on_event(defines.events.on_surface_cleared, function(event)
         ls.material, ls.equipment, ls.treasure, ls.perp)
 
     -- 飞船残骸：仅 25% 世界出现；本世界密度 = random()^3（大概率小、小概率大）。独立于危险世界。
+    storage.wreck_density = storage.wreck_density or {}   -- 老存档兜底：ensure_defaults 没补到也不崩
     storage.wreck_density[surface.name] = nil
     if math.random() < 0.25 then
         local d = math.random()
@@ -490,6 +491,8 @@ script.on_event(defines.events.on_surface_cleared, function(event)
     end
 
     -- 树换树 / 障碍换障碍：各自小概率把本星【所有树/所有石头】整体换成另一种【同类】原型（全星统一一种）。
+    storage.tree_remap = storage.tree_remap or {}            -- 老存档兜底
+    storage.obstacle_remap = storage.obstacle_remap or {}    -- 老存档兜底
     storage.tree_remap[surface.name] = nil
     if math.random() < constants.balance.tree_remap.base * prob('tree_remap') then
         storage.tree_remap[surface.name] = map_features.pick_tree_target()
