@@ -155,11 +155,7 @@ end)
 local function tutorial_cmd(command)
     local viewer = command.player_index and game.get_player(command.player_index)
     if not viewer then return end
-    -- 教程文案里的【起步分钟】【飞船寿命】等数字由 storage 实时填入（/c 热改后教程同步变）。
-    local body = {'wn.tutorial',
-                  storage.warp_initial_minutes or 10,   -- __1__ 跃迁倒计时起步分钟
-                  storage.platform_lifetime or 10}      -- __2__ 飞船最多保留的跃迁次数
-    gui.show_popup(viewer, {'wn.tutorial-title'}, {body})
+    gui.show_tutorial(viewer)   -- 文案参数(起步分钟/飞船寿命)由 gui.show_tutorial 统一填
 end
 
 add_command('tutorial', {'wn.tutorial-help'}, tutorial_cmd)
@@ -258,7 +254,8 @@ local function member_kick_cmd(command)
     if is_member(target) then sink.print({'wn.kickout-protected', target.name}); return end
     if not target.connected then sink.print({'wn.kickout-offline', target.name}); return end
     local by = actor and actor.name or '<console>'
-    game.kick_player(target, {'wn.kickout-reason', by})
+    -- 注意：kick_player 的 reason 只接受【纯字符串】，传 localised string(table) 会崩。
+    game.kick_player(target, '被会员 ' .. by .. ' 踢出')
     game.print({'wn.member-kicked', target.name, by})
 end
 

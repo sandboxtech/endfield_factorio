@@ -31,16 +31,13 @@
 
 ## P1 — 起始装备 / 跨跃迁进度（复用 respawn_gifts + passives）
 
-- [ ] **起始夜视仪**
-  首次复活礼包里加夜视仪（`night-vision-equipment`）+ 对应电池/装备栏，保证能直接用。
-  落点：`respawn_gifts.lua`（`on_first_respawn` 的护甲/起手物资段）。
-  注意：要塞进护甲装备网格，确认护甲有格子。
-
-- [ ] **角色等级 → 更好初始装备**
-  以现有跨跃迁统计（`storage.player_stats`：online_minutes / deaths 等）派生一个"等级"，
-  等级越高首发护甲/装备越好（梯度：基础护甲 → 模块护甲 → 动力护甲，逐级解锁夜视/电池/外骨骼）。
-  落点：`respawn_gifts.lua` + 可能在 `player_stats.lua` 加 `level_of(name)` 工具。
-  与"科技瓶经验发物资"并行，互不冲突。
+- [x] **起始夜视仪 + 等级驱动护甲（合并实现）**
+  起手护甲随人物等级（=floor(√在线分钟)=开局金币）成长，落点 `respawn_gifts.lua:give_starter_armor`：
+  - 固定 1 个机器人端口(2x2) + 1 夜视仪(2x2) = 8 格，**无电池**；其余格全塞 1x1 个人太阳能板。
+  - 太阳能板数 = min(等级, 92)；护甲品质自动取装得下的最小品质（品质放大网格，容量兜底用真实 `grid.width*height-8`）。
+  - 品质网格容量(扣8)：normal 17 / uncommon 28 / rare 41 / epic 56 / legendary 92。
+    → 升绿甲在 **18 级**（normal 实容 17，非用户估的 16）；**92 级**装满 92 板（非 96）。
+  - 等级 ≥100 起逐步升太阳能板品质：192 全绿、292 全蓝、392 全紫、492 全橙(传说)（线性过渡，`solar_quality_queue`）。
 
 ---
 

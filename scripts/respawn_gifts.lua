@@ -91,21 +91,56 @@ function M.coin_reward(online_minutes)
 end
 
 -- ----------------------------------------------------------------------------
--- 所有人无条件获得的起手套装（保命用，不卖）：
---   modular-armor + 1 roboport(2x2,(0,0)) + 4 solar(1x1) + 1 battery-mk1(1x2)
---   背包里再塞 5 个建设机器人，配合 roboport 修缮/拆除用。
+-- 起手护甲随【人物等级】成长（等级 = floor(√在线分钟) = 开局金币，见 coin_reward）：
+--   固定 1 个个人机器人端口(2x2) + 1 夜视仪(2x2) = 占 8 格，无电池；其余格全塞 1x1 个人太阳能板。
+--   太阳能板数 = min(等级, MAX_SOLAR=92)；护甲品质自动取"装得下这么多板"的最小品质。
+--   modular-armor 网格随品质放大（边长 = 5 + 品质level；legendary level=5 故跳 10x10）：
+--     normal 5x5=25 / uncommon 6x6=36 / rare 7x7=49 / epic 8x8=64 / legendary 10x10=100
+--   扣掉固定 8 格后的太阳能容量：17 / 28 / 41 / 56 / 92。
+--   等级 ≥100 起逐步提升太阳能板品质：192 全绿(uncommon)、292 全蓝(rare)、392 全紫(epic)、492 全橙(legendary)。
+--   背包里再塞建设机器人 + 起手基础物资。
 -- ----------------------------------------------------------------------------
-M.starter_armor = {
-    armor = 'modular-armor',
-    equipment = {
-        {name = 'personal-roboport-equipment', position = {0, 0}},
-        {name = 'solar-panel-equipment',       position = {2, 0}},
-        {name = 'solar-panel-equipment',       position = {3, 0}},
-        {name = 'solar-panel-equipment',       position = {2, 1}},
-        {name = 'solar-panel-equipment',       position = {3, 1}},
-        {name = 'battery-equipment',           position = {4, 0}},
-    },
+M.ARMOR_RESERVED = 8        -- 机器人端口(4) + 夜视仪(4) 固定占格
+M.MAX_SOLAR = 92            -- legendary 10x10 扣 8 格后的太阳能板上限（92 级装满）
+
+-- 按太阳能板数选最小够用的护甲品质（从小到大第一个容量 ≥ 板数的）。
+local ARMOR_TIERS = {
+    {cap = 17, quality = 'normal'},
+    {cap = 28, quality = 'uncommon'},
+    {cap = 41, quality = 'rare'},
+    {cap = 56, quality = 'epic'},
+    {cap = 92, quality = 'legendary'},
 }
+local function pick_armor_quality(solar)
+    for _, t in ipairs(ARMOR_TIERS) do
+        if solar <= t.cap then return t.quality end
+    end
+    return 'legendary'
+end
+
+-- 太阳能板品质升级阶梯：段 [start,stop) 内把全部板从 from 线性升到 to
+-- （升级板数 = floor(总数 × (等级-start)/(stop-start))）。<100 全 normal，≥492 全 legendary。
+local SOLAR_QUALITY_STEPS = {
+    {start = 100, stop = 192, from = 'normal',   to = 'uncommon'},
+    {start = 192, stop = 292, from = 'uncommon', to = 'rare'},
+    {start = 292, stop = 392, from = 'rare',     to = 'epic'},
+    {start = 392, stop = 492, from = 'epic',     to = 'legendary'},
+}
+-- 返回长度 = total 的品质名数组（升级后的高品质板排在前面，先放）。
+local function solar_quality_queue(level, total)
+    local q = {}
+    local fill = function(name) for i = 1, total do q[i] = name end end
+    if level < 100 then fill('normal');    return q end
+    if level >= 492 then fill('legendary'); return q end
+    for _, s in ipairs(SOLAR_QUALITY_STEPS) do
+        if level < s.stop then
+            local upgraded = math.floor(total * (level - s.start) / (s.stop - s.start))
+            for i = 1, total do q[i] = (i <= upgraded) and s.to or s.from end
+            return q
+        end
+    end
+    fill('legendary'); return q   -- 兜底（不应到达）
+end
 
 M.starter_inventory = {
     {name = 'construction-robot', count = 10},
@@ -119,13 +154,33 @@ M.starter_inventory = {
 local function give_starter_armor(player)
     local armor_inv = player.get_inventory(defines.inventory.character_armor)
     if not armor_inv or not armor_inv.is_empty() then return end
-    armor_inv.insert{name = M.starter_armor.armor, count = 1}
+
+    local level = M.coin_reward(passives.get_stat(player.index, 'online_minutes'))
+    local solar = math.min(level, M.MAX_SOLAR)
+    armor_inv.insert{name = 'modular-armor', count = 1, quality = pick_armor_quality(solar)}
+
     local stack = armor_inv[1]
     if stack and stack.valid_for_read and stack.grid then
-        for _, eq in ipairs(M.starter_armor.equipment) do
-            stack.grid.put{name = eq.name, position = eq.position}
+        local grid = stack.grid
+        grid.put{name = 'personal-roboport-equipment', position = {0, 0}}   -- 2x2 占左上
+        grid.put{name = 'night-vision-equipment',      position = {2, 0}}   -- 2x2 紧随其右
+        -- 实测容量兜底：以真实网格大小再夹一次（防品质→网格映射有出入）
+        local capacity = grid.width * grid.height - M.ARMOR_RESERVED
+        if solar > capacity then solar = capacity end
+        local queue = solar_quality_queue(level, solar)
+        local placed = 0
+        for y = 0, grid.height - 1 do
+            for x = 0, grid.width - 1 do
+                if placed >= solar then break end
+                if not grid.get({x, y}) then   -- 空格才放（机器人端口/夜视仪占的格会被跳过）
+                    grid.put{name = 'solar-panel-equipment', position = {x, y}, quality = queue[placed + 1]}
+                    placed = placed + 1
+                end
+            end
+            if placed >= solar then break end
         end
     end
+
     local main = player.get_inventory(defines.inventory.character_main)
     if main then
         for _, it in ipairs(M.starter_inventory) do

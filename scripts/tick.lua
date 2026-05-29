@@ -96,7 +96,7 @@ script.on_event(defines.events.on_gui_click, function(event)
     end
     local name = event.element.name
     if name == 'introduction' then
-        gui.show_popup(player, {'wn.tutorial-title'}, {{'wn.tutorial'}})
+        gui.show_tutorial(player)
     elseif name == gui.POPUP_CLOSE_NAME then
         gui.close_popup(player)
     end

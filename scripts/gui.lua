@@ -140,6 +140,14 @@ function M.show_popup(player, title, lines)
     return frame
 end
 
+-- 弹出玩法教程：文案里的【起步分钟】【飞船寿命】由 storage 实时填入。
+-- HUD 左上 run 按钮(tick.lua) 与 /tutorial 命令(commands.lua) 共用，避免漏传参数。
+function M.show_tutorial(player)
+    M.show_popup(player, {'wn.tutorial-title'}, {{'wn.tutorial',
+        storage.warp_initial_minutes or 10,   -- __1__ 跃迁倒计时起步分钟
+        storage.platform_lifetime or 10}})    -- __2__ 飞船最多保留的跃迁次数
+end
+
 function M.close_popup(player)
     if player and player.valid then
         local f = player.gui.screen[POPUP_NAME]
