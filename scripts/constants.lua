@@ -81,7 +81,7 @@ function M.ensure_defaults()
         event_intensity = 1,              -- 每分钟事件的落点数
         tile_remap_rules = 6,             -- tile 替换世界最多几条规则
         -- 跃迁计时（全部可 /c storage.xxx 热改、持久、多人同步）：
-        warp_initial_minutes = 10,        -- 每轮开局跃迁倒计时（分钟）
+        warp_initial_minutes = 30        -- 每轮开局跃迁倒计时（分钟）
         warp_extend_default_minutes = 60, -- 完成未列入 warp_extend_minutes 的科技瓶科技 → 延长分钟数
         warp_push_ticks = 3600,           -- /warp 主动跃迁每次把倒计时提前的 tick（3600 = 1 分钟）
         warp_push_respawn_ticks = 5400,   -- /warp 使用后本人复活等待 tick（5400 = 90 秒）
@@ -98,11 +98,11 @@ function M.ensure_defaults()
     -- 热改示例：/c storage.warp_extend_minutes['cryogenic-science-pack'] = 90
     storage.warp_extend_minutes = storage.warp_extend_minutes or {}
     local warp_ext = {
-        ['automation-science-pack'] = 20, ['logistic-science-pack'] = 30,
+        ['automation-science-pack'] = 60, ['logistic-science-pack'] = 60,
         ['military-science-pack'] = 60,   ['chemical-science-pack'] = 60,
         ['production-science-pack'] = 60, ['utility-science-pack'] = 60,
-        ['space-science-pack'] = 60,      ['metallurgic-science-pack'] = 60,
-        ['electromagnetic-science-pack'] = 60, ['agricultural-science-pack'] = 60,
+        ['space-science-pack'] = 120     ['metallurgic-science-pack'] = 120
+        ['electromagnetic-science-pack'] = 120, ['agricultural-science-pack'] = 120
         ['cryogenic-science-pack'] = 120, ['promethium-science-pack'] = 120,
     }
     for pack, m in pairs(warp_ext) do
