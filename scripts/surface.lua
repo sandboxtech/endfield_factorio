@@ -641,14 +641,25 @@ script.on_event(defines.events.on_chunk_generated, function(event)
                     local R = rule.mask == 'rock' and 2 or 1
                     mark = {}
                     for _, e in pairs(surface.find_entities_filtered{type = etype, area = area}) do
-                        local ex, ey = math.floor(e.position.x), math.floor(e.position.y)
-                        for dx = -R, R do
-                            for dy = -R, R do mark[(ex + dx) .. ':' .. (ey + dy)] = true end
+                        -- ore mask 跳过【流体类资源】(原油/锂卤水/氟喷口…)：它们稀疏点状、非成脉固体矿，不当晕染锚点。
+                        -- 判定：开采产物含流体即视为流体资源（比 resource_category 命名可靠）。
+                        local fluid_res = false
+                        if etype == 'resource' then
+                            local mp = e.prototype.mineable_properties
+                            for _, pr in ipairs(mp and mp.products or {}) do
+                                if pr.type == 'fluid' then fluid_res = true; break end
+                            end
                         end
-                        -- R+1 处随机点几个 → 软化方块硬边、增加不规则感（不再是大矩形）
-                        for _ = 1, math.random(2, 5) do
-                            local dx, dy = math.random(-(R + 1), R + 1), math.random(-(R + 1), R + 1)
-                            mark[(ex + dx) .. ':' .. (ey + dy)] = true
+                        if not fluid_res then
+                            local ex, ey = math.floor(e.position.x), math.floor(e.position.y)
+                            for dx = -R, R do
+                                for dy = -R, R do mark[(ex + dx) .. ':' .. (ey + dy)] = true end
+                            end
+                            -- R+1 处随机点几个 → 软化方块硬边、增加不规则感（不再是大矩形）
+                            for _ = 1, math.random(2, 5) do
+                                local dx, dy = math.random(-(R + 1), R + 1), math.random(-(R + 1), R + 1)
+                                mark[(ex + dx) .. ':' .. (ey + dy)] = true
+                            end
                         end
                     end
                 end
