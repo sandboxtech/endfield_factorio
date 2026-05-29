@@ -81,12 +81,22 @@ end
 
 -- "染地世界"调色板：在地面层盖半透明染色精灵，不改地块本身
 -- （寻路/属性/资源都不变），只改观感 → 属"修改观感"而非"覆盖地形"。
-local GROUND_TINT_PALETTE = {
-    {r = 0.75, g = 0.0,  b = 0.15},  -- 血红
-    {r = 0.6,  g = 0.0,  b = 0.6},   -- 紫（感染）
-    {r = 0.1,  g = 0.5,  b = 0.05},  -- 毒绿
-    {r = 0.35, g = 0.2,  b = 0.0},   -- 锈褐
-}
+-- 染地颜色【随机色相生成】（不再只从固定调色板抽）：HSV→RGB，h/s/v ∈ [0,1]，返回 0~1 的 r,g,b。
+local function hsv2rgb(h, s, v)
+    local i = math.floor(h * 6)
+    local f = h * 6 - i
+    local p, q, t = v * (1 - s), v * (1 - f * s), v * (1 - (1 - f) * s)
+    i = i % 6
+    if i == 0 then return v, t, p
+    elseif i == 1 then return q, v, p
+    elseif i == 2 then return p, v, t
+    elseif i == 3 then return p, q, v
+    elseif i == 4 then return t, p, v
+    else return v, p, q end
+end
+-- 色相 h∈[0,1] → 粗略中文色名（仅 debug 显示用，12 档）。
+local HUE_NAMES = {'红', '橙', '黄', '黄绿', '绿', '青', '青蓝', '蓝', '靛', '紫', '品红', '红'}
+local function hue_name(h) return HUE_NAMES[(math.floor(h * 12) % 12) + 1] end
 
 -- 清理染地精灵（换图前调用，避免跨轮累积）。染地 sprite 是本场景【唯一】的 rendering 对象，
 -- 故直接一次清空全部即可，不必按 surface 过滤；新一轮的染色在 on_chunk_generated 重绘。
@@ -366,7 +376,14 @@ script.on_event(defines.events.on_surface_cleared, function(event)
     local knobs = map_features.knobs()
 
     -- 各"世界变体"出现概率都乘以一个 storage 常量(默认 1，可游戏内 /c storage.prob_xxx=N 动态调)。
-    local dbg = {}   -- debug 模式下汇总本表面生成的变体属性
+    -- gen debug【分组】收集：按类别归组（order 记首次出现序，bycat 存每类多条），
+    -- 供 /gen 弹窗分段显示 + 实时一行汇总。每类可含多条（如 tile 替换多条规则）。
+    local dbg = {order = {}, bycat = {}}
+    local function dbg_add(cat, text)
+        local g = dbg.bycat[cat]
+        if not g then g = {}; dbg.bycat[cat] = g; dbg.order[#dbg.order + 1] = cat end
+        g[#g + 1] = text
+    end
 
     -- 染地世界：小概率出现（诡异世界更可能）。出现时 alpha 走立方曲线 → 大概率温和淡染、
     -- 小概率浓重。先清掉本表面上一轮的染色精灵，再决定本轮是否/如何染。
@@ -374,10 +391,15 @@ script.on_event(defines.events.on_surface_cleared, function(event)
     storage.ground_tint[surface.name] = nil
     local bt = constants.balance.ground_tint
     if math.random() < (bt.base + bt.exotic * knobs.exotic) * prob('ground_tint') then
-        local c = GROUND_TINT_PALETTE[math.random(#GROUND_TINT_PALETTE)]
         local a = 0.05 + (math.random() ^ 3) * 0.32   -- 多半 ~0.05–0.12 淡染；极少 ~0.37 浓染
-        storage.ground_tint[surface.name] = {r = c.r, g = c.g, b = c.b, a = a}
-        dbg[#dbg + 1] = string.format('tint a=%.2f', a)
+        -- 颜色【随机色相】：色相全谱随机，饱和度偏高、明度中等 → 每轮都可能不同色、仍是染色感（不发灰/不刺眼）。
+        local h = math.random()
+        local s = 0.55 + math.random() * 0.45         -- 饱和 [0.55,1.0]
+        local v = 0.40 + math.random() * 0.45         -- 明度 [0.40,0.85]
+        local r, g, b = hsv2rgb(h, s, v)
+        storage.ground_tint[surface.name] = {r = r, g = g, b = b, a = a}
+        dbg_add('染地', string.format('%s a=%.2f rgb(%d,%d,%d)', hue_name(h), a,
+            math.floor(r * 255 + 0.5), math.floor(g * 255 + 0.5), math.floor(b * 255 + 0.5)))
     end
 
     -- tile 替换世界：较常见（多为自然同类替换），本轮 1~3 条规则。每条 = 源家族 → 目标 tile + 一种 mask：
@@ -415,7 +437,7 @@ script.on_event(defines.events.on_surface_cleared, function(event)
                     -- noise mask 覆盖面非线性：多半小斑块(阈值高)、极小概率大片(阈值低)。
                     threshold = 0.45 - math.random() ^ 3 * 0.6,
                 }
-                dbg[#dbg + 1] = string.format('%s→%s/%s', src.tiles[1], to, mask)
+                dbg_add('地表', string.format('%s→%s/%s', src.tiles[1], to, mask))
             end
         end
         if #rules > 0 then storage.tile_remap[surface.name] = rules end
@@ -441,7 +463,7 @@ script.on_event(defines.events.on_surface_cleared, function(event)
         local on = {}
         for _, k in ipairs({'worm', 'spawner', 'turret', 'mine', 'art'}) do if t[k] then on[#on + 1] = k end end
         if t.replicant then on[#on + 1] = 'replicant' end
-        dbg[#dbg + 1] = 'danger:' .. table.concat(on, '+')
+        dbg_add('危险', table.concat(on, '+'))
     end
 
     -- 事件世界：每分钟触发一种事件（独立于危险度，奖励/危险皆有）。详见 tick.lua run_world_events。
@@ -464,7 +486,7 @@ script.on_event(defines.events.on_surface_cleared, function(event)
                 acc = acc + e.w
                 if r <= acc then
                     storage.event_world[surface.name] = e.et
-                    dbg[#dbg + 1] = 'event:' .. e.et
+                    dbg_add('事件', e.et)
                     break
                 end
             end
@@ -481,8 +503,8 @@ script.on_event(defines.events.on_surface_cleared, function(event)
     }
     -- debug 摘要：四类箱子各自的本世界密度[0,1]。
     local ls = storage.loot_style[surface.name]
-    dbg[#dbg + 1] = string.format('loot material=%.2f equip=%.2f treasure=%.2f perp=%.2f',
-        ls.material, ls.equipment, ls.treasure, ls.perp)
+    dbg_add('战利品', string.format('material=%.2f equip=%.2f treasure=%.2f perp=%.2f',
+        ls.material, ls.equipment, ls.treasure, ls.perp))
 
     -- 飞船残骸：仅 25% 世界出现；本世界密度 = random()^3（大概率小、小概率大）。独立于危险世界。
     storage.wreck_density = storage.wreck_density or {}   -- 老存档兜底：ensure_defaults 没补到也不崩
@@ -490,7 +512,7 @@ script.on_event(defines.events.on_surface_cleared, function(event)
     if math.random() < 0.25 then
         local d = math.random()
         storage.wreck_density[surface.name] = d * d * d
-        dbg[#dbg + 1] = string.format('wrecks=%.2f', storage.wreck_density[surface.name])
+        dbg_add('残骸', string.format('%.2f', storage.wreck_density[surface.name]))
     end
 
     -- 障碍互换（统一）：小概率把本星【现地所有带碰撞盒障碍：树/石/遗迹/冰山…】在噪声大团内跨类互换。
@@ -505,7 +527,7 @@ script.on_event(defines.events.on_surface_cleared, function(event)
         -- 大概率(85%)整片统一成一种(单一主题)，小概率(15%)每个各自随机(跨类大杂烩)
         if math.random() < 0.85 then rule.to = map_features.pick_entity_target() end
         storage.obstacle_remap[surface.name] = rule
-        dbg[#dbg + 1] = 'obstacle' .. (rule.to and ('→' .. rule.to) or '→mixed')
+        dbg_add('障碍', rule.to and ('→' .. rule.to) or 'mixed(每个随机)')
     end
 
     -- 本表面生成摘要：【始终】缓存进 storage.gen_debug[星球]（与 storage.debug 无关），供 /gen 弹窗查看。
@@ -514,10 +536,18 @@ script.on_event(defines.events.on_surface_cleared, function(event)
         surface.name, storage.radius_of[surface.name] or 0,
         knobs.verdancy, knobs.rockiness, knobs.riches, knobs.danger, knobs.exotic)
     local glines = {head}
-    if #dbg > 0 then
-        for _, d in ipairs(dbg) do glines[#glines + 1] = '    └ ' .. d end
+    if #dbg.order == 0 then
+        glines[#glines + 1] = '  （普通，无变体）'
     else
-        glines[#glines + 1] = '    └ 普通'
+        for _, cat in ipairs(dbg.order) do
+            local items = dbg.bycat[cat]
+            if #items == 1 then
+                glines[#glines + 1] = '  ' .. cat .. '：' .. items[1]
+            else
+                glines[#glines + 1] = '  ' .. cat .. '：'   -- 多条（如多条 tile 替换规则）分行列出
+                for _, it in ipairs(items) do glines[#glines + 1] = '      └ ' .. it end
+            end
+        end
     end
     storage.gen_debug[surface.name] = glines
 
@@ -527,7 +557,11 @@ script.on_event(defines.events.on_surface_cleared, function(event)
             INVALID_REPORTED = true
             debug_print('[gen] 无效 tile 名(已忽略): ' .. table.concat(INVALID_TILES, ', '))
         end
-        debug_print('[gen] ' .. head .. ' | ' .. (#dbg > 0 and table.concat(dbg, ', ') or '普通'))
+        local parts = {}
+        for _, cat in ipairs(dbg.order) do
+            parts[#parts + 1] = cat .. '(' .. table.concat(dbg.bycat[cat], '; ') .. ')'
+        end
+        debug_print('[gen] ' .. head .. ' | ' .. (#parts > 0 and table.concat(parts, ', ') or '普通'))
     end
 
     -- 按 PLANET_GEN 配置生成各星球资源/自然/气候（飞船平台等不在表内 → 跳过）。
