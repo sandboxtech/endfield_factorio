@@ -569,17 +569,11 @@ script.on_event(defines.events.on_surface_cleared, function(event)
     end
     storage.gen_debug[surface.name] = glines
 
-    -- storage.debug 仍控制是否【实时】把一行汇总打给在线管理员（玩家聊天，不进服务器控制台）；嫌刷屏可 /c storage.debug=false。
-    if storage.debug then
-        if not INVALID_REPORTED and #INVALID_TILES > 0 then
-            INVALID_REPORTED = true
-            debug_print('[gen] 无效 tile 名(已忽略): ' .. table.concat(INVALID_TILES, ', '))
-        end
-        local parts = {}
-        for _, cat in ipairs(dbg.order) do
-            parts[#parts + 1] = cat .. '(' .. table.concat(dbg.bycat[cat], '; ') .. ')'
-        end
-        debug_print('[gen] ' .. head .. ' | ' .. (#parts > 0 and table.concat(parts, ', ') or '普通'))
+    -- 生成摘要【不再实时刷屏】给管理员；随时用 /gen 弹窗查看（已缓存进 storage.gen_debug）。
+    -- 仅在 debug 模式下把无效 tile 名【一次性】提示管理员（拼错预警；INVALID_REPORTED 保证整局只报一次）。
+    if storage.debug and not INVALID_REPORTED and #INVALID_TILES > 0 then
+        INVALID_REPORTED = true
+        debug_print('[gen] 无效 tile 名(已忽略): ' .. table.concat(INVALID_TILES, ', '))
     end
 
     -- 按 PLANET_GEN 配置生成各星球资源/自然/气候（飞船平台等不在表内 → 跳过）。

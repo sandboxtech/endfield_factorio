@@ -86,7 +86,7 @@ function M.ensure_defaults()
         warp_push_ticks = 3600,           -- /warp 主动跃迁每次把倒计时提前的 tick（3600 = 1 分钟）
         warp_push_respawn_ticks = 5400,   -- /warp 使用后本人复活等待 tick（5400 = 90 秒）
         -- 复活等待 tick（可 /c 热改）：脚本死亡(跃迁清场/离场/自杀)与环境死亡用 respawn_ticks；被敌方打死用 enemy_respawn_ticks。
-        respawn_ticks = 180,              -- 默认复活：180 tick = 3 秒
+        respawn_ticks = 600,              -- 默认复活：600 tick = 10 秒
         enemy_respawn_ticks = 1800,       -- 被敌方打死：1800 tick = 30 秒
         enemy_death_push_minutes = 1,     -- 被敌方打死时本轮跃迁倒计时提前的分钟数
         warp_vote_divisor = 5,            -- 跃迁投票阈值除数：净同意 > ceil(在线人数/此值) 才推进（5=1/5，越大越易过）
