@@ -187,7 +187,7 @@ add_command('yulan', {'wn.preview-help'}, preview_cmd)
 
 -- （/settle、/jiesuan 已移除：只有【自动跃迁】才结算科技瓶经验，不再支持提前手动结算。）
 
--- /suicide（/zisha 同功能）：自杀脱困。死后按权重随机在某个星球复活（见 players.lua）。
+-- /suicide（/zisha 同功能）：自杀脱困。死后回母星出生点复活（见 players.lua kill_on_nauvis）。
 local function suicide_cmd(command)
     local player = command.player_index and game.get_player(command.player_index)
     if not player or not player.character then return end

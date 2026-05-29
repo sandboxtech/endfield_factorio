@@ -13,7 +13,9 @@ local M = {}
 -- ── 飞船命数前缀（剩余跃迁次数的可视化）─────────────────────────────────────
 local HEART = '[virtual-signal=signal-heart]'
 -- 数字 → parameter 物品图标串（逐位）：4 → [item=parameter-4]；10 → [item=parameter-1][item=parameter-0]。
+-- 最多两位（parameter 图标只有 0~9）；>99 一律按 99 显示。
 local function life_prefix(n)
+    if n > 99 then n = 99 end
     local s, out = tostring(n), {}
     for i = 1, #s do out[i] = '[item=parameter-' .. s:sub(i, i) .. ']' end
     return table.concat(out) .. HEART
