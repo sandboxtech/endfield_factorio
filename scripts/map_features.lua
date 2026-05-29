@@ -144,7 +144,8 @@ local LOOT = {
         'uranium-235',  'uranium-238',  'uranium-fuel-cell',  'depleted-uranium-fuel-cell',  'fusion-power-cell',  -- 核
         'tungsten-carbide',  'tungsten-plate',  'holmium-plate',  'lithium-plate',  'carbon-fiber',  'superconductor',  'supercapacitor',  -- 星球特产材料
         'concrete',  'refined-concrete',  'hazard-concrete',  'refined-hazard-concrete',  'landfill',  -- 铺地
-        'barrel',                                                                       -- 杂项
+        'barrel', 'water-barrel', 'crude-oil-barrel',  'petroleum-gas-barrelel',  'light-oil-barrel',  
+        'lubricant-barrel',  'sulfuric-acid-barrel', 'fluoroketone-hot-barrel', 'fluoroketone-cold-barrel',                                                                       -- 杂项
     }},
     -- 物流(带/臂/管/箱/轨/机器人)
     {cat = 'logistics',  items = {
