@@ -202,6 +202,7 @@ function M.travel(player, planet)
     end
     if on_cooldown(player) then return end   -- 校验全过后才查冷却：被拒的尝试不占冷却
     players.place_on_surface(player, planet)
+    storage.respawn_surface = storage.respawn_surface or {}   -- 老存档兜底：ensure_defaults 没补到也不崩
     storage.respawn_surface[player.name] = planet   -- 前往后，该星球成为默认复活星球
     mark_action(player)
     game.print({'wn.travel-notice', player.name, planet})

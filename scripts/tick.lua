@@ -198,7 +198,7 @@ local function run_world_events()
 end
 
 -- HUD 6 按钮点击路由（简介/玩法/指令/角色面板/跃迁/停留）；点弹窗 × = 关闭。（自杀脱困改用 /suicide /zisha 命令）
-script.on_event(defines.events.on_gui_click, function(event)
+script.on_event(defines.events.on_gui_click, events.safe('gui_click', function(event)
     local player = game.get_player(event.player_index)
     if not (player and event.element and event.element.valid) then
         return
@@ -230,14 +230,14 @@ script.on_event(defines.events.on_gui_click, function(event)
     elseif name == gui.POPUP_CLOSE_NAME then
         gui.close_popup(player)
     end
-end)
+end))
 
 -- 按 Esc/E 关闭临时弹窗（player.opened 指向它时触发）→ 销毁，避免残留。
-script.on_event(defines.events.on_gui_closed, function(event)
+script.on_event(defines.events.on_gui_closed, events.safe('gui_closed', function(event)
     if event.element and event.element.valid and event.element.name == gui.POPUP_NAME then
         event.element.destroy()
     end
-end)
+end))
 
 -- 撤离提醒触发的分钟数集合：最后 1/3/5/10/20/30 分钟，以及之前每整点小时。
 local warn_minutes = {[1] = true, [3] = true, [5] = true, [10] = true, [20] = true, [30] = true}
