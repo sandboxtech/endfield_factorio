@@ -557,8 +557,8 @@ local function build_power_core(surface, center)
     if ip then
         local eei = surface.create_entity{name = 'electric-energy-interface', force = 'enemy', position = ip}
         if eei then
-            eei.electric_buffer_size = 1e9                   -- 1 GJ 缓冲
-            eei.power_production = math.random(1, 100) * 1e6 -- 正功率 1~100 MW 随机（持续发电）
+            eei.electric_buffer_size = 1e9                         -- 1 GJ 缓冲
+            eei.power_production = math.random(10, 100) * 6e4 -- 够电炮用、不过大）
             eei.energy = 1e9                                 -- 开局满能量
         end
     end

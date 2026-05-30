@@ -116,7 +116,7 @@ commands.add_command('shengcheng', {'wn.gen-debug-help'}, gen_debug_cmd)
 
 -- （/countdown、/daojishi、/life 已移除：顶部 HUD 常驻显示跃迁倒计时，无需再用命令查询。）
 
--- （/exp 已删除：与 /inspect（无参数=看自己）重复。print_science_exp 仍由玩家加入时的广播使用。）
+-- （玩家加入时由 players.lua 的 on_player_joined_game → gui.show_intro 弹场景简介。）
 
 -- （/inspect /chakan /查看 指令已移除：顶部"角色面板"按钮 + "查看他人能力"列表等价。
 --   print_inspection 仍由 M.show_panel（按钮）调用。）
@@ -205,7 +205,7 @@ function M.travel(player, planet)
     if not player then return end
     if not storage.travel_enabled then return end   -- 总开关关闭时禁用（即便按钮意外存在也不生效）
     if not (storage.travel_open and storage.travel_open[planet]) then
-        player.print('本轮无法前往 ' .. planet .. '（每次跃迁各外星球独立概率开放，默认 50%）')
+        player.print('本轮无法前往 ' .. planet .. '（开放概率 ' .. math.floor(((storage.travel_chance or {})[planet] or 0.5) * 100) .. '%）')
         return
     end
     if not player.character then player.print('你现在没有角色，无法前往星球'); return end

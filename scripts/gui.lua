@@ -156,10 +156,11 @@ function M.show_actions(player)
     }
     -- "前往星球"按钮：总开关 storage.travel_enabled（默认关）开启后，5 个星球【全部显示】；本轮未开放(storage.travel_open[星球]=false)的【置灰】不可点。
     if storage.travel_enabled then
-        local open = storage.travel_open or {}
+        local open, tc = storage.travel_open or {}, storage.travel_chance or {}
         for _, p in ipairs({'nauvis', 'vulcanus', 'gleba', 'fulgora', 'aquilo'}) do
             buttons[#buttons + 1] = {name = 'wn_act_travel_' .. p, caption = {'wn.act-travel', p}, tags = {wn_travel = p},
-                enabled = open[p] or false, tooltip = (not open[p]) and {'wn.travel-closed'} or nil}
+                enabled = open[p] or false,
+                tooltip = (not open[p]) and {'wn.travel-closed', math.floor((tc[p] or 0.5) * 100)} or nil}   -- 传该星真实开放概率%
         end
     end
     -- "起始星球"按钮：设定【下次跃迁复活+领起手装备】的星球（即 storage.respawn_surface[玩家名]）。不传送、全星球可选、当前选中标 ✓。

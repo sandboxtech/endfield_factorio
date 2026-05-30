@@ -79,8 +79,7 @@ function M.reset()
         else
             storage.platform_age[space_platform.index] = age
             local lives = storage.platform_lifetime - age + 1
-            space_platform.name = life_prefix(lives) .. base
-            game.print({'wn.platform-aged', space_platform.name})
+            space_platform.name = life_prefix(lives) .. base   -- 只更新船名前缀(剩余命数)，不再广播"完成跃迁"
         end
     end
 
