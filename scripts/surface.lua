@@ -499,6 +499,9 @@ script.on_event(defines.events.on_surface_cleared, function(event)
 
     -- 战利品风格：四类箱子(钢=材料/铁=设备/木=宝箱/永续)各自【独立】的本世界密度，分布 = random()^2：
     -- 大概率低密度(箱子少)、小概率高密度(遍地)，四者互不相关。箱子外观=内容含义已固定，不再随机选箱体。
+    -- 敌人脚下地砖：本星本轮固定从【人造地砖】随机一种（非虫子类敌人放置时铺，见 map_features.enemy_floor_patch）。
+    storage.enemy_floor[surface.name] = TILE_CLASS.artificial[math.random(#TILE_CLASS.artificial)]
+
     storage.loot_style[surface.name] = {
         material  = math.random() ^ 2,   -- 钢箱(材料箱)
         equipment = math.random() ^ 2,   -- 铁箱(设备箱)

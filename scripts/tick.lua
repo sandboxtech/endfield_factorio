@@ -8,6 +8,7 @@ local map_features = require('scripts.map_features')
 local util = require('scripts.util')
 local gui = require('scripts.gui')
 local events = require('scripts.events')
+local commands = require('scripts.commands')   -- HUD 按钮点击路由到其导出的 show_panel / cast_warp_vote
 
 -- 前向声明：科技世界的"得到科技"helper，下方虫巢死亡 1% 奖励与 WORLD_EVENTS 也用它（定义在文件后半）。
 local grant_random_tech
@@ -203,8 +204,14 @@ script.on_event(defines.events.on_gui_click, function(event)
         return
     end
     local name = event.element.name
-    if name == 'introduction' then
+    if name == 'introduction' or name == 'wn_btn_tutorial' then
         gui.show_tutorial(player)
+    elseif name == 'skills' then
+        commands.show_panel(player)                 -- 点角色面板按钮 = 弹出角色面板（同 /inspect 自己）
+    elseif name == 'wn_btn_warp' then
+        commands.cast_warp_vote(player, 'agree')    -- 教程/跃迁/停留三按钮 = 对应命令
+    elseif name == 'wn_btn_stay' then
+        commands.cast_warp_vote(player, 'oppose')
     elseif name == gui.POPUP_CLOSE_NAME then
         gui.close_popup(player)
     end

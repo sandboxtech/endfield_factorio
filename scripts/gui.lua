@@ -83,13 +83,22 @@ function M.player_gui(player)
 
     -- 星系词条已删除：每局世界的矿物/昼夜/天色等不摆在 UI 上，让玩家自己探索发现。
 
-    -- 被动技能面板（基于自己的累计经验）
+    -- 被动技能面板（点击=弹出角色面板，悬停=tooltip 速览）
     player.gui.top.add {
         type = 'sprite-button',
         sprite = 'entity/character',
         name = 'skills',
         tooltip = build_skills_tooltip(player)
     }
+
+    -- 三个常用按钮（sprite-button，风格同角色面板按钮）：教程 / 投票跃迁 / 投票停留。点击由 tick.on_gui_click 路由。
+    for _, b in ipairs({
+        {name = 'wn_btn_tutorial', sprite = 'virtual-signal/signal-info',       tip = {'wn.tutorial-help'}},
+        {name = 'wn_btn_warp',     sprite = 'space-location/solar-system-edge', tip = {'wn.btn-warp-tip'}},
+        {name = 'wn_btn_stay',     sprite = 'virtual-signal/signal-deny',       tip = {'wn.btn-stay-tip'}},
+    }) do
+        player.gui.top.add{type = 'sprite-button', name = b.name, sprite = b.sprite, tooltip = b.tip}
+    end
 end
 
 -- 刷新所有玩家 HUD；离线玩家清空 GUI。

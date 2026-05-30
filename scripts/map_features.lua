@@ -353,12 +353,22 @@ local function fill_loot(chest, n, weights, exp, kinds)
     end
 end
 
+-- 永续箱周围铺的醒目地砖（氛围标记，远远看到就知道"这有宝/有守卫"）。
+local PERP_FLOOR = 'hazard-concrete-left'
+
 -- 永续箱奖励（罕见）：随机一种物品无限供应。设为【不可打开/不可拆走、可摧毁】，
 -- 防止滥用又能就地用（接机械臂/传送带）。force=neutral（不进蓝图；机械臂仍可从中抽货）。
 -- 返回 true=成功放置（可继续放守卫），false=失败（已清理，不放守卫）。
 local function spawn_perpetual_chest(surface, pos)
     local chest = surface.create_entity{name = 'infinity-chest', force = 'neutral', position = pos}
     if not chest then return false end
+    -- 氛围：箱子周围 7×7 铺一圈 PERP_FLOOR 地砖（set_tiles 强制铺，水/不平地形也成平台）
+    local cx, cy = math.floor(pos.x), math.floor(pos.y)
+    local tiles = {}
+    for dx = -3, 3 do
+        for dy = -3, 3 do tiles[#tiles + 1] = {name = PERP_FLOOR, position = {cx + dx, cy + dy}} end
+    end
+    surface.set_tiles(tiles)
     -- 永续箱只出基础材料/矿物(LOOT_WEIGHTS.perp)；选到无效物品名（item_ok 会报告管理员）就重抽，全失败则不放。
     local item
     for _ = 1, 8 do
@@ -372,6 +382,25 @@ local function spawn_perpetual_chest(surface, pos)
     chest.minable_flag = false    -- 不可拆走
     chest.destructible = true     -- 可摧毁
     return true
+end
+
+-- 给【非虫子类】敌人(炮塔/地雷等；排除 worm/虫巢/虫)脚下铺一小块【随机矩形】地砖。
+-- 全星同一种 = storage.enemy_floor[星球]（人造地砖，surface.lua 每轮 roll）。矩形大小随机、中心≈实体位置。
+-- 实体在区块边缘时，跨到未生成相邻区块的那部分会被 set_tiles 静默丢弃（无所谓）。
+local function enemy_floor_patch(surface, ent)
+    if not (ent and ent.valid) then return end
+    -- 虫子类(虫巢/虫/沙虫) 与 地雷 都不铺（地雷铺了会暴露陷阱）。
+    if ent.type == 'unit-spawner' or ent.type == 'unit' or ent.type == 'land-mine'
+        or string.find(ent.name, 'worm', 1, true) then return end
+    local floor = storage.enemy_floor and storage.enemy_floor[surface.name]
+    if not floor then return end
+    local cx, cy = math.floor(ent.position.x), math.floor(ent.position.y)
+    local rw, rh = math.random(1, 3), math.random(1, 3)   -- 半宽/半高随机 → 矩形大小随机
+    local tiles = {}
+    for dx = -rw, rw do
+        for dy = -rh, rh do tiles[#tiles + 1] = {name = floor, position = {cx + dx, cy + dy}} end
+    end
+    surface.set_tiles(tiles)
 end
 
 -- 敌方机枪炮塔弹种：随世界危险度【偏向】更强的弹，但【每个炮塔各自随机】（不再全星统一一种）。
@@ -446,6 +475,7 @@ local function guard_perpetual(surface, pos)
         local sp = surface.find_non_colliding_position(name, gp, 5, 1)
         if sp then
             local e = surface.create_entity{name = name, force = 'enemy', position = sp, direction = math.random(0, 3) * 4}
+            enemy_floor_patch(surface, e)
             if e and type(def) == 'table' then
                 -- 机枪炮塔 per 个随机弹种、重炮用炮弹；都加满
                 fill_turret_ammo(e, def.mag and pick_mag(danger) or def.ammo)
@@ -516,13 +546,8 @@ end
 -- 木箱 = 宝箱：稀有。1~2 种高价值物品，每件【几个】(count = ss×random^4，极偏低)
 local TREASURE_BOTTLE_CHANCE = 0.5   -- 木箱额外掉【科技瓶】的概率
 
-local function feat_treasure(surface, lt)
-    if chunk_rng(lt, 601) > spawn_chance(surface, 'treasure') then return end
-    local pos = {lt.x + math.random(2, 29) + 0.5, lt.y + math.random(2, 29) + 0.5}
-    if not surface.can_place_entity{name = 'wooden-chest', position = pos} then return end
-    local chest = surface.create_entity{name = 'wooden-chest', force = 'neutral', position = pos}
-    local inv = chest and chest.get_inventory(defines.inventory.chest)
-    if not inv then return end
+-- 给一个木箱填宝：1~2 种高价值物品 + 概率额外一种科技瓶。
+local function fill_treasure_chest(inv)
     for _ = 1, math.random(1, 2) do
         local name = TREASURE_POOL[math.random(#TREASURE_POOL)]
         if item_ok(name) then
@@ -537,6 +562,20 @@ local function feat_treasure(surface, lt)
             local ss = (proto and proto.stack_size) or 200
             local groups = 1 + math.floor(math.random() ^ 2 * 3)   -- 1~3 组（random^2 偏低）
             inv.insert{name = pack, count = groups * ss, quality = roll_treasure_quality()}
+        end
+    end
+end
+
+local function feat_treasure(surface, lt)
+    if chunk_rng(lt, 601) > spawn_chance(surface, 'treasure') then return end
+    -- 大概率 1 个、小概率成簇：count = 1 + floor(random^4 × 3)（四次方强偏小，多为 1，偶尔 2~3，极少 4）。
+    local count = 1 + math.floor(math.random() ^ 4 * 3)
+    for _ = 1, count do
+        local pos = {lt.x + math.random(2, 29) + 0.5, lt.y + math.random(2, 29) + 0.5}
+        if surface.can_place_entity{name = 'wooden-chest', position = pos} then
+            local chest = surface.create_entity{name = 'wooden-chest', force = 'neutral', position = pos}
+            local inv = chest and chest.get_inventory(defines.inventory.chest)
+            if inv then fill_treasure_chest(inv) end
         end
     end
 end
@@ -590,6 +629,7 @@ local function feat_outpost(surface, lt)
         local gsp = surface.find_non_colliding_position(def.name, gp, 3, 1)
         if gsp then
             local e = surface.create_entity{name = def.name, force = 'enemy', position = gsp, direction = math.random(0, 3) * 4}
+            enemy_floor_patch(surface, e)
             if e then
                 if def.mag then fill_turret_ammo(e, pick_mag(danger)) end
                 if def.fluid then e.insert_fluid{name = def.fluid, amount = 100} end
@@ -643,6 +683,7 @@ local function feat_danger(surface, lt, A, S, Z, W)
             local pos = {x = px + 0.5, y = py + 0.5}
             if surface.can_place_entity{name = name, position = pos} then
                 local e = surface.create_entity{name = name, force = 'enemy', position = pos, direction = math.random(0, 3) * 4}
+                enemy_floor_patch(surface, e)
                 if e and type(def) == 'table' then
                     -- 机枪炮塔 per 个随机弹种(随本世界危险度)、重炮用炮弹；都加满
                     fill_turret_ammo(e, def.mag and pick_mag(W.danger) or def.ammo)
