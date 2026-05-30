@@ -33,10 +33,13 @@ end
 -- 一律带 time_to_live 自动消失，免手动清理、不留存档。
 local function draw_center(text, color, scale, ttl, follow)
     for _, player in pairs(game.connected_players) do
-        local target = (follow ~= false and player.character) or player.position
+        -- 挂角色时必须用【角色自己的 surface】：跃迁瞬间玩家正被传送，player.surface 与 character.surface 会短暂不一致，
+        -- 用 player.surface 画 character 会跨表面报错（nauvis 实体 / fulgora 期望）。挂坐标时退回 player.surface。
+        local char = (follow ~= false) and player.character or nil
+        local target = char or player.position
         rendering.draw_text{
             text = text,
-            surface = player.surface,
+            surface = char and char.surface or player.surface,
             target = target,
             color = color,
             scale = scale,

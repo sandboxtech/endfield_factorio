@@ -192,18 +192,23 @@ local WORLD_EVENTS = {
 
 -- 每分钟事件世界：先用【全局固定概率 storage.event_chance】判定这一分钟全服是否发生事件；
 -- 发生则在【符合条件的在线玩家】里随机挑【一个】，对其所在星球的事件类型触发一次（强度随 event_intensity）。
--- 与旧版"每个玩家各自 1/√N 判定"不同：现在全服每分钟最多一次事件，频率只由 event_chance 决定、与人数无关。
+-- 全服每分钟最多一次事件（频率只由 event_chance 决定、与人数无关）；每种事件另有【独立跳过钮】可单独放缓/关闭某类。
 local function run_world_events()
     if not storage.event_world then return end
     if math.random() >= (storage.event_chance or 0.5) then return end   -- 全局概率：这一分钟不发生事件
     local danger = map_features.knobs().danger
     local k = storage.event_intensity or 1
-    -- 候选 = 有 character、所在星球配了事件类型、且该类型未被 /c storage.event_types.x=false 禁用的在线玩家
+    -- 当前第几分钟（run_world_events 仅在整分钟被调用，故为整数）；用于各事件类型的独立周期跳过。Lua 5.2 无 //，用 floor。
+    local minute = math.floor(game.tick / (60 * 60))
+    local periods = storage.event_period_min or {}
+    -- 候选 = 有 character、所在星球配了事件类型、该类型未被 /c storage.event_types.x=false 禁用、且本分钟轮到该类型的在线玩家
     local candidates = {}
     for _, player in pairs(game.connected_players) do
         local ch = player.character
         local et = ch and storage.event_world[player.surface.name]
         if et and storage.event_types and storage.event_types[et] == false then et = nil end
+        -- 【单独跳过钮】：该类型每 event_period_min[et] 分钟才参与一次（默认 1=每分钟；/c storage.event_period_min.raid=3 → 每3分钟才可能）。
+        if et and minute % (periods[et] or 1) ~= 0 then et = nil end
         if et and WORLD_EVENTS[et] then
             candidates[#candidates + 1] = {player = player, ch = ch, et = et}
         end
