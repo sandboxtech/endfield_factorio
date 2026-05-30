@@ -44,7 +44,6 @@ local M = {
         tile_to_exotic     = 0.3,    -- noise mask 下目标取 exotic(岩浆/油海/氨海/虚空) 的概率（全星统一，母星不额外加成）
         tile_to_artificial = 0.4,    -- ore mask 下目标取 artificial(人造铺装) 的概率
         tile_same_class    = 0.7,    -- 部分替换时目标保持同类(水↔水/地↔地) 的概率
-        -- （原"危险世界"各敌人类型概率 balance.danger 已移除：野外敌人改由 feat_outpost 据点生成；复制虫改全局常数 storage.replicant_chance。）
         -- 母星/草星【宁和模式】抽奖：1/N 概率开启
         peaceful_one_in = 5,
     },

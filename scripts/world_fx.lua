@@ -17,7 +17,7 @@ local function register(name, event, run)
 end
 
 -- 复制虫：玩家建筑被【虫】破坏时，按【全局常数概率】storage.replicant_chance 原地冒出新虫 → 防御被打穿会滚雪球。
--- 不再按星球 danger_theme 滚定；全局生效，由 world_fx 开关 + 该概率控制。on_entity_died 高频，先做最便宜的早退。
+-- 全局生效（不分星球），由 world_fx 开关 + 该概率控制。on_entity_died 高频，先做最便宜的早退。
 register('replicant', defines.events.on_entity_died, function(e)
     local ent = e.entity
     if not (ent and ent.valid) then return end

@@ -30,14 +30,16 @@ function M.knobs()
     local function kc(off)
         return 0.5 + (noise.hash01(wseed(off) * 6.1) - noise.hash01(wseed(off) * 3.7)) * 0.5
     end
+    -- verdancy/rockiness/exotic/riches 各自独立（不同 off 哈希）；danger 由它们【派生】，不独立。
     local exotic = k(809, 3)   -- 跨星球异物倾向（立方偏置，诡异世界很罕见）
+    local riches = k(807, 1.6) -- 战利品丰度倾向（驱动 loot 数量，见 place_encounter）
     knobs_cache = {
         verdancy  = kc(801),      -- 树/草繁茂度（中心化：多半正常，极干/极茂罕见）
         rockiness = kc(803),      -- 岩石密度（中心化）
-        riches    = k(807, 1.6),  -- 战利品丰度倾向（仅打印给管理员参考；箱子密度已改由 loot_style 三类独立 random^2 决定）
+        riches    = riches,
         exotic    = exotic,
-        -- 危险度：曲线偏低 + 与异物倾向【正相关】（诡异世界往往也更危险）。
-        danger    = math.min(1, k(805, 2) * 0.7 + exotic * 0.7),
+        -- 危险度【正相关于 riches(主) + exotic(次)】：富庶/诡异世界更危险（高风险高回报）。范围 [0,1]、均值≈0.4 不变。
+        danger    = math.min(1, riches * 0.8 + exotic * 0.4),
     }
     knobs_cache_run = run
     return knobs_cache
@@ -449,9 +451,6 @@ local OUTPOST_GUARDS = {
     {name = 'artillery-turret', ammo = 'artillery-shell'},-- 重炮：炮弹
 }
 
--- （原 guard_perpetual / GUARD_KINDS 已并入 feat_outpost 的统一守卫池 OUTPOST_GUARDS：
---   永续箱不再单独成特征、也不再各自带守卫环；敌人统一由据点生成。）
-
 
 -- 区块级确定性随机 [0,1)：点状稀有风味用。
 local function chunk_rng(left_top, offset)
@@ -621,26 +620,27 @@ local function place_encounter(surface, lt)
     local frac = math.min(1, math.sqrt(d2) / R)
     local near_spawn = d2 < 96 * 96
     local center = {x = lt.x + math.random(6, 25) + 0.5, y = lt.y + math.random(6, 25) + 0.5}
+    local W = M.knobs()                       -- 本轮气质（缓存）：riches→箱数、danger→守卫规模
+    local riches_mul = 0.5 + W.riches         -- 富庶世界箱更多（knob=0.5 时×1，范围约 0.5~1.5）
+    local danger_mul = 0.5 + W.danger         -- 危险世界守卫更猛（同上）
 
     for _, e in ipairs(ENCOUNTERS) do
         if chunk_rng(lt, e.seed) <= encounter_chance(surface, e.kind) then   -- 命中此遭遇
-            -- 奖励：非空据点放【1~16 个同类箱】，数量非线性 floor(1+15·random^6)：期望≈3、多数 1~3、极小概率十几个。
+            -- 奖励：非空据点放【1~16 个同类箱】，数量非线性 floor(1+15·random^6)，再乘本轮 riches 倍率（富庶世界更多）。
             if e.kind ~= 'empty' then
-                for _ = 1, math.floor(1 + 15 * math.random() ^ 6) do place_reward_chest(surface, center, e.kind) end
+                for _ = 1, math.floor(1 + 15 * math.random() ^ 6 * riches_mul) do place_reward_chest(surface, center, e.kind) end
             end
             -- 敌人：出生点 96 格内不放（保护新手）；地砖按类型选——空据点不铺、永续用第二种、普通箱用本星地砖。
             if not near_spawn then
                 local floor
                 if e.kind == 'perpetual' then floor = (storage.enemy_floor2 or {})[surface.name]
                 elseif e.kind ~= 'empty' then floor = (storage.enemy_floor or {})[surface.name] end
-                place_guards(surface, center, e.danger * (0.4 + 0.6 * frac), floor)
+                place_guards(surface, center, e.danger * (0.4 + 0.6 * frac) * danger_mul, floor)   -- ×本轮 danger 倍率
             end
             return   -- 每地块至多一个遭遇，命中即停
         end
     end
 end
-
--- （原零星 feat_danger 与散布 feat_wrecks 已移除：野外敌人/残骸统一改由 place_encounter→place_guards 据点式生成。）
 
 -- 树木主题（连续插值，不是离散几种世界）：把每棵树【从原版色/灰度插值到本轮目标】，插值量 = strength。
 --   strength 立方偏置：绝大多数 ≈0（几乎原版）、极小概率接近 1（大改）。所以"特殊树世界"很罕见。
@@ -837,8 +837,7 @@ function M.generate(surface, lt)
     feature_fluid_remap(surface, lt)     -- 流体资源互换（原油/锂卤水/氟喷口/硫酸喷泉 小概率整星换成另一种）
     theme_trees(surface, lt)
     -- 单地块【至多一个遭遇】：永续→木→铁→钢箱→空据点，命中即停；敌人统一 place_guards（perpetual/empty danger 高）。
-    place_encounter(surface, lt)
-    -- （原零星 feat_danger 敌群 + 散布 feat_wrecks 残骸 + 独立 feat_perpetual 已全部并入 place_encounter。原版 enemy-base 仍自然出虫。）
+    place_encounter(surface, lt)   -- 野外敌人/残骸/箱统一据点式生成；原版 enemy-base 仍自然出虫。
 end
 
 return M

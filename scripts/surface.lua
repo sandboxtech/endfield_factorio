@@ -459,8 +459,6 @@ script.on_event(defines.events.on_surface_cleared, events.safe('surface_cleared'
         if #rules > 0 then storage.tile_remap[surface.name] = rules end
     end
 
-    -- （原"危险世界"滚定已整体移除：零星敌群改由 map_features.place_encounter 据点式生成；
-    --   复制虫(replicant)改为全局常数概率、不再按星球滚，见 world_fx.lua 与 storage.replicant_chance。）
 
     -- 事件世界：每分钟触发一种事件（独立于危险度，奖励/危险皆有）。详见 tick.lua run_world_events。
     --   raid 空降虫 / meteor 矿石陨石雨 / supply 物资空投 / coinfall 金币雨 / drones 无人机来袭 / barrage 重炮落点。
