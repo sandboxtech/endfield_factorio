@@ -93,23 +93,16 @@ function M.place_on_surface(surface_name)
     for _, e in pairs(surface.find_entities_filtered{area = {{bx - 2, by - 2}, {bx + 2, by + 2}}}) do
         if e.valid and e.type ~= 'resource' and e.type ~= 'character' then e.destroy() end
     end
-    -- 铺一块 5×5 地坪，去掉水/不平地形保证放置成功。
-    -- 注意：岩浆/油海等液体 tile 的 collision_mask 挡建筑，且【混凝土盖不住】(其 default_cover_tile=foundation)；
-    -- 故先铺 refined-concrete，铺完若市场点仍不可通行(说明是需地基的液体)，再用 foundation 兜底覆盖。
-    local function lay(tile_name)
-        local tiles = {}
-        for dx = -2, 2 do
-            for dy = -2, 2 do
-                tiles[#tiles + 1] = {name = tile_name, position = {bx + dx, by + dy}}
-            end
+    -- 铺一块 5×5 混凝土地坪，去掉水/岩浆/油海/不平地形保证放置成功。
+    -- set_tiles 是脚本级、不受建造限制：mineable 的 refined-concrete 铺到 non-mineable 的岩浆/油海/水上时，
+    -- 液体变成 hidden_tile（藏到底下）、混凝土成为可走表层，故能直接盖住，无需 foundation/landfill。
+    local tiles = {}
+    for dx = -2, 2 do
+        for dy = -2, 2 do
+            tiles[#tiles + 1] = {name = 'refined-concrete', position = {bx + dx, by + dy}}
         end
-        surface.set_tiles(tiles)
     end
-    lay('refined-concrete')
-    local t = surface.get_tile(bx, by)
-    if t and t.valid and t.collides_with('player') and prototypes.tile['foundation'] then
-        lay('foundation')   -- 岩浆/油海等：混凝土没盖住 → 用 foundation（这些液体的默认覆盖 tile）
-    end
+    surface.set_tiles(tiles)
 
     local ent = surface.create_entity{name = 'market', position = {bx, by}, force = force}
     if not ent then
