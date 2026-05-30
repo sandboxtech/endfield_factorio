@@ -606,21 +606,35 @@ local function feat_perpetual(surface, lt)
     end
 end
 
--- 防御据点：远离出生点的【无限箱 + 自带子电网 + 一圈守卫塔】，给探索奖励。罕见，仅 >OUTPOST_MIN_DIST 才刷。
---   子电网：enemy 的 substation + electric-energy-interface(满缓冲+发电) → 给激光炮塔供电。
---   守卫塔(enemy 激光/喷火/机枪)全放在 substation 供电范围内(半径≤7)，数量随离中心距离增长。
---   无限箱 neutral(可取货)；守卫 enemy(打靠近者，构成挑战)。
+-- 飞船残骸外观池（big/medium/small）。force=neutral：机器人拆不掉，作障碍/点缀。
+local WRECKS = {
+    'crash-site-spaceship-wreck-big-1', 'crash-site-spaceship-wreck-big-2',
+    'crash-site-spaceship-wreck-medium-1', 'crash-site-spaceship-wreck-medium-2', 'crash-site-spaceship-wreck-medium-3',
+    'crash-site-spaceship-wreck-small-1', 'crash-site-spaceship-wreck-small-2', 'crash-site-spaceship-wreck-small-3',
+    'crash-site-spaceship-wreck-small-4', 'crash-site-spaceship-wreck-small-5', 'crash-site-spaceship-wreck-small-6',
+}
+-- 非线性数量：大概率 0、小概率几个、极小概率接近 max（random^power × (max+1) 下取整，power 越大越偏 0）。
+local function nonlinear_count(max, power)
+    if max < 1 then return 0 end
+    return math.floor(math.random() ^ (power or 3) * (max + 1))
+end
+
+-- 防御据点（唯一的野外敌人/残骸来源，取代原零星 feat_danger/feat_wrecks）：远离出生点的【电网核心 +（可选）无限箱 +
+-- 守卫塔火力网 + 飞船残骸】。罕见，仅 >OUTPOST_MIN_DIST 才刷。越远规模越大。
+--   · 宝箱【不一定有】(~60%)：有则放无限箱(neutral 可取货)，挨着核心。
+--   · 守卫塔【每种类型各自非线性】：大概率没有、小概率 1~2、极小概率很多；放在离核心(箱子)较远的环上(半径6~11)，构成接近火力网而非贴脸。
+--   · 残骸：先敌人后残骸，非线性数量，散布外围作障碍；force=neutral，【不铺人造地板】(残骸不是敌人)。
 local OUTPOST_MIN_DIST = 300                     -- 距出生点小于此不刷（据点是远征奖励）
 local function feat_outpost(surface, lt)
     if chunk_rng(lt, 701) > (storage.loot_density or 1) * (storage.loot_density_outpost or 0.004) then return end
     local ccx, ccy = lt.x + 16, lt.y + 16
     if ccx * ccx + ccy * ccy < OUTPOST_MIN_DIST * OUTPOST_MIN_DIST then return end
-    -- 子电网核心 substation：放不下就整个放弃（据点必须有电网）
+    -- 电网核心 substation（给激光/特斯拉等电炮供电）：放不下就整个放弃
     local center = {x = lt.x + math.random(10, 21) + 0.5, y = lt.y + math.random(10, 21) + 0.5}
     local sp = surface.find_non_colliding_position('substation', center, 5, 1)
     if not sp then return end
     if not surface.create_entity{name = 'substation', force = 'enemy', position = sp} then return end
-    -- 供电接口：满缓冲 + 持续发电 + 满能量 → 激光炮塔有电可打（数值给足，单位无论 W/帧都够）
+    -- 供电接口：满缓冲 + 持续发电 + 满能量 → 电炮有电可打（数值给足）
     local ip = surface.find_non_colliding_position('electric-energy-interface', sp, 4, 1)
     if ip then
         local eei = surface.create_entity{name = 'electric-energy-interface', force = 'enemy', position = ip}
@@ -630,104 +644,49 @@ local function feat_outpost(surface, lt)
             eei.energy = 1e9                                -- 开局满能量
         end
     end
-    -- 无限箱（奖励），挨着子电网
-    local chp = surface.find_non_colliding_position('steel-chest', sp, 4, 1)
-    if chp then spawn_perpetual_chest(surface, chp) end
-    -- 守卫塔环：全在 substation 供电半径内（≤7），数量随离中心距离 3→9 增长
+
+    -- 据点规模随离中心比例增长（越远越大）。
     local _w, _h = storage.width_of and storage.width_of[surface.name], storage.height_of and storage.height_of[surface.name]
     local R = (_w and _h) and (_w + _h) / 2 or storage.radius_standard or 2048   -- 椭圆等效半径=(宽+高)/2；老存档兜底
     local frac = math.min(1, math.sqrt(ccx * ccx + ccy * ccy) / R)
-    local count = math.floor(3 + frac * 6 + 0.5)
-    for _ = 1, count do
-        local def = OUTPOST_GUARDS[math.random(#OUTPOST_GUARDS)]
-        local ang, r = math.random() * 2 * math.pi, 3 + math.random() * 4
-        local gp = {x = sp.x + math.cos(ang) * r, y = sp.y + math.sin(ang) * r}
-        local gsp = surface.find_non_colliding_position(def.name, gp, 3, 1)
-        if gsp then
-            local e = surface.create_entity{name = def.name, force = 'enemy', position = gsp, direction = math.random(0, 3) * 4, quality = roll_quality(0.7)}
-            enemy_floor_patch(surface, e)
-            if e then
-                if def.mag then fill_turret_ammo(e, pick_ammo(MAG_AMMO)) end           -- 机枪：纯随机弹种(加满)
-                if def.ammo then fill_turret_ammo(e, def.ammo) end                    -- 固定弹种（磁轨弹等）加满
-                if def.rocket then fill_turret_ammo(e, pick_ammo(OUTPOST_ROCKET)) end -- 火箭炮：纯随机弹种(核弹少量)
-                if def.fluid then e.insert_fluid{name = def.fluid, amount = 100} end
-            end
-        end
+
+    -- 宝箱【不一定有】：~60% 概率在核心旁放一个无限箱（奖励）。
+    if math.random() < 0.6 then
+        local chp = surface.find_non_colliding_position('steel-chest', sp, 3, 1)   -- 贴近核心
+        if chp then spawn_perpetual_chest(surface, chp) end
     end
-end
 
--- 按本星【独立开关】theme 构建敌人池（worm/spawner/turret/mine/art 各自有无）。
---   带弹的：gun-turret 每个各自纯随机弹种(mag=true，pick_ammo)，artillery-turret 固定炮弹；无标记的不填弹。弹药加满。
-local function danger_pool(t)
-    local pool = {}
-    if t.worm then pool[#pool + 1] = 'small-worm-turret'; pool[#pool + 1] = 'medium-worm-turret'; pool[#pool + 1] = 'big-worm-turret' end
-    if t.spawner then pool[#pool + 1] = 'biter-spawner'; pool[#pool + 1] = 'spitter-spawner' end
-    if t.mine then pool[#pool + 1] = 'land-mine' end
-    if t.turret then pool[#pool + 1] = {name = 'gun-turret', mag = true} end
-    if t.art then pool[#pool + 1] = {name = 'artillery-turret', ammo = 'artillery-shell'} end
-    return pool
-end
--- 单区块敌人放置【尝试】上限：哪怕最危险 + 最边缘也封顶，不致铺满整片。
-local DANGER_MAX_PER_CHUNK = 10
--- 远离出生点(>96格)随机采样放敌方炮塔/虫巢/地雷/重炮。强度随【危险度 × 离地图中心比例】增长：
---   越靠近中心越少、越往边缘【刷新概率越高、数量越多】；但有 DANGER_MAX_PER_CHUNK 封顶。force='enemy'。
-local function feat_danger(surface, lt, A, S, Z, W)
-    local theme = storage.danger_theme and storage.danger_theme[surface.name]
-    if not theme then return end
-    local pool = danger_pool(theme)
-    if #pool == 0 then return end
-
-    -- 离中心比例 frac∈[0,1]（按区块中心算）。出生点 96 格内整块跳过。
-    local ccx, ccy = lt.x + 16, lt.y + 16
-    if ccx * ccx + ccy * ccy < 96 * 96 then return end
-    local _w, _h = storage.width_of and storage.width_of[surface.name], storage.height_of and storage.height_of[surface.name]
-    local R = (_w and _h) and (_w + _h) / 2 or storage.radius_standard or 2048   -- 椭圆等效半径=(宽+高)/2；老存档兜底
-    local frac = math.min(1, math.sqrt(ccx * ccx + ccy * ccy) / R)
-
-    -- 强度 = 危险度 × (0.25 + 0.75×离中心比例)，封顶 1：近中心弱、边缘强。
-    local intensity = math.min(1, W.danger * (0.25 + 0.75 * frac))
-    -- 尝试次数 = random(0, 上限)：半随机（有的区块空、有的成簇）；上限随 intensity 增长且封顶。
-    -- 硬封 DANGER_MAX_PER_CHUNK×4：兜底防 /c storage.danger_density 填超大数 → 每个区块狂刷虫卡死。
-    local attempts = math.random(0, math.min(DANGER_MAX_PER_CHUNK * 4,
-        math.floor(intensity * DANGER_MAX_PER_CHUNK * (storage.danger_density or 1) + 0.5)))
-    if attempts <= 0 then return end
-    local thr = 0.80 - 0.30 * intensity   -- intensity 越高 → 噪声门槛越低 → 命中概率越高（刷新概率越高）
-
-    for _ = 1, attempts do
-        local px, py = lt.x + math.random(0, 31), lt.y + math.random(0, 31)
-        if px * px + py * py > 96 * 96
-           and noise.fractal_warped(noise.octaves.blob, px, py, wseed(811), A, S, Z) > thr then
-            local def = pool[math.random(#pool)]
-            local name = type(def) == 'table' and def.name or def
-            local pos = {x = px + 0.5, y = py + 0.5}
-            if surface.can_place_entity{name = name, position = pos} then
-                local e = surface.create_entity{name = name, force = 'enemy', position = pos, direction = math.random(0, 3) * 4, quality = roll_quality(0.7)}
+    -- 守卫塔：每种类型各自非线性数量（max 随距离 2→8），放在离核心(箱子)较远的环上(半径6~11)。
+    local tmax = 2 + math.floor(frac * 6)
+    for _, def in ipairs(OUTPOST_GUARDS) do
+        for _ = 1, nonlinear_count(tmax, 3) do
+            local ang, r = math.random() * 2 * math.pi, 6 + math.random() * 5
+            local gp = {x = sp.x + math.cos(ang) * r, y = sp.y + math.sin(ang) * r}
+            local gsp = surface.find_non_colliding_position(def.name, gp, 3, 1)
+            if gsp then
+                local e = surface.create_entity{name = def.name, force = 'enemy', position = gsp, direction = math.random(0, 3) * 4, quality = roll_quality(0.7)}
                 enemy_floor_patch(surface, e)
-                if e and type(def) == 'table' then
-                    -- 机枪炮塔 per 个随机弹种(随本世界危险度)、重炮用炮弹；都加满
-                    fill_turret_ammo(e, def.mag and pick_ammo(MAG_AMMO) or def.ammo)
+                if e then
+                    if def.mag then fill_turret_ammo(e, pick_ammo(MAG_AMMO)) end           -- 机枪：纯随机弹种(加满)
+                    if def.ammo then fill_turret_ammo(e, def.ammo) end                    -- 固定弹种（磁轨弹等）加满
+                    if def.rocket then fill_turret_ammo(e, pick_ammo(OUTPOST_ROCKET)) end -- 火箭炮：纯随机弹种(核弹少量)
+                    if def.fluid then e.insert_fluid{name = def.fluid, amount = 100} end
                 end
             end
         end
     end
+
+    -- 飞船残骸：先敌人后残骸。非线性数量(max 随距离 1→6)，散布在据点外围(半径4~16)作障碍/点缀；不铺人造地板。
+    for _ = 1, nonlinear_count(1 + math.floor(frac * 5), 3) do
+        local name = WRECKS[math.random(#WRECKS)]
+        local ang, r = math.random() * 2 * math.pi, 4 + math.random() * 12
+        local wp = surface.find_non_colliding_position(name, {x = sp.x + math.cos(ang) * r, y = sp.y + math.sin(ang) * r}, 8, 1)
+        if wp then surface.create_entity{name = name, position = wp, force = 'neutral'} end
+    end
 end
 
--- 危险世界偶现飞船残骸：机器人无法拆除 → 阻碍蓝图，作为障碍风味。force='neutral'。
-local WRECKS = {
-    'crash-site-spaceship-wreck-big-1', 'crash-site-spaceship-wreck-big-2',
-    'crash-site-spaceship-wreck-medium-1', 'crash-site-spaceship-wreck-medium-2', 'crash-site-spaceship-wreck-medium-3',
-    'crash-site-spaceship-wreck-small-1', 'crash-site-spaceship-wreck-small-2', 'crash-site-spaceship-wreck-small-3',
-    'crash-site-spaceship-wreck-small-4', 'crash-site-spaceship-wreck-small-5', 'crash-site-spaceship-wreck-small-6',
-}
--- 残骸：本世界密度由 surface.lua 滚定（仅 25% 世界有，density=random^3 大概率小）。独立于危险世界。
-local function feat_wrecks(surface, lt)
-    local wd = storage.wreck_density and storage.wreck_density[surface.name]
-    if not wd then return end
-    if chunk_rng(lt, 813) > wd * (storage.danger_density or 1) then return end
-    local name = WRECKS[math.random(#WRECKS)]
-    local pos = surface.find_non_colliding_position(name, {lt.x + math.random(4, 27), lt.y + math.random(4, 27)}, 12, 1)
-    if pos then surface.create_entity{name = name, position = pos, force = 'neutral'} end
-end
+-- （原零星 feat_danger 与散布 feat_wrecks 已移除：野外敌人/残骸统一改由 feat_outpost 据点式生成。
+--   WRECKS 残骸池已上移到 feat_outpost 之前。）
 
 -- 树木主题（连续插值，不是离散几种世界）：把每棵树【从原版色/灰度插值到本轮目标】，插值量 = strength。
 --   strength 立方偏置：绝大多数 ≈0（几乎原版）、极小概率接近 1（大改）。所以"特殊树世界"很罕见。
@@ -928,10 +887,8 @@ function M.generate(surface, lt)
     feat_equipment(surface, lt)   -- 铁箱：设备
     feat_treasure(surface, lt)    -- 木箱：宝箱
     feat_perpetual(surface, lt)   -- 永续箱：基础材料/矿物
-    feat_outpost(surface, lt)     -- 防御据点：远处的无限箱+子电网+激光/喷火/机枪守卫
-    -- 危险世界（按 W.danger，与 exotic 正相关）：成簇敌方实体 + 偶现飞船残骸障碍。原版 enemy-base 仍自然出虫。
-    feat_danger(surface, lt, A, S, Z, W)
-    feat_wrecks(surface, lt)      -- 飞船残骸：仅 25% 世界、密度立方偏小（独立于危险世界）
+    feat_outpost(surface, lt)     -- 防御据点（唯一野外敌人/残骸来源）：电网核心 +(可选)无限箱 + 非线性守卫塔 + 非线性残骸
+    -- （原零星 feat_danger 敌群 + 散布 feat_wrecks 残骸已移除，统一并入 feat_outpost。原版 enemy-base 仍自然出虫。）
 end
 
 return M
