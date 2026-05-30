@@ -81,7 +81,7 @@ M.POPUP_CLOSE_NAME = POPUP_NAME .. '_close'
 
 -- title：localised string 或纯文本；lines：数组，每项一行（localised string 或纯文本）。
 -- buttons（可选）：数组，每项 {name=, caption=, tags=}，渲染成滚动区里的可点击按钮（查看他人/返回/玩家名/跃迁停留等）。
---   点击由 tick.on_gui_click 按 name 路由——复用 HUD 同名按钮的处理（skills/wn_btn_warp/wn_btn_stay 等）。
+--   点击由 tick.on_gui_click 按 name 路由，复用 HUD 同名按钮的处理（skills/wn_btn_warp/wn_btn_stay 等）。
 -- buttons_at_bottom：true 时按钮放在文本行【之后】（用于教程末尾的"其它按钮"），否则放最前（用于面板导航）。
 function M.show_popup(player, title, lines, buttons, buttons_at_bottom)
     if not (player and player.valid) then return end

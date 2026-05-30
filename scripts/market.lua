@@ -1,5 +1,5 @@
 -- 各星球出生点的金币市场（母星 + 其余 4 个星球，共 5 个，内容相同）：用挂机赚的金币(√在线分钟)买各种普通装备零件。
--- 卖装备而非建筑/瓶子——是个人增益，不替代"建工厂"的核心循环。
+-- 卖装备而非建筑/瓶子，是个人增益，不替代"建工厂"的核心循环。
 -- 每轮跃迁后由 surface.lua 的 on_surface_cleared（每个 PLANET_GEN 星球、clear 结算后）放置；不可摧毁/挖取。
 local M = {}
 
@@ -68,7 +68,7 @@ end
 
 -- 在【指定星球】出生点正北放一个金币市场并上架装备。母星 + 其余 4 个星球各放一个同样的市场。
 -- 【惰性放置】：由 surface.lua 的 on_chunk_generated 在【出生区块自然生成时】调用（玩家复活/传送到该星触发），
--- 故不再强制生成区块——此时出生区块已存在。每轮每星只放一次（storage.market_run 记录）。
+-- 故不再强制生成区块，此时出生区块已存在。每轮每星只放一次（storage.market_run 记录）。
 function M.place_on_surface(surface_name)
     local surface = game.surfaces[surface_name]
     if not surface then return end
@@ -89,7 +89,7 @@ function M.place_on_surface(surface_name)
     end
     -- 清掉市场地坪上【任何会挡住放置】的实体（树/悬崖/石头/战利品箱…），只保留矿脉(resource，不挡建筑)和玩家(character)。
     -- 注意：map_features 在本区块【先于】市场运行、可能在出生点附近落一个战利品箱(container)正好压在市场点上，
-    -- 导致 create_entity('market') 碰撞返回 nil、市场放不出——这正是"有时没市场"的主因。故按区域清干净、不再只清树石。
+    -- 导致 create_entity('market') 碰撞返回 nil、市场放不出，这正是"有时没市场"的主因。故按区域清干净、不再只清树石。
     for _, e in pairs(surface.find_entities_filtered{area = {{bx - 2, by - 2}, {bx + 2, by + 2}}}) do
         if e.valid and e.type ~= 'resource' and e.type ~= 'character' then e.destroy() end
     end

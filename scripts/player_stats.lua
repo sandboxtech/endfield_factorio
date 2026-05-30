@@ -63,7 +63,7 @@ function M.bump_connected(key)
 end
 
 -- 每分钟采样一次：所有在线玩家 online_minutes +1。
--- 由 tick.lua 的统一 on_nth_tick(3600) 调用——本文件不再单独注册，避免覆盖。
+-- 由 tick.lua 的统一 on_nth_tick(3600) 调用，本文件不再单独注册，避免覆盖。
 function M.sample_online()
     for _, player in pairs(game.connected_players) do
         local s = M.get(player.index)

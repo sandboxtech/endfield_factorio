@@ -26,7 +26,7 @@ function M.get_stat(player_index, stat_name)
 end
 
 -- 速度技能曲线：stat=0 → -0.5（-50%）；stat=to_zero → 0（原版）；之后继续 log 缓升。
--- f = -0.5 + 0.5×log10(1 + 9×stat/to_zero)。to_zero 越大升级越慢——设大让"玩几天才到 0%"，
+-- f = -0.5 + 0.5×log10(1 + 9×stat/to_zero)。to_zero 越大升级越慢，设大让"玩几天才到 0%"，
 -- 到 +50% 需 11×to_zero（老玩家级），杜绝"随便做点就 +50%"。
 local function speed_curve(to_zero)
     return function(stat) return -0.5 + 0.5 * math.log(1 + 9 * stat / to_zero) / LOG10 end

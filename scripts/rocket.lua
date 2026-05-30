@@ -1,7 +1,7 @@
 -- 发射火箭的惩罚 + 载荷公告：每把一发 cargo pod 送上太空，本轮自动跃迁时间 -1 分钟。
 -- 设计意图：跃迁是"从头再来"的核心节奏，把资源送上太空会拖慢/逃避这个节奏，故施加时间惩罚。
 -- 2.0 SA：货物不在火箭本体，而在它发射的 cargo pod 的 cargo_unit 库存里。on_rocket_launched 那一刻
--- pod 往往还没挂上货（读出来是空），所以改在 on_cargo_pod_finished_ascending 读——此刻 pod 已带货
+-- pod 往往还没挂上货（读出来是空），所以改在 on_cargo_pod_finished_ascending 读，此刻 pod 已带货
 -- 升空完成、尚未在目的地卸货；其 launched_by_rocket 字段又能精确区分"火箭发射"与玩家手动 pod 旅行。
 local constants = require('scripts.constants')
 local util = require('scripts.util')

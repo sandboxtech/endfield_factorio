@@ -169,7 +169,7 @@ function M.reset()
     force.friendly_fire = true
 
     -- 每次跃迁后自动解锁所有星球：无需研究 planet-discovery 科技即可前往。
-    -- 必须放在 force.reset() 之后——reset 会清空科技/解锁状态，先解锁会被冲掉。
+    -- 必须放在 force.reset() 之后，reset 会清空科技/解锁状态，先解锁会被冲掉。
     for name in pairs(game.planets) do
         force.unlock_space_location(name)
     end
@@ -205,7 +205,7 @@ function M.reset()
     game.reset_time_played()
 
     -- 污染/敌人/腐败等【影响玩法节奏】的全局参数：大概率正常值，小概率小幅偏离（util.mostly_normal）。
-    -- 不再大幅随机——极端的污染/虫子/腐败速度会毁掉一局的可玩性。（difficulty 默认值见 constants.ensure_defaults）
+    -- 不再大幅随机，极端的污染/虫子/腐败速度会毁掉一局的可玩性。（difficulty 默认值见 constants.ensure_defaults）
     game.forces.enemy.reset_evolution()
 
     -- 本世界【敌人武器伤害】随危险度 knobs().danger 缩放（danger 多半低 → 多数世界小幅加成，偶尔高危世界重伤）。

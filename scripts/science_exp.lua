@@ -34,7 +34,7 @@ local function sum_packs(inventory)
 end
 
 -- 跃迁结算：统计【在线】玩家背包里整组科技瓶 → 经验累加进 storage.science_exp（按瓶名，各品质合并）。
--- 不移除瓶子——跃迁本就清空背包。只有自动跃迁会调用（无提前结算）。必须在背包被清空之前调用。
+-- 不移除瓶子，跃迁本就清空背包。只有自动跃迁会调用（无提前结算）。必须在背包被清空之前调用。
 -- 返回本轮各瓶获得经验 {瓶名=经验}；离线/无背包返回 nil。
 function M.collect(player)
     if not player.connected then return nil end

@@ -151,7 +151,7 @@ local WORLD_EVENTS = {
         end
     end,
     -- tech 科技世界（对全 force，忽略落点/玩家/危险度）：从【所有科技】(排除星球发现科技)随机抽一个，
-    -- 不看是否已研究——已研究则以 tech_world_lose_chance 概率【失去】，未研究则以 tech_world_gain_chance 概率【得到】。
+    -- 不看是否已研究，已研究则以 tech_world_lose_chance 概率【失去】，未研究则以 tech_world_gain_chance 概率【得到】。
     tech = function()
         local force = game.forces.player
         local pool = {}
@@ -262,7 +262,7 @@ end
 -- （player_stats 不再单独注册 on_nth_tick，统一在此调度，避免后注册者覆盖前者。）
 script.on_nth_tick(60 * 60, function()
     player_stats.sample_online()
-    -- 事件世界（刷怪/落点/科技世界）碰大量原型、最易出错——单独兜底，出错不影响金币/倒计时/跃迁。
+    -- 事件世界（刷怪/落点/科技世界）碰大量原型、最易出错，单独兜底，出错不影响金币/倒计时/跃迁。
     events.safe('world_events', run_world_events)()
 
     -- 每分钟尝试给每个在线玩家塞 1 个普通金币（背包满则塞不进，忽略即可）。

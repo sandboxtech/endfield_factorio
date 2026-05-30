@@ -66,7 +66,7 @@ function M.player_reset(player)
     player.disable_flashlight()
 end
 
--- 脚本杀死玩家：先把玩家移到【当前所在表面】的出生点再杀死 —— 尸体(背包货物)留在当前星球，
+-- 脚本杀死玩家：先把玩家移到【当前所在表面】的出生点再杀死，尸体(背包货物)留在当前星球，
 -- 不会被带回母星（杜绝"在外星捡货 → /suicide 把货带回母星"）。
 -- 复活去哪由 on_player_respawned → place_on_respawn 决定（玩家的复活星球，默认母星）；这里只设个母星 force 兜底。
 -- 用于所有"杀死玩家"的入口（跃迁清场 / 自杀 / 离场 等）。无 character 时跳过。

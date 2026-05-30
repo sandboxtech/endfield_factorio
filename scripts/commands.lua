@@ -158,9 +158,27 @@ function M.show_lastrank(player)
     gui.show_popup(player, {'wn.lastrank-header', storage.last_leaderboard_run or 0}, lines)
 end
 
+-- ── 投票 + 传送 共享冷却 ──────────────────────────────────────────────────────
+-- 投票（跃迁/停留）与前往星球共用同一条【每玩家】冷却，防止频繁刷动作。冷却时长 3 分钟，可 /c storage.action_cd_minutes 热改。
+-- 时间戳按玩家名存 storage.action_cd[名]=tick；只有【成功执行】才计时，被拒（无角色/背包没清空等）不占冷却。
+local function on_cooldown(player)
+    storage.action_cd = storage.action_cd or {}
+    local last = storage.action_cd[player.name]
+    local cd = (storage.action_cd_minutes or 3) * constants.min_to_tick
+    if last and game.tick - last < cd then
+        player.print({'wn.action-cd', math.ceil((cd - (game.tick - last)) / 60)})
+        return true
+    end
+    return false
+end
+local function mark_action(player)
+    storage.action_cd = storage.action_cd or {}
+    storage.action_cd[player.name] = game.tick
+end
+
 -- ── 前往星球 ─────────────────────────────────────────────────────────────────
 -- /nauvis /vulcanus /gleba /fulgora /aquilo：把自己直接传送到对应星球出生点（每次跃迁已自动解锁所有星球）。
--- 要求【鼠标 / 背包 / 物流(回收) / 弹药】四个区都为空——不为空则拒绝，防止跨星球夹带物资（不主动清空，避免误删）。
+-- 要求【鼠标 / 背包 / 物流(回收) / 弹药】四个区都为空，不为空则拒绝，防止跨星球夹带物资（不主动清空，避免误删）。
 local function travel_inventories_empty(player)
     local cur = player.cursor_stack
     if cur and cur.valid_for_read then return false end
@@ -182,8 +200,11 @@ function M.travel(player, planet)
         player.print('前往星球前，请先清空：鼠标、背包、物流(回收)、弹药 这四个区')
         return
     end
+    if on_cooldown(player) then return end   -- 校验全过后才查冷却：被拒的尝试不占冷却
     players.place_on_surface(player, planet)
     storage.respawn_surface[player.name] = planet   -- 前往后，该星球成为默认复活星球
+    mark_action(player)
+    game.print({'wn.travel-notice', player.name, planet})
 end
 
 -- （/settle、/jiesuan 已移除：只有【自动跃迁】才结算科技瓶经验，不再支持提前手动结算。）
@@ -232,6 +253,8 @@ local function warp_vote_eval()
                 gui.refresh_countdown()
             end
         end
+    -- 安全不变量：取消只把 delta(本次砍掉的量)原样加回 → warp_hours 至多回到自然值，绝不超过。
+    -- 故投票【只能缩短或还原到自然倒计时，永远无法延长/阻止跃迁】。改这段务必保持"加回的 ≤ 砍掉的"。
     elseif storage.warp_vote_delta ~= nil then   -- 跌破阈值且此前施加过 → 把缩减的时间加回去（取消提前）
         storage.warp_hours = (storage.warp_hours or 1) + storage.warp_vote_delta
         storage.warp_vote_delta = nil
@@ -324,8 +347,11 @@ end
 -- 投跃迁票（vote='agree'/'oppose'，等同 /跃迁 /停留）并结算广播。
 function M.cast_warp_vote(player, vote)
     if not player then return end
+    if on_cooldown(player) then return end
     storage.warp_vote = storage.warp_vote or {}
     storage.warp_vote[player.name] = vote
+    mark_action(player)
+    game.print({vote == 'agree' and 'wn.warp-vote-cast-agree' or 'wn.warp-vote-cast-oppose', player.name})
     warp_vote_eval()
 end
 

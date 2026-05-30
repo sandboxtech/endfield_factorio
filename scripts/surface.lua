@@ -67,7 +67,7 @@ local function nature_by_knob(mgs, name, mood)
 end
 
 -- 用命名噪声输入的【偏置】修改原生气候（2.0 干净杠杆：常量数字串即可，运行时无法编译公式）。
--- 整颗星偏湿/干/冷/热，原生生成器据此自然长出对应草/沙/树/水比例——是"修改原生"而非"覆盖"。
+-- 整颗星偏湿/干/冷/热，原生生成器据此自然长出对应草/沙/树/水比例，是"修改原生"而非"覆盖"。
 -- 偏置多半接近 0(≈原版)、偶尔明显 → 寻常世界居多、剧变世界罕见。值必须是字符串。
 local function bias_climate(mgs, knobs)
     mgs.property_expression_names = mgs.property_expression_names or {}
@@ -116,7 +116,7 @@ end
 --   · 跨类替换(地→水/熔岩/虚空 等) = 戏剧化，低概率，用平滑大团噪声成片、不满图。
 -- 目标池【白名单穷举】各星自然 tile（排除法挡不住套色生成的彩色混凝土等人造 tile，故改穷举）。
 -- valid_pools 会按 prototypes.tile 过滤掉拼错/不存在的，所以这里宁可多列。人造 tile 一律不在列。
--- void/space 与 artificial(人造) 不在此白名单——它们是【受 mask 限制】的特殊目标池，由 valid_pools 另建：
+-- void/space 与 artificial(人造) 不在此白名单，它们是【受 mask 限制】的特殊目标池，由 valid_pools 另建：
 --   voidspace(empty-space/out-of-map) 仅 noise mask 可选；artificial(混凝土系等) 仅 ore mask 可选。
 local TILE_CLASS = {
     water  = {  -- 常规水(可整片替换的安全自然水：仍可泵/可作 all 目标)
@@ -199,7 +199,7 @@ local PLANET_SRC = {
         {class = 'ground', tiles = {'dust-flat', 'dust-lumpy', 'dust-patchy', 'dust-crests'}},
     },
 }
--- 常规自然目标类：同类高概率、水↔地次之（exotic 与 artificial 不在这里——它们各受 mask 限制，见 pick_target）。
+-- 常规自然目标类：同类高概率、水↔地次之（exotic 与 artificial 不在这里，它们各受 mask 限制，见 pick_target）。
 local function pick_natural_class(src_class)
     if math.random() < constants.balance.tile_same_class then return src_class end
     return src_class == 'water' and 'ground' or 'water'
@@ -335,7 +335,7 @@ script.on_event(defines.events.on_surface_cleared, events.safe('surface_cleared'
 
     -- 外观随机（纯表现）：brightness_visual_weights = 昼夜明暗(brightness)对各通道 LUT 的【影响权重】。
     --   引擎公式 LUT ×= (1-w) + brightness×w：w 越大 → 画面越紧贴昼夜曲线、非正午越暗；
-    --   默认 {0,0,0} = 完全不受影响、永远全亮。【所以权重越大越暗，不是越亮】——故只取很小的值：
+    --   默认 {0,0,0} = 完全不受影响、永远全亮。【所以权重越大越暗，不是越亮】，故只取很小的值：
     --   常态白天基本全亮、只在晨昏/夜里透出极淡色调；1/6 概率色调略强（仍只在非正午显现）。
     local cr, cg, cb
     if math.random(1, 6) == 1 then
@@ -549,7 +549,7 @@ script.on_event(defines.events.on_surface_cleared, events.safe('surface_cleared'
         dbg_add('障碍', rule.to and ('→' .. rule.to) or 'mixed(每个随机)')
     end
 
-    -- 流体资源互换：小概率激活；激活时【二选一】门控——产流体的资源(原油/锂卤水/氟喷口/硫酸喷泉)变成随机另一种喷口。
+    -- 流体资源互换：小概率激活；激活时【二选一】门控，产流体的资源(原油/锂卤水/氟喷口/硫酸喷泉)变成随机另一种喷口。
     --   模式A 每喷口各自小概率 p (零星散布，每星每世界 p 不同)；模式B noise 大团内整体突变 (成片)。应用见 map_features.feat_fluid_remap。
     storage.fluid_remap = storage.fluid_remap or {}          -- 老存档兜底
     storage.fluid_remap[surface.name] = nil
@@ -652,7 +652,7 @@ script.on_event(defines.events.on_chunk_generated, events.safe('chunk_generated'
     if far <= inner * inner then
         -- 整块在内：不铺虚空（跳过）
     elseif near >= outer * outer then
-        -- 整块在外：整块铺虚空，然后【跳过所有细节】——map_features/市场/tile替换 对纯虚空块都是无用功。染地已在最前画过。
+        -- 整块在外：整块铺虚空，然后【跳过所有细节】，map_features/市场/tile替换 对纯虚空块都是无用功。染地已在最前画过。
         local tiles = {}
         for x = -1, 32 do
             for y = -1, 32 do

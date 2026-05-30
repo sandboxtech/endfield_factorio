@@ -1,4 +1,4 @@
--- 地图风味（原则：用噪声【修改 2.0 原生生成】，不用手动 stamp 去【覆盖】——原生地貌更自然）。
+-- 地图风味（原则：用噪声【修改 2.0 原生生成】，不用手动 stamp 去【覆盖】，原生地貌更自然）。
 -- 因此本模块只做原生【做不到】的事；地貌(石/树/矿/水…)交回原生，由 surface.lua 用气候偏置/autoplace 调本轮风味。
 --   · M.knobs()：本轮整局气质连续旋钮(繁茂/岩石/危险/富庶/异物)，与 surface.lua 共用 → 全局气质一致渐变。
 --   · PLANET：目前空（手动放矿/废料表现不如原生，全交原生）；EXOTIC：跨星异物(原生无法跨星)，稀疏散布。
@@ -13,8 +13,7 @@ local M = {}
 
 local function wseed(off) return (storage.run or 0) * 1009 + off end
 
--- 本轮【整局气质】连续旋钮（由 storage.run 确定性派生）：每个都是 [0,1) 连续量，不是硬编码离散概率——
--- 每轮整体氛围（繁茂↔荒芜、危险↔安宁、富庶↔贫瘠、寻常↔诡异）都是渐变的。
+-- 本轮【整局气质】连续旋钮（由 storage.run 确定性派生）：每个都是 [0,1) 连续量，不是硬编码离散概率，-- 每轮整体氛围（繁茂↔荒芜、危险↔安宁、富庶↔贫瘠、寻常↔诡异）都是渐变的。
 -- 同时供 surface.lua 调【2.0 原生 autoplace】(树/石密度) 与本模块手动特征门控共用 → 全局气质一致。
 --   verdancy 植被繁茂  rockiness 岩石  danger 虫群危险(偏低)  riches 战利品(偏低)  exotic 异物倾向(很罕见)
 -- 按 run 号缓存：knobs() 会被【每个区块】调用，但结果整轮恒定（纯派生自 storage.run）。
@@ -44,7 +43,7 @@ function M.knobs()
     return knobs_cache
 end
 
--- 本轮【全局共享】的噪声变换(朝向/拉伸/缩放)同样整轮恒定，按 run 缓存——也被每区块调用。
+-- 本轮【全局共享】的噪声变换(朝向/拉伸/缩放)同样整轮恒定，按 run 缓存，也被每区块调用。
 local xform_cache, xform_cache_run
 local function run_transform()
     local run = storage.run or 0
@@ -56,7 +55,7 @@ local function run_transform()
     return a, s, z
 end
 
--- 本轮该特征强度：~60% 为 0(不出现)；出现时走【立方偏置】——绝大多数小规模、极小概率大规模。
+-- 本轮该特征强度：~60% 为 0(不出现)；出现时走【立方偏置】，绝大多数小规模、极小概率大规模。
 -- （r³ 把均匀随机压向 0：r=0.5→0.125、0.8→0.51、0.95→0.86，所以大规模很罕见。）
 local function strength(off)
     if noise.hash01(wseed(off) * 7.3) < 0.60 then return 0 end
@@ -125,7 +124,7 @@ local EXOTIC = {
 }
 
 -- 战利品池：手动穷举的全物品名单（从游戏数据导出，不在运行时枚举 prototypes），按【类】分组。
--- 不再带全局权重 w —— 每种箱子用各自的【类权重表】(见 LOOT_WEIGHTS)抽取，掉落构成因箱而异。
+-- 不再带全局权重 w，每种箱子用各自的【类权重表】(见 LOOT_WEIGHTS)抽取，掉落构成因箱而异。
 local LOOT = {
     -- 原料/矿
     {cat = 'raw',        items = {
@@ -229,7 +228,7 @@ local LOOT = {
 }
 
 -- 各【按外观区分】的箱子对 LOOT 各【类】的权重：先按权重选类、再类内等概率选物品。
--- 每表都【列全所有类】(顺序同 LOOT)，不要的标 0 方便手调——0 与省略等价，不影响运算。
+-- 每表都【列全所有类】(顺序同 LOOT)，不要的标 0 方便手调，0 与省略等价，不影响运算。
 -- 木箱(宝箱)走单独精选池 TREASURE_POOL，不在这里。
 local LOOT_WEIGHTS = {
     -- 钢箱 = 材料箱：基础材料/原料 + 大概率普通科技瓶。普通品质、常见、装得多。
@@ -253,7 +252,7 @@ local LOOT_WEIGHTS = {
 }
 
 -- 木箱(宝箱)精选池：每箱 1~2 件高品质高价值物品。只放【玩家初始奖励(respawn_gifts.pack_gifts)里
--- 没有的】顶级物品 —— 顶级插件(3级，初始奖励只给基础级) + rocket-silo。
+-- 没有的】顶级物品，顶级插件(3级，初始奖励只给基础级) + rocket-silo。
 -- foundry/electromagnetic-plant/biochamber/cryogenic-plant/recycler/big-mining-drill 已作为初始
 -- 奖励发放，宝箱再给等于重复 → 移除。不放科技瓶(瓶子走科技瓶经验体系，不作宝箱奖励)。
 -- (mech-armor/power-armor-mk2/spidertron/tank 已归 equipment，beacon 归 production)
@@ -291,7 +290,7 @@ local function loot_count(name, exp)
     return math.max(1, math.ceil(ss * math.random() ^ (exp or 2)))
 end
 
--- 品质：以概率 p 停在当前档、否则升一档（几何分布）。p 越小越易出高品质。常见优先——normal 大概率第一次就返回。
+-- 品质：以概率 p 停在当前档、否则升一档（几何分布）。p 越小越易出高品质。常见优先，normal 大概率第一次就返回。
 --   p=0.9(默认，普通箱)：normal/uncommon/rare/epic/legendary ≈ 0.9/0.09/0.009/0.0009/0.0001（与原分布一致）。
 --   p=0.7(敌人/敌方弹药)：更常出高品质（normal≈0.7、uncommon≈0.21、rare≈0.063…）。
 local QUALITY_TIERS = {'uncommon', 'rare', 'epic', 'legendary'}
@@ -458,7 +457,7 @@ local OUTPOST_GUARDS = {
 
 -- 永续箱守卫：只在【永续箱】四周放敌人(force=enemy)，普通箱【不放】。出生点附近(<64格)不放（保护新手）。
 --   种类：本箱随机选 1~2 种，之后所有守卫只从这几种里出 → 同箱统一。
---   数量：随【离地图中心距离】半随机缩放——近中心少(约 2~3)、越往边缘越多(可到十来个)。
+--   数量：随【离地图中心距离】半随机缩放，近中心少(约 2~3)、越往边缘越多(可到十来个)。
 local function guard_perpetual(surface, pos)
     -- pos 可能是数组式 {x,y}（feat_perpetual 传入）也可能是 {x=,y=}，统一取坐标。
     local cx, cy = pos.x or pos[1], pos.y or pos[2]
@@ -824,7 +823,7 @@ local function obstacles_pool() obstacle_pool = obstacle_pool or build_pool(OBST
 function M.pick_entity_target() local p = obstacles_pool(); return #p > 0 and p[math.random(#p)] or nil end
 
 -- 统一【障碍互换】：把现地所有带碰撞盒障碍（type=tree/simple-entity：树/石/遗迹/冰山/叠层岩…）按噪声门控原位
--- 替换——不看脚下 tile。源天然自限（find 只命中本星球现有实体），目标跨类（可树↔石↔遗迹）。
+-- 替换，不看脚下 tile。源天然自限（find 只命中本星球现有实体），目标跨类（可树↔石↔遗迹）。
 --   rm = storage.obstacle_remap[星球]，本轮该星滚定（surface.lua）：
 --     · {to=名, seed, threshold} → 噪声区内统一换成同一种（大概率；单一主题斑块、协调）
 --     · {seed, threshold}      → 噪声区内每个各自随机换成【另一种】（小概率；跨类大杂烩异界带）

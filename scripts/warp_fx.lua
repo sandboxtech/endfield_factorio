@@ -5,7 +5,7 @@
 -- 故 tick.lua 不再自行 reset（避免双 owner 重复跃迁）。/reset 命令与 on_init 仍直接调 reset.reset()（管理/开局，无需仪式）。
 --
 -- 状态存 storage.warp_fx（瞬态，nil=未进行；倒计时结束即置 nil）。画面对象全部带 time_to_live 自动销毁，
--- 不写入存档长期占位、不泄露存档体积。【绝不用 rendering.clear()】——那会连染地精灵一起抹掉。
+-- 不写入存档长期占位、不泄露存档体积。【绝不用 rendering.clear()】，那会连染地精灵一起抹掉。
 local events    = require('scripts.events')
 local constants = require('scripts.constants')
 local reset     = require('scripts.reset')
@@ -99,7 +99,7 @@ events.on(defines.events.on_tick, function()
 
     local fx = storage.warp_fx
     if not fx then
-        -- 空闲：无需每 tick 探测——每秒探一次足够（倒计时窗口 10 秒，绝不会错过）。
+        -- 空闲：无需每 tick 探测，每秒探一次足够（倒计时窗口 10 秒，绝不会错过）。
         -- 临近真跃迁（剩余 ≤ LEAD 秒且还没到）→ 起一段倒计时，end_tick 对齐真实截止 → 归零正好是跃迁时刻。
         if game.tick % 60 == 0 then
             local remaining = warp_remaining()
