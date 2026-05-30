@@ -255,8 +255,8 @@ add_command('zisha', {'wn.suicide-help'}, suicide_cmd)
 -- 不建 GUI，纯命令投票"本世界是否提前跃迁"：/yueqian(=/warp) 同意、/tingliu 反对。不投票=忽视。
 -- 票存 storage.warp_vote[玩家名]='agree'|'oppose'（再投覆盖；跃迁 reset 时清空）。
 -- 结算（每次投票后）：净同意 = 同意人数 - 反对人数（每个反对抵消 1 个同意）；
---   净同意 > ceil(在线人数 / storage.warp_vote_divisor[默认5]) → 倒计时 -1 分钟、【所有投同意者死亡】(传回母星，复活等待默认90秒)，
---   并【清空所有票】（需重新投票才能再推一次）。剩余 ≤3 分钟时不再推（避免减成负数/临门白干）。
+--   净同意 > ceil(在线人数 / storage.warp_vote_divisor[默认5]) → 把本世界倒计时【直接设为剩余 storage.warp_vote_target_minutes 分钟(默认5)】，
+--   不杀任何玩家，并【清空所有票】（需重新投票才能再推一次）。仅当当前剩余【多于】目标分钟才生效（否则会反而延长倒计时）。
 local function warp_vote_eval()
     storage.warp_vote = storage.warp_vote or {}
     local agree, oppose = 0, 0
@@ -270,18 +270,11 @@ local function warp_vote_eval()
     if net > threshold then
         local last = game.tick - (storage.run_start_tick or game.tick)
         local remain = (storage.warp_hours or 1) * constants.hour_to_tick - last
-        if remain > 3 * constants.min_to_tick then
-            local push = storage.warp_push_ticks or 3600   -- 可 /c storage.warp_push_ticks 热改
-            storage.warp_hours = (storage.warp_hours or 1) - push / constants.hour_to_tick
-            -- 同意者付代价：传回母星死亡、复活等待（默认 90 秒，可 /c storage.warp_push_respawn_ticks 热改）
-            for _, p in pairs(game.connected_players) do
-                if storage.warp_vote[p.name] == 'agree' and p.character then
-                    players.kill_on_nauvis(p)
-                    p.ticks_to_respawn = storage.warp_push_respawn_ticks or 5400
-                end
-            end
-            local rh, rm = util.hm(storage.warp_hours * constants.hour_to_tick - last)
-            game.print({'wn.warp-vote-pass', push / constants.min_to_tick, rh, rm})
+        local target = (storage.warp_vote_target_minutes or 5) * constants.min_to_tick   -- 目标剩余分钟（可 /c 热改）
+        if remain > target then
+            -- 直接把倒计时改成剩余 target：warp_hours 反解使 (warp_hours*小时 - 已用) = target。不杀玩家。
+            storage.warp_hours = (last + target) / constants.hour_to_tick
+            game.print({'wn.warp-vote-pass', target / constants.min_to_tick})
             gui.refresh_countdown()
         end
         storage.warp_vote = {}   -- 推进后清空，需重新投票才能再推
@@ -298,8 +291,8 @@ local function warp_vote_cmd(vote)
         warp_vote_eval()
     end
 end
-add_command('warp', '投票【同意】本世界提前跃迁：净同意超过在线人数1/5时倒计时-1分钟、同意者死亡', warp_vote_cmd('agree'))
-add_command('yueqian', '投票【同意】本世界提前跃迁：净同意超过在线人数1/5时倒计时-1分钟、同意者死亡', warp_vote_cmd('agree'))
+add_command('warp', '投票【同意】本世界提前跃迁：净同意超过在线人数1/5时，本世界倒计时直接设为剩余5分钟（不杀玩家）', warp_vote_cmd('agree'))
+add_command('yueqian', '投票【同意】本世界提前跃迁：净同意超过在线人数1/5时，本世界倒计时直接设为剩余5分钟（不杀玩家）', warp_vote_cmd('agree'))
 add_command('tingliu', '投票【反对】本世界跃迁：每个反对抵消1个同意', warp_vote_cmd('oppose'))
 
 -- /member <玩家名>（/huiyuan 同功能）：授予会员资格。仅会员/管理员可用。
@@ -355,7 +348,7 @@ zh_alias('查看', {'wn.inspect-help'}, inspect_cmd)
 zh_alias('预览', {'wn.preview-help'}, preview_cmd)
 zh_alias('排行', {'wn.lastrank-help'}, last_rank_cmd)
 zh_alias('自杀', {'wn.suicide-help'}, suicide_cmd)
-zh_alias('跃迁', '投票同意本世界提前跃迁（够票则倒计时-1分钟、同意者死亡）', warp_vote_cmd('agree'))
+zh_alias('跃迁', '投票同意本世界提前跃迁（够票则把倒计时直接设为剩余5分钟，不杀玩家）', warp_vote_cmd('agree'))
 zh_alias('停留', '投票反对本世界跃迁（每个反对抵消1个同意）', warp_vote_cmd('oppose'))
 zh_alias('给会员', {'wn.member-help'}, member_grant_cmd)
 zh_alias('撤会员', {'wn.unmember-help'}, member_revoke_cmd)

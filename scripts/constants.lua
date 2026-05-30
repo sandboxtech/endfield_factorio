@@ -25,7 +25,7 @@ local M = {
     },
 
     -- 跃迁计时相关的可调值【不在这里】——它们放进 storage（见 ensure_defaults），以便 /c 热改、持久、同步：
-    --   storage.warp_initial_minutes / warp_extend_default_minutes / warp_extend_minutes[瓶] / warp_push_ticks / warp_push_respawn_ticks
+    --   storage.warp_initial_minutes / warp_extend_default_minutes / warp_extend_minutes[瓶] / warp_vote_target_minutes
     -- 常量表 M 里的值是模块级 Lua 数据，/c 改了不持久(读档复位)且多人会 desync，故跃迁可调值一律入 storage。
 
     -- 世界变体调参【一览表】：概率/权重的硬编码基数集中于此，方便统一调平衡。
@@ -84,8 +84,7 @@ function M.ensure_defaults()
         -- 跃迁计时（全部可 /c storage.xxx 热改、持久、多人同步）：
         warp_initial_minutes = 30,        -- 每轮开局跃迁倒计时（分钟）
         warp_extend_default_minutes = 60, -- 完成未列入 warp_extend_minutes 的科技瓶科技 → 延长分钟数
-        warp_push_ticks = 3600,           -- /warp 主动跃迁每次把倒计时提前的 tick（3600 = 1 分钟）
-        warp_push_respawn_ticks = 5400,   -- /warp 使用后本人复活等待 tick（5400 = 90 秒）
+        warp_vote_target_minutes = 5,     -- /warp 投票通过后，本世界倒计时直接设为剩余的分钟数（不杀玩家）
         -- 复活等待 tick（可 /c 热改）：脚本死亡(跃迁清场/离场/自杀)与环境死亡用 respawn_ticks；被敌方打死用 enemy_respawn_ticks。
         respawn_ticks = 600,              -- 默认复活：600 tick = 10 秒
         enemy_respawn_ticks = 1800,       -- 被敌方打死：1800 tick = 30 秒
