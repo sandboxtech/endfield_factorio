@@ -155,6 +155,12 @@ function M.reset()
     force.reset()
     force.friendly_fire = true
 
+    -- 每次跃迁后自动解锁所有星球：无需研究 planet-discovery 科技即可前往。
+    -- 必须放在 force.reset() 之后——reset 会清空科技/解锁状态，先解锁会被冲掉。
+    for name in pairs(game.planets) do
+        force.unlock_space_location(name)
+    end
+
     -- 跃迁倒计时重置为初始值（storage.warp_initial_minutes 分钟，可 /c 热改）；研究科技瓶科技按
     -- storage.warp_extend_minutes 各自延长。内部以小时记账，故 /60。
     storage.warp_hours = (storage.warp_initial_minutes or 10) / 60

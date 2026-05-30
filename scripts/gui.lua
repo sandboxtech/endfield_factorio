@@ -146,9 +146,9 @@ function M.show_tutorial(player)
     local lines = {{'wn.tutorial',
         storage.warp_initial_minutes or 10,   -- __1__ 跃迁倒计时起步分钟
         storage.platform_lifetime or 10}}     -- __2__ 飞船最多保留的跃迁次数
-    -- 管理/会员指令只追加给管理员看：普通玩家不显示。
-    if player and player.admin then
-        lines[#lines + 1] = {'wn.tutorial-admin'}
+    -- 会员系统指令只追加给【会员/管理员】看（管理员永远算会员）；纯管理命令(/reset /gen /exp_clear)不进教程。
+    if player and (player.admin or (storage.members and storage.members[player.name])) then
+        lines[#lines + 1] = {'wn.tutorial-member'}
     end
     M.show_popup(player, {'wn.tutorial-title'}, lines)
 end

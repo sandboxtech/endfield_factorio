@@ -414,7 +414,8 @@ script.on_event(defines.events.on_surface_cleared, function(event)
     local br = constants.balance.tile_remap
     if srcs and #srcs > 0 and math.random() < (br.base + br.exotic * knobs.exotic) * prob('tile_remap') then
         local rules = {}
-        local nrules = 1 + math.floor(math.random() ^ 2 * (storage.tile_remap_rules or 3))   -- 偏向少：多半 1 条
+        -- 封顶 20：兜底防 /c storage.tile_remap_rules 填超大数 → 替换规则循环过多。
+        local nrules = 1 + math.min(20, math.floor(math.random() ^ 2 * (storage.tile_remap_rules or 3)))   -- 偏向少：多半 1 条
         for _ = 1, nrules do
             local src = srcs[math.random(#srcs)]
             -- 先定 mask：~45% all(整片自然，安全)，否则 noise/跟随树石矿。

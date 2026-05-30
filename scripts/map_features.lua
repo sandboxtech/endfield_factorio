@@ -626,7 +626,9 @@ local function feat_danger(surface, lt, A, S, Z, W)
     -- 强度 = 危险度 × (0.25 + 0.75×离中心比例)，封顶 1：近中心弱、边缘强。
     local intensity = math.min(1, W.danger * (0.25 + 0.75 * frac))
     -- 尝试次数 = random(0, 上限)：半随机（有的区块空、有的成簇）；上限随 intensity 增长且封顶。
-    local attempts = math.random(0, math.floor(intensity * DANGER_MAX_PER_CHUNK * (storage.danger_density or 1) + 0.5))
+    -- 硬封 DANGER_MAX_PER_CHUNK×4：兜底防 /c storage.danger_density 填超大数 → 每个区块狂刷虫卡死。
+    local attempts = math.random(0, math.min(DANGER_MAX_PER_CHUNK * 4,
+        math.floor(intensity * DANGER_MAX_PER_CHUNK * (storage.danger_density or 1) + 0.5)))
     if attempts <= 0 then return end
     local thr = 0.80 - 0.30 * intensity   -- intensity 越高 → 噪声门槛越低 → 命中概率越高（刷新概率越高）
 
