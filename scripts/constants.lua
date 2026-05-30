@@ -122,7 +122,7 @@ function M.ensure_defaults()
     for _, key in ipairs({'radius_of', 'science_exp', 'player_stats', 'platform_age',
                           'ground_tint', 'tile_remap', 'danger_theme', 'event_world', 'loot_style', 'members',
                           'last_respawn_run', 'move_pos', 'bad_items', 'bad_entities', 'gen_debug', 'warp_vote', 'wreck_density',
-                          'tree_remap', 'obstacle_remap', 'fluid_remap', 'last_leaderboard', 'market_run'}) do
+                          'tree_remap', 'obstacle_remap', 'fluid_remap', 'last_leaderboard', 'market_run', 'respawn_surface'}) do
         storage[key] = storage[key] or {}
     end
     -- world_fx 全局开关（默认开；/c storage.world_fx.xxx=false 单独禁用某事件驱动效果）。

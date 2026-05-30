@@ -51,10 +51,11 @@ function M.player_reset(player)
     player.disable_flashlight()
 end
 
--- 死亡处理：先把玩家移到【当前所在表面】的出生点再杀死 —— 尸体(背包货物)留在当前星球，
--- 不会被带回母星（杜绝"在外星捡货 → /suicide 把货带回母星"）。复活点设到母星，复活由 on_player_respawned 统一送回。
--- 用于所有"杀死玩家"的入口（跃迁清场 / 自杀 / 离场 / 投票等）。无 character 时跳过。
-function M.kill_on_nauvis(player)
+-- 脚本杀死玩家：先把玩家移到【当前所在表面】的出生点再杀死 —— 尸体(背包货物)留在当前星球，
+-- 不会被带回母星（杜绝"在外星捡货 → /suicide 把货带回母星"）。
+-- 复活去哪由 on_player_respawned → place_on_respawn 决定（玩家的复活星球，默认母星）；这里只设个母星 force 兜底。
+-- 用于所有"杀死玩家"的入口（跃迁清场 / 自杀 / 离场 等）。无 character 时跳过。
+function M.kill_player(player)
     if not player or not player.character then return end
     local force = player.force
     -- ① 在当前表面出生点处死亡（尸体留在当前星球）
@@ -62,7 +63,7 @@ function M.kill_on_nauvis(player)
     local origin = force.get_spawn_position(surface)
     local pos = surface.find_non_colliding_position('character', origin, 64, 1) or origin
     player.teleport(pos, surface)
-    -- ② 复活点设回母星（on_player_respawned 也会兜底把玩家送回母星出生点）
+    -- ② force 出生点兜底设母星（实际复活落点以 place_on_respawn 为准）
     local nauvis = game.surfaces['nauvis']
     if nauvis then
         local norigin = force.get_spawn_position(nauvis)
@@ -83,7 +84,7 @@ local function try_gift_first_in_world(player)
 end
 
 -- 把玩家安全送到【指定星球】出生点：先生成出生区块、找无碰撞落点、传送，再揭图周围 256。
--- 复活落点(place_on_nauvis) 与 /前往星球 命令共用。无 character 或星球不存在则跳过。
+-- 复活落点(place_on_respawn) 与 /前往星球 命令共用。无 character 或星球不存在则跳过。
 function M.place_on_surface(player, surface_name)
     if not player or not player.character then return end
     local surface = game.surfaces[surface_name]
@@ -97,10 +98,17 @@ function M.place_on_surface(player, surface_name)
     player.force.chart(surface, {{pos.x - 256, pos.y - 256}, {pos.x + 256, pos.y + 256}})
 end
 
--- 死亡复活落点：一律回母星 nauvis 出生点（不再随机散落到各星球）——
--- 被杀/下线/自杀/warp 死亡的玩家都回家集结。
-local function place_on_nauvis(player)
-    M.place_on_surface(player, 'nauvis')
+-- 玩家的【默认复活星球】：前往某星球时由命令记入 storage.respawn_surface[玩家名]。
+-- 复活时去那里；若该星球 surface 不存在（没生成）则回母星 nauvis。
+local function respawn_surface_name(player)
+    local s = storage.respawn_surface and storage.respawn_surface[player.name]
+    if s and game.surfaces[s] then return s end
+    return 'nauvis'
+end
+
+-- 死亡复活落点：回玩家的默认复活星球出生点（默认/兜底＝母星）。
+local function place_on_respawn(player)
+    M.place_on_surface(player, respawn_surface_name(player))
 end
 
 -- 死亡：把复活倒计时压到 3 秒；只把【有 cause 的真实死亡】（被敌人/环境打死）计入该玩家 death_count，
@@ -123,7 +131,7 @@ end)
 
 script.on_event(defines.events.on_player_respawned, function(event)
     local player = game.get_player(event.player_index)
-    place_on_nauvis(player)   -- 一律回母星出生点 + chart 256
+    place_on_respawn(player)   -- 回玩家的复活星球出生点（默认/兜底母星）+ chart 256
     player.disable_flashlight()
     passives.apply(player)
     respawn_gifts.apply_inventory_bonus(player)   -- 背包格数加成（按赠品总组数，每组 +1 格）
@@ -138,7 +146,7 @@ script.on_event(defines.events.on_pre_player_left_game, function(event)
     end
 
     if player.character then
-        M.kill_on_nauvis(player)
+        M.kill_player(player)
         -- 删除可能落在飞船原点附近的尸体
         for _, space_platform in pairs(game.forces.player.platforms) do
             if space_platform.surface then

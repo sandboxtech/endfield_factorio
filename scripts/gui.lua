@@ -1,4 +1,4 @@
--- 左上角 HUD：跃迁轮次按钮（点击=自杀回母星脱困）+ 角色面板。
+-- 左上角 HUD：跃迁轮次按钮（点击=弹出玩法教程）+ 跃迁倒计时 + 角色面板。
 local constants = require('scripts.constants')
 local passives = require('scripts.passives')
 local respawn_gifts = require('scripts.respawn_gifts')

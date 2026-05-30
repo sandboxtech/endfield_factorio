@@ -23,8 +23,8 @@
 | `util.lua` | 通用工具：`readable`、`random_exp` 指数分布、`random_nature`、`mostly_normal`、`evo_biter`（按进化度挑虫）。 |
 | `events.lua` | **事件总线**：同一事件多处 `events.on()` 订阅、内部只 `script.on_event` 注册一次再分发 → 避免单事件被多处注册互相覆盖。可能被多方监听的事件都走它。 |
 | `noise.lua` | 2D simplex + 分形多倍频 + 种子派生变换（旋转/拉伸/缩放）。供运行时手动铺设噪声地物（移植自 ComfyFactorio）。 |
-| `players.lua` | 玩家生命周期（创建/加入/离开/复活/死亡）。`kill_on_nauvis`：先把玩家移到**当前所在表面**的出生点再杀死（**尸体/货物留在当前星球**，杜绝"外星捡货→自杀带回母星"），复活点设母星；**复活一律回母星出生点**（`place_on_surface(player,'nauvis')`，仅**异步**请求生成区块、不强制）。`print_inspection` 面板。 |
-| `respawn_gifts.lua` | 每世界首次复活时发：起手护甲 + 起手物资 + **每瓶 2 种代表物资**（随经验、按堆叠封顶 5 组）+ **开局金币**(`√在线分钟`)。 |
+| `players.lua` | 玩家生命周期（创建/加入/离开/复活/死亡）。`kill_player`：先把玩家移到**当前所在表面**的出生点再杀死（**尸体/货物留在当前星球**，杜绝"外星捡货→自杀带回母星"）；**复活落点** `place_on_respawn` 去玩家的**复活星球** `storage.respawn_surface[名]`（前往某星球时由命令记下；该星球 surface 不存在则回**母星**），`place_on_surface` 仅**异步**请求生成区块、不强制。`print_inspection` 面板。 |
+| `respawn_gifts.lua` | 每世界首次复活时发：起手护甲 + 起手物资 + **每瓶 2 种代表物资**（数量 = `ceil(堆叠数 × 等级/100)`，等级 = `floor(√exp)`，封顶 `MAX_GROUPS=10` 组）+ **开局金币**(`√在线分钟`)。 |
 | `market.lua` | **5 个**金币市场（母星 + 其余 4 个星球，凡 `PLANET_GEN` 有配置，内容相同，不可摧毁/挖取）。**惰性放置**：由 `surface.lua` 的 `on_chunk_generated` 在**出生区块自然生成时**（玩家复活/传送到该星触发）调一次，**不强制生成区块**；每轮每星一次（`storage.market_run` 记录，成功才记）。同时做**出生点保底**：中心抽 16 点，过半不可通行(`collides_with('player')`：水/熔岩/油海/虚空…)就铺 64×64 精炼混凝土。 |
 | `passives.lua` | **动作即时升级的 4 技能**：手搓/移动(封顶 +100%)/挖矿/生命上限。曲线 -50% 下限、log 缓升。独占 craft/mine/changed_position/died 事件。 |
 | `science_exp.lua` | `collect`（跃迁结算在线玩家**整组**科技瓶 = `floor(数量/堆叠) × 品质系数`，不移除瓶子）/ `preview`（同算法预览，不写入）。经验按**玩家名**存 `storage.science_exp`。（提前结算 `/settle` 已移除：只有跃迁才结算。） |
@@ -105,7 +105,7 @@ on_chunk_generated（每区块）:
     -> 若是出生区块: 惰性放该星市场 market.place_on_surface（每轮每星一次，不强制生成区块）
 
 on_player_respawned / on_player_created: passives.apply；本世界首次 -> respawn_gifts.on_first_respawn
-on_pre_player_left_game: kill_on_nauvis（当前表面出生点死亡，尸体留当地；复活回母星）
+on_pre_player_left_game: kill_player（当前表面出生点死亡，尸体留当地；复活回其复活星球/母星）
 on_nth_tick(3600): 在线采样 + 各 +1 金币 + 倒计时/提醒 + run_world_events（事件世界，含 tech 得/失科技）
 on_entity_died（world_fx 经总线）: 复制虫世界里玩家建筑被虫毁 -> 原地冒虫
 ```

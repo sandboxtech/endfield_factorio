@@ -111,14 +111,14 @@ function M.reset()
         game.remove_offline_players(stale)
     end
 
-    -- 重置所有玩家（含飞船上的）：有 character 的传送回母星并杀死 → 在母星复活领奖励；
+    -- 重置所有玩家（含飞船上的）：有 character 的在当前星球杀死(尸体留当地) → 在其复活星球复活领奖励；
     -- 否则清空背包。这样每轮跃迁人人重置、背包必空，杜绝"待在飞船上跨轮保留背包、反复白嫖经验"。
     -- 飞船本身仍按 platform_lifetime 老化（见上方循环），与玩家死亡解耦。
     for _, player in pairs(game.players) do
         if player.surface then
             local inventory = player.get_inventory(defines.inventory.character_main)
             if player.character then
-                players.kill_on_nauvis(player)
+                players.kill_player(player)
             elseif inventory then
                 inventory.clear()
             else

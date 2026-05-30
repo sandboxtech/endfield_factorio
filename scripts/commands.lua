@@ -227,6 +227,7 @@ local function travel_cmd(planet)
             return
         end
         players.place_on_surface(player, planet)
+        storage.respawn_surface[player.name] = planet   -- 前往后，该星球成为默认复活星球
     end
 end
 add_command('nauvis',   '前往母星 Nauvis',    travel_cmd('nauvis'))
@@ -237,13 +238,13 @@ add_command('aquilo',   '前往星球 Aquilo',      travel_cmd('aquilo'))
 
 -- （/settle、/jiesuan 已移除：只有【自动跃迁】才结算科技瓶经验，不再支持提前手动结算。）
 
--- /suicide（/zisha 同功能）：自杀脱困。死后回母星出生点复活（见 players.lua kill_on_nauvis）。
+-- /suicide（/zisha 同功能）：自杀脱困。死后在当前星球留尸、回复活星球(默认母星)复活（见 players.lua kill_player）。
 local function suicide_cmd(command)
     local player = command.player_index and game.get_player(command.player_index)
     if not player or not player.character then return end
     local last_run_ticks = game.tick - (storage.run_start_tick or game.tick)
     local life = (storage.warp_hours or 1) * constants.hour_to_tick - last_run_ticks
-    players.kill_on_nauvis(player)
+    players.kill_player(player)
     local h, m = util.hm(life)
     game.print({'wn.suicide-notice', player.name, h, m})
 end
