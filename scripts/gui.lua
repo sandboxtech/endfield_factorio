@@ -1,6 +1,7 @@
 -- 左上角 HUD：跃迁轮次按钮（点击=弹出玩法教程）+ 跃迁倒计时 + 角色面板。
 local constants = require('scripts.constants')
 local util = require('scripts.util')
+local classes = require('scripts.classes')
 
 local M = {}
 
@@ -36,6 +37,8 @@ function M.player_gui(player)
         {name = 'wn_btn_actions',  sprite = 'item/blueprint-book',  tip = {'wn.btn-actions-tip'}},
         -- {spacer = true},
         {name = 'wn_btn_skills',          sprite = 'entity/character',            tip = {'wn.skills-btn-tip'}},
+        {name = 'wn_btn_class',    sprite = 'virtual-signal/signal-science-pack', tip = {'wn.btn-class-tip'}},
+        {name = 'wn_btn_star',     sprite = 'virtual-signal/signal-star',       tip = {'wn.btn-star-tip'}},
         {name = 'wn_btn_warp',     sprite = 'virtual-signal/signal-trash-bin',  tip = {'wn.btn-warp-tip'}},
         {name = 'wn_btn_stay',     sprite = 'virtual-signal/signal-white-flag', tip = {'wn.btn-stay-tip'}},
     }) do
@@ -184,6 +187,21 @@ function M.show_actions(player)
             caption = {p == home and 'wn.act-home-cur' or 'wn.act-home', p}, tags = {wn_home = p}}
     end
     M.show_popup(player, {'wn.actions-title'}, {}, buttons)
+end
+
+-- 弹出【职业】窗口（HUD 独立按钮）：每个职业一个按钮，当前职业标 ✓、悬停说明专精瓶。
+-- 点击经 tick.on_gui_click（tags.wn_class）路由到 commands.set_class。同时只能一种职业。
+function M.show_classes(player)
+    if not player then return end
+    local cur = classes.selected_key(player)
+    local buttons = {}
+    for _, def in ipairs(classes.list) do
+        buttons[#buttons + 1] = {name = 'wn_act_class_' .. def.key,
+            caption = {def.key == cur and 'wn.class-cur' or 'wn.class-pick', {'wn.class-name-' .. def.key}},
+            tooltip = {'wn.class-tip', {'wn.class-name-' .. def.key}, '[img=item/' .. def.packs[1] .. ']'},
+            tags = {wn_class = def.key}}
+    end
+    M.show_popup(player, {'wn.class-title'}, {}, buttons)
 end
 
 function M.close_popup(player)

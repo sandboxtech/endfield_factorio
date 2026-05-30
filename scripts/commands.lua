@@ -7,6 +7,7 @@ local players = require('scripts.players')
 local science_exp = require('scripts.science_exp')
 local passives = require('scripts.passives')
 local respawn_gifts = require('scripts.respawn_gifts')
+local classes = require('scripts.classes')
 local util = require('scripts.util')
 
 local M = {}   -- 导出给 HUD 按钮复用（gui 点击经 tick 路由到这里）
@@ -168,12 +169,13 @@ function M.show_lastrank(player)
     gui.show_popup(player, {'wn.lastrank-header', storage.last_leaderboard_run or 0}, lines)
 end
 
--- ── 投票 + 传送 共享冷却 ──────────────────────────────────────────────────────
--- 投票（跃迁/停留）与前往星球共用同一条【每玩家】冷却，防止频繁刷动作。冷却时长 3 分钟，可 /c storage.action_cd_minutes 热改。
--- 时间戳按玩家名存 storage.action_cd[名]=tick；只有【成功执行】才计时，被拒（无角色/背包没清空等）不占冷却。
-local function on_cooldown(player)
-    storage.action_cd = storage.action_cd or {}
-    local last = storage.action_cd[player.name]
+-- ── 动作冷却（按【桶】区分，每玩家独立计时）──────────────────────────────────────
+-- 前往星球(travel_cd)、投票跃迁/停留(vote_cd)、转账星星(action_cd) 各用一条【独立】冷却，互不挤占。
+-- 时长统一读 storage.action_cd_minutes（默认 3 分钟，可 /c 热改）。
+-- 时间戳按玩家名存 storage[桶][名]=tick；只有【成功执行】才计时，被拒（无角色/背包没清空等）不占冷却。
+local function on_cooldown(player, bucket)
+    storage[bucket] = storage[bucket] or {}
+    local last = storage[bucket][player.name]
     local cd = (storage.action_cd_minutes or 3) * constants.min_to_tick
     if last and game.tick - last < cd then
         player.print({'wn.action-cd', math.ceil((cd - (game.tick - last)) / 60)})
@@ -181,9 +183,9 @@ local function on_cooldown(player)
     end
     return false
 end
-local function mark_action(player)
-    storage.action_cd = storage.action_cd or {}
-    storage.action_cd[player.name] = game.tick
+local function mark_action(player, bucket)
+    storage[bucket] = storage[bucket] or {}
+    storage[bucket][player.name] = game.tick
 end
 
 -- ── 前往星球 ─────────────────────────────────────────────────────────────────
@@ -214,11 +216,11 @@ function M.travel(player, planet)
         player.print('前往星球前，请先清空：鼠标、背包、物流(回收)、弹药 这四个区')
         return
     end
-    if on_cooldown(player) then return end   -- 校验全过后才查冷却：被拒的尝试不占冷却
+    if on_cooldown(player, 'travel_cd') then return end   -- 前往星球独立冷却；校验全过后才查，被拒不占冷却
     players.place_on_surface(player, planet)
     storage.respawn_surface = storage.respawn_surface or {}   -- 老存档兜底：ensure_defaults 没补到也不崩
     storage.respawn_surface[player.name] = planet   -- 前往后，该星球成为默认复活星球
-    mark_action(player)
+    mark_action(player, 'travel_cd')
     game.print({'wn.travel-notice', player.name, planet})
 end
 
@@ -331,34 +333,39 @@ function M.show_panel(player, target)
     target = target or player
     local self = target.index == player.index
     local sink = gui.popup_sink()
-    players.print_inspection(target, sink, self)   -- 看自己：先不打印经验，留到星星块之后（看别人：照常打印）
+    players.print_inspection(target, sink, self)   -- 看自己：先不打印经验，留到统计之后（看别人：照常打印）
     local title = table.remove(sink.lines, 1)   -- 首行 inspect-header 提作弹窗标题
     -- 顶部导航按钮：看自己→"查看他人能力"；看别人→"返回玩家列表"。两者复用同名 wn_panel_others（tick 路由按上下文处理）。
     local top_buttons = { self
         and {name = 'wn_panel_others', caption = {'wn.panel-others'}}
         or  {name = 'wn_panel_others', caption = {'wn.panel-back'}} }
-    local bottom_buttons = {}
     if self then
-        -- ⭐ 星星（只对自己，追加到统计之后）：先空行隔开，再星星余额（所有等级都显示），再进度条+领取按钮（仅达 star_unlock_level）。
-        sink.lines[#sink.lines + 1] = ''                                          -- 空行间隔（统计与星星之间）
-        local bal = math.floor(((storage.star or {})[player.name] or 0) / constants.min_to_tick)
-        sink.lines[#sink.lines + 1] = {'wn.panel-star', bal}                      -- 星星余额（整数）
-        if M.star_unlocked(player) then
-            local pend = M.charge_pending(player)
-            local maxt = (storage.charge_max_hours or 30) * constants.hour_to_tick
-            local frac = (maxt > 0) and (pend / maxt) or 0
-            sink.lines[#sink.lines + 1] = {'wn.panel-star-charge',
-                players.progress_bar(frac),
-                math.floor(pend / constants.min_to_tick),                         -- 当前可领整数星星
-                math.floor(maxt / constants.min_to_tick)}                         -- 能领的最大值（=满充星星数）
-            bottom_buttons[#bottom_buttons + 1] = {name = 'wn_claim_star', caption = {'wn.act-claim-star'}}
-        end
-        -- 科技瓶经验放到最后（星星之后）
+        -- 科技瓶经验放最后（看自己时 print_inspection 跳过了经验，这里补打印）。星星已独立成单独的 HUD 按钮窗口。
+        sink.lines[#sink.lines + 1] = ''   -- 统计与经验之间留空行
         players.print_exp(target, sink)
-        -- 经验与底部"领取星星"按钮之间留一个空行间隔（仅当有领取按钮时才需要）
-        if #bottom_buttons > 0 then sink.lines[#sink.lines + 1] = '' end
     end
-    gui.show_popup(player, title, sink.lines, top_buttons, false, bottom_buttons)
+    gui.show_popup(player, title, sink.lines, top_buttons)
+end
+
+-- 弹出【星星】窗口（HUD 独立按钮）：星星余额（所有等级都显示）+ 充能进度条 + 领取按钮（仅达 star_unlock_level）。
+-- 原先嵌在角色面板里，现单独成窗。领取走 wn_claim_star（tick 路由 → M.claim_charge）。
+function M.show_star(player)
+    if not player then return end
+    local lines = {}
+    local bal = math.floor(((storage.star or {})[player.name] or 0) / constants.min_to_tick)
+    lines[#lines + 1] = {'wn.panel-star', bal}                      -- 星星余额（整数）
+    local bottom_buttons = {}
+    if M.star_unlocked(player) then
+        local pend = M.charge_pending(player)
+        local maxt = (storage.charge_max_hours or 30) * constants.hour_to_tick
+        local frac = (maxt > 0) and (pend / maxt) or 0
+        lines[#lines + 1] = {'wn.panel-star-charge',
+            players.progress_bar(frac),
+            math.floor(pend / constants.min_to_tick),                         -- 当前可领整数星星
+            math.floor(maxt / constants.min_to_tick)}                         -- 能领的最大值（=满充星星数）
+        bottom_buttons[#bottom_buttons + 1] = {name = 'wn_claim_star', caption = {'wn.act-claim-star'}}
+    end
+    gui.show_popup(player, {'wn.star-title'}, lines, nil, false, bottom_buttons)
 end
 
 -- 弹出【在线玩家列表】：每个在线玩家一个名字按钮，点击查看其能力面板。
@@ -380,6 +387,23 @@ function M.set_home_planet(player, planet)
     storage.respawn_surface[player.name] = planet
     player.print({'wn.home-set', planet})
     gui.show_actions(player)   -- 重开功能弹窗 → 当前起始星球按钮标 ✓
+end
+
+-- 选择职业（HUD 独立按钮窗口）：纯个人设置——只改 storage.player_class[名]，不公告、不传送。
+-- 同时只能一种职业。效果暂未实现（选定后拟在该领域开局多发对应物品）。带短冷却防刷消息。
+function M.set_class(player, key)
+    if not player or not classes.by_key[key] then return end
+    storage.class_cd = storage.class_cd or {}
+    local last = storage.class_cd[player.name]
+    local cd = (storage.class_cd_minutes or 0.5) * constants.min_to_tick
+    if last and game.tick - last < cd then
+        player.print({'wn.action-cd', math.ceil((cd - (game.tick - last)) / 60)})
+        return
+    end
+    classes.set(player, key)
+    storage.class_cd[player.name] = game.tick
+    player.print({'wn.class-set', {'wn.class-name-' .. key}})
+    gui.show_classes(player)   -- 重开职业弹窗 → 当前职业按钮标 ✓
 end
 
 -- ⭐ 星星充能（懒计算）：storage.charge[名]=上次结算到的 game.tick；storage.star[名]=星星余额(内部存 tick，恒为 min_to_tick 整数倍)。
@@ -416,10 +440,10 @@ function M.claim_charge(player)
     storage.star[player.name] = (storage.star[player.name] or 0) + n * unit
     storage.charge[player.name] = last + n * unit      -- 记录前移 N 颗的量，保留余数
     player.print({'wn.star-claimed', n})
-    M.show_panel(player)   -- 刷新面板（充能减少、余额更新）
+    M.show_star(player)   -- 刷新星星窗口（充能减少、余额更新）
 end
 -- 把 stars 颗（整数）星星转给目标玩家（余额不足则转全部整颗）。内部按 颗×min_to_tick 存。
--- 转账与投票/前往星球【共用同一条冷却】：校验全过（目标存在/非自己/数额有效/余额足）后才查冷却，被拒不占冷却；成功才 mark_action。
+-- 转账有【自己一条独立冷却 action_cd】：校验全过（目标存在/非自己/数额有效/余额足）后才查冷却，被拒不占冷却；成功才 mark_action。
 function M.give_star(player, target_name, stars)
     if not player then return end
     storage.star = storage.star or {}
@@ -432,10 +456,10 @@ function M.give_star(player, target_name, stars)
     local have = math.floor((storage.star[player.name] or 0) / unit)   -- 余额有多少整颗
     if have <= 0 then player.print({'wn.star-insufficient'}); return end
     n = math.min(n, have)                              -- 余额不足则转全部整颗
-    if on_cooldown(player) then return end             -- 校验全过后才查冷却：被拒的尝试不占冷却
+    if on_cooldown(player, 'action_cd') then return end   -- 转账独立冷却；校验全过后才查，被拒不占冷却
     storage.star[player.name] = (storage.star[player.name] or 0) - n * unit
     storage.star[target.name] = (storage.star[target.name] or 0) + n * unit
-    mark_action(player)   -- 与投票/前往星球共享冷却
+    mark_action(player, 'action_cd')   -- 转账独立冷却
     game.print({'wn.star-given', player.name, n, target.name})
 end
 -- /givestar <玩家> <星星>：转星星给他人（用原始注册、不走公告包装；give_star 自身已全服广播）。
@@ -449,10 +473,10 @@ end)
 -- 投跃迁票（vote='agree'/'oppose'，等同 /跃迁 /停留）并结算广播。
 function M.cast_warp_vote(player, vote)
     if not player then return end
-    if on_cooldown(player) then return end
+    if on_cooldown(player, 'vote_cd') then return end   -- 投票跃迁/停留独立冷却
     storage.warp_vote = storage.warp_vote or {}
     storage.warp_vote[player.name] = vote
-    mark_action(player)
+    mark_action(player, 'vote_cd')
     game.print({vote == 'agree' and 'wn.warp-vote-cast-agree' or 'wn.warp-vote-cast-oppose', player.name})
     warp_vote_eval()
 end

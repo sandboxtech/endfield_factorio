@@ -12,3 +12,7 @@
     game.players.hncsltok.print('remaining_ticks='..tostring(rem)..'  ('..string.format('%.1f',rem/3600)..' 分钟)')
     game.players.hncsltok.print('warp_fx='..serpent.line(s.warp_fx)..'  vote_delta='..tostring(s.warp_vote_delta))
     
+
+一亿瓶 = 10^8 = (10^4) = 1000 级
+
+

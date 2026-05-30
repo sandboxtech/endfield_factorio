@@ -237,8 +237,12 @@ script.on_event(defines.events.on_gui_click, events.safe('gui_click', function(e
         commands.admin_diff(player)                 -- 管理员红按钮：ensure_defaults + 参数对比
     elseif name == 'wn_btn_skills' then
         commands.show_panel(player)                 -- 点角色面板按钮 = 弹出角色面板（同 /inspect 自己）
+    elseif name == 'wn_btn_class' then
+        gui.show_classes(player)                    -- 职业按钮：弹出职业选择窗口
+    elseif name == 'wn_btn_star' then
+        commands.show_star(player)                  -- 星星按钮：弹出星星窗口（余额/充能/领取）
     elseif name == 'wn_claim_star' then
-        commands.claim_charge(player)               -- 面板里"领取星星充能"按钮
+        commands.claim_charge(player)               -- 星星窗口里"领取星星充能"按钮
     elseif name == 'wn_panel_others' then
         commands.show_player_list(player)           -- 面板里"查看他人能力"/"返回" = 弹出在线玩家列表
     elseif event.element.tags and event.element.tags.wn_view then
@@ -258,6 +262,8 @@ script.on_event(defines.events.on_gui_click, events.safe('gui_click', function(e
         commands.travel(player, event.element.tags.wn_travel)   -- 前往星球按钮（tags 带星球名）
     elseif event.element.tags and event.element.tags.wn_home then
         commands.set_home_planet(player, event.element.tags.wn_home)   -- 起始星球按钮（设复活+领装备的星球）
+    elseif event.element.tags and event.element.tags.wn_class then
+        commands.set_class(player, event.element.tags.wn_class)   -- 选择职业按钮（设本人职业，下次跃迁生效）
     elseif name == gui.POPUP_CLOSE_NAME then
         gui.close_popup(player)
     end
