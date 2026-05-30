@@ -204,12 +204,8 @@ script.on_event(defines.events.on_gui_click, function(event)
         return
     end
     local name = event.element.name
-    if name == 'wn_btn_intro' then
-        gui.show_intro(player)                      -- 简介
-    elseif name == 'wn_btn_gameplay' then
-        gui.show_tutorial(player)                   -- 游戏玩法详介
-    elseif name == 'wn_btn_commands' then
-        gui.show_commands(player)                   -- 按钮指令详介
+    if name == 'wn_btn_gameplay' then
+        gui.show_tutorial(player)                   -- 游戏玩法 & 指令（已合并为一个弹窗）
     elseif name == 'skills' then
         commands.show_panel(player)                 -- 点角色面板按钮 = 弹出角色面板（同 /inspect 自己）
     elseif name == 'wn_panel_others' then

@@ -171,6 +171,7 @@ script.on_event(defines.events.on_player_created, function(event)
     passives.apply(player)
     respawn_gifts.apply_inventory_bonus(player)   -- 背包格数加成（按赠品总组数，每组 +1 格）
     try_gift_first_in_world(player)
+    gui.show_intro(player)   -- 新玩家首次进服自动弹简介（即世界标签的悬停内容）
 end)
 
 script.on_event(defines.events.on_player_left_game, function(event)

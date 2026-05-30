@@ -10,10 +10,10 @@ function M.warp_hm()
     return util.hm((storage.warp_hours or 1) * constants.hour_to_tick - last)
 end
 
--- 顶部合并标签的文案：「世界 N　[img]距跃迁 H 小时 M 分钟」（轮次 + 倒计时合一）。
+-- 顶部合并标签的文案：「世界 N　[img]距跃迁 H 小时 M 分钟」。run 与 warp-countdown 已合并为单键 world-status。
 function M.countdown_caption()
     local h, m = M.warp_hm()
-    return {'', {'run', storage.run or 0}, '　', {'wn.warp-countdown', h, m}}
+    return {'wn.world-status', storage.run or 0, h, m}
 end
 
 -- 刷新所有在线玩家顶部的跃迁倒计时标签（由 tick.lua 每分钟调用）。
@@ -29,8 +29,24 @@ end
 function M.player_gui(player)
     player.gui.top.clear()
 
-    -- 世界轮次 + 跃迁倒计时【合并为一个只读 label】：不再占 288 宽、不再纯白，统一琥珀色。
-    -- 悬停显示简介（详细简介在"简介"按钮弹窗）。倒计时每分钟由 tick.lua 经 refresh_countdown 刷新。
+    -- HUD 按钮【放最前】：位置固定，不会被后面变长的世界标签挤动。点击由 tick.on_gui_click 路由。
+    --   玩法&指令（弹窗）  |间隔|  角色面板 / 跃迁(投同意✓) / 停留(投反对✗)。
+    for _, b in ipairs({
+        {name = 'wn_btn_gameplay', sprite = 'virtual-signal/signal-info',  tip = {'wn.btn-gameplay-tip'}},
+        -- {spacer = true},
+        {name = 'skills',          sprite = 'entity/character',            tip = {'wn.skills-btn-tip'}},
+        {name = 'wn_btn_warp',     sprite = 'virtual-signal/signal-check',  tip = {'wn.btn-warp-tip'}},
+        {name = 'wn_btn_stay',     sprite = 'virtual-signal/signal-deny',   tip = {'wn.btn-stay-tip'}},
+    }) do
+        if b.spacer then
+            player.gui.top.add{type = 'empty-widget'}.style.width = 12   -- 玩法 与 操作组 之间的间隔
+        else
+            player.gui.top.add{type = 'sprite-button', name = b.name, sprite = b.sprite, tooltip = b.tip}
+        end
+    end
+
+    -- 世界轮次 + 跃迁倒计时合并标签【放最后】：标签随轮次/时间变长，放末尾才不会挤动前面的按钮。
+    -- 悬停显示简介（即原"简介"按钮内容；新玩家进服会自动弹一次）。倒计时每分钟由 refresh_countdown 刷新。
     local cd = player.gui.top.add {
         type = 'label',
         name = 'warp_countdown',
@@ -41,21 +57,6 @@ function M.player_gui(player)
     cd.style.font_color = {255, 210, 120}
     cd.style.left_margin = 10
     cd.style.top_margin = 6
-
-    -- 星系词条已删除：每局世界的矿物/昼夜/天色等不摆在 UI 上，让玩家自己探索发现。
-
-    -- 6 个 HUD 按钮，点击由 tick.on_gui_click 路由：
-    --   简介 / 玩法详介 / 指令详介（弹窗）  +  角色面板 / 跃迁 / 停留（不变）。
-    for _, b in ipairs({
-        {name = 'wn_btn_intro',    sprite = 'space-location/solar-system-edge', tip = {'wn.btn-intro-tip'}},
-        {name = 'wn_btn_gameplay', sprite = 'item/exoskeleton-equipment',       tip = {'wn.btn-gameplay-tip'}},
-        {name = 'wn_btn_commands', sprite = 'virtual-signal/signal-info',        tip = {'wn.btn-commands-tip'}},
-        {name = 'skills',          sprite = 'entity/character',                 tip = {'wn.skills-btn-tip'}},
-        {name = 'wn_btn_warp',     sprite = 'virtual-signal/signal-white-flag', tip = {'wn.btn-warp-tip'}},
-        {name = 'wn_btn_stay',     sprite = 'virtual-signal/signal-trash-bin',  tip = {'wn.btn-stay-tip'}},
-    }) do
-        player.gui.top.add{type = 'sprite-button', name = b.name, sprite = b.sprite, tooltip = b.tip}
-    end
 end
 
 -- 刷新所有玩家 HUD；离线玩家清空 GUI。
@@ -117,21 +118,18 @@ function M.show_intro(player)
     M.show_popup(player, {'wn.intro-title'}, {{'description', ''}})
 end
 
--- 弹出【游戏玩法详介】：文案里的【起步分钟】【飞船寿命】由 storage 实时填入。
--- HUD 玩法按钮(tick.lua) 与 /tutorial 命令(commands.lua) 共用，避免漏传参数。
+-- 弹出【游戏玩法 & 指令】（玩法与指令两个按钮已合并为一个弹窗）：
+--   玩法机制段（参数：起步分钟/飞船寿命由 storage 实时填入）+ 控制台指令段；会员/管理员再追加会员指令段。
 function M.show_tutorial(player)
-    M.show_popup(player, {'wn.tutorial-title'}, {{'wn.guide-gameplay',
-        storage.warp_initial_minutes or 10,   -- __1__ 跃迁倒计时起步分钟
-        storage.platform_lifetime or 10}})    -- __2__ 飞船最多保留的跃迁次数
-end
-
--- 弹出【按钮指令详介】：可用控制台指令清单；会员/管理员额外追加会员指令段（管理员永远算会员）。
-function M.show_commands(player)
-    local lines = {{'wn.guide-commands'}}
+    local lines = {
+        {'wn.guide-gameplay', storage.warp_initial_minutes or 10, storage.platform_lifetime or 10},
+        '',
+        {'wn.guide-commands'},
+    }
     if player and (player.admin or (storage.members and storage.members[player.name])) then
         lines[#lines + 1] = {'wn.tutorial-member'}
     end
-    M.show_popup(player, {'wn.commands-title'}, lines)
+    M.show_popup(player, {'wn.tutorial-title'}, lines)
 end
 
 function M.close_popup(player)
