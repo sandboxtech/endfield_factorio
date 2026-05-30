@@ -33,21 +33,27 @@ end
 -- 一律带 time_to_live 自动消失，免手动清理、不留存档。
 local function draw_center(text, color, scale, ttl, follow)
     for _, player in pairs(game.connected_players) do
-        -- 挂角色时必须用【角色自己的 surface】：跃迁瞬间玩家正被传送，player.surface 与 character.surface 会短暂不一致，
-        -- 用 player.surface 画 character 会跨表面报错（nauvis 实体 / fulgora 期望）。挂坐标时退回 player.surface。
+        -- 挂角色时必须用【角色自己的 surface】：跃迁/死亡复活/跨星传送的那一瞬，player.surface 与 character.surface 会短暂不一致，
+        -- 用 player.surface 画 character 会跨表面报错（如"aquilo 实体 / 期望 gleba"）。挂坐标时退回 player.surface。
         local char = (follow ~= false) and player.character or nil
-        local target = char or player.position
-        rendering.draw_text{
+        if char and not char.valid then char = nil end   -- 刚死/被销毁的失效角色：退化为坐标，别拿来当 target
+        -- 逐玩家 pcall：单个玩家处于跨表面/实体失效的瞬态时只跳过他自己，不连累其他人的倒计时（旧版是一人出错整段倒计时全挂）。
+        local ok = pcall(rendering.draw_text, {
             text = text,
             surface = char and char.surface or player.surface,
-            target = target,
-            color = color,
-            scale = scale,
-            alignment = 'center',
-            vertical_alignment = 'middle',
-            players = {player},
-            time_to_live = ttl,
-        }
+            target = char or player.position,
+            color = color, scale = scale,
+            alignment = 'center', vertical_alignment = 'middle',
+            players = {player}, time_to_live = ttl,
+        })
+        if not ok and char then   -- 挂角色失败 → 退回纯坐标(player.surface)再画一次，保证该玩家仍能看到大字
+            pcall(rendering.draw_text, {
+                text = text, surface = player.surface, target = player.position,
+                color = color, scale = scale,
+                alignment = 'center', vertical_alignment = 'middle',
+                players = {player}, time_to_live = ttl,
+            })
+        end
     end
 end
 
@@ -106,10 +112,20 @@ events.on(defines.events.on_tick, function()
         -- 临近真跃迁（剩余 ≤ LEAD 秒且还没到）→ 起一段倒计时，end_tick 对齐真实截止 → 归零正好是跃迁时刻。
         if game.tick % 60 == 0 then
             local remaining = warp_remaining()
-            if remaining > 0 and remaining <= LEAD_SECONDS * 60 then
-                storage.warp_fx = {end_tick = game.tick + remaining, last = nil}
+            -- 守卫用 ≤ 窗口（含已逾期 remaining ≤ 0），而非旧的 remaining>0：
+            -- 一旦 remaining 因任何原因(reset 抛错没重置 warp_hours、投票骤减后被跨过等)已是负值，
+            -- 旧守卫会永不再起 → 自动跃迁彻底卡死、HUD 卡在 0 分钟。这里逾期则 end_tick 夹到当前 tick，下个 tick 立即归零触发 reset。
+            if remaining <= LEAD_SECONDS * 60 then
+                storage.warp_fx = {end_tick = game.tick + math.max(0, remaining), last = nil}
             end
         end
+        return
+    end
+
+    -- 硬化：持久态 warp_fx 若被写坏(end_tick 非数字)，fx.end_tick-game.tick 会每 tick 抛错被总线吞掉 →
+    -- 既不倒计时也不 reset、永久卡死。直接清掉，下个 tick 走空闲分支按 warp_remaining 重新决定。
+    if type(fx.end_tick) ~= 'number' then
+        storage.warp_fx = nil
         return
     end
 
@@ -117,7 +133,10 @@ events.on(defines.events.on_tick, function()
     if remain <= 0 then
         storage.warp_fx = nil          -- 先清状态：reset 会重置 run_start_tick，下个 tick 不会误判再起一轮
         finale()
-        local gained = reset.reset()                       -- 真跃迁：结算 + 清场 + 重生；返回本轮是否有人拿到经验
+        -- pcall 兜底：reset 万一抛错，warp_fx 已为 nil、warp_hours 未重置 → 空闲分支(上面 ≤窗口守卫)会在 ≤60 tick 内重新起倒计时重试，
+        -- 自愈而非永久卡死；reset 持续失败则每分钟重试一次(并把错误抛给总线播报给管理员)，是显式告警而非静默死掉。
+        local ok, gained = pcall(reset.reset)
+        if not ok then error(gained) end                  -- 交给 events 总线 pcall：记日志 + 通知管理员（同一错一会话只播一次）
         play(gained and SUCCESS_SOUND or PLAIN_SOUND)
         return
     end

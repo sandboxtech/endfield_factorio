@@ -20,6 +20,7 @@ local function progress_bar(frac)
     local f = math.floor(frac * BAR_N + 0.5)
     return '[color=acid]' .. string.rep('█', f) .. '[/color][color=70,70,70]' .. string.rep('█', BAR_N - f) .. '[/color]'
 end
+M.progress_bar = progress_bar   -- 导出供 commands.show_panel 的星星充能进度条复用（同款方块字符条）
 
 function M.print_inspection(target, viewer)
     viewer.print({'wn.inspect-header', target.name})
@@ -203,6 +204,9 @@ end)
 
 script.on_event(defines.events.on_player_joined_game, function(event)
     local player = game.get_player(event.player_index)
+    -- 星星充能基准：首次见到该玩家时锚定为当前 tick（之后随游戏时间累积；不重置已有值）。
+    storage.charge = storage.charge or {}
+    storage.charge[player.name] = storage.charge[player.name] or game.tick
     -- 名册变了，刷新所有人 HUD（自然包含自己）
     gui.players_gui()
 

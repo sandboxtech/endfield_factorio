@@ -567,6 +567,12 @@ end
 --   danger(0~1+)：越大守卫越多越猛、残骸越多。每种炮塔各自【非线性】数量(大概率0、极小概率很多)，放在半径6~11 环上。
 --   电炮(electric)首次要放时才【惰性】建电网核心；建不出则本类电炮跳过。残骸 force=neutral、不铺人造地板。
 local function place_guards(surface, center, danger, floor)
+    -- Fulgora：据点中心放一座避雷针(enemy force)。range_elongation=25 覆盖范围远超 6~11 格守卫环，
+    -- 把闪电引到自己身上，保护周围敌方守卫塔/电网核心不被劈烂（永续箱已 destructible=false，本就免疫）。
+    if surface.name == 'fulgora' then
+        local lp = surface.find_non_colliding_position('lightning-collector', center, 6, 1)
+        if lp then surface.create_entity{name = 'lightning-collector', force = 'enemy', position = lp} end
+    end
     local tmax = math.max(1, math.floor(1 + danger * 7 + 0.5))
     local core, core_tried = nil, false
     for _, def in ipairs(OUTPOST_GUARDS) do

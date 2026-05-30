@@ -119,7 +119,8 @@ function M.ensure_defaults()
         warp_vote_divisor = 5,            -- 跃迁投票阈值除数：净同意 > ceil(在线人数/此值) 才推进（5=1/5，越大越易过）
         travel_enabled = true,           -- 前往星球【总开关】（默认关）。开启：/c storage.travel_enabled=true。开启后每轮每个外星球还要各自过 travel_chance。
         action_cd_minutes = 3,            -- 投票+传送共享冷却（分钟），防止玩家频繁刷动作
-        charge_max_hours = 100,           -- 星星充能上限（游戏内小时）：随游戏时间累积，超过此值的部分领不到（领取=1 tick 1 星星）
+        charge_max_hours = 30,            -- 星星充能上限（游戏内小时）：随游戏时间累积、封顶此值（1 星星=1 分钟=3600 tick；满充=30h=1800 星星）
+        star_unlock_level = 0,            -- 解锁【充能进度条 + 领取按钮】所需的人物等级(=floor√在线分钟)；默认 0=人人可见。星星余额所有等级都显示
     }
     M.scalar_defaults = d   -- 暴露标量默认值（供 /config 命令对比当前 storage 与默认）
     for k, v in pairs(d) do

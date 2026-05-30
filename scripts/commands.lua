@@ -5,6 +5,8 @@ local gui = require('scripts.gui')
 local reset = require('scripts.reset')
 local players = require('scripts.players')
 local science_exp = require('scripts.science_exp')
+local passives = require('scripts.passives')
+local respawn_gifts = require('scripts.respawn_gifts')
 local util = require('scripts.util')
 
 local M = {}   -- 导出给 HUD 按钮复用（gui 点击经 tick 路由到这里）
@@ -82,12 +84,6 @@ end)
 
 -- ── 管理员功能：改由【HUD 左上角红按钮】触发（仅管理员可见可点），不再注册为命令。───────────────
 -- 按钮点击经 tick.on_gui_click 路由到这些 M.* 函数；函数内再校验 player.admin 兜底。
-
--- 玩家管理 GUI（刷新所有人 HUD）。
-function M.admin_players_gui(player)
-    if not (player and player.admin) then return end
-    gui.players_gui()
-end
 
 -- 查看各星球【最近一次世界生成】的 debug 摘要（surface.lua 每轮缓存进 storage.gen_debug 的多行数组）。
 local GEN_DEBUG_PLANETS = {'nauvis', 'vulcanus', 'fulgora', 'gleba', 'aquilo'}
@@ -333,13 +329,32 @@ add_command('kickout', {'wn.kickout-help'}, member_kick_cmd)
 function M.show_panel(player, target)
     if not player then return end
     target = target or player
+    local self = target.index == player.index
     local sink = gui.popup_sink()
     players.print_inspection(target, sink)
     local title = table.remove(sink.lines, 1)   -- 首行 inspect-header 提作弹窗标题
-    local btn = (target.index == player.index)
-        and {name = 'wn_panel_others', caption = {'wn.panel-others'}}   -- 看自己：去看他人
-        or  {name = 'wn_panel_others', caption = {'wn.panel-back'}}     -- 看别人：返回玩家列表
-    gui.show_popup(player, title, sink.lines, {btn})
+    -- 顶部导航按钮：看自己→"查看他人能力"；看别人→"返回玩家列表"。两者复用同名 wn_panel_others（tick 路由按上下文处理）。
+    local top_buttons = { self
+        and {name = 'wn_panel_others', caption = {'wn.panel-others'}}
+        or  {name = 'wn_panel_others', caption = {'wn.panel-back'}} }
+    local bottom_buttons = {}
+    if self then
+        -- ⭐ 星星（只对自己，追加到统计之后）：先空行隔开，再星星余额（所有等级都显示），再进度条+领取按钮（仅达 star_unlock_level）。
+        sink.lines[#sink.lines + 1] = ''                                          -- 空行间隔
+        local bal = math.floor(((storage.star or {})[player.name] or 0) / constants.min_to_tick)
+        sink.lines[#sink.lines + 1] = {'wn.panel-star', bal}                      -- 星星余额（整数）
+        if M.star_unlocked(player) then
+            local pend = M.charge_pending(player)
+            local maxt = (storage.charge_max_hours or 30) * constants.hour_to_tick
+            local frac = (maxt > 0) and (pend / maxt) or 0
+            sink.lines[#sink.lines + 1] = {'wn.panel-star-charge',
+                players.progress_bar(frac),
+                math.floor(pend / constants.min_to_tick),                         -- 当前可领整数星星
+                math.floor(maxt / constants.min_to_tick)}                         -- 能领的最大值（=满充星星数）
+            bottom_buttons[#bottom_buttons + 1] = {name = 'wn_claim_star', caption = {'wn.act-claim-star'}}
+        end
+    end
+    gui.show_popup(player, title, sink.lines, top_buttons, false, bottom_buttons)
 end
 
 -- 弹出【在线玩家列表】：每个在线玩家一个名字按钮，点击查看其能力面板。
@@ -362,6 +377,70 @@ function M.set_home_planet(player, planet)
     player.print({'wn.home-set', planet})
     gui.show_actions(player)   -- 重开功能弹窗 → 当前起始星球按钮标 ✓
 end
+
+-- ⭐ 星星充能（懒计算）：storage.charge[名]=上次结算到的 game.tick；storage.star[名]=星星余额(内部存 tick，恒为 min_to_tick 整数倍)。
+-- 单位：1 星星 = 1 分钟 = min_to_tick(3600) tick。显示一律 floor(值/min_to_tick) → 整数星星。
+-- 领取：只能领【整数颗】星星——N = floor(待领 tick / min_to_tick)（待领封顶 charge_max_hours 小时），余额 += N×min_to_tick，
+--       记录前移 last += N×min_to_tick（保留不足 1 颗的余数，下次接着攒，不浪费、不漂移）。
+local STAR = nil   -- = constants.min_to_tick，下方惰性取（避免顶层依赖顺序问题）
+local function star_tick() STAR = STAR or constants.min_to_tick; return STAR end
+
+-- 人物等级 = floor(√在线分钟)（= 开局金币 coin_reward）。
+local function player_level(player)
+    return respawn_gifts.coin_reward(passives.get_stat(player.index, 'online_minutes'))
+end
+-- 是否已解锁充能进度条 + 领取按钮（达到 star_unlock_level，默认 0=人人解锁）。
+function M.star_unlocked(player)
+    return player and player_level(player) >= (storage.star_unlock_level or 0)
+end
+
+function M.charge_pending(player)   -- 返回 待领 tick（封顶 charge_max_hours 小时）
+    local maxt = (storage.charge_max_hours or 100) * constants.hour_to_tick
+    local last = (storage.charge or {})[player.name] or game.tick
+    return math.min(game.tick - last, maxt)
+end
+function M.claim_charge(player)
+    if not player then return end
+    if not M.star_unlocked(player) then return end   -- 等级不够：按钮本不该出现，这里兜底拦截
+    storage.charge, storage.star = storage.charge or {}, storage.star or {}
+    local unit = star_tick()
+    local last = storage.charge[player.name] or game.tick
+    local maxt = (storage.charge_max_hours or 100) * constants.hour_to_tick
+    local pend = math.min(game.tick - last, maxt)
+    local n = math.floor(pend / unit)                  -- 整数星星数（只领整颗）
+    if n <= 0 then player.print({'wn.star-none-yet'}); return end
+    storage.star[player.name] = (storage.star[player.name] or 0) + n * unit
+    storage.charge[player.name] = last + n * unit      -- 记录前移 N 颗的量，保留余数
+    player.print({'wn.star-claimed', n})
+    M.show_panel(player)   -- 刷新面板（充能减少、余额更新）
+end
+-- 把 stars 颗（整数）星星转给目标玩家（余额不足则转全部整颗）。内部按 颗×min_to_tick 存。
+-- 转账与投票/前往星球【共用同一条冷却】：校验全过（目标存在/非自己/数额有效/余额足）后才查冷却，被拒不占冷却；成功才 mark_action。
+function M.give_star(player, target_name, stars)
+    if not player then return end
+    storage.star = storage.star or {}
+    local target = target_name and game.get_player(target_name)
+    if not target then player.print({'wn.member-no-such', target_name or ''}); return end
+    if target.index == player.index then player.print({'wn.star-self'}); return end
+    local unit = star_tick()
+    local n = math.floor(tonumber(stars) or 0)         -- 只转整数颗
+    if n <= 0 then player.print({'wn.star-bad-amount'}); return end
+    local have = math.floor((storage.star[player.name] or 0) / unit)   -- 余额有多少整颗
+    if have <= 0 then player.print({'wn.star-insufficient'}); return end
+    n = math.min(n, have)                              -- 余额不足则转全部整颗
+    if on_cooldown(player) then return end             -- 校验全过后才查冷却：被拒的尝试不占冷却
+    storage.star[player.name] = (storage.star[player.name] or 0) - n * unit
+    storage.star[target.name] = (storage.star[target.name] or 0) + n * unit
+    mark_action(player)   -- 与投票/前往星球共享冷却
+    game.print({'wn.star-given', player.name, n, target.name})
+end
+-- /givestar <玩家> <星星>：转星星给他人（用原始注册、不走公告包装；give_star 自身已全服广播）。
+commands.add_command('givestar', '把星星转给其他玩家：/givestar <玩家> <星星>', function(command)
+    local player = command.player_index and game.get_player(command.player_index)
+    if not player then return end
+    local name, n = string.match(command.parameter or '', '^%s*(%S+)%s+(%S+)')
+    M.give_star(player, name, tonumber(n))
+end)
 
 -- 投跃迁票（vote='agree'/'oppose'，等同 /跃迁 /停留）并结算广播。
 function M.cast_warp_vote(player, vote)

@@ -52,7 +52,6 @@ function M.player_gui(player)
         for _, b in ipairs({
             {name = 'wn_admin_gen',     caption = 'GEN',   tip = {'wn.admin-gen-tip'}},
             {name = 'wn_admin_diff',    caption = 'DIFF',  tip = {'wn.admin-diff-tip'}},
-            {name = 'wn_admin_players', caption = '玩家',  tip = {'wn.admin-players-tip'}},
         }) do
             player.gui.top.add{type = 'button', name = b.name, caption = b.caption, tooltip = b.tip, style = 'red_button'}
         end
@@ -95,8 +94,10 @@ M.POPUP_CLOSE_NAME = POPUP_NAME .. '_close'
 -- title：localised string 或纯文本；lines：数组，每项一行（localised string 或纯文本）。
 -- buttons（可选）：数组，每项 {name=, caption=, tags=}，渲染成滚动区里的可点击按钮（查看他人/返回/玩家名/跃迁停留等）。
 --   点击由 tick.on_gui_click 按 name 路由，复用 HUD 同名按钮的处理（skills/wn_btn_warp/wn_btn_stay 等）。
--- buttons_at_bottom：true 时按钮放在文本行【之后】（用于教程末尾的"其它按钮"），否则放最前（用于面板导航）。
-function M.show_popup(player, title, lines, buttons, buttons_at_bottom)
+-- buttons_at_bottom：true 时 buttons 放在文本行【之后】（用于教程末尾的"其它按钮"），否则放最前（用于面板导航）。
+-- bottom_buttons（可选）：与 buttons_at_bottom 无关，永远渲染在【所有文本行之后】。用于"顶部导航按钮 + 底部操作按钮"两段式布局
+--   （如角色面板：顶部"查看他人能力"，底部"领取星星"）。
+function M.show_popup(player, title, lines, buttons, buttons_at_bottom, bottom_buttons)
     if not (player and player.valid) then return end
     local screen = player.gui.screen
     if screen[POPUP_NAME] then screen[POPUP_NAME].destroy() end   -- 重开即替换
@@ -116,19 +117,20 @@ function M.show_popup(player, title, lines, buttons, buttons_at_bottom)
     local pane = frame.add{type = 'scroll-pane', direction = 'vertical'}
     pane.style.maximal_height = 460
     pane.style.minimal_width = 380
-    local function add_buttons()
-        if not buttons then return end
-        for _, b in ipairs(buttons) do
+    local function add_buttons(list)
+        if not list then return end
+        for _, b in ipairs(list) do
             -- enabled=false → 按钮置灰且不触发 on_gui_click（如本轮关闭的星球）。tooltip 说明为何不可点。
             pane.add{type = 'button', name = b.name, caption = b.caption, tags = b.tags,
                      enabled = b.enabled, tooltip = b.tooltip}
         end
     end
-    if not buttons_at_bottom then add_buttons() end
+    if not buttons_at_bottom then add_buttons(buttons) end
     for _, line in ipairs(lines) do
         pane.add{type = 'label', caption = line}.style.single_line = false
     end
-    if buttons_at_bottom then add_buttons() end
+    if buttons_at_bottom then add_buttons(buttons) end
+    add_buttons(bottom_buttons)   -- 永远在文本行之后
     frame.force_auto_center()
     player.opened = frame   -- Esc/E 关闭
 

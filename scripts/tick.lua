@@ -235,10 +235,10 @@ script.on_event(defines.events.on_gui_click, events.safe('gui_click', function(e
         commands.admin_gen(player)                  -- 管理员红按钮：各星生成 debug
     elseif name == 'wn_admin_diff' then
         commands.admin_diff(player)                 -- 管理员红按钮：ensure_defaults + 参数对比
-    elseif name == 'wn_admin_players' then
-        commands.admin_players_gui(player)          -- 管理员红按钮：刷新玩家 HUD
     elseif name == 'wn_btn_skills' then
         commands.show_panel(player)                 -- 点角色面板按钮 = 弹出角色面板（同 /inspect 自己）
+    elseif name == 'wn_claim_star' then
+        commands.claim_charge(player)               -- 面板里"领取星星充能"按钮
     elseif name == 'wn_panel_others' then
         commands.show_player_list(player)           -- 面板里"查看他人能力"/"返回" = 弹出在线玩家列表
     elseif event.element.tags and event.element.tags.wn_view then
