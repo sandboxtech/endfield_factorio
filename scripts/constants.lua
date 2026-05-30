@@ -63,9 +63,9 @@ function M.ensure_defaults()
         size_multiplier = 4,              -- 矿脉更大 · rail world：原 1 的 ×4
         frequency_multiplier = 0.5,       -- 矿脉更稀疏 · rail world：原 1 的 ×1/2（少而大的矿，逼玩家修铁路）
         local_specialty_multiplier = 0.25,
-        radius = 2048,
-        radius_min = 256,
-        radius_max = 4096,
+        radius_standard = 1024,           -- 标准(基准)半径：每星球真实半径 = clamp(standard × random_exp(2), radius_min, radius_max)
+        radius_min = 256,                 -- 真实半径下限
+        radius_max = 4096,                -- 真实半径上限
         platform_lifetime = 10,
         difficulty = 1,
         debug = true,                     -- 向管理员打印每次世界生成的属性
@@ -100,7 +100,12 @@ function M.ensure_defaults()
         enemy_respawn_ticks = 1800,       -- 被敌方打死：1800 tick = 30 秒
         enemy_death_push_minutes = 1,     -- 被敌方打死时本轮跃迁倒计时提前的分钟数
         warp_vote_divisor = 5,            -- 跃迁投票阈值除数：净同意 > ceil(在线人数/此值) 才推进（5=1/5，越大越易过）
+        travel_enabled = false,           -- 是否显示并启用"前往星球"按钮（默认关）。开启：/c storage.travel_enabled=true
     }
+    -- 老存档迁移：原 storage.radius 已改名 radius_standard，把旧值继承过来（仅一次，default 之前）。
+    if storage.radius_standard == nil and storage.radius ~= nil then
+        storage.radius_standard = storage.radius
+    end
     for k, v in pairs(d) do
         if storage[k] == nil then storage[k] = v end
     end

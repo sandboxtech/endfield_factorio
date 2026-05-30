@@ -366,7 +366,7 @@ script.on_event(defines.events.on_surface_cleared, events.safe('surface_cleared'
     end
 
     -- 刷新星球半径，箝制在 [radius_min, radius_max]（默认值见 constants.ensure_defaults）
-    local r = storage.radius * util.random_exp(2)
+    local r = storage.radius_standard * util.random_exp(2)
     r = math.max(storage.radius_min, r)
     r = math.min(storage.radius_max, r)
     r = math.ceil(r)
@@ -606,7 +606,7 @@ script.on_event(defines.events.on_chunk_generated, events.safe('chunk_generated'
     local surface = event.surface
     local left_top = event.area.left_top
 
-    local r = storage.radius_of[surface.name] or storage.radius or 2048
+    local r = storage.radius_of[surface.name] or storage.radius_standard or 2048
 
     -- 圆外格子铺虚空（整块都在圆内则跳过此段）
     if left_top.x * left_top.x + left_top.y * left_top.y >= r * r / 2 then

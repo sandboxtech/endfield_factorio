@@ -125,7 +125,7 @@ local WORLD_EVENTS = {
         local skip = DRONE_SKIP_MAX - (DRONE_SKIP_MAX - DRONE_SKIP_MIN) * t
         if math.random() < skip then return end
         -- 数量随距离 1→DRONE_MAX(以本轮地图半径为远端参考)，乘强度并夹 [1,10]
-        local radius = storage.radius or 2048
+        local radius = storage.radius_standard or 2048
         local frac = math.min(1, (d - DRONE_NO_SPAWN_RADIUS) / math.max(1, radius - DRONE_NO_SPAWN_RADIUS))
         local count = math.max(1, math.min(DRONE_MAX, math.floor((1 + (DRONE_MAX - 1) * frac) * k + 0.5)))
         for _ = 1, count do

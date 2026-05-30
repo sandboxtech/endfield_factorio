@@ -11,6 +11,15 @@ local M = {}
 -- 默认值见 constants.ensure_defaults（respawn_ticks=180=3 秒，enemy_respawn_ticks=1800=30 秒）。
 
 -- 把 target 的统计数据打印给 viewer：4 项技能 + 在线时长 + 各瓶累计经验。
+-- 文字进度条：BAR_N 个 █，按比例 frac∈[0,1] 前段染 acid(已得)、后段染深灰(待补)。
+-- 只用 █ 一种字形(靠颜色区分)，规避罕见字形缺字渲染成豆腐块的风险。
+local BAR_N = 12
+local function progress_bar(frac)
+    frac = math.max(0, math.min(1, frac))
+    local f = math.floor(frac * BAR_N + 0.5)
+    return '[color=acid]' .. string.rep('█', f) .. '[/color][color=70,70,70]' .. string.rep('█', BAR_N - f) .. '[/color]'
+end
+
 function M.print_inspection(target, viewer)
     viewer.print({'wn.inspect-header', target.name})
     -- 人物等级 = 开局金币 = floor(√在线分钟)；升到下一级需 (等级+1)² 分钟在线
@@ -34,9 +43,14 @@ function M.print_inspection(target, viewer)
             end
             local nx = respawn_gifts.exp_for_next_level(pexp)
             if nx then
-                viewer.print({'wn.exp-detail', pack, lv, table.concat(cur, ' '), pexp, nx - pexp})
+                local base = lv * lv                                  -- 当前等级最低经验 = lv²
+                local frac = (nx > base) and (pexp - base) / (nx - base) or 0
+                viewer.print({'wn.exp-detail', pack, lv, table.concat(cur, ' '),
+                              progress_bar(frac), math.floor(frac * 100 + 0.5),
+                              pexp - base, nx - base})                 -- __6__/__7__ = 本级已得/本级跨度，百分比即其比值
+
             else
-                viewer.print({'wn.exp-detail-max', pack, lv, table.concat(cur, ' '), pexp})
+                viewer.print({'wn.exp-detail-max', pack, lv, table.concat(cur, ' '), pexp, progress_bar(1)})
             end
         end
     end

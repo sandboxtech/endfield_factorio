@@ -146,8 +146,11 @@ function M.show_tutorial(player)
         {name = 'wn_act_lastrank', caption = {'wn.act-lastrank'}},
         {name = 'wn_act_suicide',  caption = {'wn.act-suicide'}},
     }
-    for _, p in ipairs({'nauvis', 'vulcanus', 'gleba', 'fulgora', 'aquilo'}) do
-        buttons[#buttons + 1] = {name = 'wn_act_travel_' .. p, caption = {'wn.act-travel', p}, tags = {wn_travel = p}}
+    -- "前往星球"按钮：由 storage.travel_enabled 开关控制（默认关 → 不显示）。
+    if storage.travel_enabled then
+        for _, p in ipairs({'nauvis', 'vulcanus', 'gleba', 'fulgora', 'aquilo'}) do
+            buttons[#buttons + 1] = {name = 'wn_act_travel_' .. p, caption = {'wn.act-travel', p}, tags = {wn_travel = p}}
+        end
     end
     M.show_popup(player, {'wn.tutorial-title'}, lines, buttons, true)
 end

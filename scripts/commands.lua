@@ -188,6 +188,7 @@ end
 
 function M.travel(player, planet)
     if not player then return end
+    if not storage.travel_enabled then return end   -- 开关关闭时禁用（即便按钮意外存在也不生效）
     if not player.character then player.print('你现在没有角色，无法前往星球'); return end
     if not game.surfaces[planet] then player.print('星球 ' .. planet .. ' 还没生成'); return end
     if not travel_inventories_empty(player) then
