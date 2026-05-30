@@ -57,7 +57,8 @@ function M.ensure_defaults()
     -- 重构清理（每次调用都跑，幂等）：删除已废弃的 storage 键，并修正类型已变更的键。
     -- on_init / on_configuration_changed / 每轮 reset 都会触发 → 老存档无需手动迁移，加载/跃迁即自愈。
     for _, k in ipairs({'radius', 'radius_of', 'tree_remap', 'prob_tree_remap', 'schema_version',
-                        'prob_danger', 'danger_density', 'danger_theme', 'wreck_density'}) do
+                        'prob_danger', 'danger_density', 'danger_theme', 'wreck_density',
+                        'loot_density_outpost', 'loot_density_perp', 'encounter_perp', 'encounter_empty'}) do
         storage[k] = nil
     end
     -- travel_chance 曾是标量、现改为【按星球的表】；旧标量会让 tc[星球] 索引数字崩服 → 非表一律清掉，由下方按星球重建。
@@ -83,13 +84,13 @@ function M.ensure_defaults()
         replicant_chance = 0.5,           -- 复制虫：玩家建筑被虫破坏时，按此概率原地冒新虫（全局，world_fx 开关另控）
         enemy_dmg_scale = 2,              -- 敌人武器伤害随危险度的缩放：加成 = knobs.danger × 此值（0=原版、2=最高危世界约+200%）
         -- 战利品密度：全局乘数 × 各类乘数（相乘共同影响）。默认全 1，可 /c 单独热改：2 更多、0.5 更少、0 不刷。
-        loot_density           = 1,        -- 全局总乘数（对所有类型一起生效）
+        -- 遭遇出现率乘数：全局 × 各类（默认全 1，相乘）。基础频率见 map_features.ENCOUNTER_BASE；实际率还乘每世界 random² 密度。
+        loot_density           = 1,        -- 全局总乘数（五类一起生效）
         loot_density_material  = 1,        -- 钢箱（材料）
         loot_density_equipment = 1,        -- 铁箱（设备）
         loot_density_treasure  = 1,        -- 木箱（宝箱）
-        -- 遭遇优先链(place_encounter)里 perpetual/empty 的每区块基础出现率（× loot_density 全局乘数）。
-        encounter_perp         = 0.004,    -- 永续箱遭遇（最稀、守卫最猛）
-        encounter_empty        = 0.03,     -- 空据点遭遇（最常见、纯敌人、守卫猛）
+        loot_density_perpetual = 1,        -- 永续箱遭遇
+        loot_density_empty     = 1,        -- 空据点遭遇（纯敌人）
         event_chance = 0.5,               -- 每分钟【全服】发生一次世界事件的固定概率（与人数无关；命中后随机挑 1 名玩家）
         -- 科技世界(事件世界的一种)：每次从所有科技随机抽一个，        tech_world_lose_chance = 0.125,    -- 抽中【已研究】科技时，失去它的概率
         tech_world_gain_chance = 0.25,     -- 抽中【未研究】科技时，研究它的概率

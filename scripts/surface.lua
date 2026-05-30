@@ -494,15 +494,18 @@ script.on_event(defines.events.on_surface_cleared, events.safe('surface_cleared'
     -- 敌人脚下地砖：本星本轮固定从【人造地砖】随机一种（非虫子类敌人放置时铺，见 map_features.enemy_floor_patch）。
     storage.enemy_floor[surface.name] = TILE_CLASS.artificial[math.random(#TILE_CLASS.artificial)]
 
+    -- 五类遭遇各自【本世界密度】= random()^2（多半低、偶尔高），map_features.encounter_chance 统一用它。
     storage.loot_style[surface.name] = {
-        material  = math.random() ^ 2,   -- 钢箱(材料箱)
-        equipment = math.random() ^ 2,   -- 铁箱(设备箱)
+        material  = math.random() ^ 2,   -- 钢箱(材料)
+        equipment = math.random() ^ 2,   -- 铁箱(设备)
         treasure  = math.random() ^ 2,   -- 木箱(宝箱)
-    }   -- 永续箱不再野外散布（改据点奖励），故无 perp 密度
-    -- debug 摘要：三类散布箱各自的本世界密度[0,1]。
+        perpetual = math.random() ^ 2,   -- 永续箱遭遇
+        empty     = math.random() ^ 2,   -- 空据点遭遇(纯敌人)
+    }
+    -- debug 摘要：五类遭遇各自的本世界密度[0,1]。
     local ls = storage.loot_style[surface.name]
-    dbg_add('战利品', string.format('material=%.2f equip=%.2f treasure=%.2f',
-        ls.material, ls.equipment, ls.treasure))
+    dbg_add('遭遇', string.format('material=%.2f equip=%.2f treasure=%.2f perp=%.2f empty=%.2f',
+        ls.material, ls.equipment, ls.treasure, ls.perpetual, ls.empty))
 
     -- （飞船残骸 wreck_density 滚定已移除：残骸改由 map_features.feat_outpost 在据点处非线性生成。）
 

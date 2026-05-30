@@ -455,21 +455,20 @@ local OUTPOST_GUARDS = {
 
 
 -- 区块级确定性随机 [0,1)：点状稀有风味用。
-local function chunk_rng(lt, off)
-    return noise.hash01(lt.x * 0.1234 + lt.y * 0.3717 + off * 1.7 + (storage.run or 0) * 0.011)
+local function chunk_rng(left_top, offset)
+    return noise.hash01(left_top.x * 0.1234 + left_top.y * 0.3717 + offset * 1.7 + (storage.run or 0) * 0.011)
 end
 
--- 四类箱子【每区块基础频率】（密度=1 时的频率上限）。钢(材料)最常见 > 铁(设备) > 木(宝箱)稀有 > 永续箱极低。
-local LOOT_FREQ = {material = 0.04, equipment = 0.02, treasure = 0.01}   -- 永续箱不再野外散布(改据点奖励)，故无 perp 频率
+-- 五类遭遇【每区块基础频率】（世界密度=1 时的上限）。常→稀：空据点 > 钢(材料) > 铁(设备) > 木(宝箱) ≈ 永续箱。
+local ENCOUNTER_BASE = {material = 0.04, equipment = 0.02, treasure = 0.01, perpetual = 0.01, empty = 0.08}
 
--- 本世界本类箱子的【每区块实际出现概率】= 世界密度(surface.lua 滚的 random^2) × 基础频率 × 该类全局乘数。
---   密度 = 世界密度 × 基础频率 × 全局乘数 storage.loot_density × 该类乘数 storage.loot_density_<类型>（两者相乘）。
---   两个乘数默认1、可 /c 单独热改：loot_density(全局) 与 loot_density_material/equipment/treasure/perp（据点另见 loot_density_outpost）。
---   无世界密度则兜底 0.3。
-local function spawn_chance(surface, kind)
+-- 本世界本类遭遇的【每区块实际出现概率】，五类【统一口径】：
+--   世界密度(surface.lua 滚的 random^2，每星每类独立) × 基础频率 ENCOUNTER_BASE × 全局乘数 storage.loot_density × 该类乘数 storage.loot_density_<类型>。
+--   后两者默认 1、可 /c 单独热改（loot_density 全局；loot_density_material/equipment/treasure/perpetual/empty 各类）。无世界密度则兜底 0.3。
+local function encounter_chance(surface, kind)
     local style = storage.loot_style and storage.loot_style[surface.name]
     local wd = (style and style[kind]) or 0.3
-    return wd * LOOT_FREQ[kind] * (storage.loot_density or 1) * (storage['loot_density_' .. kind] or 1)
+    return wd * ENCOUNTER_BASE[kind] * (storage.loot_density or 1) * (storage['loot_density_' .. kind] or 1)
 end
 
 -- 钢箱 = 材料箱填充：1~3 种材料、接近装满。高效填法：每种【一次性 insert 满堆叠×分到的格数】，整箱只需 1~3 次 insert。普通品质。
@@ -552,7 +551,8 @@ end
 local function build_power_core(surface, center)
     local sp = surface.find_non_colliding_position('substation', center, 5, 1)
     if not sp then return nil end
-    if not surface.create_entity{name = 'substation', force = 'enemy', position = sp} then return nil end
+    -- legendary 品质 substation：供电范围更大 → 环上 6~11 格的电炮都能覆盖到、不会没电。
+    if not surface.create_entity{name = 'substation', force = 'enemy', position = sp, quality = 'legendary'} then return nil end
     local ip = surface.find_non_colliding_position('electric-energy-interface', sp, 4, 1)
     if ip then
         local eei = surface.create_entity{name = 'electric-energy-interface', force = 'enemy', position = ip}
@@ -613,25 +613,21 @@ local function place_encounter(surface, lt)
     local frac = math.min(1, math.sqrt(d2) / R)
     local near_spawn = d2 < 96 * 96
     local center = {x = lt.x + math.random(6, 25) + 0.5, y = lt.y + math.random(6, 25) + 0.5}
-    local ld = storage.loot_density or 1
 
-    -- off=chunk_rng 种子, prob=出现率, place=放置奖励(可空), danger=守卫危险基数。命中即放置+守卫并返回 true。
-    local function try(off, prob, place, danger)
-        if chunk_rng(lt, off) > prob then return false end
+    -- offset=chunk_rng 种子（各遭遇独立）, kind=遭遇类型(查 encounter_chance), place=放置奖励(可空), danger=守卫危险基数。
+    -- 命中即放置奖励 + 守卫并返回 true（出生点 96 格内只放奖励、不放敌人）。
+    local function try(offset, kind, place, danger)
+        if chunk_rng(lt, offset) > encounter_chance(surface, kind) then return false end
         place()
         if not near_spawn then place_guards(surface, center, danger * (0.4 + 0.6 * frac)) end
         return true
     end
 
-    if try(605, ld * (storage.encounter_perp or 0.004),
-        function() place_reward_chest(surface, center, 'perpetual') end, 0.9) then return end
-    if try(601, spawn_chance(surface, 'treasure'),
-        function() place_reward_chest(surface, center, 'treasure') end, 0.35) then return end
-    if try(557, spawn_chance(surface, 'equipment'),
-        function() place_reward_chest(surface, center, 'equipment') end, 0.25) then return end
-    if try(503, spawn_chance(surface, 'material'),
-        function() place_reward_chest(surface, center, 'material') end, 0.20) then return end
-    try(701, ld * (storage.encounter_empty or 0.03), function() end, 0.9)   -- 空据点：纯敌人，最常见、最危险
+    if try(605, 'perpetual', function() place_reward_chest(surface, center, 'perpetual') end, 0.9) then return end
+    if try(601, 'treasure',  function() place_reward_chest(surface, center, 'treasure') end, 0.35) then return end
+    if try(557, 'equipment', function() place_reward_chest(surface, center, 'equipment') end, 0.25) then return end
+    if try(503, 'material',  function() place_reward_chest(surface, center, 'material') end, 0.20) then return end
+    try(701, 'empty', function() end, 0.9)   -- 空据点：纯敌人，最常见、最危险
 end
 
 -- （原零星 feat_danger 与散布 feat_wrecks 已移除：野外敌人/残骸统一改由 place_encounter→place_guards 据点式生成。）
@@ -697,7 +693,7 @@ local ROCK_CANDIDATES = {
 local OTHER_OBSTACLES = {
     'fulgoran-ruin-small', 'fulgoran-ruin-medium', 'fulgoran-ruin-big', 'fulgoran-ruin-huge',
 }
--- 统一【障碍目标池】= 树 + 石/障碍 + 其它障碍。源不靠此表（feat_entity_remap 按 type 过滤现地实体），
+-- 统一【障碍目标池】= 树 + 石/障碍 + 其它障碍。源不靠此表（feature_entity_remap 按 type 过滤现地实体），
 -- 此表只决定"换成什么"，可跨类互换（树↔石↔遗迹↔冰山…）。运行时按 entity_ok 校验。
 local OBSTACLE_TARGETS = {}
 for _, list in ipairs({TREE_TARGETS, ROCK_CANDIDATES, OTHER_OBSTACLES}) do
@@ -736,7 +732,7 @@ function M.pick_entity_target() local p = obstacles_pool(); return #p > 0 and p[
 --     · {to=名, seed, threshold} → 噪声区内统一换成同一种（大概率；单一主题斑块、协调）
 --     · {seed, threshold}      → 噪声区内每个各自随机换成【另一种】（小概率；跨类大杂烩异界带）
 -- （旧纯字符串格式已对线上老档用一次性 /c 统一成表；新档只产出表格式，此处不再判型。）
-local function feat_entity_remap(surface, lt)
+local function feature_entity_remap(surface, lt)
     local rm = storage.obstacle_remap and storage.obstacle_remap[surface.name]
     if not rm then return end
     local pool = obstacles_pool()
@@ -786,7 +782,7 @@ end
 --     · {p=概率}        → 每个产流体资源【各自】以概率 p 突变（零星散布，每星每世界 p 不同）
 --     · {seed,threshold} → 仅落在 noise 大团内的喷口整体突变（成片，多半小斑块）
 --   含量按目标喷口 minimum × 1.5~5.5 生成（量级随目标自适应）。同片油田可能混出多种喷口。
-local function feat_fluid_remap(surface, lt)
+local function feature_fluid_remap(surface, lt)
     local rm = storage.fluid_remap and storage.fluid_remap[surface.name]
     if not rm then return end
     -- （旧裸 p 数值格式已对线上老档用一次性 /c 统一成 {p=…} 表；新档只产出表格式，此处不再判型。）
@@ -827,8 +823,8 @@ function M.generate(surface, lt)
         for _, def in ipairs(home) do place_feature(surface, lt, def, A, S, Z, W) end
     end
     for _, def in ipairs(EXOTIC) do place_feature(surface, lt, def, A, S, Z, W) end
-    feat_entity_remap(surface, lt)    -- 统一障碍互换（树/石/遗迹跨类，噪声门控）；在调色前，让换出来的新树也被 theme_trees 调色
-    feat_fluid_remap(surface, lt)     -- 流体资源互换（原油/锂卤水/氟喷口/硫酸喷泉 小概率整星换成另一种）
+    feature_entity_remap(surface, lt)    -- 统一障碍互换（树/石/遗迹跨类，噪声门控）；在调色前，让换出来的新树也被 theme_trees 调色
+    feature_fluid_remap(surface, lt)     -- 流体资源互换（原油/锂卤水/氟喷口/硫酸喷泉 小概率整星换成另一种）
     theme_trees(surface, lt)
     -- 单地块【至多一个遭遇】：永续→木→铁→钢箱→空据点，命中即停；敌人统一 place_guards（perpetual/empty danger 高）。
     place_encounter(surface, lt)
