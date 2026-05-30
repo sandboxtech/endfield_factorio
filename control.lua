@@ -11,6 +11,7 @@ require('scripts.rocket')
 require('scripts.commands')
 require('scripts.tick')
 require('scripts.world_fx')
+require('scripts.warp_fx')
 
 local constants = require('scripts.constants')
 local reset = require('scripts.reset')

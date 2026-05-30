@@ -87,20 +87,36 @@ function M.place_on_surface(surface_name)
     for _, old in pairs(surface.find_entities_filtered{name = 'market', position = {bx, by}, radius = 8}) do
         old.destroy()
     end
-    -- 清掉挡路实体（树/悬崖/石头；矿脉不挡建筑，保留）
-    for _, e in pairs(surface.find_entities_filtered{position = {bx, by}, radius = 3, type = {'tree', 'cliff', 'simple-entity'}}) do
-        if e.valid then e.destroy() end
+    -- 清掉市场地坪上【任何会挡住放置】的实体（树/悬崖/石头/战利品箱…），只保留矿脉(resource，不挡建筑)和玩家(character)。
+    -- 注意：map_features 在本区块【先于】市场运行、可能在出生点附近落一个战利品箱(container)正好压在市场点上，
+    -- 导致 create_entity('market') 碰撞返回 nil、市场放不出——这正是"有时没市场"的主因。故按区域清干净、不再只清树石。
+    for _, e in pairs(surface.find_entities_filtered{area = {{bx - 2, by - 2}, {bx + 2, by + 2}}}) do
+        if e.valid and e.type ~= 'resource' and e.type ~= 'character' then e.destroy() end
     end
-    -- 铺一块 5×5 混凝土地坪，去掉水/不平地形保证放置成功
-    local tiles = {}
-    for dx = -2, 2 do
-        for dy = -2, 2 do
-            tiles[#tiles + 1] = {name = 'refined-concrete', position = {bx + dx, by + dy}}
+    -- 铺一块 5×5 地坪，去掉水/不平地形保证放置成功。
+    -- 注意：岩浆/油海等液体 tile 的 collision_mask 挡建筑，且【混凝土盖不住】(其 default_cover_tile=foundation)；
+    -- 故先铺 refined-concrete，铺完若市场点仍不可通行(说明是需地基的液体)，再用 foundation 兜底覆盖。
+    local function lay(tile_name)
+        local tiles = {}
+        for dx = -2, 2 do
+            for dy = -2, 2 do
+                tiles[#tiles + 1] = {name = tile_name, position = {bx + dx, by + dy}}
+            end
         end
+        surface.set_tiles(tiles)
     end
-    surface.set_tiles(tiles)
+    lay('refined-concrete')
+    local t = surface.get_tile(bx, by)
+    if t and t.valid and t.collides_with('player') and prototypes.tile['foundation'] then
+        lay('foundation')   -- 岩浆/油海等：混凝土没盖住 → 用 foundation（这些液体的默认覆盖 tile）
+    end
 
     local ent = surface.create_entity{name = 'market', position = {bx, by}, force = force}
+    if not ent then
+        -- 兜底：万一原位仍被占，就近找个不冲突的位置放，保证市场一定出现（不再"有时没有"）。
+        local p = surface.find_non_colliding_position('market', {bx, by}, 8, 0.5)
+        if p then ent = surface.create_entity{name = 'market', position = p, force = force} end
+    end
     if not ent then return nil end
     ent.destructible = false   -- 不可摧毁
     ent.minable = false        -- 不可挖取

@@ -2,7 +2,6 @@
 -- 本文件是 on_gui_click 与 on_nth_tick(3600) 的唯一注册点；player_stats 的每分钟采样
 -- 通过 player_stats.sample_online 接入，避免多文件重复注册 on_nth_tick 互相覆盖。
 local constants = require('scripts.constants')
-local reset = require('scripts.reset')
 local player_stats = require('scripts.player_stats')
 local map_features = require('scripts.map_features')
 local util = require('scripts.util')
@@ -198,19 +197,28 @@ local function run_world_events()
     WORLD_EVENTS[pick.et](pick.player, pick.player.surface, pick.ch, danger, k)
 end
 
--- 点击左上 run 按钮 = 弹出游戏教程；点弹窗 × = 关闭。（自杀脱困改用 /suicide /zisha 命令）
+-- HUD 6 按钮点击路由（简介/玩法/指令/角色面板/跃迁/停留）；点弹窗 × = 关闭。（自杀脱困改用 /suicide /zisha 命令）
 script.on_event(defines.events.on_gui_click, function(event)
     local player = game.get_player(event.player_index)
     if not (player and event.element and event.element.valid) then
         return
     end
     local name = event.element.name
-    if name == 'introduction' or name == 'wn_btn_tutorial' then
-        gui.show_tutorial(player)
+    if name == 'wn_btn_intro' then
+        gui.show_intro(player)                      -- 简介
+    elseif name == 'wn_btn_gameplay' then
+        gui.show_tutorial(player)                   -- 游戏玩法详介
+    elseif name == 'wn_btn_commands' then
+        gui.show_commands(player)                   -- 按钮指令详介
     elseif name == 'skills' then
         commands.show_panel(player)                 -- 点角色面板按钮 = 弹出角色面板（同 /inspect 自己）
+    elseif name == 'wn_panel_others' then
+        commands.show_player_list(player)           -- 面板里"查看他人能力"/"返回" = 弹出在线玩家列表
+    elseif event.element.tags and event.element.tags.wn_view then
+        local t = game.get_player(event.element.tags.wn_view)   -- 点列表里某玩家名 = 看其能力面板（带返回）
+        if t then commands.show_panel(player, t) end
     elseif name == 'wn_btn_warp' then
-        commands.cast_warp_vote(player, 'agree')    -- 教程/跃迁/停留三按钮 = 对应命令
+        commands.cast_warp_vote(player, 'agree')    -- 跃迁/停留 = 对应投票命令
     elseif name == 'wn_btn_stay' then
         commands.cast_warp_vote(player, 'oppose')
     elseif name == gui.POPUP_CLOSE_NAME then
@@ -248,7 +256,8 @@ end
 -- （player_stats 不再单独注册 on_nth_tick，统一在此调度，避免后注册者覆盖前者。）
 script.on_nth_tick(60 * 60, function()
     player_stats.sample_online()
-    run_world_events()
+    -- 事件世界（刷怪/落点/科技世界）碰大量原型、最易出错——单独兜底，出错不影响金币/倒计时/跃迁。
+    events.safe('world_events', run_world_events)()
 
     -- 每分钟尝试给每个在线玩家塞 1 个普通金币（背包满则塞不进，忽略即可）。
     for _, player in pairs(game.connected_players) do
@@ -266,10 +275,8 @@ script.on_nth_tick(60 * 60, function()
     local last_run_ticks = game.tick - (storage.run_start_tick or game.tick)
     local life = (storage.warp_hours or 1) * constants.hour_to_tick - last_run_ticks
 
-    if life <= 0 then
-        reset.reset()
-        return
-    end
+    -- 跃迁触发已收口到 warp_fx（截止前 10 秒倒计时、归零调 reset）；本处只负责【临近告警】。
+    if life <= 0 then return end
 
     local minutes = math.floor(life / constants.min_to_tick)
     if warn_minutes[minutes] or (minutes > 30 and minutes % 60 == 0) then

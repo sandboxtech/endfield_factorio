@@ -235,6 +235,9 @@ function M.reset()
     end
 
     gui.players_gui()
+
+    -- 返回本轮是否有人拿到科技瓶经验（summaries 只收 total>0 的玩家）→ 供 warp_fx 选成功/普通音效。
+    return #summaries > 0
 end
 
 return M

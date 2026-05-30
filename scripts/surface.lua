@@ -4,6 +4,7 @@ local market = require('scripts.market')
 local map_features = require('scripts.map_features')
 local noise = require('scripts.noise')
 local constants = require('scripts.constants')
+local events = require('scripts.events')
 
 -- 各"世界变体"出现概率的可调常量（默认 1，游戏内 /c storage.prob_danger=3 之类即可动态调）。
 local function prob(key) return storage['prob_' .. key] or 1 end
@@ -294,7 +295,7 @@ local PLANET_GEN = {
 }
 
 -- 表面新建时只重置 seed（cleared 才会进入完整生成流程）。
-script.on_event(defines.events.on_surface_created, function(event)
+script.on_event(defines.events.on_surface_created, events.safe('surface_created', function(event)
     local surface = game.get_surface(event.surface_index)
     if not surface then
         return
@@ -302,10 +303,10 @@ script.on_event(defines.events.on_surface_created, function(event)
     local mgs = surface.map_gen_settings
     mgs.seed = math.random(1, 4294967295)
     surface.map_gen_settings = mgs
-end)
+end))
 
 -- 表面被 clear（跃迁触发）时执行完整随机生成。
-script.on_event(defines.events.on_surface_cleared, function(event)
+script.on_event(defines.events.on_surface_cleared, events.safe('surface_cleared', function(event)
     local surface = game.get_surface(event.surface_index)
     if not surface then
         return
@@ -328,7 +329,7 @@ script.on_event(defines.events.on_surface_cleared, function(event)
     else
         surface.daytime = math.random()                       -- 20%：完全随机（含晨昏/夜，保留多样性）
     end
-    surface.wind_speed = 0.02 * (0.5 + math.random())
+    surface.wind_speed = 0.01 + 0.5 * math.random()^8
     surface.wind_orientation = math.random()
     surface.wind_orientation_change = 0.0001 * (0.5 + math.random())
 
@@ -598,10 +599,10 @@ script.on_event(defines.events.on_surface_cleared, function(event)
     surface.map_gen_settings = mgs
     -- 市场不在这里放（出生区块此刻尚未生成）：改由下方 on_chunk_generated 在出生区块自然生成时惰性放置，
     -- 避免强制生成区块。chart 同理改到出生区块生成后（见 on_chunk_generated 母星分支）。
-end)
+end))
 
 -- 圆形地图：超出半径的格子全部铺成虚空。
-script.on_event(defines.events.on_chunk_generated, function(event)
+script.on_event(defines.events.on_chunk_generated, events.safe('chunk_generated', function(event)
     local surface = event.surface
     local left_top = event.area.left_top
 
@@ -715,7 +716,7 @@ script.on_event(defines.events.on_chunk_generated, function(event)
     end
     -- 注意：不要在这里刷 GUI。区块生成极高频（每轮跃迁成百上千次），
     -- HUD 不依赖区块，刷新由 reset/玩家事件触发即可。
-end)
+end))
 
 -- 场景加载即构建并校验 tile 池（2.0 控制阶段加载期 prototypes 可用）；无效名记入 log。
 -- pcall 兜底（万一加载期不可用），运行时 valid_pools 也会懒构建。

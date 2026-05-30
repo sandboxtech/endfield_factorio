@@ -6,6 +6,34 @@
 local M = {}
 
 local handlers = {}   -- [event_id] = { fn1, fn2, ... }
+local reported = {}   -- 去重：同一 (标签|错误信息) 一次会话只播报一次，防每 tick 刷屏
+
+-- 统一错误兜底：handler 抛错时不让它崩掉整个多人服务器，改为写 log + 通知在线管理员。
+-- 纯读 game.connected_players、确定性，多人下各客户端表现一致、不会不同步。
+local function report(tag, err)
+    log('[wn] handler error @' .. tostring(tag) .. ': ' .. tostring(err))
+    local key = tostring(tag) .. '|' .. tostring(err)
+    if reported[key] then return end   -- 同一错误只播报一次，避免每 tick 刷屏
+    reported[key] = true
+    if game then
+        for _, p in pairs(game.connected_players) do
+            if p.admin then
+                p.print('[wn] 脚本出错(' .. tostring(tag) .. ')，已拦截未崩服：' .. tostring(err))
+            end
+        end
+    end
+end
+
+-- 把任意 handler 包成"出错只播报不崩服"的安全版。
+-- 直接 script.on_event 注册的高危 handler（逐区块生成等）可用：script.on_event(id, events.safe('chunk', fn))。
+-- tag 仅用于报错定位，省略则用事件 id。
+function M.safe(tag, fn)
+    if fn == nil then fn, tag = tag, 'event' end   -- 允许只传 fn
+    return function(e)
+        local ok, err = pcall(fn, e)
+        if not ok then report(tag, err) end
+    end
+end
 
 function M.on(event_id, fn)
     local list = handlers[event_id]
@@ -13,7 +41,11 @@ function M.on(event_id, fn)
         list = {}
         handlers[event_id] = list
         script.on_event(event_id, function(e)
-            for _, h in ipairs(list) do h(e) end
+            -- 逐个 handler 兜底：一个订阅者抛错不影响同事件的其他订阅者，也不崩服。
+            for _, h in ipairs(list) do
+                local ok, err = pcall(h, e)
+                if not ok then report('event ' .. tostring(event_id), err) end
+            end
         end)
     end
     list[#list + 1] = fn

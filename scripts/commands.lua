@@ -358,13 +358,28 @@ zh_alias('撤会员', {'wn.unmember-help'}, member_revoke_cmd)
 zh_alias('踢出', {'wn.kickout-help'}, member_kick_cmd)
 
 -- ── 供 HUD 按钮调用（gui 点击经 tick.on_gui_click 路由到这里）──────────────────
--- 弹出该玩家自己的角色面板（等同 /inspect 看自己）。
-function M.show_panel(player)
+-- 弹出角色面板：target 省略=看自己。看自己→底部带"查看他人能力"按钮；看别人→带"返回"按钮（回玩家列表）。
+function M.show_panel(player, target)
     if not player then return end
+    target = target or player
     local sink = gui.popup_sink()
-    players.print_inspection(player, sink)
+    players.print_inspection(target, sink)
     local title = table.remove(sink.lines, 1)   -- 首行 inspect-header 提作弹窗标题
-    gui.show_popup(player, title, sink.lines)
+    local btn = (target.index == player.index)
+        and {name = 'wn_panel_others', caption = {'wn.panel-others'}}   -- 看自己：去看他人
+        or  {name = 'wn_panel_others', caption = {'wn.panel-back'}}     -- 看别人：返回玩家列表
+    gui.show_popup(player, title, sink.lines, {btn})
+end
+
+-- 弹出【在线玩家列表】：每个在线玩家一个名字按钮，点击查看其能力面板。
+function M.show_player_list(player)
+    if not player then return end
+    local buttons, i = {}, 0
+    for _, p in pairs(game.connected_players) do
+        i = i + 1
+        buttons[#buttons + 1] = {name = 'wn_view_player_' .. i, caption = p.name, tags = {wn_view = p.name}}
+    end
+    gui.show_popup(player, {'wn.panel-list-title'}, {}, buttons)
 end
 
 -- 投跃迁票（vote='agree'/'oppose'，等同 /跃迁 /停留）并结算广播。
