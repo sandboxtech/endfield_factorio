@@ -58,7 +58,10 @@ function M.ensure_defaults()
     -- on_init / on_configuration_changed / 每轮 reset 都会触发 → 老存档无需手动迁移，加载/跃迁即自愈。
     for _, k in ipairs({'radius', 'radius_of', 'tree_remap', 'prob_tree_remap', 'schema_version',
                         'prob_danger', 'danger_density', 'danger_theme', 'wreck_density',
-                        'loot_density_outpost', 'loot_density_perp', 'encounter_perp', 'encounter_empty'}) do
+                        'loot_density_outpost', 'loot_density_perp', 'encounter_perp', 'encounter_empty',
+                        'enemy_death_push_minutes',
+                        -- 外来/开发期遗留的顶层键（本场景代码从未定义；只删顶层、不碰任何嵌套玩家数据）：
+                        'test_chest_chance', 'my_forest2', 'pro_josh', 'the_strelock'}) do
         storage[k] = nil
     end
     -- travel_chance 曾是标量、现改为【按星球的表】；旧标量会让 tc[星球] 索引数字崩服 → 非表一律清掉，由下方按星球重建。
@@ -68,7 +71,7 @@ function M.ensure_defaults()
     local d = {
         richness_multiplier = 8,          -- 矿更富（每格储量）· rail world：原 4 的 ×2
         size_multiplier = 4,              -- 矿脉更大 · rail world：原 1 的 ×4
-        frequency_multiplier = 0.5,       -- 矿脉更稀疏 · rail world：原 1 的 ×1/2（少而大的矿，逼玩家修铁路）
+        frequency_multiplier = 1,       
         local_specialty_multiplier = 0.25,
         radius_standard = 1024,           -- 标准(基准)半径：每星球真实半径 = clamp(standard × random_exp(2), radius_min, radius_max)
         radius_min = 256,                 -- 真实半径下限
@@ -104,7 +107,6 @@ function M.ensure_defaults()
         -- 复活等待 tick（可 /c 热改）：脚本死亡(跃迁清场/离场/自杀)与环境死亡用 respawn_ticks；被敌方打死用 enemy_respawn_ticks。
         respawn_ticks = 600,              -- 默认复活：600 tick = 10 秒
         enemy_respawn_ticks = 1800,       -- 被敌方打死：1800 tick = 30 秒
-        enemy_death_push_minutes = 1,     -- 被敌方打死时本轮跃迁倒计时提前的分钟数
         warp_vote_divisor = 5,            -- 跃迁投票阈值除数：净同意 > ceil(在线人数/此值) 才推进（5=1/5，越大越易过）
         travel_enabled = true,           -- 前往星球【总开关】（默认关）。开启：/c storage.travel_enabled=true。开启后每轮每个外星球还要各自过 travel_chance。
         action_cd_minutes = 3,            -- 投票+传送共享冷却（分钟），防止玩家频繁刷动作

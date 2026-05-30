@@ -144,11 +144,6 @@ script.on_event(defines.events.on_player_died, function(event)
     if player then
         player.ticks_to_respawn = by_enemy and (storage.enemy_respawn_ticks or 1800) or (storage.respawn_ticks or 180)
     end
-    if by_enemy then
-        -- 被敌方打死：本轮跃迁倒计时提前（默认 1 分钟，可 /c storage.enemy_death_push_minutes 热改）
-        storage.warp_hours = (storage.warp_hours or 1) - (storage.enemy_death_push_minutes or 1) / 60
-        gui.refresh_countdown()   -- 倒计时已变 → 立刻刷新所有人头顶 UI
-    end
     if cause then player_stats.bump(event.player_index, 'death_count') end
 end)
 
