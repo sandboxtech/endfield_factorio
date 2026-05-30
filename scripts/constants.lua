@@ -85,7 +85,7 @@ function M.ensure_defaults()
         enemy_dmg_scale = 2,              -- 敌人武器伤害随危险度的缩放：加成 = knobs.danger × 此值（0=原版、2=最高危世界约+200%）
         -- 战利品密度：全局乘数 × 各类乘数（相乘共同影响）。默认全 1，可 /c 单独热改：2 更多、0.5 更少、0 不刷。
         -- 遭遇出现率乘数：全局 × 各类（默认全 1，相乘）。基础频率见 map_features.ENCOUNTER_BASE；实际率还乘每世界 random² 密度。
-        loot_density           = 1,        -- 全局总乘数（五类一起生效）
+        loot_density           = 0.5,        -- 全局总乘数（五类一起生效）
         loot_density_material  = 1,        -- 钢箱（材料）
         loot_density_equipment = 1,        -- 铁箱（设备）
         loot_density_treasure  = 1,        -- 木箱（宝箱）
@@ -106,7 +106,7 @@ function M.ensure_defaults()
         enemy_respawn_ticks = 1800,       -- 被敌方打死：1800 tick = 30 秒
         enemy_death_push_minutes = 1,     -- 被敌方打死时本轮跃迁倒计时提前的分钟数
         warp_vote_divisor = 5,            -- 跃迁投票阈值除数：净同意 > ceil(在线人数/此值) 才推进（5=1/5，越大越易过）
-        travel_enabled = false,           -- 前往星球【总开关】（默认关）。开启：/c storage.travel_enabled=true。开启后每轮每个外星球还要各自过 travel_chance。
+        travel_enabled = true,           -- 前往星球【总开关】（默认关）。开启：/c storage.travel_enabled=true。开启后每轮每个外星球还要各自过 travel_chance。
         action_cd_minutes = 3,            -- 投票+传送共享冷却（分钟），防止玩家频繁刷动作
     }
     M.scalar_defaults = d   -- 暴露标量默认值（供 /config 命令对比当前 storage 与默认）
