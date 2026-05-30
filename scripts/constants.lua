@@ -87,8 +87,9 @@ function M.ensure_defaults()
         loot_density_material  = 1,        -- 钢箱（材料）
         loot_density_equipment = 1,        -- 铁箱（设备）
         loot_density_treasure  = 1,        -- 木箱（宝箱）
-        loot_density_perp      = 1,        -- 永续（无底）箱
-        loot_density_outpost   = 0.004,    -- 远征防御据点：此值=每区块基础出现率（已含原 0.004 基数）× loot_density 全局乘数
+        -- 遭遇优先链(place_encounter)里 perpetual/empty 的每区块基础出现率（× loot_density 全局乘数）。
+        encounter_perp         = 0.004,    -- 永续箱遭遇（最稀、守卫最猛）
+        encounter_empty        = 0.03,     -- 空据点遭遇（最常见、纯敌人、守卫猛）
         event_chance = 0.5,               -- 每分钟【全服】发生一次世界事件的固定概率（与人数无关；命中后随机挑 1 名玩家）
         -- 科技世界(事件世界的一种)：每次从所有科技随机抽一个，        tech_world_lose_chance = 0.125,    -- 抽中【已研究】科技时，失去它的概率
         tech_world_gain_chance = 0.25,     -- 抽中【未研究】科技时，研究它的概率

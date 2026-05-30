@@ -459,7 +459,7 @@ script.on_event(defines.events.on_surface_cleared, events.safe('surface_cleared'
         if #rules > 0 then storage.tile_remap[surface.name] = rules end
     end
 
-    -- （原"危险世界"滚定已整体移除：零星敌群改由 map_features.feat_outpost 据点式生成；
+    -- （原"危险世界"滚定已整体移除：零星敌群改由 map_features.place_encounter 据点式生成；
     --   复制虫(replicant)改为全局常数概率、不再按星球滚，见 world_fx.lua 与 storage.replicant_chance。）
 
     -- 事件世界：每分钟触发一种事件（独立于危险度，奖励/危险皆有）。详见 tick.lua run_world_events。
@@ -498,12 +498,11 @@ script.on_event(defines.events.on_surface_cleared, events.safe('surface_cleared'
         material  = math.random() ^ 2,   -- 钢箱(材料箱)
         equipment = math.random() ^ 2,   -- 铁箱(设备箱)
         treasure  = math.random() ^ 2,   -- 木箱(宝箱)
-        perp      = math.random() ^ 2,   -- 永续(无底)箱
-    }
-    -- debug 摘要：四类箱子各自的本世界密度[0,1]。
+    }   -- 永续箱不再野外散布（改据点奖励），故无 perp 密度
+    -- debug 摘要：三类散布箱各自的本世界密度[0,1]。
     local ls = storage.loot_style[surface.name]
-    dbg_add('战利品', string.format('material=%.2f equip=%.2f treasure=%.2f perp=%.2f',
-        ls.material, ls.equipment, ls.treasure, ls.perp))
+    dbg_add('战利品', string.format('material=%.2f equip=%.2f treasure=%.2f',
+        ls.material, ls.equipment, ls.treasure))
 
     -- （飞船残骸 wreck_density 滚定已移除：残骸改由 map_features.feat_outpost 在据点处非线性生成。）
 
