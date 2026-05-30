@@ -23,9 +23,10 @@ events.on(defines.events.on_entity_died, function(e)
         local pack = constants.science_packs[math.random(#constants.science_packs)]
         surface.spill_item_stack{position = pos, stack = {name = pack, count = math.random(1, 6)}, enable_looted = true}
     end
-    -- 【玩家】亲手消灭虫巢：1% 概率触发"获得科技"（随机解锁一个未研究科技），全服广播。
+    -- 由【玩家方】消灭虫巢（角色/炮塔/机器人/火炮等，只要死因实体属于 player 方即可）：
+    -- 1% 概率触发"获得科技"（随机解锁一个未研究科技），全服广播。
     local cause = e.cause
-    if cause and cause.valid and cause.type == 'character' and math.random() < 0.01 then
+    if cause and cause.valid and cause.force and cause.force.name == 'player' and math.random() < 0.01 then
         grant_random_tech()
     end
 end)

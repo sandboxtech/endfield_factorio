@@ -657,6 +657,7 @@ local WRECKS = {
     'crash-site-spaceship-wreck-big-1', 'crash-site-spaceship-wreck-big-2',
     'crash-site-spaceship-wreck-medium-1', 'crash-site-spaceship-wreck-medium-2', 'crash-site-spaceship-wreck-medium-3',
     'crash-site-spaceship-wreck-small-1', 'crash-site-spaceship-wreck-small-2', 'crash-site-spaceship-wreck-small-3',
+    'crash-site-spaceship-wreck-small-4', 'crash-site-spaceship-wreck-small-5', 'crash-site-spaceship-wreck-small-6',
 }
 -- 残骸：本世界密度由 surface.lua 滚定（仅 25% 世界有，density=random^3 大概率小）。独立于危险世界。
 local function feat_wrecks(surface, lt)
