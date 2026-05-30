@@ -365,15 +365,23 @@ script.on_event(defines.events.on_surface_cleared, events.safe('surface_cleared'
         surface.daytime = 0.56   -- 永夜
     end
 
-    -- 刷新星球半径，箝制在 [radius_min, radius_max]（默认值见 constants.ensure_defaults）
+    -- 刷新星球【形状】：基准半径 r(clamp 到 [min,max]) → 椭圆 rw/rh(正相关、多半近圆) + 噪声粗糙边缘。
     local r = storage.radius_standard * util.random_exp(2)
-    r = math.max(storage.radius_min, r)
-    r = math.min(storage.radius_max, r)
+    r = math.max(storage.radius_min, math.min(storage.radius_max, r))
     r = math.ceil(r)
-    storage.radius_of[surface.name] = r
+    -- 椭圆离心 ecc：(rand−rand)×0.35 三角分布，多半≈0(圆)、偶尔明显(椭圆)；rw,rh 都随 r 缩放 → 正相关(偏圆)。
+    local ecc = (math.random() - math.random()) * 0.35
+    local rw = math.ceil(r * (1 + ecc))
+    local rh = math.ceil(r * (1 - ecc))
+    -- 边缘粗糙度 rough(归一化，边界半径 = 1 + rough×噪声)：random^6 × 0.6 → 大概率≈0(光滑)、小概率小、极小概率大(海湾/锯齿)。
+    local rough = math.random() ^ 6 * 0.6
+    storage.width_of[surface.name] = rw                                              -- 椭圆 X 半轴（替代原 radius_of）
+    storage.height_of[surface.name] = rh                                             -- 椭圆 Y 半轴
+    storage.shape_of[surface.name] = {rough = rough, seed = math.random(1, 1000000)} -- 边缘噪声参数
 
-    mgs.width = r * 2 + 32
-    mgs.height = r * 2 + 32
+    -- mapgen 区域按【最大外凸】(1+rough) 留足，保证粗糙边缘外凸的半岛也能正常生成。
+    mgs.width = math.ceil(rw * (1 + rough)) * 2 + 32
+    mgs.height = math.ceil(rh * (1 + rough)) * 2 + 32
     mgs.starting_area = 1 + 2 * util.random_exp(2)
 
     -- 本轮整局气质（繁茂/岩石/危险/富庶/异物），与 map_features 共用同一套确定性旋钮 → 全局气质一致。
@@ -555,8 +563,9 @@ script.on_event(defines.events.on_surface_cleared, events.safe('surface_cleared'
 
     -- 本表面生成摘要：【始终】缓存进 storage.gen_debug[星球]（与 storage.debug 无关），供 /gen 弹窗查看。
     -- 缓存为【多行数组】：首行 = 星球+半径+气质旋钮；其后每个变体各占一行（缩进）→ 窗口里逐行换行，不再逗号挤一行。
-    local head = string.format('%s r=%d  verdancy=%.2f rockiness=%.2f riches=%.2f danger=%.2f exotic=%.2f',
-        surface.name, storage.radius_of[surface.name] or 0,
+    local sh = storage.shape_of[surface.name] or {}
+    local head = string.format('%s %dx%d rough=%.2f  verdancy=%.2f rockiness=%.2f riches=%.2f danger=%.2f exotic=%.2f',
+        surface.name, storage.width_of[surface.name] or 0, storage.height_of[surface.name] or 0, sh.rough or 0,
         knobs.verdancy, knobs.rockiness, knobs.riches, knobs.danger, knobs.exotic)
     local glines = {head}
     if #dbg.order == 0 then
@@ -606,25 +615,61 @@ script.on_event(defines.events.on_chunk_generated, events.safe('chunk_generated'
     local surface = event.surface
     local left_top = event.area.left_top
 
-    local r = storage.radius_of[surface.name] or storage.radius_standard or 2048
+    -- 染地世界：本轮该表面若被选中，在地面层盖一张缩放到整块(32×32)的半透明染色精灵（不改地块，只改观感）。
+    -- 【提到最前 + 每块都画】：圆外虚空也染 → 整图色调一致；且下面"整块在外"分支会提前 return 跳过细节，染地须在其之前。
+    local gt = storage.ground_tint and storage.ground_tint[surface.name]
+    if gt then
+        rendering.draw_sprite{
+            sprite = 'tile/lab-dark-2', x_scale = 32, y_scale = 32,
+            target = {left_top.x + 16, left_top.y + 16}, surface = surface,
+            tint = gt, render_layer = 'ground-layer-1',
+        }
+    end
 
-    -- 圆外格子铺虚空（整块都在圆内则跳过此段）
-    if left_top.x * left_top.x + left_top.y * left_top.y >= r * r / 2 then
-        local chunk_size = 32
+    -- 椭圆 + 噪声边界：归一化椭圆距离 (px/rw)²+(py/rh)²，边界半径² = (1 + rough×噪声)²，超过即铺虚空。
+    local rw = storage.width_of[surface.name] or storage.radius_standard or 2048
+    local rh = storage.height_of[surface.name] or rw
+    local sh = storage.shape_of[surface.name]
+    local rough = (sh and sh.rough) or 0
+    local seed = (sh and sh.seed) or 0
+    local cx, cy = 0.5, 0.5
+    local inner, outer = 1 - rough, 1 + rough
+
+    -- 先按 chunk 整体判定（含 ±1 边缘重叠）：算最近/最远角的归一化椭圆距离。
+    local lx, hx = left_top.x - 1 - cx, left_top.x + 32 - cx
+    local ly, hy = left_top.y - 1 - cy, left_top.y + 32 - cy
+    local nxmax, nymax = math.max(math.abs(lx), math.abs(hx)) / rw, math.max(math.abs(ly), math.abs(hy)) / rh
+    local nxmin = ((lx <= 0 and hx >= 0) and 0 or math.min(math.abs(lx), math.abs(hx))) / rw
+    local nymin = ((ly <= 0 and hy >= 0) and 0 or math.min(math.abs(ly), math.abs(hy))) / rh
+    local far, near = nxmax * nxmax + nymax * nymax, nxmin * nxmin + nymin * nymin
+
+    if far <= inner * inner then
+        -- 整块在内：不铺虚空（跳过）
+    elseif near >= outer * outer then
+        -- 整块在外：整块铺虚空，然后【跳过所有细节】——map_features/市场/tile替换 对纯虚空块都是无用功。染地已在最前画过。
         local tiles = {}
-        local cx, cy = 0.5, 0.5
-        for x = -1, chunk_size, 1 do
-            for y = -1, chunk_size, 1 do
-                local px = left_top.x + x
-                local py = left_top.y + y
-                if (px - cx) * (px - cx) + (py - cy) * (py - cy) > r * r then
-                    table.insert(tiles, {name = 'empty-space', position = {x = px, y = py}})
+        for x = -1, 32 do
+            for y = -1, 32 do
+                tiles[#tiles + 1] = {name = 'empty-space', position = {x = left_top.x + x, y = left_top.y + y}}
+            end
+        end
+        surface.set_tiles(tiles)
+        return
+    else
+        -- 跨边界：逐格判定（rough>0 时加噪声扰动边缘 → 海湾/半岛/锯齿）
+        local tiles = {}
+        for x = -1, 32 do
+            for y = -1, 32 do
+                local px, py = left_top.x + x, left_top.y + y
+                local dx, dy = (px - cx) / rw, (py - cy) / rh
+                local edge = 1
+                if rough > 0 then edge = 1 + rough * noise.fractal(noise.octaves.blob, px, py, seed) end
+                if dx * dx + dy * dy > edge * edge then
+                    tiles[#tiles + 1] = {name = 'empty-space', position = {x = px, y = py}}
                 end
             end
         end
-        if #tiles > 0 then   -- tiles 是 table.insert 连续数组、无空洞，# 与 table_size 等价且更快
-            surface.set_tiles(tiles)
-        end
+        if #tiles > 0 then surface.set_tiles(tiles) end
     end
 
     -- 各星球地图风味（本地特色矿/石/树/遗迹/冰山 + 跨星球异物 + 树木主题 + 虫群/物资箱）：
@@ -704,18 +749,8 @@ script.on_event(defines.events.on_chunk_generated, events.safe('chunk_generated'
         end
     end
 
-    -- 染地世界：本轮该表面若被选中，在地面层盖一张缩放到整块(32×32)的半透明染色精灵。
-    -- 不改地块本身，只改观感。【每个区块都画，圆外虚空也染】→ 整张地图(含虚空环)染色一致。
-    local gt = storage.ground_tint and storage.ground_tint[surface.name]
-    if gt then
-        rendering.draw_sprite{
-            sprite = 'tile/lab-dark-2', x_scale = 32, y_scale = 32,
-            target = {left_top.x + 16, left_top.y + 16}, surface = surface,
-            tint = gt, render_layer = 'ground-layer-1',
-        }
-    end
     -- 注意：不要在这里刷 GUI。区块生成极高频（每轮跃迁成百上千次），
-    -- HUD 不依赖区块，刷新由 reset/玩家事件触发即可。
+    -- HUD 不依赖区块，刷新由 reset/玩家事件触发即可。（染地已提到本处理器最前。）
 end))
 
 -- 场景加载即构建并校验 tile 池（2.0 控制阶段加载期 prototypes 可用）；无效名记入 log。

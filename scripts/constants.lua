@@ -106,6 +106,16 @@ function M.ensure_defaults()
     if storage.radius_standard == nil and storage.radius ~= nil then
         storage.radius_standard = storage.radius
     end
+    -- 老存档迁移：radius_of 已拆成 width_of/height_of（旧档按圆形：宽=高=旧半径），迁移后清除 radius_of。
+    if storage.radius_of then
+        storage.width_of = storage.width_of or {}
+        storage.height_of = storage.height_of or {}
+        for name, rr in pairs(storage.radius_of) do
+            if storage.width_of[name] == nil then storage.width_of[name] = rr end
+            if storage.height_of[name] == nil then storage.height_of[name] = rr end
+        end
+        storage.radius_of = nil
+    end
     for k, v in pairs(d) do
         if storage[k] == nil then storage[k] = v end
     end
@@ -125,7 +135,7 @@ function M.ensure_defaults()
     end
     -- 必需表（累积数据 / 每星球状态 / 运行时缓存），缺失则建空表。
     -- 这是所有 storage 表的【唯一出生地】——各模块不再各自 `storage.x = storage.x or {}`，统一在此补齐。
-    for _, key in ipairs({'radius_of', 'science_exp', 'player_stats', 'platform_age',
+    for _, key in ipairs({'width_of', 'height_of', 'shape_of', 'science_exp', 'player_stats', 'platform_age',
                           'ground_tint', 'tile_remap', 'danger_theme', 'event_world', 'loot_style', 'members',
                           'last_respawn_run', 'move_pos', 'bad_items', 'bad_entities', 'gen_debug', 'warp_vote', 'wreck_density',
                           'tree_remap', 'obstacle_remap', 'fluid_remap', 'last_leaderboard', 'market_run', 'respawn_surface', 'chat_bubble', 'enemy_floor'}) do

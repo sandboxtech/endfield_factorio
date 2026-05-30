@@ -477,7 +477,8 @@ local function guard_perpetual(surface, pos)
     end
 
     -- 数量随离中心比例 frac∈[0,1] 增长：均值 2(中心)→10(边缘)，叠三角抖动 ±~3，下限 2。
-    local R = (storage.radius_of and storage.radius_of[surface.name]) or storage.radius or 2048   -- 老存档兜底
+    local _w, _h = storage.width_of and storage.width_of[surface.name], storage.height_of and storage.height_of[surface.name]
+    local R = (_w and _h) and (_w + _h) / 2 or storage.radius_standard or 2048   -- 椭圆等效半径=(宽+高)/2；老存档兜底
     local frac = math.min(1, dist / R)
     local mean = 2 + frac * 8
     local count = math.max(2, math.floor(mean + (math.random() - math.random()) * 3 + 0.5))
@@ -633,7 +634,8 @@ local function feat_outpost(surface, lt)
     local chp = surface.find_non_colliding_position('steel-chest', sp, 4, 1)
     if chp then spawn_perpetual_chest(surface, chp) end
     -- 守卫塔环：全在 substation 供电半径内（≤7），数量随离中心距离 3→9 增长
-    local R = (storage.radius_of and storage.radius_of[surface.name]) or storage.radius or 2048   -- 老存档兜底
+    local _w, _h = storage.width_of and storage.width_of[surface.name], storage.height_of and storage.height_of[surface.name]
+    local R = (_w and _h) and (_w + _h) / 2 or storage.radius_standard or 2048   -- 椭圆等效半径=(宽+高)/2；老存档兜底
     local frac = math.min(1, math.sqrt(ccx * ccx + ccy * ccy) / R)
     local count = math.floor(3 + frac * 6 + 0.5)
     for _ = 1, count do
@@ -678,7 +680,8 @@ local function feat_danger(surface, lt, A, S, Z, W)
     -- 离中心比例 frac∈[0,1]（按区块中心算）。出生点 96 格内整块跳过。
     local ccx, ccy = lt.x + 16, lt.y + 16
     if ccx * ccx + ccy * ccy < 96 * 96 then return end
-    local R = (storage.radius_of and storage.radius_of[surface.name]) or storage.radius or 2048   -- 老存档兜底
+    local _w, _h = storage.width_of and storage.width_of[surface.name], storage.height_of and storage.height_of[surface.name]
+    local R = (_w and _h) and (_w + _h) / 2 or storage.radius_standard or 2048   -- 椭圆等效半径=(宽+高)/2；老存档兜底
     local frac = math.min(1, math.sqrt(ccx * ccx + ccy * ccy) / R)
 
     -- 强度 = 危险度 × (0.25 + 0.75×离中心比例)，封顶 1：近中心弱、边缘强。
