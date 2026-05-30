@@ -201,9 +201,12 @@ end
 -- ── 跃迁投票 ───────────────────────────────────────────────────────────────
 -- 不建 GUI，纯命令投票"本世界是否提前跃迁"：/yueqian(=/warp) 同意、/tingliu 反对。不投票=忽视。
 -- 票存 storage.warp_vote[玩家名]='agree'|'oppose'（再投覆盖；跃迁 reset 时清空）。
--- 结算（每次投票后）：净同意 = 同意人数 - 反对人数（每个反对抵消 1 个同意）；
---   净同意 > ceil(在线人数 / storage.warp_vote_divisor[默认5]) → 把本世界倒计时【直接设为剩余 storage.warp_vote_target_minutes 分钟(默认5)】，
---   不杀任何玩家，并【清空所有票】（需重新投票才能再推一次）。仅当当前剩余【多于】目标分钟才生效（否则会反而延长倒计时）。
+-- 结算（每次投票后）：净同意 = 同意人数 - 反对人数（每个反对抵消 1 个同意）；阈值 = ceil(在线人数 / warp_vote_divisor[默认5])。
+-- 【可取消提前】票持续生效，不在通过后清空：
+--   · 净同意 ≥ 阈值且当前未施加 → 把倒计时【直接设为剩余 warp_vote_target_minutes 分钟(默认5)】，
+--     并把被砍掉的小时数记入 storage.warp_vote_delta（仅当当前剩余【多于】目标才砍，否则反而延长 → 不动）。
+--   · 净同意 < 阈值且此前施加过 → 把 warp_vote_delta 加回 warp_hours（取消提前、恢复倒计时），清除 delta；需再投票才能再推。
+--   delta 与期间研究/敌人死亡对 warp_hours 的增减解耦（记的是"投票净缩减量"），reset 时随 warp_vote 一并清空。不杀任何玩家。
 local function warp_vote_eval()
     storage.warp_vote = storage.warp_vote or {}
     local agree, oppose = 0, 0
@@ -214,17 +217,28 @@ local function warp_vote_eval()
     local threshold = math.ceil(n / (storage.warp_vote_divisor or 5))   -- 默认 1/5，可 /c storage.warp_vote_divisor 热改
     local net = agree - oppose
     game.print({'wn.warp-vote-status', agree, oppose, net, threshold})
+
     if net >= threshold then   -- 达到阈值即过（含单人/少数人：threshold 最低为 1，1 净同意即可）
+        if storage.warp_vote_delta == nil then   -- 尚未施加才施加（避免二次缩减）
+            local last = game.tick - (storage.run_start_tick or game.tick)
+            local remain = (storage.warp_hours or 1) * constants.hour_to_tick - last
+            local target = (storage.warp_vote_target_minutes or 5) * constants.min_to_tick   -- 目标剩余分钟（可 /c 热改）
+            if remain > target then
+                -- 倒计时改成剩余 target：warp_hours 反解使 (warp_hours*小时 - 已用) = target。记录被砍掉的小时数以便撤销。
+                local new_hours = (last + target) / constants.hour_to_tick
+                storage.warp_vote_delta = (storage.warp_hours or 1) - new_hours
+                storage.warp_hours = new_hours
+                game.print({'wn.warp-vote-pass', target / constants.min_to_tick})
+                gui.refresh_countdown()
+            end
+        end
+    elseif storage.warp_vote_delta ~= nil then   -- 跌破阈值且此前施加过 → 把缩减的时间加回去（取消提前）
+        storage.warp_hours = (storage.warp_hours or 1) + storage.warp_vote_delta
+        storage.warp_vote_delta = nil
         local last = game.tick - (storage.run_start_tick or game.tick)
         local remain = (storage.warp_hours or 1) * constants.hour_to_tick - last
-        local target = (storage.warp_vote_target_minutes or 5) * constants.min_to_tick   -- 目标剩余分钟（可 /c 热改）
-        if remain > target then
-            -- 直接把倒计时改成剩余 target：warp_hours 反解使 (warp_hours*小时 - 已用) = target。不杀玩家。
-            storage.warp_hours = (last + target) / constants.hour_to_tick
-            game.print({'wn.warp-vote-pass', target / constants.min_to_tick})
-            gui.refresh_countdown()
-        end
-        storage.warp_vote = {}   -- 推进后清空，需重新投票才能再推
+        game.print({'wn.warp-vote-cancel', math.max(0, math.floor(remain / constants.min_to_tick))})
+        gui.refresh_countdown()
     end
 end
 

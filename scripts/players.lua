@@ -1,5 +1,6 @@
 -- 玩家生命周期：创建/加入/离开/重生/死亡。
 local constants = require('scripts.constants')
+local events = require('scripts.events')
 local gui = require('scripts.gui')
 local passives = require('scripts.passives')
 local respawn_gifts = require('scripts.respawn_gifts')
@@ -216,20 +217,23 @@ end)
 -- 玩家聊天 → 头顶冒【对话气泡】，跟随角色、约 5 秒后自动淡出（compi-speech-bubble 的 lifetime 处理，无需手动定时）。
 -- 连发会先销毁上一个气泡，避免叠加。无角色(旁观/未生成)不冒。文本截断防刷屏。
 local CHAT_BUBBLE_TICKS = 600   -- 气泡寿命（5 秒）
-script.on_event(defines.events.on_console_chat, function(event)
+script.on_event(defines.events.on_console_chat, events.safe('chat_bubble', function(event)
     if not (event.player_index and event.message) then return end
     local player = game.get_player(event.player_index)
-    if not (player and player.character) then return end
+    local char = player and player.character
+    if not (char and char.valid) then return end
     storage.chat_bubble = storage.chat_bubble or {}
     local old = storage.chat_bubble[player.index]
     if old and old.valid then old.destroy() end
-    storage.chat_bubble[player.index] = player.surface.create_entity{
+    -- 必须锚定到 character 自身的 surface/position：玩家跨星(传送/复活)的那一瞬 player.surface
+    -- 已切到新星球而 character 仍在旧星球，用 player.surface + source=character 会跨表面崩档。
+    storage.chat_bubble[player.index] = char.surface.create_entity{
         name = 'compi-speech-bubble',
-        position = player.position,
-        source = player.character,
+        position = char.position,
+        source = char,
         text = string.sub(event.message, 1, 120),
         lifetime = CHAT_BUBBLE_TICKS,
     }
-end)
+end))
 
 return M

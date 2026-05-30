@@ -185,7 +185,8 @@ function M.reset()
     -- 跃迁倒计时重置为初始值（storage.warp_initial_minutes 分钟，可 /c 热改）；研究科技瓶科技按
     -- storage.warp_extend_minutes 各自延长。内部以小时记账，故 /60。
     storage.warp_hours = (storage.warp_initial_minutes or 10) / 60
-    storage.warp_vote = {}   -- 新世界清空跃迁投票（上一世界的同意/反对作废）
+    storage.warp_vote = {}        -- 新世界清空跃迁投票（上一世界的同意/反对作废）
+    storage.warp_vote_delta = nil -- 投票缩减量作废（warp_hours 已重置，无可恢复）
     storage.chat_bubble = {} -- 清空聊天气泡引用（角色已死、气泡已随之销毁，避免残留无效引用）
 
     -- 飞船全部瞬移回母星轨道并暂停；顺带清空各平台 surface 上的所有陨石(asteroid + asteroid-chunk)，
