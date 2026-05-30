@@ -1,6 +1,7 @@
 local constants = require('scripts.constants')
 local util = require('scripts.util')
 local player_stats = require('scripts.player_stats')
+local gui = require('scripts.gui')
 
 -- 研究完成时：给在线玩家各记一次研究；若该科技名以 -science-pack 结尾（关键科技），额外记一次并把本轮跃迁倒计时延长一段（分钟数按 warp_extend_minutes 各瓶配置，缺省 warp_extend_default_minutes；含 SA 的 trigger 解锁瓶）。
 script.on_event(defines.events.on_research_finished, function(event)
@@ -26,4 +27,5 @@ script.on_event(defines.events.on_research_finished, function(event)
     local th, tm = util.hm(total_ticks)                 -- 本轮共
     local rh, rm = util.hm(total_ticks - last_run_ticks)   -- 剩余
     game.print({'wn.warp-extend-tech', research.name, add_min, th, tm, rh, rm})
+    gui.refresh_countdown()   -- 倒计时已变 → 立刻刷新所有人头顶 UI（否则要等下一分钟整点才更新）
 end)

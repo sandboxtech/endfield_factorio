@@ -23,7 +23,7 @@ M.pack_gifts = {
     ['agricultural-science-pack']    = {'biochamber', 'heating-tower'},
     ['cryogenic-science-pack']       = {'cryogenic-plant', 'productivity-module'},
     ['promethium-science-pack']      = {'efficiency-module', 'speed-module'},
-    ['military-science-pack']        = {'gun-turret', 'firearm-magazine'},
+    ['military-science-pack']        = {'gun-turret', 'toolbelt-equipment'},
 }
 
 -- 等级 = floor(√经验)，封顶 1000（与人物等级 floor(√在线分钟) 同一公式；升下一级需 (lv+1)² 经验）。
