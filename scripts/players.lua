@@ -27,6 +27,14 @@ function M.print_inspection(target, viewer)
     local om = passives.get_stat(target.index, 'online_minutes')
     local lv = respawn_gifts.coin_reward(om)
     viewer.print({'wn.ability-online', om, lv, (lv + 1) * (lv + 1) - om})
+    -- 个人战绩（终身累积，仅展示、不驱动技能）：击杀/毁巢/阵亡/经历跃迁/研究(关键)。
+    viewer.print({'wn.panel-stats',
+        passives.get_stat(target.index, 'kill_count'),
+        passives.get_stat(target.index, 'nest_count'),
+        passives.get_stat(target.index, 'death_count'),
+        passives.get_stat(target.index, 'warps'),
+        passives.get_stat(target.index, 'research'),
+        passives.get_stat(target.index, 'key_research')})
     -- 角色技能（实时值，每次 /inspect 现算）：手搓/移动/挖矿/生命
     for _, ab in ipairs(passives.abilities) do
         local val = passives.get_stat(target.index, ab.stat)

@@ -491,8 +491,14 @@ script.on_event(defines.events.on_surface_cleared, events.safe('surface_cleared'
 
     -- 战利品风格：四类箱子(钢=材料/铁=设备/木=宝箱/永续)各自【独立】的本世界密度，分布 = random()^2：
     -- 大概率低密度(箱子少)、小概率高密度(遍地)，四者互不相关。箱子外观=内容含义已固定，不再随机选箱体。
-    -- 敌人脚下地砖：本星本轮固定从【人造地砖】随机一种（非虫子类敌人放置时铺，见 map_features.enemy_floor_patch）。
-    storage.enemy_floor[surface.name] = TILE_CLASS.artificial[math.random(#TILE_CLASS.artificial)]
+    -- 据点地砖：本星本轮从【人造地砖】滚两种——enemy_floor 普通据点用、enemy_floor2 永续据点专用（取不同的一种以作区分）。
+    storage.enemy_floor2 = storage.enemy_floor2 or {}   -- 老档兜底：ensure_defaults 没补到也不崩
+    local art = TILE_CLASS.artificial
+    local n = #art
+    local i1 = math.random(n)
+    local i2 = n > 1 and ((i1 - 1 + math.random(n - 1)) % n + 1) or i1   -- 保证 i2 ≠ i1（n=1 时退化）
+    storage.enemy_floor[surface.name] = art[i1]
+    storage.enemy_floor2[surface.name] = art[i2]
 
     -- 五类遭遇各自【本世界密度】= random()^2（多半低、偶尔高），map_features.encounter_chance 统一用它。
     storage.loot_style[surface.name] = {

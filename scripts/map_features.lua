@@ -365,9 +365,9 @@ local PERP_FLOOR = 'hazard-concrete-left'
 local function spawn_perpetual_chest(surface, pos)
     local chest = surface.create_entity{name = 'infinity-chest', force = 'neutral', position = pos}
     if not chest then return false end
-    -- 氛围：箱子周围 7×7 铺一圈地砖（与本星敌人脚下同一种 storage.enemy_floor[星球]，未设时退回 PERP_FLOOR）。
+    -- 氛围：箱子周围 7×7 铺一圈【第二种】地砖 storage.enemy_floor2[星球]（永续据点专用，与普通据点地砖区分），未设退回 PERP_FLOOR。
     -- pos 同时兼容 {x=,y=} 与数组式 {a,b} 两种写法。
-    local floor = (storage.enemy_floor and storage.enemy_floor[surface.name]) or PERP_FLOOR
+    local floor = (storage.enemy_floor2 and storage.enemy_floor2[surface.name]) or PERP_FLOOR
     local cx, cy = math.floor(pos.x or pos[1]), math.floor(pos.y or pos[2])
     local tiles = {}
     for dx = -3, 3 do
@@ -389,16 +389,15 @@ local function spawn_perpetual_chest(surface, pos)
     return true
 end
 
--- 给【非虫子类】敌人(炮塔/地雷等；排除 worm/虫巢/虫)脚下铺一小块【随机矩形】地砖。
--- 全星同一种 = storage.enemy_floor[星球]（人造地砖，surface.lua 每轮 roll）。矩形大小随机、中心≈实体位置。
+-- 给【非虫子类】敌人(炮塔/地雷等；排除 worm/虫巢/虫)脚下铺一小块【随机矩形】地砖 floor。
+-- floor 由调用方决定（空据点传 nil=不铺；普通箱传本星地砖；永续传第二种地砖）。矩形大小随机、中心≈实体位置。
 -- 实体在区块边缘时，跨到未生成相邻区块的那部分会被 set_tiles 静默丢弃（无所谓）。
-local function enemy_floor_patch(surface, ent)
+local function enemy_floor_patch(surface, ent, floor)
+    if not floor then return end                       -- 不传地砖 → 不铺（空据点）
     if not (ent and ent.valid) then return end
     -- 虫子类(虫巢/虫/沙虫) 与 地雷 都不铺（地雷铺了会暴露陷阱）。
     if ent.type == 'unit-spawner' or ent.type == 'unit' or ent.type == 'land-mine'
         or string.find(ent.name, 'worm', 1, true) then return end
-    local floor = storage.enemy_floor and storage.enemy_floor[surface.name]
-    if not floor then return end
     local cx, cy = math.floor(ent.position.x), math.floor(ent.position.y)
     local rw, rh = math.random(1, 3), math.random(1, 3)   -- 半宽/半高随机 → 矩形大小随机
     local tiles = {}
@@ -460,7 +459,7 @@ local function chunk_rng(left_top, offset)
 end
 
 -- 五类遭遇【每区块基础频率】（世界密度=1 时的上限）。常→稀：空据点 > 钢(材料) > 铁(设备) > 木(宝箱) ≈ 永续箱。
-local ENCOUNTER_BASE = {material = 0.04, equipment = 0.02, treasure = 0.01, perpetual = 0.01, empty = 0.08}
+local ENCOUNTER_BASE = {material = 0.03, equipment = 0.015, treasure = 0.0075, perpetual = 0.0075, empty = 0.08}
 
 -- 本世界本类遭遇的【每区块实际出现概率】，五类【统一口径】：
 --   世界密度(surface.lua 滚的 random^2，每星每类独立) × 基础频率 ENCOUNTER_BASE × 全局乘数 storage.loot_density × 该类乘数 storage.loot_density_<类型>。
@@ -568,7 +567,7 @@ end
 -- 【统一放敌人逻辑】(所有遭遇共用，只是 danger 不同)：在 center 周围按 danger 放守卫塔 + 飞船残骸。
 --   danger(0~1+)：越大守卫越多越猛、残骸越多。每种炮塔各自【非线性】数量(大概率0、极小概率很多)，放在半径6~11 环上。
 --   电炮(electric)首次要放时才【惰性】建电网核心；建不出则本类电炮跳过。残骸 force=neutral、不铺人造地板。
-local function place_guards(surface, center, danger)
+local function place_guards(surface, center, danger, floor)
     local tmax = math.max(1, math.floor(1 + danger * 7 + 0.5))
     local core, core_tried = nil, false
     for _, def in ipairs(OUTPOST_GUARDS) do
@@ -584,7 +583,7 @@ local function place_guards(surface, center, danger)
             local gsp = surface.find_non_colliding_position(name, gp, 3, 1)
             if gsp then
                 local e = surface.create_entity{name = name, force = 'enemy', position = gsp, direction = math.random(0, 3) * 4, quality = roll_quality(0.7)}
-                enemy_floor_patch(surface, e)
+                enemy_floor_patch(surface, e, floor)
                 if e then
                     if def.mag then fill_turret_ammo(e, pick_ammo(MAG_AMMO)) end
                     if def.ammo then fill_turret_ammo(e, def.ammo) end
@@ -605,6 +604,15 @@ end
 -- 【单地块至多一个遭遇】：按稀有度优先级依次尝试，命中即放置(箱/敌人)并 return，后面不再试。
 -- 顺序(稀→常)：永续箱 → 木箱 → 铁箱 → 钢箱 → 空据点(纯敌人)。永续箱/空据点 danger 高(更多更猛)，普通箱 danger 低。
 -- 敌人统一走 place_guards，只是 danger 不同。出生点 96 格内：放箱不放敌人(保护新手)；距中心越远 danger 越高。
+-- 遭遇表（声明式，按【稀→常】排序，命中即停）：seed=chunk_rng 独立种子, kind=类型(查 encounter_chance), danger=守卫危险基数。
+--   仅【永续箱】高危(稀有大奖配重兵)，普通箱与空据点都低危；empty=纯敌人无箱。
+local ENCOUNTERS = {
+    {seed = 605, kind = 'perpetual', danger = 0.9},
+    {seed = 601, kind = 'treasure',  danger = 0.12},
+    {seed = 557, kind = 'equipment', danger = 0.08},
+    {seed = 503, kind = 'material',  danger = 0.05},
+    {seed = 701, kind = 'empty',     danger = 0.12},
+}
 local function place_encounter(surface, lt)
     local ccx, ccy = lt.x + 16, lt.y + 16
     local d2 = ccx * ccx + ccy * ccy
@@ -614,20 +622,22 @@ local function place_encounter(surface, lt)
     local near_spawn = d2 < 96 * 96
     local center = {x = lt.x + math.random(6, 25) + 0.5, y = lt.y + math.random(6, 25) + 0.5}
 
-    -- offset=chunk_rng 种子（各遭遇独立）, kind=遭遇类型(查 encounter_chance), place=放置奖励(可空), danger=守卫危险基数。
-    -- 命中即放置奖励 + 守卫并返回 true（出生点 96 格内只放奖励、不放敌人）。
-    local function try(offset, kind, place, danger)
-        if chunk_rng(lt, offset) > encounter_chance(surface, kind) then return false end
-        place()
-        if not near_spawn then place_guards(surface, center, danger * (0.4 + 0.6 * frac)) end
-        return true
+    for _, e in ipairs(ENCOUNTERS) do
+        if chunk_rng(lt, e.seed) <= encounter_chance(surface, e.kind) then   -- 命中此遭遇
+            -- 奖励：非空据点放【1~16 个同类箱】，数量非线性 floor(1+15·random^6)：期望≈3、多数 1~3、极小概率十几个。
+            if e.kind ~= 'empty' then
+                for _ = 1, math.floor(1 + 15 * math.random() ^ 6) do place_reward_chest(surface, center, e.kind) end
+            end
+            -- 敌人：出生点 96 格内不放（保护新手）；地砖按类型选——空据点不铺、永续用第二种、普通箱用本星地砖。
+            if not near_spawn then
+                local floor
+                if e.kind == 'perpetual' then floor = (storage.enemy_floor2 or {})[surface.name]
+                elseif e.kind ~= 'empty' then floor = (storage.enemy_floor or {})[surface.name] end
+                place_guards(surface, center, e.danger * (0.4 + 0.6 * frac), floor)
+            end
+            return   -- 每地块至多一个遭遇，命中即停
+        end
     end
-
-    if try(605, 'perpetual', function() place_reward_chest(surface, center, 'perpetual') end, 0.9) then return end
-    if try(601, 'treasure',  function() place_reward_chest(surface, center, 'treasure') end, 0.35) then return end
-    if try(557, 'equipment', function() place_reward_chest(surface, center, 'equipment') end, 0.25) then return end
-    if try(503, 'material',  function() place_reward_chest(surface, center, 'material') end, 0.20) then return end
-    try(701, 'empty', function() end, 0.9)   -- 空据点：纯敌人，最常见、最危险
 end
 
 -- （原零星 feat_danger 与散布 feat_wrecks 已移除：野外敌人/残骸统一改由 place_encounter→place_guards 据点式生成。）

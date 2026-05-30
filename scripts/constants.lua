@@ -92,7 +92,8 @@ function M.ensure_defaults()
         loot_density_perpetual = 1,        -- 永续箱遭遇
         loot_density_empty     = 1,        -- 空据点遭遇（纯敌人）
         event_chance = 0.5,               -- 每分钟【全服】发生一次世界事件的固定概率（与人数无关；命中后随机挑 1 名玩家）
-        -- 科技世界(事件世界的一种)：每次从所有科技随机抽一个，        tech_world_lose_chance = 0.125,    -- 抽中【已研究】科技时，失去它的概率
+        -- 科技世界(事件世界的一种)：每次从所有科技随机抽一个
+        tech_world_lose_chance = 0.125,    -- 抽中【已研究】科技时，失去它的概率
         tech_world_gain_chance = 0.25,     -- 抽中【未研究】科技时，研究它的概率
         event_intensity = 1,              -- 每分钟事件的落点数
         tile_remap_rules = 6,             -- tile 替换世界最多几条规则
@@ -108,6 +109,7 @@ function M.ensure_defaults()
         travel_enabled = false,           -- 前往星球【总开关】（默认关）。开启：/c storage.travel_enabled=true。开启后每轮每个外星球还要各自过 travel_chance。
         action_cd_minutes = 3,            -- 投票+传送共享冷却（分钟），防止玩家频繁刷动作
     }
+    M.scalar_defaults = d   -- 暴露标量默认值（供 /config 命令对比当前 storage 与默认）
     for k, v in pairs(d) do
         if storage[k] == nil then storage[k] = v end
     end

@@ -89,7 +89,7 @@ add_command('players_gui', {'wn.players-gui-help'}, function(command)
     end
 end)
 
--- /gen（/shengcheng 同功能）：管理员查看各星球【最近一次世界生成】缓存的 debug 摘要。
+-- /gen：管理员查看各星球【最近一次世界生成】缓存的 debug 摘要。（管理员命令只用英文名，不设中文/拼音别名。）
 -- 故意用【原始】commands.add_command 注册（不走 add_command 的公告包装）→ 查看【不告知其他玩家】。
 -- 输出【只走 GUI 弹窗】(gui.show_popup，每行可换行、可关闭，同 /inspect /preview)；控制台(无玩家)不打印。
 -- 摘要在 surface.lua 生成时始终缓存进 storage.gen_debug（每星球一个【多行数组】），与 storage.debug 无关。
@@ -110,7 +110,6 @@ local function gen_debug_cmd(command)
     gui.show_popup(player, {'wn.gen-debug-header', storage.run or 0}, lines)
 end
 commands.add_command('gen', {'wn.gen-debug-help'}, gen_debug_cmd)
-commands.add_command('shengcheng', {'wn.gen-debug-help'}, gen_debug_cmd)
 
 -- （/fixstats、/xiufutongji 已移除：玩家统计字段补齐改为对线上老档跑一次性 /c 脚本，代码里不再常驻。）
 
@@ -136,6 +135,31 @@ local function ensure_defaults_cmd(command)
     sink.print('[ensure_defaults] 已补齐 storage 默认值/必需表，并清理废弃键')
 end
 add_command('ensuredefaults', '管理员：手动补齐 storage 默认值 + 清理废弃键（迁移）', ensure_defaults_cmd)
+
+-- /config（/canshu 同功能）：管理员弹窗对比【当前 storage 值】与【默认值】，被 /c 改过的项高亮。只弹给本人、不公告。
+-- 仅覆盖标量可调常量（constants.scalar_defaults）；表型(warp_extend_minutes/travel_chance/event_types…)不在此列。
+local function config_diff_cmd(command)
+    local player = command.player_index and game.get_player(command.player_index)
+    if not player then return end
+    if not player.admin then player.print(constants.not_admin_text); return end
+    local defs = constants.scalar_defaults or {}
+    local keys = {}
+    for k in pairs(defs) do keys[#keys + 1] = k end
+    table.sort(keys)
+    local lines, changed = {}, 0
+    for _, k in ipairs(keys) do
+        local cur, def = storage[k], defs[k]
+        if cur == def then
+            lines[#lines + 1] = k .. ' = ' .. tostring(cur)
+        else
+            changed = changed + 1
+            lines[#lines + 1] = '[color=acid]' .. k .. ' = ' .. tostring(cur) .. '[/color]（默认 ' .. tostring(def) .. '）'
+        end
+    end
+    table.insert(lines, 1, '已改 [color=acid]' .. changed .. '[/color] 项（高亮），共 ' .. #keys .. ' 项：')
+    gui.show_popup(player, '参数：当前值 vs 默认值', lines)
+end
+commands.add_command('config', '管理员：对比当前 storage 与默认值（不公告）', config_diff_cmd)
 
 -- （/tutorial /教程 指令已移除：顶部"玩法"按钮等价。gui.show_tutorial 仍由该按钮调用。）
 
@@ -330,7 +354,6 @@ add_command('tichu', {'wn.kickout-help'}, member_kick_cmd)
 -- 命令名是 UTF-8 字符串，中文可注册；玩家需用输入法在控制台敲中文。
 -- 用 pcall 兜底：万一某版本/环境不接受中文命令名，只是中文别名不生效，不影响其余命令与场景加载。
 local function zh_alias(name, help, fn) pcall(add_command, name, help, fn) end
-zh_alias('补默认', '管理员：手动补齐 storage 默认值 + 清理废弃键（迁移）', ensure_defaults_cmd)
 zh_alias('给会员', {'wn.member-help'}, member_grant_cmd)
 zh_alias('撤会员', {'wn.unmember-help'}, member_revoke_cmd)
 zh_alias('踢出', {'wn.kickout-help'}, member_kick_cmd)
