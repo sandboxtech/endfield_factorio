@@ -227,6 +227,8 @@ script.on_event(defines.events.on_gui_click, events.safe('gui_click', function(e
         commands.do_suicide(player)
     elseif event.element.tags and event.element.tags.wn_travel then
         commands.travel(player, event.element.tags.wn_travel)   -- 前往星球按钮（tags 带星球名）
+    elseif event.element.tags and event.element.tags.wn_home then
+        commands.set_home_planet(player, event.element.tags.wn_home)   -- 起始星球按钮（设复活+领装备的星球）
     elseif name == gui.POPUP_CLOSE_NAME then
         gui.close_popup(player)
     end

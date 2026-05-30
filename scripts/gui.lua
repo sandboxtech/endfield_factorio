@@ -106,7 +106,9 @@ function M.show_popup(player, title, lines, buttons, buttons_at_bottom)
     local function add_buttons()
         if not buttons then return end
         for _, b in ipairs(buttons) do
-            pane.add{type = 'button', name = b.name, caption = b.caption, tags = b.tags}
+            -- enabled=false → 按钮置灰且不触发 on_gui_click（如本轮关闭的星球）。tooltip 说明为何不可点。
+            pane.add{type = 'button', name = b.name, caption = b.caption, tags = b.tags,
+                     enabled = b.enabled, tooltip = b.tooltip}
         end
     end
     if not buttons_at_bottom then add_buttons() end
@@ -146,11 +148,19 @@ function M.show_tutorial(player)
         {name = 'wn_act_lastrank', caption = {'wn.act-lastrank'}},
         {name = 'wn_act_suicide',  caption = {'wn.act-suicide'}},
     }
-    -- "前往星球"按钮：由 storage.travel_enabled 开关控制（默认关 → 不显示）。
+    -- "前往星球"按钮：总开关 storage.travel_enabled（默认关）开启后，5 个星球【全部显示】；本轮未开放(storage.travel_open[星球]=false)的【置灰】不可点。
     if storage.travel_enabled then
+        local open = storage.travel_open or {}
         for _, p in ipairs({'nauvis', 'vulcanus', 'gleba', 'fulgora', 'aquilo'}) do
-            buttons[#buttons + 1] = {name = 'wn_act_travel_' .. p, caption = {'wn.act-travel', p}, tags = {wn_travel = p}}
+            buttons[#buttons + 1] = {name = 'wn_act_travel_' .. p, caption = {'wn.act-travel', p}, tags = {wn_travel = p},
+                enabled = open[p] or false, tooltip = (not open[p]) and {'wn.travel-closed'} or nil}
         end
+    end
+    -- "起始星球"按钮：设定【下次跃迁复活+领起手装备】的星球（即 storage.respawn_surface[玩家名]）。不传送、全星球可选、当前选中标 ✓。
+    local home = (storage.respawn_surface or {})[player.name] or 'nauvis'
+    for _, p in ipairs({'nauvis', 'vulcanus', 'gleba', 'fulgora', 'aquilo'}) do
+        buttons[#buttons + 1] = {name = 'wn_act_home_' .. p,
+            caption = {p == home and 'wn.act-home-cur' or 'wn.act-home', p}, tags = {wn_home = p}}
     end
     M.show_popup(player, {'wn.tutorial-title'}, lines, buttons, true)
 end

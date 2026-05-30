@@ -385,7 +385,7 @@ local function spawn_perpetual_chest(surface, pos)
     chest.infinity_container_filters = {{index = 1, name = item, count = ss, mode = 'exactly'}}
     chest.operable = false        -- 不可打开/重配
     chest.minable_flag = false    -- 不可拆走
-    chest.destructible = true     -- 可摧毁
+    chest.destructible = false    -- 不可摧毁（否则 fulgora 闪电/火炮会把它劈烂）
     return true
 end
 
