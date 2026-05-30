@@ -4,6 +4,7 @@
 -- 科技瓶经验由 science_exp 累积，只用于"下次开局的初始物品"，不驱动技能。
 -- 本模块独占 on_player_crafted_item / on_player_mined_entity / on_player_changed_position
 -- （player_stats 不再注册这些，避免双重注册互相覆盖）。
+local constants = require('scripts.constants')
 local player_stats = require('scripts.player_stats')
 local science_exp = require('scripts.science_exp')
 local events = require('scripts.events')
@@ -13,12 +14,13 @@ local M = {}
 local LOG10 = math.log(10)
 local MOVE_MAX_STEP = 50   -- 单次采样位移上限（格）：超过视为瞬移/换面，不计入移动距离
 
--- 某瓶累计科技瓶经验（→ 下次开局初始物品），供 gui / respawn_gifts / inspect 读取。
+-- 某瓶累计科技瓶经验，返回【"组"刻度】（= 存的瓶数 ÷ bottles_per_exp）。供 gui / respawn_gifts / inspect 读取。
+-- 存储以瓶为整数；此处单次除法 → 各公式(pack_level/gift_count…)仍按"组"工作、零浮点漂移。
 function M.exp_total_for_pack(player_index, pack_name)
     local player = game.get_player(player_index)
     if not player then return 0 end
     local exp = science_exp.player_exp(player)
-    return (exp and exp[pack_name]) or 0
+    return ((exp and exp[pack_name]) or 0) / constants.bottles_per_exp
 end
 
 function M.get_stat(player_index, stat_name)

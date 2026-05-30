@@ -3,6 +3,7 @@
 local M = {
     hour_to_tick = 216000,
     min_to_tick = 3600,
+    bottles_per_exp = 200,   -- 经验以"瓶"存整数；200 瓶 = 1 旧"组"经验点（科技瓶堆叠=200）。读取/显示处 ÷它 = 组刻度。
 
     not_admin_text = {'wn.permission-denied'},
 
@@ -63,6 +64,17 @@ function M.ensure_defaults()
     end
     -- travel_chance 曾是标量、现改为【按星球的表】；旧标量会让 tc[星球] 索引数字崩服 → 非表一律清掉，由下方按星球重建。
     if type(storage.travel_chance) ~= 'table' then storage.travel_chance = nil end
+    -- 科技瓶经验改名+换刻度：旧 storage.science_exp(以"组"计) → 新 storage.exp(以"瓶"计 = 组×bottles_per_exp)。
+    -- 幂等：靠旧键 science_exp 是否存在；搬完置 nil，后续不再跑（故可常驻 ensure_defaults，不怕重复）。
+    if storage.science_exp then
+        storage.exp = storage.exp or {}
+        for name, packs in pairs(storage.science_exp) do
+            local d = storage.exp[name] or {}
+            for pk, v in pairs(packs) do d[pk] = (d[pk] or 0) + v * M.bottles_per_exp end
+            storage.exp[name] = d
+        end
+        storage.science_exp = nil
+    end
 
     -- 标量默认（用 nil 判定，布尔 false/0 也能被正确保留）
     local d = {
@@ -107,8 +119,7 @@ function M.ensure_defaults()
         warp_vote_divisor = 5,            -- 跃迁投票阈值除数：净同意 > ceil(在线人数/此值) 才推进（5=1/5，越大越易过）
         travel_enabled = true,           -- 前往星球【总开关】（默认关）。开启：/c storage.travel_enabled=true。开启后每轮每个外星球还要各自过 travel_chance。
         action_cd_minutes = 3,            -- 投票+传送共享冷却（分钟），防止玩家频繁刷动作
-        charge_max_hours = 100,           -- 离线充能上限（游戏内小时）：积累超过此值的部分领不到
-        charge_coin_per_tick = 1,         -- 充能领取兑换率：每 1 tick 充能 = 多少金币（默认 1）
+        charge_max_hours = 100,           -- 星星充能上限（游戏内小时）：随游戏时间累积，超过此值的部分领不到（领取=1 tick 1 星星）
     }
     M.scalar_defaults = d   -- 暴露标量默认值（供 /config 命令对比当前 storage 与默认）
     for k, v in pairs(d) do
@@ -136,10 +147,10 @@ function M.ensure_defaults()
     end
     -- 必需表（累积数据 / 每星球状态 / 运行时缓存），缺失则建空表。
     -- 这是所有 storage 表的【唯一出生地】，各模块不再各自 `storage.x = storage.x or {}`，统一在此补齐。
-    for _, key in ipairs({'width_of', 'height_of', 'shape_of', 'science_exp', 'player_stats', 'platform_age',
+    for _, key in ipairs({'width_of', 'height_of', 'shape_of', 'exp', 'player_stats', 'platform_age',
                           'ground_tint', 'tile_remap', 'event_world', 'loot_style', 'members',
                           'last_respawn_run', 'move_pos', 'bad_items', 'bad_entities', 'gen_debug', 'warp_vote',
-                          'obstacle_remap', 'fluid_remap', 'last_leaderboard', 'market_run', 'respawn_surface', 'chat_bubble', 'enemy_floor', 'action_cd', 'travel_open', 'event_period_min'}) do
+                          'obstacle_remap', 'fluid_remap', 'last_leaderboard', 'market_run', 'respawn_surface', 'chat_bubble', 'enemy_floor', 'action_cd', 'travel_open', 'event_period_min', 'charge', 'star'}) do
         storage[key] = storage[key] or {}
     end
     -- world_fx 全局开关（默认开；/c storage.world_fx.xxx=false 单独禁用某事件驱动效果）。

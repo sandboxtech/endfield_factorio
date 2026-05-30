@@ -113,7 +113,7 @@ end
 
 add_command('exp_clear', {'wn.exp-clear-help'}, function(command)
     if not require_admin(command) then return end
-    storage.science_exp = {}
+    storage.exp = {}
     game.print({'wn.exp-cleared'})
 end)
 
@@ -149,11 +149,11 @@ end
 -- 预览：若现在立即跃迁，背包里的科技瓶各能换多少经验。
 function M.show_preview(player)
     if not player then return end
-    local gain = science_exp.preview(player)
+    local gain = science_exp.preview(player)   -- 瓶数；显示 ÷bottles_per_exp = 组刻度
     local lines = {}
     for _, pack in ipairs(constants.science_packs) do
         if (gain[pack] or 0) > 0 then
-            lines[#lines + 1] = {'wn.preview-entry', pack, gain[pack]}
+            lines[#lines + 1] = {'wn.preview-entry', pack, string.format('%g', gain[pack] / constants.bottles_per_exp)}
         end
     end
     if #lines == 0 then lines[1] = {'wn.preview-none'} end

@@ -89,15 +89,16 @@ function M.reset()
     for _, player in pairs(game.players) do
         local gain = science_exp.collect(player)
         if gain then
+            -- gain 是【瓶数】；显示/排行用"组"刻度 ÷bottles_per_exp（%g 去掉多余小数）。
             local total, parts = 0, {}
             for _, pack in ipairs(constants.science_packs) do
                 if (gain[pack] or 0) > 0 then
                     total = total + gain[pack]
-                    parts[#parts + 1] = '[img=item/' .. pack .. ']+' .. gain[pack]
+                    parts[#parts + 1] = '[img=item/' .. pack .. ']+' .. string.format('%g', gain[pack] / constants.bottles_per_exp)
                 end
             end
             if total > 0 then
-                summaries[#summaries + 1] = {name = player.name, total = total, detail = table.concat(parts, '  ')}
+                summaries[#summaries + 1] = {name = player.name, total = total / constants.bottles_per_exp, detail = table.concat(parts, '  ')}
             end
         end
     end
