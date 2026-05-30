@@ -35,7 +35,6 @@ local M = {
         ground_tint = {base = 0.1, exotic = 0.25},   -- 出现率 = base + exotic × knobs.exotic
         tile_remap  = {base = 0.6,  exotic = 0.3},    -- 出现率 = base + exotic × knobs.exotic
         -- 源天然自限（find 只命中该星球实际存在的障碍），目标跨类/跨星球 → 概率可放高，不会误伤。
-        tree_remap     = {base = 0.60},               -- 【已并入 obstacle_remap】保留仅为兼容，未再使用
         obstacle_remap = {base = 0.60},               -- 统一障碍互换世界出现率（树/石/遗迹/冰山/叠层岩跨类，噪声门控）
         fluid_remap    = {base = 0.24},               -- 流体资源互换世界出现率（原油/锂卤水/氟喷口/硫酸喷泉 整星换成另一种喷口，小概率）
         -- 出现率 = base；选中哪种事件按 weights 加权(缺省 1)，drones 更低 → 无人机世界更罕见
@@ -56,6 +55,8 @@ local M = {
 -- 给 storage 里的可调常量/必需表设默认值（仅当缺失时）。幂等 → on_init 与
 -- on_configuration_changed 都可安全调用，老存档改版后迁移也能补齐新增字段。
 -- 注意：warp_hours 等"每轮重置的运行时状态"不在此处，由 on_init / reset 负责。
+-- 注意：跨版本【数据格式】迁移（radius_of 拆 width/height、remap 旧格式等）不在代码里常驻，
+--       仅对线上老存档用一次性 /c 脚本处理过；新档由各模块直接产出新格式。
 function M.ensure_defaults()
     -- 标量默认（用 nil 判定，布尔 false/0 也能被正确保留）
     local d = {
@@ -71,7 +72,6 @@ function M.ensure_defaults()
         debug = true,                     -- 向管理员打印每次世界生成的属性
         prob_ground_tint = 2,             -- 染地世界出现概率乘数（0=关）
         prob_tile_remap = 3,              -- tile 替换世界
-        prob_tree_remap = 1,              -- 树换树世界（0=关）
         prob_obstacle_remap = 1,          -- 障碍换障碍世界（0=关）
         prob_fluid_remap = 1,             -- 流体资源互换世界（0=关）
         prob_danger = 1,                  -- 危险世界
@@ -102,20 +102,6 @@ function M.ensure_defaults()
         warp_vote_divisor = 5,            -- 跃迁投票阈值除数：净同意 > ceil(在线人数/此值) 才推进（5=1/5，越大越易过）
         travel_enabled = false,           -- 是否显示并启用"前往星球"按钮（默认关）。开启：/c storage.travel_enabled=true
     }
-    -- 老存档迁移：原 storage.radius 已改名 radius_standard，把旧值继承过来（仅一次，default 之前）。
-    if storage.radius_standard == nil and storage.radius ~= nil then
-        storage.radius_standard = storage.radius
-    end
-    -- 老存档迁移：radius_of 已拆成 width_of/height_of（旧档按圆形：宽=高=旧半径），迁移后清除 radius_of。
-    if storage.radius_of then
-        storage.width_of = storage.width_of or {}
-        storage.height_of = storage.height_of or {}
-        for name, rr in pairs(storage.radius_of) do
-            if storage.width_of[name] == nil then storage.width_of[name] = rr end
-            if storage.height_of[name] == nil then storage.height_of[name] = rr end
-        end
-        storage.radius_of = nil
-    end
     for k, v in pairs(d) do
         if storage[k] == nil then storage[k] = v end
     end
@@ -138,7 +124,7 @@ function M.ensure_defaults()
     for _, key in ipairs({'width_of', 'height_of', 'shape_of', 'science_exp', 'player_stats', 'platform_age',
                           'ground_tint', 'tile_remap', 'danger_theme', 'event_world', 'loot_style', 'members',
                           'last_respawn_run', 'move_pos', 'bad_items', 'bad_entities', 'gen_debug', 'warp_vote', 'wreck_density',
-                          'tree_remap', 'obstacle_remap', 'fluid_remap', 'last_leaderboard', 'market_run', 'respawn_surface', 'chat_bubble', 'enemy_floor'}) do
+                          'obstacle_remap', 'fluid_remap', 'last_leaderboard', 'market_run', 'respawn_surface', 'chat_bubble', 'enemy_floor'}) do
         storage[key] = storage[key] or {}
     end
     -- world_fx 全局开关（默认开；/c storage.world_fx.xxx=false 单独禁用某事件驱动效果）。

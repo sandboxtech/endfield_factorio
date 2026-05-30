@@ -828,11 +828,10 @@ function M.pick_entity_target() local p = obstacles_pool(); return #p > 0 and p[
 --   rm = storage.obstacle_remap[星球]，本轮该星滚定（surface.lua）：
 --     · {to=名, seed, threshold} → 噪声区内统一换成同一种（大概率；单一主题斑块、协调）
 --     · {seed, threshold}      → 噪声区内每个各自随机换成【另一种】（小概率；跨类大杂烩异界带）
---     · 纯字符串（老存档旧格式） → 全替换成该名、无噪声（兼容）
+-- （旧纯字符串格式已对线上老档用一次性 /c 统一成表；新档只产出表格式，此处不再判型。）
 local function feat_entity_remap(surface, lt)
     local rm = storage.obstacle_remap and storage.obstacle_remap[surface.name]
     if not rm then return end
-    if type(rm) == 'string' then rm = {to = rm} end   -- 老存档兜底：旧格式是纯目标名、全替换、无噪声
     local pool = obstacles_pool()
     if #pool == 0 then return end
     local seed, thr = rm.seed, rm.threshold or 0
@@ -883,7 +882,7 @@ end
 local function feat_fluid_remap(surface, lt)
     local rm = storage.fluid_remap and storage.fluid_remap[surface.name]
     if not rm then return end
-    if type(rm) == 'number' then rm = {p = rm} end   -- 兼容：曾短暂存过裸 p 数值
+    -- （旧裸 p 数值格式已对线上老档用一次性 /c 统一成 {p=…} 表；新档只产出表格式，此处不再判型。）
     for _, e in pairs(surface.find_entities_filtered{area = {{lt.x, lt.y}, {lt.x + 32, lt.y + 32}}, type = 'resource'}) do
         if e.valid and yields_fluid(e.prototype) then
             local pos = e.position

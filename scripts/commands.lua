@@ -5,7 +5,6 @@ local gui = require('scripts.gui')
 local reset = require('scripts.reset')
 local players = require('scripts.players')
 local science_exp = require('scripts.science_exp')
-local player_stats = require('scripts.player_stats')
 local util = require('scripts.util')
 
 local M = {}   -- 导出给 HUD 按钮复用（gui 点击经 tick 路由到这里）
@@ -103,10 +102,8 @@ local function gen_debug_cmd(command)
     local lines = {}
     for _, name in ipairs(GEN_DEBUG_PLANETS) do
         local entry = storage.gen_debug and storage.gen_debug[name]
-        if type(entry) == 'table' then
+        if type(entry) == 'table' then   -- 多行数组（旧单行字符串格式已对线上老档用一次性 /c 统一）
             for _, l in ipairs(entry) do lines[#lines + 1] = l end
-        elseif type(entry) == 'string' then
-            lines[#lines + 1] = entry        -- 老存档旧格式（单行字符串）兼容
         end
     end
     if #lines == 0 then lines[1] = {'wn.gen-debug-none'} end
@@ -115,17 +112,7 @@ end
 commands.add_command('gen', {'wn.gen-debug-help'}, gen_debug_cmd)
 commands.add_command('shengcheng', {'wn.gen-debug-help'}, gen_debug_cmd)
 
--- /fixstats（/xiufutongji 同功能）：管理员手动修复旧存档——给已存在的玩家统计记录补齐
--- 新增字段（如 kill_count/nest_count），消除直接自增时 nil+1 崩档。结果只打给调用者。
-local function fix_stats_cmd(command)
-    local player = command.player_index and game.get_player(command.player_index)
-    if player and not player.admin then player.print(constants.not_admin_text); return end
-    local sink = player or game
-    local records, fields = player_stats.migrate()
-    sink.print('[统计修复] 扫描 ' .. records .. ' 条玩家记录，补齐 ' .. fields .. ' 个缺失字段。')
-end
-commands.add_command('fixstats', '修复旧存档玩家统计记录的缺失字段（仅管理员）', fix_stats_cmd)
-commands.add_command('xiufutongji', '修复旧存档玩家统计记录的缺失字段（仅管理员）', fix_stats_cmd)
+-- （/fixstats、/xiufutongji 已移除：玩家统计字段补齐改为对线上老档跑一次性 /c 脚本，代码里不再常驻。）
 
 -- （/countdown、/daojishi、/life 已移除：顶部 HUD 常驻显示跃迁倒计时，无需再用命令查询。）
 
