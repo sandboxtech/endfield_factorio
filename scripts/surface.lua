@@ -375,6 +375,9 @@ script.on_event(defines.events.on_surface_cleared, events.safe('surface_cleared'
     local rh = math.ceil(r * (1 - ecc))
     -- 边缘粗糙度 rough(归一化，边界半径 = 1 + rough×噪声)：random^6 × 0.6 → 大概率≈0(光滑)、小概率小、极小概率大(海湾/锯齿)。
     local rough = math.random() ^ 6 * 0.6
+    -- 老存档兜底：ensure_defaults 没补到也不崩（索引 nil 表会先崩，光靠下游 `or` 救不了 → 必须在写入点保证表存在）。
+    storage.width_of, storage.height_of, storage.shape_of =
+        storage.width_of or {}, storage.height_of or {}, storage.shape_of or {}
     storage.width_of[surface.name] = rw                                              -- 椭圆 X 半轴（替代原 radius_of）
     storage.height_of[surface.name] = rh                                             -- 椭圆 Y 半轴
     storage.shape_of[surface.name] = {rough = rough, seed = math.random(1, 1000000)} -- 边缘噪声参数
@@ -563,9 +566,9 @@ script.on_event(defines.events.on_surface_cleared, events.safe('surface_cleared'
 
     -- 本表面生成摘要：【始终】缓存进 storage.gen_debug[星球]（与 storage.debug 无关），供 /gen 弹窗查看。
     -- 缓存为【多行数组】：首行 = 星球+半径+气质旋钮；其后每个变体各占一行（缩进）→ 窗口里逐行换行，不再逗号挤一行。
-    local sh = storage.shape_of[surface.name] or {}
+    local sh = (storage.shape_of or {})[surface.name] or {}   -- 老存档兜底：索引 nil 表会先崩
     local head = string.format('%s %dx%d rough=%.2f  verdancy=%.2f rockiness=%.2f riches=%.2f danger=%.2f exotic=%.2f',
-        surface.name, storage.width_of[surface.name] or 0, storage.height_of[surface.name] or 0, sh.rough or 0,
+        surface.name, (storage.width_of or {})[surface.name] or 0, (storage.height_of or {})[surface.name] or 0, sh.rough or 0,
         knobs.verdancy, knobs.rockiness, knobs.riches, knobs.danger, knobs.exotic)
     local glines = {head}
     if #dbg.order == 0 then
@@ -627,9 +630,12 @@ script.on_event(defines.events.on_chunk_generated, events.safe('chunk_generated'
     end
 
     -- 椭圆 + 噪声边界：归一化椭圆距离 (px/rw)²+(py/rh)²，边界半径² = (1 + rough×噪声)²，超过即铺虚空。
-    local rw = storage.width_of[surface.name] or storage.radius_standard or 2048
-    local rh = storage.height_of[surface.name] or rw
-    local sh = storage.shape_of[surface.name]
+    -- 老存档兜底：width_of/height_of/shape_of 可能尚未由 ensure_defaults 补齐（旧档继承会 nil）。
+    -- 索引 nil 表会先崩→被 events.safe 的 pcall 吞掉→handler 中途夭折、后续 math.random 消耗不一致→desync。
+    -- 故此处对【表】本身取兜底（`(t or {})[k]`），而非只对取值结果 `or`。
+    local rw = (storage.width_of or {})[surface.name] or storage.radius_standard or 2048
+    local rh = (storage.height_of or {})[surface.name] or rw
+    local sh = (storage.shape_of or {})[surface.name]
     local rough = (sh and sh.rough) or 0
     local seed = (sh and sh.seed) or 0
     local cx, cy = 0.5, 0.5
