@@ -291,25 +291,18 @@ local function loot_count(name, exp)
     return math.max(1, math.ceil(ss * math.random() ^ (exp or 2)))
 end
 
--- 普通品质（材料箱/设备箱用）：多数 normal，小概率 uncommon/rare。
--- 常见优先：normal(~90%) 一次比较即返回，省掉后面几次 if（分布与从低到高判完全等价）。
-local function roll_quality()
-    local r = math.random()
-    if r >= 0.1 then return 'normal' end
-    if r >= 0.01 then return 'uncommon' end
-    if r >= 0.001 then return 'rare' end
-    if r >= 0.0001 then return 'epic' end
-    return 'legendary'
-end
-
--- 敌人/敌方弹药专用：比 roll_quality【更高概率】出高品质（让敌人更常带品质 → 更有威胁/氛围）。常见优先。
-local function roll_enemy_quality()
-    local r = math.random()
-    if r >= 0.40 then return 'normal' end       -- 60%
-    if r >= 0.15 then return 'uncommon' end      -- 25%
-    if r >= 0.05 then return 'rare' end          -- 10%
-    if r >= 0.01 then return 'epic' end          -- 4%
-    return 'legendary'                            -- 1%
+-- 品质：以概率 p 停在当前档、否则升一档（几何分布）。p 越小越易出高品质。常见优先——normal 大概率第一次就返回。
+--   p=0.9(默认，普通箱)：normal/uncommon/rare/epic/legendary ≈ 0.9/0.09/0.009/0.0009/0.0001（与原分布一致）。
+--   p=0.7(敌人/敌方弹药)：更常出高品质（normal≈0.7、uncommon≈0.21、rare≈0.063…）。
+local QUALITY_TIERS = {'uncommon', 'rare', 'epic', 'legendary'}
+local function roll_quality(p)
+    p = p or 0.9
+    local q = 'normal'
+    for _, tier in ipairs(QUALITY_TIERS) do
+        if math.random() < p then return q end
+        q = tier
+    end
+    return q
 end
 
 -- 宝箱(木箱)专用品质（高品质惊喜，与"宝"匹配）。常见优先。
@@ -424,7 +417,7 @@ local function fill_turret_ammo(e, ammo, count)
     local inv = e.get_inventory(defines.inventory.turret_ammo)
              or e.get_inventory(defines.inventory.artillery_turret_ammo)
     if not inv then return end
-    inv.insert{name = ammo, count = count or (prototypes.item[ammo].stack_size * #inv), quality = roll_enemy_quality()}
+    inv.insert{name = ammo, count = count or (prototypes.item[ammo].stack_size * #inv), quality = roll_quality(0.7)}
 end
 
 -- 加权随机抽弹药：list 每项 {权重, 弹名[, 数量lo, 数量hi]}（无 lo/hi = 加满）。返回 弹名, 数量(or nil)。
@@ -496,7 +489,7 @@ local function guard_perpetual(surface, pos)
         local gp = {x = cx + math.cos(ang) * r, y = cy + math.sin(ang) * r}
         local sp = surface.find_non_colliding_position(name, gp, 5, 1)
         if sp then
-            local e = surface.create_entity{name = name, force = 'enemy', position = sp, direction = math.random(0, 3) * 4, quality = roll_enemy_quality()}
+            local e = surface.create_entity{name = name, force = 'enemy', position = sp, direction = math.random(0, 3) * 4, quality = roll_quality(0.7)}
             enemy_floor_patch(surface, e)
             if e and type(def) == 'table' then
                 -- 机枪炮塔 per 个随机弹种、重炮用炮弹；都加满
@@ -649,7 +642,7 @@ local function feat_outpost(surface, lt)
         local gp = {x = sp.x + math.cos(ang) * r, y = sp.y + math.sin(ang) * r}
         local gsp = surface.find_non_colliding_position(def.name, gp, 3, 1)
         if gsp then
-            local e = surface.create_entity{name = def.name, force = 'enemy', position = gsp, direction = math.random(0, 3) * 4, quality = roll_enemy_quality()}
+            local e = surface.create_entity{name = def.name, force = 'enemy', position = gsp, direction = math.random(0, 3) * 4, quality = roll_quality(0.7)}
             enemy_floor_patch(surface, e)
             if e then
                 if def.mag then fill_turret_ammo(e, pick_ammo(MAG_AMMO)) end           -- 机枪：纯随机弹种(加满)
@@ -705,7 +698,7 @@ local function feat_danger(surface, lt, A, S, Z, W)
             local name = type(def) == 'table' and def.name or def
             local pos = {x = px + 0.5, y = py + 0.5}
             if surface.can_place_entity{name = name, position = pos} then
-                local e = surface.create_entity{name = name, force = 'enemy', position = pos, direction = math.random(0, 3) * 4, quality = roll_enemy_quality()}
+                local e = surface.create_entity{name = name, force = 'enemy', position = pos, direction = math.random(0, 3) * 4, quality = roll_quality(0.7)}
                 enemy_floor_patch(surface, e)
                 if e and type(def) == 'table' then
                     -- 机枪炮塔 per 个随机弹种(随本世界危险度)、重炮用炮弹；都加满

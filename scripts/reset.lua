@@ -214,6 +214,9 @@ function M.reset()
         if prototypes.ammo_category[cat] then game.forces.enemy.set_ammo_damage_modifier(cat, dmg) end
     end
 
+    -- 本世界"玩家消灭虫巢获随机科技"的概率
+    storage.nest_tech_chance = 0.001 + math.random() * 0.009
+
     game.map_settings.enemy_expansion.enabled = false
     game.map_settings.pollution.enabled = true
     game.map_settings.pollution.ageing = util.mostly_normal()
