@@ -35,8 +35,8 @@ function M.player_gui(player)
         {name = 'wn_btn_gameplay', sprite = 'virtual-signal/signal-info',  tip = {'wn.btn-gameplay-tip'}},
         -- {spacer = true},
         {name = 'skills',          sprite = 'entity/character',            tip = {'wn.skills-btn-tip'}},
-        {name = 'wn_btn_warp',     sprite = 'virtual-signal/signal-check',  tip = {'wn.btn-warp-tip'}},
-        {name = 'wn_btn_stay',     sprite = 'virtual-signal/signal-deny',   tip = {'wn.btn-stay-tip'}},
+        {name = 'wn_btn_warp',     sprite = 'virtual-signal/signal-trash-bin',  tip = {'wn.btn-warp-tip'}},
+        {name = 'wn_btn_stay',     sprite = 'virtual-signal/signal-white-flag', tip = {'wn.btn-stay-tip'}},
     }) do
         if b.spacer then
             player.gui.top.add{type = 'empty-widget'}.style.width = 12   -- 玩法 与 操作组 之间的间隔
@@ -45,13 +45,15 @@ function M.player_gui(player)
         end
     end
 
-    -- 世界轮次 + 跃迁倒计时合并标签【放最后】：标签随轮次/时间变长，放末尾才不会挤动前面的按钮。
-    -- 悬停显示简介（即原"简介"按钮内容；新玩家进服会自动弹一次）。倒计时每分钟由 refresh_countdown 刷新。
+    -- 世界轮次 + 跃迁倒计时合并标签【放最后】：随轮次/时间变长，放末尾才不挤动前面的按钮。
+    -- 用 button（label 不触发 on_gui_click）：悬停显示简介，点击弹出简介窗口（tick.on_gui_click → show_intro）。
+    -- 倒计时每分钟由 refresh_countdown 刷新 caption。
     local cd = player.gui.top.add {
-        type = 'label',
+        type = 'button',
         name = 'warp_countdown',
         caption = M.countdown_caption(),
-        tooltip = {'description', ''}
+        tooltip = {'description', ''},
+        style = 'transparent_button',   -- 内置全透明 button 样式：外观如 label，但可点击（label 不触发 on_gui_click）
     }
     cd.style.font = 'heading-1'
     cd.style.font_color = {255, 210, 120}
