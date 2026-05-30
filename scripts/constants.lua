@@ -58,9 +58,7 @@ function M.ensure_defaults()
     for _, k in ipairs({'radius', 'radius_of', 'tree_remap', 'prob_tree_remap', 'schema_version',
                         'prob_danger', 'danger_density', 'danger_theme', 'wreck_density',
                         'loot_density_outpost', 'loot_density_perp', 'encounter_perp', 'encounter_empty',
-                        'enemy_death_push_minutes',
-                        -- 外来/开发期遗留的顶层键（本场景代码从未定义；只删顶层、不碰任何嵌套玩家数据）：
-                        'test_chest_chance', 'my_forest2', 'pro_josh', 'the_strelock'}) do
+                        'enemy_death_push_minutes'}) do
         storage[k] = nil
     end
     -- travel_chance 曾是标量、现改为【按星球的表】；旧标量会让 tc[星球] 索引数字崩服 → 非表一律清掉，由下方按星球重建。
@@ -109,6 +107,8 @@ function M.ensure_defaults()
         warp_vote_divisor = 5,            -- 跃迁投票阈值除数：净同意 > ceil(在线人数/此值) 才推进（5=1/5，越大越易过）
         travel_enabled = true,           -- 前往星球【总开关】（默认关）。开启：/c storage.travel_enabled=true。开启后每轮每个外星球还要各自过 travel_chance。
         action_cd_minutes = 3,            -- 投票+传送共享冷却（分钟），防止玩家频繁刷动作
+        charge_max_hours = 100,           -- 离线充能上限（游戏内小时）：积累超过此值的部分领不到
+        charge_coin_per_tick = 1,         -- 充能领取兑换率：每 1 tick 充能 = 多少金币（默认 1）
     }
     M.scalar_defaults = d   -- 暴露标量默认值（供 /config 命令对比当前 storage 与默认）
     for k, v in pairs(d) do
