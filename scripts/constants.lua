@@ -125,11 +125,11 @@ function M.ensure_defaults()
     for pack, m in pairs(warp_ext) do
         if storage.warp_extend_minutes[pack] == nil then storage.warp_extend_minutes[pack] = m end
     end
-    -- 每个【外星球】单独的开放概率：每次跃迁各自掷一次决定本轮能否前往（"外星来人帮忙"）。
+    -- 每个【外星球】单独的开放概率：每次跃迁各自掷一次决定本轮能否前往（"外星来人帮忙"）。默认 0.5（50%）。
     -- 缺失才补 → 保留管理员 /c 的单独调整。热改示例：/c storage.travel_chance['fulgora'] = 0.6
     storage.travel_chance = storage.travel_chance or {}
     for _, p in ipairs({'vulcanus', 'gleba', 'fulgora', 'aquilo'}) do
-        if storage.travel_chance[p] == nil then storage.travel_chance[p] = 0.3 end
+        if storage.travel_chance[p] == nil then storage.travel_chance[p] = 0.5 end
     end
     -- 必需表（累积数据 / 每星球状态 / 运行时缓存），缺失则建空表。
     -- 这是所有 storage 表的【唯一出生地】，各模块不再各自 `storage.x = storage.x or {}`，统一在此补齐。

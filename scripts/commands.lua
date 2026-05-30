@@ -127,6 +127,16 @@ add_command('exp_clear', {'wn.exp-clear-help'}, function(command)
     game.print({'wn.exp-cleared'})
 end)
 
+-- /ensuredefaults（/buqi 补齐 同功能）：管理员手动跑一次 constants.ensure_defaults——补齐 storage 默认值/必需表
+-- + 清理废弃键、修正类型变更的键（迁移）。改了默认值/加了新 storage 表后，无需等下次跃迁即可立刻生效。
+local function ensure_defaults_cmd(command)
+    if not require_admin(command) then return end
+    constants.ensure_defaults()
+    local sink = (command.player_index and game.get_player(command.player_index)) or game
+    sink.print('[ensure_defaults] 已补齐 storage 默认值/必需表，并清理废弃键')
+end
+add_command('ensuredefaults', '管理员：手动补齐 storage 默认值 + 清理废弃键（迁移）', ensure_defaults_cmd)
+
 -- （/tutorial /教程 指令已移除：顶部"玩法"按钮等价。gui.show_tutorial 仍由该按钮调用。）
 
 -- 以下原"控制台指令"(预览/排行/自杀/前往星球)已【改为教程弹窗里的按钮】，指令注册移除；
@@ -195,7 +205,7 @@ function M.travel(player, planet)
     if not player then return end
     if not storage.travel_enabled then return end   -- 总开关关闭时禁用（即便按钮意外存在也不生效）
     if not (storage.travel_open and storage.travel_open[planet]) then
-        player.print('本轮无法前往 ' .. planet .. '（每次跃迁各外星球独立 30% 概率开放）')
+        player.print('本轮无法前往 ' .. planet .. '（每次跃迁各外星球独立概率开放，默认 50%）')
         return
     end
     if not player.character then player.print('你现在没有角色，无法前往星球'); return end
@@ -320,6 +330,7 @@ add_command('tichu', {'wn.kickout-help'}, member_kick_cmd)
 -- 命令名是 UTF-8 字符串，中文可注册；玩家需用输入法在控制台敲中文。
 -- 用 pcall 兜底：万一某版本/环境不接受中文命令名，只是中文别名不生效，不影响其余命令与场景加载。
 local function zh_alias(name, help, fn) pcall(add_command, name, help, fn) end
+zh_alias('补默认', '管理员：手动补齐 storage 默认值 + 清理废弃键（迁移）', ensure_defaults_cmd)
 zh_alias('给会员', {'wn.member-help'}, member_grant_cmd)
 zh_alias('撤会员', {'wn.unmember-help'}, member_revoke_cmd)
 zh_alias('踢出', {'wn.kickout-help'}, member_kick_cmd)
