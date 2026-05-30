@@ -611,7 +611,7 @@ end
 --   无限箱 neutral(可取货)；守卫 enemy(打靠近者，构成挑战)。
 local OUTPOST_MIN_DIST = 300                     -- 距出生点小于此不刷（据点是远征奖励）
 local function feat_outpost(surface, lt)
-    if chunk_rng(lt, 701) > 0.004 * (storage.loot_density or 1) * (storage.loot_density_outpost or 1) then return end
+    if chunk_rng(lt, 701) > (storage.loot_density or 1) * (storage.loot_density_outpost or 0.004) then return end
     local ccx, ccy = lt.x + 16, lt.y + 16
     if ccx * ccx + ccy * ccy < OUTPOST_MIN_DIST * OUTPOST_MIN_DIST then return end
     -- 子电网核心 substation：放不下就整个放弃（据点必须有电网）
@@ -720,7 +720,7 @@ local WRECKS = {
 local function feat_wrecks(surface, lt)
     local wd = storage.wreck_density and storage.wreck_density[surface.name]
     if not wd then return end
-    if chunk_rng(lt, 813) > 0.05 * wd * (storage.danger_density or 1) then return end
+    if chunk_rng(lt, 813) > wd * (storage.danger_density or 1) then return end
     local name = WRECKS[math.random(#WRECKS)]
     local pos = surface.find_non_colliding_position(name, {lt.x + math.random(4, 27), lt.y + math.random(4, 27)}, 12, 1)
     if pos then surface.create_entity{name = name, position = pos, force = 'neutral'} end

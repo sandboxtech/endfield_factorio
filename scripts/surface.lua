@@ -415,7 +415,7 @@ script.on_event(defines.events.on_surface_cleared, function(event)
     if srcs and #srcs > 0 and math.random() < (br.base + br.exotic * knobs.exotic) * prob('tile_remap') then
         local rules = {}
         -- 封顶 20：兜底防 /c storage.tile_remap_rules 填超大数 → 替换规则循环过多。
-        local nrules = 1 + math.min(20, math.floor(math.random() ^ 2 * (storage.tile_remap_rules or 3)))   -- 偏向少：多半 1 条
+        local nrules = 1 + math.min(20, math.floor(math.random() ^ 2 * (storage.tile_remap_rules or 6)))   -- 偏向少：多半 1 条
         for _ = 1, nrules do
             local src = srcs[math.random(#srcs)]
             -- 先定 mask：~45% all(整片自然，安全)，否则 noise/跟随树石矿。
@@ -513,13 +513,13 @@ script.on_event(defines.events.on_surface_cleared, function(event)
     dbg_add('战利品', string.format('material=%.2f equip=%.2f treasure=%.2f perp=%.2f',
         ls.material, ls.equipment, ls.treasure, ls.perp))
 
-    -- 飞船残骸：仅 25% 世界出现；本世界密度 = random()^3（大概率小、小概率大）。独立于危险世界。
+    -- 飞船残骸：仅 25% 世界出现；本世界密度 = random()^3 × 0.05（每区块出现率的基数已折入此处，map_features 不再出现魔法数 0.05）。
     storage.wreck_density = storage.wreck_density or {}   -- 老存档兜底：ensure_defaults 没补到也不崩
     storage.wreck_density[surface.name] = nil
     if math.random() < 0.25 then
         local d = math.random()
-        storage.wreck_density[surface.name] = d * d * d
-        dbg_add('残骸', string.format('%.2f', storage.wreck_density[surface.name]))
+        storage.wreck_density[surface.name] = d * d * d * 0.05
+        dbg_add('残骸', string.format('%.3f', storage.wreck_density[surface.name]))
     end
 
     -- 障碍互换（统一）：小概率把本星【现地所有带碰撞盒障碍：树/石/遗迹/冰山…】在噪声大团内跨类互换。

@@ -84,7 +84,7 @@ function M.ensure_defaults()
         loot_density_equipment = 1,        -- 铁箱（设备）
         loot_density_treasure  = 1,        -- 木箱（宝箱）
         loot_density_perp      = 1,        -- 永续（无底）箱
-        loot_density_outpost   = 1,        -- 远征防御据点（无限箱+守卫）
+        loot_density_outpost   = 0.004,    -- 远征防御据点：此值=每区块基础出现率（已含原 0.004 基数）× loot_density 全局乘数
         event_chance = 0.5,               -- 每分钟【全服】发生一次世界事件的固定概率（与人数无关；命中后随机挑 1 名玩家）
         -- 科技世界(事件世界的一种)：每次从所有科技随机抽一个——
         tech_world_lose_chance = 0.125,    -- 抽中【已研究】科技时，失去它的概率
@@ -108,11 +108,11 @@ function M.ensure_defaults()
     -- 热改示例：/c storage.warp_extend_minutes['cryogenic-science-pack'] = 90
     storage.warp_extend_minutes = storage.warp_extend_minutes or {}
     local warp_ext = {
-        ['automation-science-pack'] = 60, ['logistic-science-pack'] = 60,
+        ['automation-science-pack'] = 30, ['logistic-science-pack'] = 60,
         ['military-science-pack'] = 60,   ['chemical-science-pack'] = 60,
         ['production-science-pack'] = 60, ['utility-science-pack'] = 60,
-        ['space-science-pack'] = 120,     ['metallurgic-science-pack'] = 120,
-        ['electromagnetic-science-pack'] = 120, ['agricultural-science-pack'] = 120,
+        ['space-science-pack'] = 60,     ['metallurgic-science-pack'] = 60,
+        ['electromagnetic-science-pack'] = 60, ['agricultural-science-pack'] = 60,
         ['cryogenic-science-pack'] = 120, ['promethium-science-pack'] = 120,
     }
     for pack, m in pairs(warp_ext) do
