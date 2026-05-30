@@ -34,7 +34,7 @@ function M.player_gui(player)
     for _, b in ipairs({
         {name = 'wn_btn_gameplay', sprite = 'virtual-signal/signal-info',  tip = {'wn.btn-gameplay-tip'}},
         -- {spacer = true},
-        {name = 'skills',          sprite = 'entity/character',            tip = {'wn.skills-btn-tip'}},
+        {name = 'wn_btn_skills',          sprite = 'entity/character',            tip = {'wn.skills-btn-tip'}},
         {name = 'wn_btn_warp',     sprite = 'virtual-signal/signal-trash-bin',  tip = {'wn.btn-warp-tip'}},
         {name = 'wn_btn_stay',     sprite = 'virtual-signal/signal-white-flag', tip = {'wn.btn-stay-tip'}},
     }) do
@@ -80,8 +80,10 @@ M.POPUP_NAME = POPUP_NAME
 M.POPUP_CLOSE_NAME = POPUP_NAME .. '_close'
 
 -- title：localised string 或纯文本；lines：数组，每项一行（localised string 或纯文本）。
--- buttons（可选）：数组，每项 {name=, caption=, tags=}，渲染成滚动区顶部的可点击按钮（用于"查看他人/返回/玩家列表"）。
-function M.show_popup(player, title, lines, buttons)
+-- buttons（可选）：数组，每项 {name=, caption=, tags=}，渲染成滚动区里的可点击按钮（查看他人/返回/玩家名/跃迁停留等）。
+--   点击由 tick.on_gui_click 按 name 路由——复用 HUD 同名按钮的处理（skills/wn_btn_warp/wn_btn_stay 等）。
+-- buttons_at_bottom：true 时按钮放在文本行【之后】（用于教程末尾的"其它按钮"），否则放最前（用于面板导航）。
+function M.show_popup(player, title, lines, buttons, buttons_at_bottom)
     if not (player and player.valid) then return end
     local screen = player.gui.screen
     if screen[POPUP_NAME] then screen[POPUP_NAME].destroy() end   -- 重开即替换
@@ -97,18 +99,21 @@ function M.show_popup(player, title, lines, buttons)
     drag.style.right_margin = 4
     bar.add{type = 'sprite-button', name = M.POPUP_CLOSE_NAME, sprite = 'utility/close',
             style = 'frame_action_button', tooltip = {'gui.close'}}
-    -- 内容：滚动区。顶部先放可选按钮（查看他人/返回/玩家名），再放文本行。
+    -- 内容：滚动区。按钮可放在文本之前（默认）或之后（buttons_at_bottom）。
     local pane = frame.add{type = 'scroll-pane', direction = 'vertical'}
     pane.style.maximal_height = 460
     pane.style.minimal_width = 380
-    if buttons then
+    local function add_buttons()
+        if not buttons then return end
         for _, b in ipairs(buttons) do
             pane.add{type = 'button', name = b.name, caption = b.caption, tags = b.tags}
         end
     end
+    if not buttons_at_bottom then add_buttons() end
     for _, line in ipairs(lines) do
         pane.add{type = 'label', caption = line}.style.single_line = false
     end
+    if buttons_at_bottom then add_buttons() end
     frame.force_auto_center()
     player.opened = frame   -- Esc/E 关闭
 
@@ -125,13 +130,26 @@ end
 function M.show_tutorial(player)
     local lines = {
         {'wn.guide-gameplay', storage.warp_initial_minutes or 10, storage.platform_lifetime or 10},
-        '',
-        {'wn.guide-commands'},
     }
     if player and (player.admin or (storage.members and storage.members[player.name])) then
-        lines[#lines + 1] = {'wn.tutorial-member'}
+        lines[#lines + 1] = ''
+        lines[#lines + 1] = {'wn.tutorial-member'}   -- 会员/管理：仍是控制台指令（无按钮）
     end
-    M.show_popup(player, {'wn.tutorial-title'}, lines)
+    lines[#lines + 1] = ''
+    lines[#lines + 1] = {'wn.other-buttons-header'}   -- 末尾"功能按钮"小标题，下面是真按钮
+    -- 真按钮：name 复用 HUD 同名按钮 或 wn_act_* / tags，点击经 tick.on_gui_click 路由到 commands.* 。
+    local buttons = {
+        {name = 'wn_btn_skills',          caption = {'wn.act-panel'}},
+        {name = 'wn_btn_warp',     caption = {'wn.act-warp'}},
+        {name = 'wn_btn_stay',     caption = {'wn.act-stay'}},
+        {name = 'wn_act_preview',  caption = {'wn.act-preview'}},
+        {name = 'wn_act_lastrank', caption = {'wn.act-lastrank'}},
+        {name = 'wn_act_suicide',  caption = {'wn.act-suicide'}},
+    }
+    for _, p in ipairs({'nauvis', 'vulcanus', 'gleba', 'fulgora', 'aquilo'}) do
+        buttons[#buttons + 1] = {name = 'wn_act_travel_' .. p, caption = {'wn.act-travel', p}, tags = {wn_travel = p}}
+    end
+    M.show_popup(player, {'wn.tutorial-title'}, lines, buttons, true)
 end
 
 function M.close_popup(player)

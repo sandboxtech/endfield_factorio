@@ -142,9 +142,11 @@ end)
 
 -- （/tutorial /教程 指令已移除：顶部"玩法"按钮等价。gui.show_tutorial 仍由该按钮调用。）
 
--- /preview（/yulan 同功能）：若现在立即跃迁，背包里的科技瓶各能换多少经验。
-local function preview_cmd(command)
-    local player = command.player_index and game.get_player(command.player_index)
+-- 以下原"控制台指令"(预览/排行/自杀/前往星球)已【改为教程弹窗里的按钮】，指令注册移除；
+-- 核心逻辑抽成 M.* 供按钮点击调用（tick.on_gui_click → 这里）。
+
+-- 预览：若现在立即跃迁，背包里的科技瓶各能换多少经验。
+function M.show_preview(player)
     if not player then return end
     local gain = science_exp.preview(player)
     local lines = {}
@@ -157,13 +159,9 @@ local function preview_cmd(command)
     gui.show_popup(player, {'wn.preview-header'}, lines)
 end
 
-add_command('preview', {'wn.preview-help'}, preview_cmd)
-add_command('yulan', {'wn.preview-help'}, preview_cmd)
-
 -- /lastrank（/paihang 同功能，中文别名 /排行）：查看【上一个世界】每人带走的科技瓶经验排行榜。
 -- 数据在跃迁时由 reset.lua 存进 storage.last_leaderboard（只保留上一个世界这一份，每次跃迁覆盖）。
-local function last_rank_cmd(command)
-    local player = command.player_index and game.get_player(command.player_index)
+function M.show_lastrank(player)
     if not player then return end
     local lines = {}
     for _, s in ipairs(storage.last_leaderboard or {}) do
@@ -172,9 +170,6 @@ local function last_rank_cmd(command)
     if #lines == 0 then lines[1] = {'wn.lastrank-none'} end
     gui.show_popup(player, {'wn.lastrank-header', storage.last_leaderboard_run or 0}, lines)
 end
-
-add_command('lastrank', {'wn.lastrank-help'}, last_rank_cmd)
-add_command('paihang', {'wn.lastrank-help'}, last_rank_cmd)
 
 -- ── 前往星球 ─────────────────────────────────────────────────────────────────
 -- /nauvis /vulcanus /gleba /fulgora /aquilo：把自己直接传送到对应星球出生点（每次跃迁已自动解锁所有星球）。
@@ -191,31 +186,22 @@ local function travel_inventories_empty(player)
     return true
 end
 
-local function travel_cmd(planet)
-    return function(command)
-        local player = command.player_index and game.get_player(command.player_index)
-        if not player then return end
-        if not player.character then player.print('你现在没有角色，无法前往星球'); return end
-        if not game.surfaces[planet] then player.print('星球 ' .. planet .. ' 还没生成'); return end
-        if not travel_inventories_empty(player) then
-            player.print('前往星球前，请先清空：鼠标、背包、物流(回收)、弹药 这四个区')
-            return
-        end
-        players.place_on_surface(player, planet)
-        storage.respawn_surface[player.name] = planet   -- 前往后，该星球成为默认复活星球
+function M.travel(player, planet)
+    if not player then return end
+    if not player.character then player.print('你现在没有角色，无法前往星球'); return end
+    if not game.surfaces[planet] then player.print('星球 ' .. planet .. ' 还没生成'); return end
+    if not travel_inventories_empty(player) then
+        player.print('前往星球前，请先清空：鼠标、背包、物流(回收)、弹药 这四个区')
+        return
     end
+    players.place_on_surface(player, planet)
+    storage.respawn_surface[player.name] = planet   -- 前往后，该星球成为默认复活星球
 end
-add_command('nauvis',   '前往母星 Nauvis',    travel_cmd('nauvis'))
-add_command('vulcanus', '前往星球 Vulcanus', travel_cmd('vulcanus'))
-add_command('gleba',    '前往星球 Gleba',       travel_cmd('gleba'))
-add_command('fulgora',  '前往星球 Fulgora',   travel_cmd('fulgora'))
-add_command('aquilo',   '前往星球 Aquilo',      travel_cmd('aquilo'))
 
 -- （/settle、/jiesuan 已移除：只有【自动跃迁】才结算科技瓶经验，不再支持提前手动结算。）
 
--- /suicide（/zisha 同功能）：自杀脱困。死后在当前星球留尸、回复活星球(默认母星)复活（见 players.lua kill_player）。
-local function suicide_cmd(command)
-    local player = command.player_index and game.get_player(command.player_index)
+-- 自杀脱困：死后在当前星球留尸、回复活星球(默认母星)复活（见 players.lua kill_player）。
+function M.do_suicide(player)
     if not player or not player.character then return end
     local last_run_ticks = game.tick - (storage.run_start_tick or game.tick)
     local life = (storage.warp_hours or 1) * constants.hour_to_tick - last_run_ticks
@@ -223,9 +209,6 @@ local function suicide_cmd(command)
     local h, m = util.hm(life)
     game.print({'wn.suicide-notice', player.name, h, m})
 end
-
-add_command('suicide', {'wn.suicide-help'}, suicide_cmd)
-add_command('zisha', {'wn.suicide-help'}, suicide_cmd)
 
 -- ── 跃迁投票 ───────────────────────────────────────────────────────────────
 -- 不建 GUI，纯命令投票"本世界是否提前跃迁"：/yueqian(=/warp) 同意、/tingliu 反对。不投票=忽视。
@@ -307,9 +290,6 @@ add_command('tichu', {'wn.kickout-help'}, member_kick_cmd)
 -- 命令名是 UTF-8 字符串，中文可注册；玩家需用输入法在控制台敲中文。
 -- 用 pcall 兜底：万一某版本/环境不接受中文命令名，只是中文别名不生效，不影响其余命令与场景加载。
 local function zh_alias(name, help, fn) pcall(add_command, name, help, fn) end
-zh_alias('预览', {'wn.preview-help'}, preview_cmd)
-zh_alias('排行', {'wn.lastrank-help'}, last_rank_cmd)
-zh_alias('自杀', {'wn.suicide-help'}, suicide_cmd)
 zh_alias('给会员', {'wn.member-help'}, member_grant_cmd)
 zh_alias('撤会员', {'wn.unmember-help'}, member_revoke_cmd)
 zh_alias('踢出', {'wn.kickout-help'}, member_kick_cmd)

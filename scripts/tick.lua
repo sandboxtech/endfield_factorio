@@ -208,7 +208,7 @@ script.on_event(defines.events.on_gui_click, function(event)
         gui.show_intro(player)                      -- 点世界标签 = 弹出简介（即其悬停内容）
     elseif name == 'wn_btn_gameplay' then
         gui.show_tutorial(player)                   -- 游戏玩法 & 指令（已合并为一个弹窗）
-    elseif name == 'skills' then
+    elseif name == 'wn_btn_skills' then
         commands.show_panel(player)                 -- 点角色面板按钮 = 弹出角色面板（同 /inspect 自己）
     elseif name == 'wn_panel_others' then
         commands.show_player_list(player)           -- 面板里"查看他人能力"/"返回" = 弹出在线玩家列表
@@ -216,9 +216,17 @@ script.on_event(defines.events.on_gui_click, function(event)
         local t = game.get_player(event.element.tags.wn_view)   -- 点列表里某玩家名 = 看其能力面板（带返回）
         if t then commands.show_panel(player, t) end
     elseif name == 'wn_btn_warp' then
-        commands.cast_warp_vote(player, 'agree')    -- 跃迁/停留 = 对应投票命令
+        commands.cast_warp_vote(player, 'agree')    -- 跃迁/停留 = 对应投票
     elseif name == 'wn_btn_stay' then
         commands.cast_warp_vote(player, 'oppose')
+    elseif name == 'wn_act_preview' then
+        commands.show_preview(player)               -- 教程弹窗里的功能按钮（原 /预览 等指令已改按钮）
+    elseif name == 'wn_act_lastrank' then
+        commands.show_lastrank(player)
+    elseif name == 'wn_act_suicide' then
+        commands.do_suicide(player)
+    elseif event.element.tags and event.element.tags.wn_travel then
+        commands.travel(player, event.element.tags.wn_travel)   -- 前往星球按钮（tags 带星球名）
     elseif name == gui.POPUP_CLOSE_NAME then
         gui.close_popup(player)
     end
