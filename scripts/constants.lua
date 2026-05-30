@@ -78,6 +78,7 @@ function M.ensure_defaults()
         prob_event = 1,                   -- 每分钟事件世界
         danger_density = 1,               -- 危险世界里敌人/残骸的密度
         loot_density = 1,                  -- 战利品箱(物资/宝/永续)全局密度乘数：2 更多、0.5 更少
+        event_chance = 0.5,               -- 每分钟【全服】发生一次世界事件的固定概率（与人数无关；命中后随机挑 1 名玩家）
         event_intensity = 1,              -- 每分钟事件的落点数
         tile_remap_rules = 6,             -- tile 替换世界最多几条规则
         -- 跃迁计时（全部可 /c storage.xxx 热改、持久、多人同步）：

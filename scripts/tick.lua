@@ -51,6 +51,8 @@ end
 local DRONE_SKIP_MAX        = 1.0    -- 100 格处跳过概率（最不容易刷）
 local DRONE_SKIP_MIN        = 0.2    -- 1000 格及更远跳过概率（最容易刷）
 local DRONE_MAX             = 10     -- 单次最多无人机数（距离越远越接近上限）
+-- barrage 重炮：每次世界事件触发再以此概率【跳过不落弹】，大幅拉长落弹间隔（0.9 = 仅 1/10 触发真落弹）。
+local BARRAGE_SKIP          = 0.9
 
 -- 每分钟事件世界的【分发表】：键 = 事件类型，值 = 处理器(player, surface, ch, danger, k)。
 -- 加新事件类型只需在此表增一项，并在 surface.lua 的 event_world 候选里列上同名键。
@@ -124,6 +126,7 @@ local WORLD_EVENTS = {
     -- barrage 重炮落点(危险)：玩家周围落几发真炮弹(artillery-projectile)，范围伤害+爆炸（会砸到自家建筑）。
     -- 落点半径 = 90 × random()³ → 大概率近(高密度砸玩家)、小概率远(保留远程骚扰)。
     barrage = function(_, surface, ch, danger, k)
+        if math.random() < BARRAGE_SKIP then return end   -- 大幅降低炮弹出现概率/频率，落弹间隔拉长很多
         for _ = 1, math.max(1, math.floor((1 + danger) * k + 0.5)) do
             local lp = rand_near_cubic(ch, 90)
             surface.create_entity{
@@ -137,24 +140,27 @@ local WORLD_EVENTS = {
     end,
 }
 
--- 每分钟事件世界：按本星 storage.event_world 的事件类型，对该星上每个在线玩家触发。强度随 event_intensity。
+-- 每分钟事件世界：先用【全局固定概率 storage.event_chance】判定这一分钟全服是否发生事件；
+-- 发生则在【符合条件的在线玩家】里随机挑【一个】，对其所在星球的事件类型触发一次（强度随 event_intensity）。
+-- 与旧版"每个玩家各自 1/√N 判定"不同：现在全服每分钟最多一次事件，频率只由 event_chance 决定、与人数无关。
 local function run_world_events()
     if not storage.event_world then return end
+    if math.random() >= (storage.event_chance or 0.5) then return end   -- 全局概率：这一分钟不发生事件
     local danger = map_features.knobs().danger
     local k = storage.event_intensity or 1
-    -- 全服事件量 ∝ √(在线玩家数)：每玩家以 1/√N 概率触发 → 期望触发人数 = N×(1/√N) = √N。
-    -- （N=1 必触发；人越多，单个玩家越不容易摊上事件，避免人多时全服事件量线性爆炸。）
-    local n = #game.connected_players
-    if n == 0 then return end
-    local p_trigger = 1 / math.sqrt(n)
+    -- 候选 = 有 character、所在星球配了事件类型、且该类型未被 /c storage.event_types.x=false 禁用的在线玩家
+    local candidates = {}
     for _, player in pairs(game.connected_players) do
         local ch = player.character
         local et = ch and storage.event_world[player.surface.name]
-        -- 尊重事件类型开关：即便本轮已滚到该类型，禁用后(/c storage.event_types.x=false)也立即停触发
         if et and storage.event_types and storage.event_types[et] == false then et = nil end
-        local handler = et and WORLD_EVENTS[et]
-        if handler and math.random() < p_trigger then handler(player, player.surface, ch, danger, k) end
+        if et and WORLD_EVENTS[et] then
+            candidates[#candidates + 1] = {player = player, ch = ch, et = et}
+        end
     end
+    if #candidates == 0 then return end
+    local pick = candidates[math.random(#candidates)]   -- math.random 多端同步，挑选确定性一致
+    WORLD_EVENTS[pick.et](pick.player, pick.player.surface, pick.ch, danger, k)
 end
 
 -- 点击左上 run 按钮 = 弹出游戏教程；点弹窗 × = 关闭。（自杀脱困改用 /suicide /zisha 命令）

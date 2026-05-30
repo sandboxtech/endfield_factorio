@@ -93,6 +93,7 @@ function M.reset()
     -- 每次跃迁覆盖，供 /lastrank（/排行）随时查看。广播见下方杀玩家之后。
     table.sort(summaries, function(a, b) return a.total > b.total end)
     storage.last_leaderboard = summaries
+    storage.last_leaderboard_run = storage.run - 1   -- 这份排行属于【刚结束的那个世界】(run 上面已 +1，故 -1)
 
     -- 清理长期不活跃玩家（3 天没上线）：删除其玩家对象，释放蓝图/快捷键等存档膨胀。
     -- 经验/统计按【名字】存储（player_stats / science_exp），删玩家不动这些数据；

@@ -195,7 +195,7 @@ local function last_rank_cmd(command)
         lines[#lines + 1] = {'wn.summary-player', s.name, s.total, s.detail}
     end
     if #lines == 0 then lines[1] = {'wn.lastrank-none'} end
-    gui.show_popup(player, {'wn.lastrank-header'}, lines)
+    gui.show_popup(player, {'wn.lastrank-header', storage.last_leaderboard_run or 0}, lines)
 end
 
 add_command('lastrank', {'wn.lastrank-help'}, last_rank_cmd)
