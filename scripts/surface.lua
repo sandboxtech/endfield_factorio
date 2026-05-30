@@ -6,7 +6,7 @@ local noise = require('scripts.noise')
 local constants = require('scripts.constants')
 local events = require('scripts.events')
 
--- 各"世界变体"出现概率的可调常量（默认 1，游戏内 /c storage.prob_danger=3 之类即可动态调）。
+-- 各"世界变体"出现概率的可调常量（默认 1，游戏内 /c storage.prob_tile_remap=3 之类即可动态调）。
 local function prob(key) return storage['prob_' .. key] or 1 end
 
 -- debug 打印：只发给在线管理员，不刷屏所有玩家。
@@ -459,28 +459,8 @@ script.on_event(defines.events.on_surface_cleared, events.safe('surface_cleared'
         if #rules > 0 then storage.tile_remap[surface.name] = rules end
     end
 
-    -- 危险世界：每星球独立滚（概率 = knobs.danger × prob_danger，prob_danger=0 即关闭）。
-    -- 各敌人类型【独立】开关 → 组合多样(只沙虫 / 只机枪炮塔 / 虫+重炮 …)；机枪弹种随危险度；
-    -- 35% 还带"复制虫"(建筑被虫破坏冒虫，事件驱动见 world_fx.lua)。具体放置在 map_features.feat_danger。
-    storage.danger_theme[surface.name] = nil
-    if math.random() < knobs.danger * prob('danger') then
-        local bd = constants.balance.danger
-        -- 机枪炮塔弹种不再全星统一，改为每个炮塔各自随机（见 map_features.pick_mag），故 theme 不再存 mag。
-        local t = {
-            worm    = math.random() < bd.worm,       -- 沙虫炮塔
-            spawner = math.random() < bd.spawner,    -- 虫巢
-            turret  = math.random() < bd.turret,     -- 敌方机枪炮塔(带弹)
-            mine    = math.random() < bd.mine,       -- 敌方地雷
-            art     = math.random() < bd.art_base + bd.art_danger * knobs.danger,   -- 敌方重炮(更稀，随危险度)
-            replicant = math.random() < bd.replicant,
-        }
-        if not (t.worm or t.spawner or t.turret or t.mine or t.art) then t.worm = true end   -- 至少一种
-        storage.danger_theme[surface.name] = t
-        local on = {}
-        for _, k in ipairs({'worm', 'spawner', 'turret', 'mine', 'art'}) do if t[k] then on[#on + 1] = k end end
-        if t.replicant then on[#on + 1] = 'replicant' end
-        dbg_add('危险', table.concat(on, '+'))
-    end
+    -- （原"危险世界"滚定已整体移除：零星敌群改由 map_features.feat_outpost 据点式生成；
+    --   复制虫(replicant)改为全局常数概率、不再按星球滚，见 world_fx.lua 与 storage.replicant_chance。）
 
     -- 事件世界：每分钟触发一种事件（独立于危险度，奖励/危险皆有）。详见 tick.lua run_world_events。
     --   raid 空降虫 / meteor 矿石陨石雨 / supply 物资空投 / coinfall 金币雨 / drones 无人机来袭 / barrage 重炮落点。
@@ -525,14 +505,7 @@ script.on_event(defines.events.on_surface_cleared, events.safe('surface_cleared'
     dbg_add('战利品', string.format('material=%.2f equip=%.2f treasure=%.2f perp=%.2f',
         ls.material, ls.equipment, ls.treasure, ls.perp))
 
-    -- 飞船残骸：仅 25% 世界出现；本世界密度 = random()^3 × 0.05（每区块出现率的基数已折入此处，map_features 不再出现魔法数 0.05）。
-    storage.wreck_density = storage.wreck_density or {}   -- 老存档兜底：ensure_defaults 没补到也不崩
-    storage.wreck_density[surface.name] = nil
-    if math.random() < 0.25 then
-        local d = math.random()
-        storage.wreck_density[surface.name] = d * d * d * 0.05
-        dbg_add('残骸', string.format('%.3f', storage.wreck_density[surface.name]))
-    end
+    -- （飞船残骸 wreck_density 滚定已移除：残骸改由 map_features.feat_outpost 在据点处非线性生成。）
 
     -- 障碍互换（统一）：小概率把本星【现地所有带碰撞盒障碍：树/石/遗迹/冰山…】在噪声大团内跨类互换。
     --   大概率整片统一换成同一种(单一主题、协调)；小概率每个各自随机(跨类大杂烩)。应用见 map_features.feat_entity_remap。

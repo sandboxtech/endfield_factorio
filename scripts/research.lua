@@ -23,6 +23,15 @@ script.on_event(defines.events.on_research_finished, function(event)
                     or storage.warp_extend_default_minutes or 60
     storage.warp_hours = (storage.warp_hours or ((storage.warp_initial_minutes or 10) / 60)) + add_min / 60
     local last_run_ticks = game.tick - (storage.run_start_tick or game.tick)
+    -- 若此刻跃迁投票处于"想跃迁"状态（warp_vote_delta 已施加），把刚加的时间也并入【投票缩减】，
+    -- 倒计时仍钳在 target(默认5分钟)——否则研发加时会让"已投票通过要跃迁"的倒计时又被拉长。
+    -- delta 累加本次新砍量 → 日后改票取消时仍能把"自然总时长(含本次研发)"完整加回（投票永不能阻止跃迁的不变量保持）。
+    if storage.warp_vote_delta ~= nil then
+        local target = (storage.warp_vote_target_minutes or 5) * constants.min_to_tick
+        local new_hours = (last_run_ticks + target) / constants.hour_to_tick
+        storage.warp_vote_delta = storage.warp_vote_delta + (storage.warp_hours - new_hours)
+        storage.warp_hours = new_hours
+    end
     local total_ticks = storage.warp_hours * constants.hour_to_tick
     local th, tm = util.hm(total_ticks)                 -- 本轮共
     local rh, rm = util.hm(total_ticks - last_run_ticks)   -- 剩余

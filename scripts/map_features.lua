@@ -524,16 +524,8 @@ local function spawn_chance(surface, kind)
     return wd * LOOT_FREQ[kind] * (storage.loot_density or 1) * (storage['loot_density_' .. kind] or 1)
 end
 
--- 钢箱 = 材料箱：常见。1~3 种材料、接近装满。高效填法：每种【一次性 insert 满堆叠×分到的格数】，
--- 整箱只需 1~3 次 insert（不逐格、不卡）。普通品质（每种各滚一次）。
-local function feat_material(surface, lt)
-    if chunk_rng(lt, 503) > spawn_chance(surface, 'material') then return end
-    local pos = {lt.x + math.random(7, 25) + 0.5, lt.y + math.random(7, 25) + 0.5}
-    if not surface.can_place_entity{name = 'steel-chest', position = pos} then return end
-    local chest = surface.create_entity{name = 'steel-chest', force = 'neutral', position = pos}
-    local inv = chest and chest.get_inventory(defines.inventory.chest)
-    if not inv then return end
-    chest.destructible = false   -- 不可摧毁（防 fulgora 闪电/火炮劈烂）
+-- 钢箱 = 材料箱填充：1~3 种材料、接近装满。高效填法：每种【一次性 insert 满堆叠×分到的格数】，整箱只需 1~3 次 insert。普通品质。
+local function fill_material_chest(inv)
     -- 选 1~3 种材料（无效名跳过）
     local kinds = {}
     for _ = 1, math.random(1, 3) do
@@ -550,6 +542,18 @@ local function feat_material(surface, lt)
         local ss = prototypes.item[name].stack_size
         if n_slots > 0 then inv.insert{name = name, count = ss * n_slots, quality = roll_quality()} end
     end
+end
+
+-- 钢箱 = 材料箱：常见。
+local function feat_material(surface, lt)
+    if chunk_rng(lt, 503) > spawn_chance(surface, 'material') then return end
+    local pos = {lt.x + math.random(7, 25) + 0.5, lt.y + math.random(7, 25) + 0.5}
+    if not surface.can_place_entity{name = 'steel-chest', position = pos} then return end
+    local chest = surface.create_entity{name = 'steel-chest', force = 'neutral', position = pos}
+    local inv = chest and chest.get_inventory(defines.inventory.chest)
+    if not inv then return end
+    chest.destructible = false   -- 不可摧毁（防 fulgora 闪电/火炮劈烂）
+    fill_material_chest(inv)
 end
 
 -- 铁箱 = 设备箱：居中、【种类最杂】。抽 10~24 次不同物品，每件 count = ss×random^2，普通品质。
@@ -606,6 +610,26 @@ local function feat_perpetual(surface, lt)
     end
 end
 
+-- 据点奖励箱：按种类放一个箱并填充。material/equipment/treasure = 普通可拆箱(destructible=false 不受伤、仍可手拆收取)；perpetual = 无限箱。
+local function place_reward_chest(surface, pos, kind)
+    if kind == 'perpetual' then
+        local p = surface.find_non_colliding_position('steel-chest', pos, 4, 1)
+        if p then spawn_perpetual_chest(surface, p) end
+        return
+    end
+    local chest_name = (kind == 'equipment' and 'iron-chest') or (kind == 'treasure' and 'wooden-chest') or 'steel-chest'
+    local p = surface.find_non_colliding_position(chest_name, pos, 4, 1)
+    if not p then return end
+    local chest = surface.create_entity{name = chest_name, force = 'neutral', position = p}
+    if not chest then return end
+    chest.destructible = false
+    local inv = chest.get_inventory(defines.inventory.chest)
+    if not inv then return end
+    if kind == 'equipment' then fill_loot(chest, math.random(10, 24), LOOT_WEIGHTS.equipment, 2)
+    elseif kind == 'treasure' then fill_treasure_chest(inv)
+    else fill_material_chest(inv) end
+end
+
 -- 飞船残骸外观池（big/medium/small）。force=neutral：机器人拆不掉，作障碍/点缀。
 local WRECKS = {
     'crash-site-spaceship-wreck-big-1', 'crash-site-spaceship-wreck-big-2',
@@ -650,11 +674,11 @@ local function feat_outpost(surface, lt)
     local R = (_w and _h) and (_w + _h) / 2 or storage.radius_standard or 2048   -- 椭圆等效半径=(宽+高)/2；老存档兜底
     local frac = math.min(1, math.sqrt(ccx * ccx + ccy * ccy) / R)
 
-    -- 宝箱【不一定有】：~60% 概率在核心旁放一个无限箱（奖励）。
-    if math.random() < 0.6 then
-        local chp = surface.find_non_colliding_position('steel-chest', sp, 3, 1)   -- 贴近核心
-        if chp then spawn_perpetual_chest(surface, chp) end
-    end
+    -- 据点奖励【按概率】：空(30%) / 材料(20%) / 设备(20%) / 宝箱(15%) / 永续(15%)——"空据点"也是一种结果。贴近核心放置。
+    local r = math.random()
+    local kind = (r < 0.30 and 'none') or (r < 0.50 and 'material') or (r < 0.70 and 'equipment')
+              or (r < 0.85 and 'treasure') or 'perpetual'
+    if kind ~= 'none' then place_reward_chest(surface, sp, kind) end
 
     -- 守卫塔：每种类型各自非线性数量（max 随距离 2→8），放在离核心(箱子)较远的环上(半径6~11)。
     local tmax = 2 + math.floor(frac * 6)

@@ -28,8 +28,8 @@
 | `passives.lua` | **动作即时升级的 4 技能**：手搓/移动(封顶 +100%)/挖矿/生命上限。曲线 -50% 下限、log 缓升。独占 craft/mine/changed_position/died 事件。 |
 | `science_exp.lua` | `collect`（跃迁结算在线玩家**整组**科技瓶 = `floor(数量/堆叠) × 品质系数`，不移除瓶子）/ `preview`（同算法预览，不写入）。经验按**玩家名**存 `storage.science_exp`。（提前结算 `/settle` 已移除：只有跃迁才结算。） |
 | `research.lua` | 研究含 `-science-pack` 名（非 trigger）的科技 → 本轮倒计时延长 `warp_extend_minutes[瓶]`(默认60) 分钟、公告、并 `gui.refresh_countdown()` 立刻刷新头顶倒计时。 |
-| `map_features.lua` | **每轮地图风味**（手动放置原生做不到的东西）：`M.knobs()` 本轮整局气质连续旋钮；跨星球 `EXOTIC` 异物（稀疏 simplex 散布）；`theme_trees` 改原生树颜色/灰度（连续插值）；**4 类独立战利品箱**（钢=材料 / 铁=设备 / 木=宝箱，各按 `loot_style` 密度滚、带品质）+ 罕见**永续箱**（infinity 无底，不可开不可拆可摧毁，周围放 enemy 守卫）+ 远处**防御据点** `feat_outpost`（无限箱 + enemy 子电网 substation/供电接口 + 激光/喷火/机枪守卫塔）；`feat_danger` 危险敌群（独立开关 worm/巢/机枪炮塔+弹/地雷/重炮+弹，force=enemy）；`feat_wrecks` 飞船残骸障碍（仅 25% 世界、密度 random³ 偏小，独立于危险世界，见 `storage.wreck_density`）。`M.generate` 逐区块调用。 |
-| `world_fx.lua` | 事件驱动的世界效果（经 `events` 总线）的**注册表**：`register(name,event,run)` 每项带全局开关 `storage.world_fx[name]`（默认开，`/c storage.world_fx.xxx=false` 禁用）。现有 **复制虫**(`replicant`)，玩家建筑被虫破坏时原地冒虫（呼应 Comfy infested）。加新 fx 只动本文件 + `ensure_defaults` 开关列表。 |
+| `map_features.lua` | **每轮地图风味**（手动放置原生做不到的东西）：`M.knobs()` 本轮整局气质连续旋钮；跨星球 `EXOTIC` 异物（稀疏 simplex 散布）；`theme_trees` 改原生树颜色/灰度（连续插值）；**4 类独立战利品箱**（钢=材料 / 铁=设备 / 木=宝箱，各按 `loot_style` 密度滚、带品质，均 `destructible=false` 不受伤但**可手拆**收取）+ 罕见**永续箱**（infinity 无底，不可开/不可拆/**不可摧毁**）+ **防御据点** `feat_outpost`（**唯一野外敌人/残骸来源**，仅 >300 格远征处）：enemy 子电网 substation/供电接口 + **守卫塔火力网**（每种炮塔各自**非线性**数量：大概率无、极小概率很多，放在离箱较远的环上）+ **奖励箱按概率**（空/材料/设备/宝箱/永续）+ **非线性飞船残骸**（neutral，不铺人造地板）。`M.generate` 逐区块调用。（原零星 `feat_danger` 敌群与散布 `feat_wrecks` 残骸已移除并入据点。） |
+| `world_fx.lua` | 事件驱动的世界效果（经 `events` 总线）的**注册表**：`register(name,event,run)` 每项带全局开关 `storage.world_fx[name]`（默认开，`/c storage.world_fx.xxx=false` 禁用）。现有 **复制虫**(`replicant`)，玩家建筑被虫破坏时按**全局常数概率** `storage.replicant_chance`(默认0.5) 原地冒虫（不再按星球 danger_theme 滚，呼应 Comfy infested）。加新 fx 只动本文件 + `ensure_defaults` 开关列表。 |
 | `surface.lua` | 跃迁后逐星球生成：原生 autoplace 调参 + **气候噪声偏置**（`control:moisture/aux/temperature:bias` 修改原生而非覆盖）+ **世界变体**滚定（染地/tile 替换/危险/事件/战利品风格/障碍/流体）+ **椭圆+噪声粗糙虚空边界**（每星滚定椭圆半轴 `width_of`/`height_of` 与边缘粗糙度 `shape_of={rough,seed}`，归一化椭圆距离超 `1+rough×噪声` 即铺虚空 → 海湾/半岛/锯齿边）；逐区块应用 tile 替换与染地精灵；**逐区块惰性放各星球市场**（出生区块生成时）。各星球资源/自然/气候由声明式 `PLANET_GEN` 表驱动。debug 时向**管理员**打印每次生成的属性。 |
 | `reset.lua` | 跃迁主流程：飞船老化(命数前缀) → 收集经验/存排行榜 → 清理不活跃玩家 → 杀玩家(尸体留当地) → 广播结算 → 清星球 → 重置科技 → **解锁所有星球+发现科技** → 飞船回母星轨道+**清陨石** → 随机参数。 |
 | `tick.lua` | `on_gui_click` 与 `on_nth_tick(3600)` 的**唯一注册点**：每分钟在线采样 + 给在线玩家各 +1 金币 + 倒计时/提醒 + **事件世界**(`run_world_events` 按 `WORLD_EVENTS` 分发表：raid/meteor/supply/coinfall/drones/barrage/tech；每分钟全服 `event_chance` 掷一次、命中挑一个事件世界玩家触发其星球事件)。 |
@@ -53,7 +53,7 @@
   - 目标白名单 `TILE_CLASS` 四类：`water`(常规水) / `ground`(自然地表) / `exotic`(岩浆·油海·氨海·虚空·太空) / `artificial`(混凝土系+9 色套色+铺路/landfill/地基)。`valid_pools` 按 `prototypes.tile` 过滤拼错名。
   - mask：`all`(整片，仅安全自然：水→可泵水、地→任意地) / `noise`(平滑成片，**exotic 仅此可选**) / `tree`/`rock`/`ore`(跟随原生树/石/矿分布，**artificial 仅 ore 可选**)。规则数与覆盖面非线性偏小。
   - 约束：整片替换不让星球缺资源；exotic/artificial 只部分替换（原 tile 仍保留）。exotic 出现率全星统一（`tile_mask_all` × `tile_to_exotic`），母星不额外加成。
-- **危险世界** `danger_theme[星球]`：各敌人类型**独立开关**（worm/spawner/机枪炮塔+弹/地雷/重炮+弹）+ 机枪弹种(随危险度) + 35% 复制虫。`map_features.feat_danger` 远离出生点采样放置（force=enemy）。（`feat_wrecks` 残骸已独立成自己的 25% 世界滚定，不再绑危险世界。）
+- **野外敌人/残骸**（原"危险世界 `danger_theme` + 零星 `feat_danger`/`feat_wrecks`"已整体移除）：现统一由 **`map_features.feat_outpost` 防御据点**生成——远征处(>300格)的 enemy 子电网 + 非线性守卫塔火力网 + 按概率奖励箱(空/4 类箱) + 非线性飞船残骸。**复制虫**改为全局常数 `storage.replicant_chance`（见 world_fx）。原版 enemy-base 仍自然出虫。
 - **事件世界** `event_world[星球]`：每星球每轮 **10%**(`balance.event.base 0.1 × prob_event`) 成为事件世界，命中则从下列类型**按权重抽一个**存入（**至多一种**；权重 `balance.event.weights`：drones=0.3，余默认1）。触发见 `tick.run_world_events`：每分钟先掷全局 `event_chance`(默认0.5) 决定**全服**是否发生，命中则随机挑一个"身处事件世界星球的在线玩家"，触发其星球的事件**一次**。类型：
   - `raid` 空降虫 / `meteor` 矿石陨石雨 / `supply` 物资空投 / `coinfall` 金币雨 / `drones` 敌方战斗机器人(defender/distractor/destroyer) / `barrage` 重炮落点(artillery-projectile，会砸自家建筑)。
   - `tech` **科技世界**（也是事件世界的一种，效果对**全 force**）：从**所有科技**(排除 4 个星球发现科技)**随机抽一个，不看是否已研究**，已研究则以 `tech_world_lose_chance`(默认0.125) **失去**(`researched=false`)，未研究则以 `tech_world_gain_chance`(默认0.25) **得到**(`researched=true`)，全服广播 `tech-gain`/`tech-lose`。脚本改 `researched` 是 `by_script` 事件，`research.lua` 早退 → 不会顺带改跃迁倒计时。
@@ -74,11 +74,11 @@
 - `storage.market_run[星球]`：该星本轮市场已放置的 `run`（惰性放置去重）。
 - `storage.warp_vote[玩家名]`：跃迁投票（`agree`/`oppose`，**持续生效、只在跃迁 reset 时清空**）；`storage.warp_vote_delta`：投票通过时砍掉的小时数，改票跌破阈值则加回（取消提前），reset 清空。
 - 地图：`storage.radius_standard / radius_min / radius_max / difficulty / *_multiplier / local_specialty_multiplier`。每星球形状 `width_of`/`height_of`(椭圆半轴) + `shape_of={rough,seed}`(边缘噪声) 每轮重滚（替代原圆形 `radius_of`）。
-- 世界变体（每星球，每轮重滚）：`ground_tint / tile_remap / danger_theme / event_world / loot_style / obstacle_remap({seed,threshold[,to]}) / fluid_remap / wreck_density`（树替换已并入 `obstacle_remap`）。
+- 世界变体（每星球，每轮重滚）：`ground_tint / tile_remap / event_world / loot_style / obstacle_remap({seed,threshold[,to]}) / fluid_remap`（树替换已并入 `obstacle_remap`；`danger_theme`/`wreck_density` 已随危险世界/散布残骸移除）。
 - **可调常量**（默认值由 `constants.ensure_defaults` 设，on_init / on_configuration_changed / 每轮 reset 都调用，幂等不覆盖；游戏内 `/c storage.xxx=N` 动态调）：
   - `debug`(默认 true，向管理员打印每次生成属性)
-  - 概率乘数（0=关）：`prob_ground_tint / prob_tile_remap / prob_obstacle_remap / prob_fluid_remap / prob_danger / prob_event`
-  - 强度：`danger_density`(敌人/残骸密度) / `event_intensity`(事件落点) / `tile_remap_rules`(最多规则数)
+  - 概率乘数（0=关）：`prob_ground_tint / prob_tile_remap / prob_obstacle_remap / prob_fluid_remap / prob_event`
+  - 强度：`event_intensity`(事件落点) / `tile_remap_rules`(最多规则数) / `replicant_chance`(复制虫冒虫概率，默认0.5)
   - 战利品密度（**全局乘数 × 各类乘数，相乘**）：`loot_density`(全局) × `loot_density_<material/equipment/treasure/perp/outpost>`(各类，默认1)
   - 上限钳（防 /c 填超大数一 tick 卡死）：事件落点 `EVENT_MAX_SPAWN=50`、危险刷怪 `DANGER_MAX_PER_CHUNK×4`、tile 规则 `≤20`
   - `storage.world_fx.<name>`(默认 true)：事件驱动效果总闸，false 全局禁用（如 `replicant` 复制虫）
@@ -96,18 +96,18 @@ reset.reset():
 
 on_surface_cleared（每星球，clear 结算后）:
     随机昼夜/形状(椭圆 width_of/height_of + 粗糙度 shape_of)/资源档位 + 气候偏置(bias_climate) + 原生 autoplace 调参
-    滚世界变体: ground_tint / tile_remap / danger_theme / event_world(含 tech) / loot_style / obstacle_remap / fluid_remap（debug 打印给管理员）
+    滚世界变体: ground_tint / tile_remap / event_world(含 tech) / loot_style / obstacle_remap / fluid_remap（debug 打印给管理员）
     (市场不在此放，出生区块尚未生成，改由 on_chunk_generated 惰性放置)
 
 on_chunk_generated（每区块）:
-    椭圆+噪声边界外铺虚空 -> map_features.generate（异物/障碍互换/树调色/战利品箱/危险敌群/残骸）
+    椭圆+噪声边界外铺虚空 -> map_features.generate（异物/障碍互换/树调色/战利品箱/防御据点：敌人+残骸+奖励箱）
     -> 应用 tile 替换（按 mask）-> 画染地精灵
     -> 若是出生区块: 惰性放该星市场 market.place_on_surface（每轮每星一次，不强制生成区块）
 
 on_player_respawned / on_player_created: passives.apply；本世界首次 -> respawn_gifts.on_first_respawn
 on_pre_player_left_game: kill_player（当前表面出生点死亡，尸体留当地；复活回其复活星球/母星）
 on_nth_tick(3600): 在线采样 + 各 +1 金币 + 倒计时/提醒 + run_world_events（事件世界，含 tech 得/失科技）
-on_entity_died（world_fx 经总线）: 复制虫世界里玩家建筑被虫毁 -> 原地冒虫
+on_entity_died（world_fx 经总线）: 玩家建筑被虫毁 -> 按 replicant_chance 原地冒虫
 ```
 
 ## 跨跃迁进度

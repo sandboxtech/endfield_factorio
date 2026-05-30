@@ -44,9 +44,7 @@ local M = {
         tile_to_exotic     = 0.3,    -- noise mask 下目标取 exotic(岩浆/油海/氨海/虚空) 的概率（全星统一，母星不额外加成）
         tile_to_artificial = 0.4,    -- ore mask 下目标取 artificial(人造铺装) 的概率
         tile_same_class    = 0.7,    -- 部分替换时目标保持同类(水↔水/地↔地) 的概率
-        -- 危险世界各敌人类型【独立开关】概率
-        danger = {worm = 0.6, spawner = 0.4, turret = 0.4, mine = 0.4,
-                  art_base = 0.12, art_danger = 0.3, replicant = 0.35},
+        -- （原"危险世界"各敌人类型概率 balance.danger 已移除：野外敌人改由 feat_outpost 据点生成；复制虫改全局常数 storage.replicant_chance。）
         -- 母星/草星【宁和模式】抽奖：1/N 概率开启
         peaceful_one_in = 5,
     },
@@ -55,9 +53,16 @@ local M = {
 -- 给 storage 里的可调常量/必需表设默认值（仅当缺失时）。幂等 → on_init 与
 -- on_configuration_changed 都可安全调用，老存档改版后迁移也能补齐新增字段。
 -- 注意：warp_hours 等"每轮重置的运行时状态"不在此处，由 on_init / reset 负责。
--- 注意：跨版本【数据格式】迁移（radius_of 拆 width/height、remap 旧格式等）不在代码里常驻，
---       仅对线上老存档用一次性 /c 脚本处理过；新档由各模块直接产出新格式。
 function M.ensure_defaults()
+    -- 重构清理（每次调用都跑，幂等）：删除已废弃的 storage 键，并修正类型已变更的键。
+    -- on_init / on_configuration_changed / 每轮 reset 都会触发 → 老存档无需手动迁移，加载/跃迁即自愈。
+    for _, k in ipairs({'radius', 'radius_of', 'tree_remap', 'prob_tree_remap', 'schema_version',
+                        'prob_danger', 'danger_density', 'danger_theme', 'wreck_density'}) do
+        storage[k] = nil
+    end
+    -- travel_chance 曾是标量、现改为【按星球的表】；旧标量会让 tc[星球] 索引数字崩服 → 非表一律清掉，由下方按星球重建。
+    if type(storage.travel_chance) ~= 'table' then storage.travel_chance = nil end
+
     -- 标量默认（用 nil 判定，布尔 false/0 也能被正确保留）
     local d = {
         richness_multiplier = 8,          -- 矿更富（每格储量）· rail world：原 4 的 ×2
@@ -74,9 +79,8 @@ function M.ensure_defaults()
         prob_tile_remap = 3,              -- tile 替换世界
         prob_obstacle_remap = 1,          -- 障碍换障碍世界（0=关）
         prob_fluid_remap = 1,             -- 流体资源互换世界（0=关）
-        prob_danger = 1,                  -- 危险世界
-        prob_event = 1,                   -- 每分钟事件世界
-        danger_density = 1,               -- 危险世界里敌人/残骸的密度
+        prob_event = 1,                   -- 事件世界出现概率乘数
+        replicant_chance = 0.5,           -- 复制虫：玩家建筑被虫破坏时，按此概率原地冒新虫（全局，world_fx 开关另控）
         enemy_dmg_scale = 2,              -- 敌人武器伤害随危险度的缩放：加成 = knobs.danger × 此值（0=原版、2=最高危世界约+200%）
         -- 战利品密度：全局乘数 × 各类乘数（相乘共同影响）。默认全 1，可 /c 单独热改：2 更多、0.5 更少、0 不刷。
         loot_density           = 1,        -- 全局总乘数（对所有类型一起生效）
@@ -128,8 +132,8 @@ function M.ensure_defaults()
     -- 必需表（累积数据 / 每星球状态 / 运行时缓存），缺失则建空表。
     -- 这是所有 storage 表的【唯一出生地】，各模块不再各自 `storage.x = storage.x or {}`，统一在此补齐。
     for _, key in ipairs({'width_of', 'height_of', 'shape_of', 'science_exp', 'player_stats', 'platform_age',
-                          'ground_tint', 'tile_remap', 'danger_theme', 'event_world', 'loot_style', 'members',
-                          'last_respawn_run', 'move_pos', 'bad_items', 'bad_entities', 'gen_debug', 'warp_vote', 'wreck_density',
+                          'ground_tint', 'tile_remap', 'event_world', 'loot_style', 'members',
+                          'last_respawn_run', 'move_pos', 'bad_items', 'bad_entities', 'gen_debug', 'warp_vote',
                           'obstacle_remap', 'fluid_remap', 'last_leaderboard', 'market_run', 'respawn_surface', 'chat_bubble', 'enemy_floor', 'action_cd', 'travel_open'}) do
         storage[key] = storage[key] or {}
     end
