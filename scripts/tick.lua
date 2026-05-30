@@ -68,19 +68,35 @@ local EVENT_MAX_SPAWN       = 50
 
 -- 每分钟事件世界的【分发表】：键 = 事件类型，值 = 处理器(player, surface, ch, danger, k)。
 -- 加新事件类型只需在此表增一项，并在 surface.lua 的 event_world 候选里列上同名键。
+-- raid 撒【虫卵】用的有效物品（懒构建，按本游戏实际存在的原型过滤）：
+--   biter-egg 30min→大型虫 / pentapod-egg 15min→五足虫 / captive-biter-spawner 30min→巨型虫。
+local RAID_EGGS
+local function raid_eggs()
+    if not RAID_EGGS then
+        RAID_EGGS = {}
+        for _, n in ipairs({'biter-egg', 'pentapod-egg', 'captive-biter-spawner'}) do
+            if prototypes.item[n] then RAID_EGGS[#RAID_EGGS + 1] = n end
+        end
+    end
+    return RAID_EGGS
+end
+
 local WORLD_EVENTS = {
-    -- raid 空降虫(危险)：玩家外圈炸开并刷一波随进化度的虫。
+    -- raid 空降【虫卵】(延迟危险)：在玩家四周地上撒虫卵/五足虫卵/虫巢孵化器，随机【不同新鲜度】。
+    -- 蛋会随时间腐败孵化成虫(spoil_percent 越高孵得越快)；玩家可抢在孵化前捡走 → 抢救=资源、放任=刷怪。
     raid = function(_, surface, ch, danger, k)
-        local evo = game.forces.enemy.get_evolution_factor(surface)
+        local eggs = raid_eggs()
+        if #eggs == 0 then return end
         for _ = 1, math.min(EVENT_MAX_SPAWN, math.max(1, math.floor((1 + danger * 2) * k + 0.5))) do
             if math.random() < 0.7 then
-                local lp = rand_near(ch, 30, 80)
-                surface.create_entity{name = 'massive-explosion', position = lp}
-                for _ = 1, math.random(3, 6) do
-                    local name = util.evo_biter(evo)
-                    local p = surface.find_non_colliding_position(name, lp, 8, 1)
-                    if p then surface.create_entity{name = name, position = p, force = 'enemy'} end
-                end
+                local lp = rand_near(ch, 20, 70)
+                local egg = eggs[math.random(#eggs)]
+                local cnt = (egg == 'captive-biter-spawner') and 1 or math.random(2, 6)   -- 孵化器 stack_size=1
+                surface.spill_item_stack{
+                    position = lp,
+                    stack = {name = egg, count = cnt, spoil_percent = math.random()},   -- 线性随机新鲜度：越高越快孵化
+                    enable_looted = math.random() < 0.5,   -- 随机：一半可被自动拾取/机器人收，一半留地上(更易孵化)
+                }
             end
         end
     end,
@@ -207,7 +223,9 @@ script.on_event(defines.events.on_gui_click, events.safe('gui_click', function(e
     if name == 'warp_countdown' then
         gui.show_intro(player)                      -- 点世界标签 = 弹出简介（即其悬停内容）
     elseif name == 'wn_btn_gameplay' then
-        gui.show_tutorial(player)                   -- 游戏玩法 & 指令（已合并为一个弹窗）
+        gui.show_tutorial(player)                   -- 第一个按钮：纯玩法&指令说明文字
+    elseif name == 'wn_btn_actions' then
+        gui.show_actions(player)                    -- 第二个按钮：所有功能按钮（面板/投票/预览/排行/自杀/前往/起始星球）
     elseif name == 'wn_btn_skills' then
         commands.show_panel(player)                 -- 点角色面板按钮 = 弹出角色面板（同 /inspect 自己）
     elseif name == 'wn_panel_others' then

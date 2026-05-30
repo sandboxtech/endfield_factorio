@@ -356,7 +356,7 @@ function M.set_home_planet(player, planet)
     storage.respawn_surface = storage.respawn_surface or {}
     storage.respawn_surface[player.name] = planet
     player.print({'wn.home-set', planet})
-    gui.show_tutorial(player)   -- 重开弹窗 → 当前起始星球按钮标 ✓
+    gui.show_actions(player)   -- 重开功能弹窗 → 当前起始星球按钮标 ✓
 end
 
 -- 投跃迁票（vote='agree'/'oppose'，等同 /跃迁 /停留）并结算广播。

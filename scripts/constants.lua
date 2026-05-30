@@ -100,7 +100,6 @@ function M.ensure_defaults()
         enemy_death_push_minutes = 1,     -- 被敌方打死时本轮跃迁倒计时提前的分钟数
         warp_vote_divisor = 5,            -- 跃迁投票阈值除数：净同意 > ceil(在线人数/此值) 才推进（5=1/5，越大越易过）
         travel_enabled = false,           -- 前往星球【总开关】（默认关）。开启：/c storage.travel_enabled=true。开启后每轮每个外星球还要各自过 travel_chance。
-        travel_chance = 0.3,              -- 每次跃迁，每个【外星球】独立 30% 概率本轮开放前往（母星恒开）。见 reset 滚定 storage.travel_open。
         action_cd_minutes = 3,            -- 投票+传送共享冷却（分钟），防止玩家频繁刷动作
     }
     for k, v in pairs(d) do
@@ -119,6 +118,12 @@ function M.ensure_defaults()
     }
     for pack, m in pairs(warp_ext) do
         if storage.warp_extend_minutes[pack] == nil then storage.warp_extend_minutes[pack] = m end
+    end
+    -- 每个【外星球】单独的开放概率：每次跃迁各自掷一次决定本轮能否前往（"外星来人帮忙"）。
+    -- 缺失才补 → 保留管理员 /c 的单独调整。热改示例：/c storage.travel_chance['fulgora'] = 0.6
+    storage.travel_chance = storage.travel_chance or {}
+    for _, p in ipairs({'vulcanus', 'gleba', 'fulgora', 'aquilo'}) do
+        if storage.travel_chance[p] == nil then storage.travel_chance[p] = 0.3 end
     end
     -- 必需表（累积数据 / 每星球状态 / 运行时缓存），缺失则建空表。
     -- 这是所有 storage 表的【唯一出生地】，各模块不再各自 `storage.x = storage.x or {}`，统一在此补齐。

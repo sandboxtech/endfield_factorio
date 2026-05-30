@@ -33,6 +33,7 @@ function M.player_gui(player)
     --   玩法&指令（弹窗）  |间隔|  角色面板 / 跃迁(投同意✓) / 停留(投反对✗)。
     for _, b in ipairs({
         {name = 'wn_btn_gameplay', sprite = 'virtual-signal/signal-info',  tip = {'wn.btn-gameplay-tip'}},
+        {name = 'wn_btn_actions',  sprite = 'item/blueprint-book',  tip = {'wn.btn-actions-tip'}},
         -- {spacer = true},
         {name = 'wn_btn_skills',          sprite = 'entity/character',            tip = {'wn.skills-btn-tip'}},
         {name = 'wn_btn_warp',     sprite = 'virtual-signal/signal-trash-bin',  tip = {'wn.btn-warp-tip'}},
@@ -127,8 +128,8 @@ function M.show_intro(player)
     M.show_popup(player, {'wn.intro-title'}, {{'description', ''}})
 end
 
--- 弹出【游戏玩法 & 指令】（玩法与指令两个按钮已合并为一个弹窗）：
---   玩法机制段（参数：起步分钟/飞船寿命由 storage 实时填入）+ 控制台指令段；会员/管理员再追加会员指令段。
+-- 弹出【游戏玩法 & 指令】（HUD 第一个按钮）：纯【说明文字】——玩法机制段 + 会员指令段（会员/管理员可见）。
+-- 功能按钮已拆到独立的 show_actions（HUD 第二个按钮）。
 function M.show_tutorial(player)
     local lines = {
         {'wn.guide-gameplay', storage.warp_initial_minutes or 10, storage.platform_lifetime or 10},
@@ -137,11 +138,16 @@ function M.show_tutorial(player)
         lines[#lines + 1] = ''
         lines[#lines + 1] = {'wn.tutorial-member'}   -- 会员/管理：仍是控制台指令（无按钮）
     end
-    lines[#lines + 1] = ''
-    lines[#lines + 1] = {'wn.other-buttons-header'}   -- 末尾"功能按钮"小标题，下面是真按钮
+    M.show_popup(player, {'wn.tutorial-title'}, lines)
+end
+
+-- 弹出【功能按钮】（HUD 第二个按钮）：把原先挤在教程弹窗末尾的一堆操作按钮单独成窗。
+--   角色面板 / 跃迁(✓) / 停留(✗) / 预览 / 上局排行 / 自杀脱困 + 前往星球（按本轮开放置灰）+ 起始星球（当前标 ✓）。
+function M.show_actions(player)
+    if not player then return end
     -- 真按钮：name 复用 HUD 同名按钮 或 wn_act_* / tags，点击经 tick.on_gui_click 路由到 commands.* 。
     local buttons = {
-        {name = 'wn_btn_skills',          caption = {'wn.act-panel'}},
+        {name = 'wn_btn_skills',   caption = {'wn.act-panel'}},
         {name = 'wn_btn_warp',     caption = {'wn.act-warp'}},
         {name = 'wn_btn_stay',     caption = {'wn.act-stay'}},
         {name = 'wn_act_preview',  caption = {'wn.act-preview'}},
@@ -162,7 +168,7 @@ function M.show_tutorial(player)
         buttons[#buttons + 1] = {name = 'wn_act_home_' .. p,
             caption = {p == home and 'wn.act-home-cur' or 'wn.act-home', p}, tags = {wn_home = p}}
     end
-    M.show_popup(player, {'wn.tutorial-title'}, lines, buttons, true)
+    M.show_popup(player, {'wn.actions-title'}, {}, buttons)
 end
 
 function M.close_popup(player)

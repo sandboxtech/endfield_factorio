@@ -166,7 +166,7 @@ function M.reset()
 
     -- 科技进度全部清零，不再保留无限科技 level
     force.reset()
-    force.friendly_fire = true
+    force.friendly_fire = false   -- 禁止友军伤害：玩家的武器/爆炸不再伤到自家(同 force)建筑与队友
 
     -- 每次跃迁后自动解锁所有星球：无需研究 planet-discovery 科技即可前往。
     -- 必须放在 force.reset() 之后，reset 会清空科技/解锁状态，先解锁会被冲掉。
@@ -188,11 +188,12 @@ function M.reset()
     storage.warp_vote = {}        -- 新世界清空跃迁投票（上一世界的同意/反对作废）
     storage.warp_vote_delta = nil -- 投票缩减量作废（warp_hours 已重置，无可恢复）
 
-    -- 本轮【能否前往各外星球】独立滚定：母星恒开，其余 4 星各自 travel_chance(默认30%) 概率开放。
+    -- 本轮【能否前往各外星球】独立滚定：母星恒开，其余 4 星各自按 storage.travel_chance[星球](默认30%) 概率开放。
     -- 仅 travel_enabled 总开关开启时这套才生效（见 commands.travel / gui 按钮）。
     storage.travel_open = {nauvis = true}
+    local tc = storage.travel_chance or {}
     for _, planet in ipairs({'vulcanus', 'gleba', 'fulgora', 'aquilo'}) do
-        storage.travel_open[planet] = math.random() < (storage.travel_chance or 0.3)
+        storage.travel_open[planet] = math.random() < (tc[planet] or 0.3)
     end
     storage.chat_bubble = {} -- 清空聊天气泡引用（角色已死、气泡已随之销毁，避免残留无效引用）
 

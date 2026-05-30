@@ -503,7 +503,7 @@ end
 local function place_filled_chest(surface, pos, chest_name, n, weights, exp, kinds)
     if not surface.can_place_entity{name = chest_name, position = pos} then return end
     local chest = surface.create_entity{name = chest_name, force = 'neutral', position = pos}
-    if chest then fill_loot(chest, n, weights, exp, kinds) end
+    if chest then chest.destructible = false; fill_loot(chest, n, weights, exp, kinds) end   -- 不可摧毁（防 fulgora 闪电/火炮劈烂）
 end
 
 -- 区块级确定性随机 [0,1)：点状稀有风味用。
@@ -533,6 +533,7 @@ local function feat_material(surface, lt)
     local chest = surface.create_entity{name = 'steel-chest', force = 'neutral', position = pos}
     local inv = chest and chest.get_inventory(defines.inventory.chest)
     if not inv then return end
+    chest.destructible = false   -- 不可摧毁（防 fulgora 闪电/火炮劈烂）
     -- 选 1~3 种材料（无效名跳过）
     local kinds = {}
     for _ = 1, math.random(1, 3) do
@@ -590,7 +591,7 @@ local function feat_treasure(surface, lt)
         if surface.can_place_entity{name = 'wooden-chest', position = pos} then
             local chest = surface.create_entity{name = 'wooden-chest', force = 'neutral', position = pos}
             local inv = chest and chest.get_inventory(defines.inventory.chest)
-            if inv then fill_treasure_chest(inv) end
+            if inv then chest.destructible = false; fill_treasure_chest(inv) end   -- 不可摧毁（防 fulgora 闪电/火炮劈烂）
         end
     end
 end
