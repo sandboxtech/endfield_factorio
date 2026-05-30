@@ -231,6 +231,12 @@ script.on_event(defines.events.on_gui_click, events.safe('gui_click', function(e
         gui.show_tutorial(player)                   -- 第一个按钮：纯玩法&指令说明文字
     elseif name == 'wn_btn_actions' then
         gui.show_actions(player)                    -- 第二个按钮：所有功能按钮（面板/投票/预览/排行/自杀/前往/起始星球）
+    elseif name == 'wn_admin_gen' then
+        commands.admin_gen(player)                  -- 管理员红按钮：各星生成 debug
+    elseif name == 'wn_admin_diff' then
+        commands.admin_diff(player)                 -- 管理员红按钮：ensure_defaults + 参数对比
+    elseif name == 'wn_admin_players' then
+        commands.admin_players_gui(player)          -- 管理员红按钮：刷新玩家 HUD
     elseif name == 'wn_btn_skills' then
         commands.show_panel(player)                 -- 点角色面板按钮 = 弹出角色面板（同 /inspect 自己）
     elseif name == 'wn_panel_others' then

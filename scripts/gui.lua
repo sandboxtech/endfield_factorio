@@ -46,6 +46,18 @@ function M.player_gui(player)
         end
     end
 
+    -- 管理员专属【红按钮】：仅管理员可见可点（普通玩家不创建 → 看不到）。点击经 tick.on_gui_click 路由到 commands.admin_*。
+    if player.admin then
+        player.gui.top.add{type = 'empty-widget'}.style.width = 12
+        for _, b in ipairs({
+            {name = 'wn_admin_gen',     caption = 'GEN',   tip = {'wn.admin-gen-tip'}},
+            {name = 'wn_admin_diff',    caption = 'DIFF',  tip = {'wn.admin-diff-tip'}},
+            {name = 'wn_admin_players', caption = '玩家',  tip = {'wn.admin-players-tip'}},
+        }) do
+            player.gui.top.add{type = 'button', name = b.name, caption = b.caption, tooltip = b.tip, style = 'red_button'}
+        end
+    end
+
     -- 世界轮次 + 跃迁倒计时合并标签【放最后】：随轮次/时间变长，放末尾才不挤动前面的按钮。
     -- 用 button（label 不触发 on_gui_click）：悬停显示简介，点击弹出简介窗口（tick.on_gui_click → show_intro）。
     -- 倒计时每分钟由 refresh_countdown 刷新 caption。
