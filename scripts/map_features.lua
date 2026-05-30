@@ -222,7 +222,7 @@ local LOOT = {
     }},
     -- 太空/平台
     {cat = 'space',      items = {
-        'space-platform-starter-pack',                                                 -- 平台起步包
+        'space-platform-starter-pack', 'rocket-part',                                 -- 平台起步包
         'foundation',  'space-platform-foundation',  'ice-platform',                   -- 平台地基
         'cargo-bay',  'cargo-landing-pad',  'asteroid-collector',  'thruster',          -- 平台部件
     }},
@@ -258,7 +258,7 @@ local LOOT_WEIGHTS = {
 -- 奖励发放，宝箱再给等于重复 → 移除。不放科技瓶(瓶子走科技瓶经验体系，不作宝箱奖励)。
 -- (mech-armor/power-armor-mk2/spidertron/tank 已归 equipment，beacon 归 production)
 local TREASURE_POOL = {
-    'rocket-fuel', 'processing-unit','low-density-structure',   
+    'rocket-fuel', 'processing-unit','low-density-structure', 'rocket-part',
     'productivity-module-2', 'speed-module-2', 'efficiency-module-2', 'quality-module-2',  -- 顶级插件
     'productivity-module-3', 'speed-module-3', 'efficiency-module-3', 'quality-module-3',  -- 顶级插件
     'rocket-silo',

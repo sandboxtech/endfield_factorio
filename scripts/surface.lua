@@ -394,8 +394,8 @@ script.on_event(defines.events.on_surface_cleared, function(event)
     storage.ground_tint[surface.name] = nil
     local bt = constants.balance.ground_tint
     if math.random() < (bt.base + bt.exotic * knobs.exotic) * prob('ground_tint') then
-        -- alpha 很关键：大概率淡染、小概率浓染（立方偏小 + 长尾），[0.05,0.50]，多半 ~0.05–0.13。
-        local a = 0.02 + (math.random() ^ 3) * 0.68
+        -- alpha 很关键：大概率很淡、小概率稍浓（偏小 + 长尾），范围 [0.02,0.32]，多半 ~0.02–0.06。
+        local a = 0.02 + (math.random() ^ 5) * 0.60
         -- 颜色：色相【纯随机】；饱和度/明度大概率在好看区间，极小概率(8%)放飞到离谱(近灰/死黑/荧光)。
         local h = math.random()
         local s = band_or_wild(0.55, 1.0, 0.08)
@@ -701,17 +701,14 @@ script.on_event(defines.events.on_chunk_generated, function(event)
     end
 
     -- 染地世界：本轮该表面若被选中，在地面层盖一张缩放到整块(32×32)的半透明染色精灵。
-    -- 不改地块本身，只改观感。仅圆内区块绘制（圆外多是虚空，跳过省开销）。
+    -- 不改地块本身，只改观感。【每个区块都画，圆外虚空也染】→ 整张地图(含虚空环)染色一致。
     local gt = storage.ground_tint and storage.ground_tint[surface.name]
     if gt then
-        local cx, cy = left_top.x + 16, left_top.y + 16
-        if cx * cx + cy * cy <= r * r then
-            rendering.draw_sprite{
-                sprite = 'tile/lab-dark-2', x_scale = 32, y_scale = 32,
-                target = {cx, cy}, surface = surface,
-                tint = gt, render_layer = 'ground-layer-1',
-            }
-        end
+        rendering.draw_sprite{
+            sprite = 'tile/lab-dark-2', x_scale = 32, y_scale = 32,
+            target = {left_top.x + 16, left_top.y + 16}, surface = surface,
+            tint = gt, render_layer = 'ground-layer-1',
+        }
     end
     -- 注意：不要在这里刷 GUI。区块生成极高频（每轮跃迁成百上千次），
     -- HUD 不依赖区块，刷新由 reset/玩家事件触发即可。

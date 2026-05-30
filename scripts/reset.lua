@@ -48,6 +48,16 @@ function M.reset()
     storage.run = (storage.run or 0) + 1
     player_stats.bump_connected('warps')   -- 给当前在线玩家各记一次"经历的跃迁"
 
+    -- 跃迁时：人物等级(=floor√在线分钟) ≥ 50 的【在线】玩家自动成为会员（会员名单按玩家名存，见 commands.is_member）。
+    storage.members = storage.members or {}
+    for _, player in pairs(game.connected_players) do
+        local om = player_stats.get(player.index).online_minutes or 0
+        if respawn_gifts.coin_reward(om) >= 50 and not storage.members[player.name] then
+            storage.members[player.name] = true
+            game.print({'wn.member-granted', player.name})
+        end
+    end
+
     local last_run_ticks = (game.tick - (storage.run_start_tick or game.tick))
     game.print({'wn.warp-success-time',
                 math.floor(last_run_ticks / constants.hour_to_tick),
@@ -175,6 +185,7 @@ function M.reset()
     -- storage.warp_extend_minutes 各自延长。内部以小时记账，故 /60。
     storage.warp_hours = (storage.warp_initial_minutes or 10) / 60
     storage.warp_vote = {}   -- 新世界清空跃迁投票（上一世界的同意/反对作废）
+    storage.chat_bubble = {} -- 清空聊天气泡引用（角色已死、气泡已随之销毁，避免残留无效引用）
 
     -- 飞船全部瞬移回母星轨道并暂停；顺带清空各平台 surface 上的所有陨石(asteroid + asteroid-chunk)，
     -- 避免上一轮飞来的陨石跨轮残留/继续砸船。
