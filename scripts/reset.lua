@@ -12,18 +12,20 @@ local M = {}
 
 -- ── 飞船命数前缀（剩余跃迁次数的可视化）─────────────────────────────────────
 local HEART = '[img=virtual-signal/signal-heart]'
--- 数字 → parameter 物品图标串（逐位）：4 → [item=parameter-4]；10 → [item=parameter-1][item=parameter-0]。
+-- 数字 → parameter 物品图标串（逐位，用 img= 形式）：4 → [img=item/parameter-4]；10 → [img=item/parameter-1][img=item/parameter-0]。
 -- 最多两位（parameter 图标只有 0~9）；>99 一律按 99 显示。
 local function life_prefix(n)
     if n > 99 then n = 99 end
     local s, out = tostring(n), {}
-    for i = 1, #s do out[i] = '[item=parameter-' .. s:sub(i, i) .. ']' end
+    for i = 1, #s do out[i] = '[img=item/parameter-' .. s:sub(i, i) .. ']' end
     return table.concat(out) .. HEART
 end
 -- 反复剥掉船名开头的【命数(parameter)/心】前缀，以及老存档遗留的【骷髅】串 → 得到纯船名。
 local function strip_life_prefix(name)
     local pats = {
-        '^%[img=parameter%/%d+%]',
+        '^%[img=item/parameter%-%d%]',               -- 命数数字：life_prefix 产出并被引擎规范化后的 [img=item/parameter-N]（用 img= 而非 item=，否则剥不掉 → 每轮累加）
+        '^%[item=parameter%-%d%]',                   -- 兼容：万一某处仍是 [item=parameter-N] 未规范化
+        '^%[img=parameter%/%d+%]',                   -- 兼容更老格式
         '^%[img=virtual%-signal/signal%-heart%]',
         '^%[img=virtual%-signal/signal%-skull%]',   -- 兼容旧版累积的骷髅前缀
     }
@@ -165,6 +167,9 @@ function M.reset()
         local tech = force.technologies['planet-discovery-' .. planet]
         if tech then tech.researched = true end
     end
+
+    -- （科技世界已并入事件世界：tech 现作为事件类型之一，由 surface.lua 的事件世界 roll 按星球抽中、
+    --   tick.lua 的 run_world_events 按事件机制每分钟触发，不再这里单独全局 roll。）
 
     -- 跃迁倒计时重置为初始值（storage.warp_initial_minutes 分钟，可 /c 热改）；研究科技瓶科技按
     -- storage.warp_extend_minutes 各自延长。内部以小时记账，故 /60。

@@ -267,7 +267,7 @@ local function warp_vote_eval()
     local threshold = math.ceil(n / (storage.warp_vote_divisor or 5))   -- 默认 1/5，可 /c storage.warp_vote_divisor 热改
     local net = agree - oppose
     game.print({'wn.warp-vote-status', agree, oppose, net, threshold})
-    if net > threshold then
+    if net >= threshold then   -- 达到阈值即过（含单人/少数人：threshold 最低为 1，1 净同意即可）
         local last = game.tick - (storage.run_start_tick or game.tick)
         local remain = (storage.warp_hours or 1) * constants.hour_to_tick - last
         local target = (storage.warp_vote_target_minutes or 5) * constants.min_to_tick   -- 目标剩余分钟（可 /c 热改）

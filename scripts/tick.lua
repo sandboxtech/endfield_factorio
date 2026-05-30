@@ -9,6 +9,9 @@ local util = require('scripts.util')
 local gui = require('scripts.gui')
 local events = require('scripts.events')
 
+-- 前向声明：科技世界的"得到科技"helper，下方虫巢死亡 1% 奖励与 WORLD_EVENTS 也用它（定义在文件后半）。
+local grant_random_tech
+
 -- 消灭虫巢(unit-spawner)：原地爆少量随机科技瓶 + 金币（落地可捡）。on_entity_died 高频 → 先按类型早退；
 -- 走事件总线，不与 world_fx 的 on_entity_died 互相覆盖。多人各端确定性一致（死亡事件+math.random 同步）。
 events.on(defines.events.on_entity_died, function(e)
@@ -19,6 +22,11 @@ events.on(defines.events.on_entity_died, function(e)
     for _ = 1, math.random(1, 2) do
         local pack = constants.science_packs[math.random(#constants.science_packs)]
         surface.spill_item_stack{position = pos, stack = {name = pack, count = math.random(1, 6)}, enable_looted = true}
+    end
+    -- 【玩家】亲手消灭虫巢：1% 概率触发"获得科技"（随机解锁一个未研究科技），全服广播。
+    local cause = e.cause
+    if cause and cause.valid and cause.type == 'character' and math.random() < 0.01 then
+        grant_random_tech()
     end
 end)
 
@@ -140,6 +148,28 @@ local WORLD_EVENTS = {
             }
         end
     end,
+    -- tech 科技世界（对全 force，忽略落点/玩家/危险度）：从【所有科技】(排除星球发现科技)随机抽一个，
+    -- 不看是否已研究——已研究则以 tech_world_lose_chance 概率【失去】，未研究则以 tech_world_gain_chance 概率【得到】。
+    tech = function()
+        local force = game.forces.player
+        local pool = {}
+        for _, t in pairs(force.technologies) do
+            if t.enabled and string.sub(t.name, 1, 16) ~= 'planet-discovery' then pool[#pool + 1] = t end
+        end
+        if #pool == 0 then return end
+        local t = pool[math.random(#pool)]
+        if t.researched then
+            if math.random() < (storage.tech_world_lose_chance or 0.25) then
+                t.researched = false
+                game.print({'wn.tech-lose', t.localised_name})
+            end
+        else
+            if math.random() < (storage.tech_world_gain_chance or 0.5) then
+                t.researched = true
+                game.print({'wn.tech-gain', t.localised_name})
+            end
+        end
+    end,
 }
 
 -- 每分钟事件世界：先用【全局固定概率 storage.event_chance】判定这一分钟全服是否发生事件；
@@ -189,6 +219,22 @@ end)
 -- 撤离提醒触发的分钟数集合：最后 1/3/5/10/20/30 分钟，以及之前每整点小时。
 local warn_minutes = {[1] = true, [3] = true, [5] = true, [10] = true, [20] = true, [30] = true}
 
+-- "得到科技"：从所有【已启用且未研究】科技(排除星球发现科技)里随机抽一个直接研究(不看前置)并广播全服。
+-- 供科技世界 gain 与"消灭虫巢 1% 奖励"复用。脚本设 researched 触发的是 by_script 事件，research.lua 早退 → 不改跃迁倒计时。
+function grant_random_tech()
+    local force = game.forces.player
+    local pool = {}
+    for _, tech in pairs(force.technologies) do
+        if tech.enabled and not tech.researched and string.sub(tech.name, 1, 16) ~= 'planet-discovery' then
+            pool[#pool + 1] = tech
+        end
+    end
+    if #pool == 0 then return end
+    local tech = pool[math.random(#pool)]
+    tech.researched = true
+    game.print({'wn.tech-gain', tech.localised_name})
+end
+
 -- 每分钟统一处理：在线时长采样 + 跃迁倒计时 + 撤离提醒。
 -- （player_stats 不再单独注册 on_nth_tick，统一在此调度，避免后注册者覆盖前者。）
 script.on_nth_tick(60 * 60, function()
@@ -202,6 +248,8 @@ script.on_nth_tick(60 * 60, function()
             if main then main.insert{name = 'coin', count = 1} end
         end
     end
+
+    -- （科技世界已并入事件世界：tech 作为 WORLD_EVENTS 的一种，由 run_world_events 统一按事件机制触发，此处不再单独判定。）
 
     -- 刷新顶部跃迁倒计时标签（精确到分钟，每分钟一次）。
     gui.refresh_countdown()

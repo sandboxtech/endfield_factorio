@@ -477,7 +477,7 @@ script.on_event(defines.events.on_surface_cleared, function(event)
         -- 只从【已启用】的事件类型里【按权重】滚（false 排除；权重见 balance.event.weights，缺省 1，drones 更低 → 更罕见）
         local weights = constants.balance.event.weights or {}
         local pool, total = {}, 0
-        for _, et in ipairs({'raid', 'meteor', 'supply', 'coinfall', 'drones', 'barrage'}) do
+        for _, et in ipairs({'raid', 'meteor', 'supply', 'coinfall', 'drones', 'barrage', 'tech'}) do
             if storage.event_types[et] ~= false then   -- nil/true 启用，仅显式 false 排除
                 local w = weights[et] or 1
                 pool[#pool + 1] = {et = et, w = w}
@@ -593,18 +593,8 @@ script.on_event(defines.events.on_surface_cleared, function(event)
     end
 
     surface.map_gen_settings = mgs
-
-    -- 在出生点放金币市场：5 个星球（母星 + 其余 4 个，凡 PLANET_GEN 有配置的）都放同一个市场。
-    -- 飞船平台等 cfg 为 nil → 不放。此时 surface.clear 已结算，放置的实体不会再被清掉。
-    if cfg then
-        market.place_on_surface(surface.name)
-    end
-
-    -- 仅母星预先 chart 一块区域，方便玩家落地后立刻看清周围地形（半径约 128）
-    if surface == game.surfaces.nauvis then
-        local radius = 128
-        game.forces.player.chart(game.surfaces.nauvis, {{x = -radius, y = -radius}, {x = radius, y = radius}})
-    end
+    -- 市场不在这里放（出生区块此刻尚未生成）：改由下方 on_chunk_generated 在出生区块自然生成时惰性放置，
+    -- 避免强制生成区块。chart 同理改到出生区块生成后（见 on_chunk_generated 母星分支）。
 end)
 
 -- 圆形地图：超出半径的格子全部铺成虚空。
@@ -637,6 +627,25 @@ script.on_event(defines.events.on_chunk_generated, function(event)
     -- 放在铺虚空【之后】，can_place_entity 自动跳过虚空/水/障碍。generate 内部按 PLANET[表面名]
     -- 自行判断，未定义的表面（飞船平台）直接跳过。详见 scripts/map_features.lua。
     map_features.generate(surface, left_top)
+
+    -- 惰性放置出生点市场（母星 + 其余 4 个星球，凡 PLANET_GEN 有配置）：当出生点附近区块生成时尝试放，
+    -- 每轮每星只放一次（成功才记 storage.market_run，否则邻块生成时重试）。不再强制生成区块。
+    if PLANET_GEN[surface.name] then
+        storage.market_run = storage.market_run or {}
+        if storage.market_run[surface.name] ~= storage.run then
+            local s = game.forces.player.get_spawn_position(surface)
+            -- 本区块在出生点周围 3×3 区块范围内才尝试（块中心距出生点 ≤48 格）
+            if math.abs((left_top.x + 16) - s.x) <= 48 and math.abs((left_top.y + 16) - s.y) <= 48 then
+                if market.place_on_surface(surface.name) then
+                    storage.market_run[surface.name] = storage.run
+                    -- 母星：市场就绪后顺带 chart 出生点 ±128，落地即看清地形
+                    if surface == game.surfaces.nauvis then
+                        game.forces.player.chart(surface, {{x = -128, y = -128}, {x = 128, y = 128}})
+                    end
+                end
+            end
+        end
+    end
 
     -- tile 替换：本轮该表面每条规则，把匹配到的源 tile 按 mask 换成目标 tile。圆外已是虚空、不匹配。
     -- mask=all 整片；noise 平滑噪声区；tree/rock/ore 跟随原生树/石/矿分布（在其 tile 及邻近替换）。

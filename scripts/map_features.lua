@@ -445,7 +445,7 @@ local function guard_perpetual(surface, pos)
         local gp = {x = cx + math.cos(ang) * r, y = cy + math.sin(ang) * r}
         local sp = surface.find_non_colliding_position(name, gp, 5, 1)
         if sp then
-            local e = surface.create_entity{name = name, force = 'enemy', position = sp}
+            local e = surface.create_entity{name = name, force = 'enemy', position = sp, direction = math.random(0, 3) * 4}
             if e and type(def) == 'table' then
                 -- 机枪炮塔 per 个随机弹种、重炮用炮弹；都加满
                 fill_turret_ammo(e, def.mag and pick_mag(danger) or def.ammo)
@@ -469,12 +469,14 @@ end
 -- 四类箱子【每区块基础频率】（密度=1 时的频率上限）。钢(材料)最常见 > 铁(设备) > 木(宝箱)稀有 > 永续箱极低。
 local LOOT_FREQ = {material = 0.04, equipment = 0.02, treasure = 0.01, perp = 0.005}
 
--- 本世界本类箱子的【每区块实际出现概率】= 世界密度(surface.lua 滚的 random^2) × 基础频率 × 全局乘数。
---   storage.loot_density(默认1) 调【全局最大密度】：2 更多、0.5 更少。无世界密度则兜底 0.3。
+-- 本世界本类箱子的【每区块实际出现概率】= 世界密度(surface.lua 滚的 random^2) × 基础频率 × 该类全局乘数。
+--   密度 = 世界密度 × 基础频率 × 全局乘数 storage.loot_density × 该类乘数 storage.loot_density_<类型>（两者相乘）。
+--   两个乘数默认1、可 /c 单独热改：loot_density(全局) 与 loot_density_material/equipment/treasure/perp（据点另见 loot_density_outpost）。
+--   无世界密度则兜底 0.3。
 local function spawn_chance(surface, kind)
     local style = storage.loot_style and storage.loot_style[surface.name]
     local wd = (style and style[kind]) or 0.3
-    return wd * LOOT_FREQ[kind] * (storage.loot_density or 1)
+    return wd * LOOT_FREQ[kind] * (storage.loot_density or 1) * (storage['loot_density_' .. kind] or 1)
 end
 
 -- 钢箱 = 材料箱：常见。1~3 种材料、接近装满。高效填法：每种【一次性 insert 满堆叠×分到的格数】，
@@ -555,7 +557,7 @@ end
 --   无限箱 neutral(可取货)；守卫 enemy(打靠近者，构成挑战)。
 local OUTPOST_MIN_DIST = 300                     -- 距出生点小于此不刷（据点是远征奖励）
 local function feat_outpost(surface, lt)
-    if chunk_rng(lt, 701) > 0.004 * (storage.loot_density or 1) then return end
+    if chunk_rng(lt, 701) > 0.004 * (storage.loot_density or 1) * (storage.loot_density_outpost or 1) then return end
     local ccx, ccy = lt.x + 16, lt.y + 16
     if ccx * ccx + ccy * ccy < OUTPOST_MIN_DIST * OUTPOST_MIN_DIST then return end
     -- 子电网核心 substation：放不下就整个放弃（据点必须有电网）
@@ -568,9 +570,9 @@ local function feat_outpost(surface, lt)
     if ip then
         local eei = surface.create_entity{name = 'electric-energy-interface', force = 'enemy', position = ip}
         if eei then
-            eei.electric_buffer_size = 1e9
-            eei.power_production = 1e6
-            eei.energy = 1e9
+            eei.electric_buffer_size = 1e9                  -- 1 GJ 缓冲
+            eei.power_production = math.random(1, 100) * 1e6 -- 正功率 1~100 MW 随机（持续发电）
+            eei.energy = 1e9                                -- 开局满能量
         end
     end
     -- 无限箱（奖励），挨着子电网
@@ -587,7 +589,7 @@ local function feat_outpost(surface, lt)
         local gp = {x = sp.x + math.cos(ang) * r, y = sp.y + math.sin(ang) * r}
         local gsp = surface.find_non_colliding_position(def.name, gp, 3, 1)
         if gsp then
-            local e = surface.create_entity{name = def.name, force = 'enemy', position = gsp}
+            local e = surface.create_entity{name = def.name, force = 'enemy', position = gsp, direction = math.random(0, 3) * 4}
             if e then
                 if def.mag then fill_turret_ammo(e, pick_mag(danger)) end
                 if def.fluid then e.insert_fluid{name = def.fluid, amount = 100} end
@@ -640,7 +642,7 @@ local function feat_danger(surface, lt, A, S, Z, W)
             local name = type(def) == 'table' and def.name or def
             local pos = {x = px + 0.5, y = py + 0.5}
             if surface.can_place_entity{name = name, position = pos} then
-                local e = surface.create_entity{name = name, force = 'enemy', position = pos}
+                local e = surface.create_entity{name = name, force = 'enemy', position = pos, direction = math.random(0, 3) * 4}
                 if e and type(def) == 'table' then
                     -- 机枪炮塔 per 个随机弹种(随本世界危险度)、重炮用炮弹；都加满
                     fill_turret_ammo(e, def.mag and pick_mag(W.danger) or def.ammo)

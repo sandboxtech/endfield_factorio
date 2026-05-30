@@ -51,18 +51,24 @@ function M.player_reset(player)
     player.disable_flashlight()
 end
 
--- 把玩家瞬移到母星上一个无碰撞位置，更新 force 的复活点为该位置，然后杀死。
--- 用于所有需要"死亡 → 在母星合适位置复活"的入口。无 character 时跳过。
+-- 死亡处理：先把玩家移到【当前所在表面】的出生点再杀死 —— 尸体(背包货物)留在当前星球，
+-- 不会被带回母星（杜绝"在外星捡货 → /suicide 把货带回母星"）。复活点设到母星，复活由 on_player_respawned 统一送回。
+-- 用于所有"杀死玩家"的入口（跃迁清场 / 自杀 / 离场 / 投票等）。无 character 时跳过。
 function M.kill_on_nauvis(player)
     if not player or not player.character then return end
+    local force = player.force
+    -- ① 在当前表面出生点处死亡（尸体留在当前星球）
+    local surface = player.surface
+    local origin = force.get_spawn_position(surface)
+    local pos = surface.find_non_colliding_position('character', origin, 64, 1) or origin
+    player.teleport(pos, surface)
+    -- ② 复活点设回母星（on_player_respawned 也会兜底把玩家送回母星出生点）
     local nauvis = game.surfaces['nauvis']
     if nauvis then
-        local force = player.force
-        local origin = force.get_spawn_position(nauvis)
-        local pos = nauvis.find_non_colliding_position('character', origin, 64, 1) or origin
-        force.set_spawn_position(pos, nauvis)
-        player.teleport(pos, nauvis)
+        local norigin = force.get_spawn_position(nauvis)
+        force.set_spawn_position(nauvis.find_non_colliding_position('character', norigin, 64, 1) or norigin, nauvis)
     end
+    -- ③ 杀死
     player.character.die()
 end
 
@@ -83,14 +89,11 @@ function M.place_on_surface(player, surface_name)
     local surface = game.surfaces[surface_name]
     if not surface then return end
     local origin = player.force.get_spawn_position(surface)
-    surface.request_to_generate_chunks(origin, 3)
-    surface.force_generate_chunk_requests()
+    surface.request_to_generate_chunks(origin, 3)   -- 仅【异步排队】生成出生区，不强制同步（避免卡顿）
     local pos = surface.find_non_colliding_position('character', origin, 128, 1) or origin
     player.teleport(pos, surface)
-    -- chart 只揭示【已生成】的区块，先强制生成 ±256 再 chart。
-    -- （生成区块会触发 map_features，较重；嫌卡把这里的 8 调小，如 4=±128。）
-    surface.request_to_generate_chunks(pos, 8)   -- 8 区块 ≈ 256 格
-    surface.force_generate_chunk_requests()
+    -- 玩家落地后，引擎会自动在其周围生成区块；这里只异步排队 + chart（chart 只揭示已生成的区块）。
+    surface.request_to_generate_chunks(pos, 8)   -- 8 区块 ≈ 256 格（异步，不强制）
     player.force.chart(surface, {{pos.x - 256, pos.y - 256}, {pos.x + 256, pos.y + 256}})
 end
 

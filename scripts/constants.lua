@@ -32,12 +32,12 @@ local M = {
     -- 纯表现性的内部曲线（染地 alpha 立方、noise threshold、亮度/昼夜抖动）留在 surface.lua 原地。
     balance = {
         -- 各变体【出现概率】（再乘动态乘数 storage.prob_xxx）
-        ground_tint = {base = 0.06, exotic = 0.25},   -- 出现率 = base + exotic × knobs.exotic
-        tile_remap  = {base = 0.5,  exotic = 0.4},    -- 出现率 = base + exotic × knobs.exotic
+        ground_tint = {base = 0.1, exotic = 0.25},   -- 出现率 = base + exotic × knobs.exotic
+        tile_remap  = {base = 0.6,  exotic = 0.3},    -- 出现率 = base + exotic × knobs.exotic
         -- 源天然自限（find 只命中该星球实际存在的障碍），目标跨类/跨星球 → 概率可放高，不会误伤。
         tree_remap     = {base = 0.60},               -- 【已并入 obstacle_remap】保留仅为兼容，未再使用
         obstacle_remap = {base = 0.60},               -- 统一障碍互换世界出现率（树/石/遗迹/冰山/叠层岩跨类，噪声门控）
-        fluid_remap    = {base = 0.12},               -- 流体资源互换世界出现率（原油/锂卤水/氟喷口/硫酸喷泉 整星换成另一种喷口，小概率）
+        fluid_remap    = {base = 0.24},               -- 流体资源互换世界出现率（原油/锂卤水/氟喷口/硫酸喷泉 整星换成另一种喷口，小概率）
         -- 出现率 = base；选中哪种事件按 weights 加权(缺省 1)，drones 更低 → 无人机世界更罕见
         event       = {base = 0.1, weights = {drones = 0.3}},
         -- tile 替换内部权重
@@ -77,8 +77,17 @@ function M.ensure_defaults()
         prob_danger = 1,                  -- 危险世界
         prob_event = 1,                   -- 每分钟事件世界
         danger_density = 1,               -- 危险世界里敌人/残骸的密度
-        loot_density = 1,                  -- 战利品箱(物资/宝/永续)全局密度乘数：2 更多、0.5 更少
+        -- 战利品密度：全局乘数 × 各类乘数（相乘共同影响）。默认全 1，可 /c 单独热改：2 更多、0.5 更少、0 不刷。
+        loot_density           = 1,        -- 全局总乘数（对所有类型一起生效）
+        loot_density_material  = 1,        -- 钢箱（材料）
+        loot_density_equipment = 1,        -- 铁箱（设备）
+        loot_density_treasure  = 1,        -- 木箱（宝箱）
+        loot_density_perp      = 1,        -- 永续（无底）箱
+        loot_density_outpost   = 1,        -- 远征防御据点（无限箱+守卫）
         event_chance = 0.5,               -- 每分钟【全服】发生一次世界事件的固定概率（与人数无关；命中后随机挑 1 名玩家）
+        -- 科技世界(事件世界的一种)：每次从所有科技随机抽一个——
+        tech_world_lose_chance = 0.125,    -- 抽中【已研究】科技时，失去它的概率
+        tech_world_gain_chance = 0.25,     -- 抽中【未研究】科技时，研究它的概率
         event_intensity = 1,              -- 每分钟事件的落点数
         tile_remap_rules = 6,             -- tile 替换世界最多几条规则
         -- 跃迁计时（全部可 /c storage.xxx 热改、持久、多人同步）：
@@ -113,7 +122,7 @@ function M.ensure_defaults()
     for _, key in ipairs({'radius_of', 'science_exp', 'player_stats', 'platform_age',
                           'ground_tint', 'tile_remap', 'danger_theme', 'event_world', 'loot_style', 'members',
                           'last_respawn_run', 'move_pos', 'bad_items', 'bad_entities', 'gen_debug', 'warp_vote', 'wreck_density',
-                          'tree_remap', 'obstacle_remap', 'fluid_remap', 'last_leaderboard'}) do
+                          'tree_remap', 'obstacle_remap', 'fluid_remap', 'last_leaderboard', 'market_run'}) do
         storage[key] = storage[key] or {}
     end
     -- world_fx 全局开关（默认开；/c storage.world_fx.xxx=false 单独禁用某事件驱动效果）。
@@ -125,7 +134,7 @@ function M.ensure_defaults()
     -- 每分钟"事件世界"各类型开关（false=不再被滚到/触发）。运行时也可 /c storage.event_types.xxx=true/false。
     -- 下表的值即各类型的【初始启用状态】：coinfall(金币雨) 默认禁用，按需改 true/false。
     storage.event_types = storage.event_types or {}
-    local event_defaults = {raid = true, meteor = true, supply = true, coinfall = true, drones = true, barrage = true}
+    local event_defaults = {raid = true, meteor = true, supply = true, coinfall = true, drones = true, barrage = true, tech = true}
     for et, on in pairs(event_defaults) do
         if storage.event_types[et] == nil then storage.event_types[et] = on end
     end

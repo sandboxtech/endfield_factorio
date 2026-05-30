@@ -66,8 +66,9 @@ local function ensure_spawn_ground(surface, sx, sy)
     surface.set_tiles(tiles)
 end
 
--- 每轮跃迁后调用：在【指定星球】出生点正北放一个金币市场并上架装备。
--- 母星 + 其余 4 个星球各放一个同样的市场（由 surface.lua 在各星球清场重生后调用）。
+-- 在【指定星球】出生点正北放一个金币市场并上架装备。母星 + 其余 4 个星球各放一个同样的市场。
+-- 【惰性放置】：由 surface.lua 的 on_chunk_generated 在【出生区块自然生成时】调用（玩家复活/传送到该星触发），
+-- 故不再强制生成区块——此时出生区块已存在。每轮每星只放一次（storage.market_run 记录）。
 function M.place_on_surface(surface_name)
     local surface = game.surfaces[surface_name]
     if not surface then return end
@@ -76,9 +77,8 @@ function M.place_on_surface(surface_name)
     local sx, sy = math.floor(s.x), math.floor(s.y)
     local bx, by = sx, sy - 8   -- 市场放出生点正北 8 格（北 = -Y）
 
-    -- 紧接 surface.clear 之后，必须强制生成出生区（覆盖 64×64 保底范围 + 市场），否则读 tile / create_entity 会失败
-    surface.request_to_generate_chunks({sx, sy}, 2)
-    surface.force_generate_chunk_requests()
+    -- 市场所在区块还没生成 → 放弃（不强制生成）；on_chunk_generated 会在它生成后再调一次重试。返回 nil 表示未放成。
+    if not surface.is_chunk_generated({math.floor(bx / 32), math.floor(by / 32)}) then return nil end
 
     -- 出生点保底铺地（极端水/exotic 世界用；判过半不可通行才铺）
     ensure_spawn_ground(surface, sx, sy)
@@ -101,10 +101,11 @@ function M.place_on_surface(surface_name)
     surface.set_tiles(tiles)
 
     local ent = surface.create_entity{name = 'market', position = {bx, by}, force = force}
-    if not ent then return end
+    if not ent then return nil end
     ent.destructible = false   -- 不可摧毁
     ent.minable = false        -- 不可挖取
     stock(ent)
+    return ent                 -- 放置成功（调用方据此标记本轮已放、不再重试）
 end
 
 return M
