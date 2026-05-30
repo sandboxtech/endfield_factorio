@@ -1,6 +1,6 @@
 -- 周期性事件：自动跃迁倒计时 + 点击 HUD 弹教程。
--- 本文件是 on_gui_click 与 on_nth_tick(3600) 的唯一注册点；player_stats 的每分钟采样
--- 通过 player_stats.sample_online 接入，避免多文件重复注册 on_nth_tick 互相覆盖。
+-- 本文件统一调度【每分钟周期任务】：经 events 总线挂 on_tick + tick 整除门控（不用 on_nth_tick，避免被覆盖、间隔可扩展）。
+-- player_stats 的每分钟采样通过 player_stats.sample_online 在此调用，不再各自注册定时器。
 local constants = require('scripts.constants')
 local player_stats = require('scripts.player_stats')
 local map_features = require('scripts.map_features')
@@ -279,8 +279,13 @@ function grant_random_tech()
 end
 
 -- 每分钟统一处理：在线时长采样 + 跃迁倒计时 + 撤离提醒。
--- （player_stats 不再单独注册 on_nth_tick，统一在此调度，避免后注册者覆盖前者。）
-script.on_nth_tick(60 * 60, function()
+-- 【不再用 on_nth_tick】：on_nth_tick 每个间隔只能挂一个 handler、易被后注册者覆盖且间隔写死；
+-- 改走 events 总线的 on_tick（多订阅安全，与 warp_fx 的 on_tick 并存），开头用 tick 整除【门控】——
+-- 绝大多数 tick 在此一句廉价返回，效率与 on_nth_tick 等同。将来要加别的周期任务，
+-- 再写一段 `if game.tick % 间隔 == 0 then ... end` 即可，互不覆盖、间隔随意。
+local PER_MINUTE = 60 * 60
+events.on(defines.events.on_tick, function()
+    if game.tick % PER_MINUTE ~= 0 then return end   -- 非整分钟：立即返回（廉价门控，省去整个每分钟处理）
     player_stats.sample_online()
     -- 事件世界（刷怪/落点/科技世界）碰大量原型、最易出错，单独兜底，出错不影响金币/倒计时/跃迁。
     events.safe('world_events', run_world_events)()
