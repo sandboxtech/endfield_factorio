@@ -331,7 +331,7 @@ function M.show_panel(player, target)
     target = target or player
     local self = target.index == player.index
     local sink = gui.popup_sink()
-    players.print_inspection(target, sink)
+    players.print_inspection(target, sink, self)   -- 看自己：先不打印经验，留到星星块之后（看别人：照常打印）
     local title = table.remove(sink.lines, 1)   -- 首行 inspect-header 提作弹窗标题
     -- 顶部导航按钮：看自己→"查看他人能力"；看别人→"返回玩家列表"。两者复用同名 wn_panel_others（tick 路由按上下文处理）。
     local top_buttons = { self
@@ -340,7 +340,7 @@ function M.show_panel(player, target)
     local bottom_buttons = {}
     if self then
         -- ⭐ 星星（只对自己，追加到统计之后）：先空行隔开，再星星余额（所有等级都显示），再进度条+领取按钮（仅达 star_unlock_level）。
-        sink.lines[#sink.lines + 1] = ''                                          -- 空行间隔
+        sink.lines[#sink.lines + 1] = ''                                          -- 空行间隔（统计与星星之间）
         local bal = math.floor(((storage.star or {})[player.name] or 0) / constants.min_to_tick)
         sink.lines[#sink.lines + 1] = {'wn.panel-star', bal}                      -- 星星余额（整数）
         if M.star_unlocked(player) then
@@ -353,6 +353,10 @@ function M.show_panel(player, target)
                 math.floor(maxt / constants.min_to_tick)}                         -- 能领的最大值（=满充星星数）
             bottom_buttons[#bottom_buttons + 1] = {name = 'wn_claim_star', caption = {'wn.act-claim-star'}}
         end
+        -- 科技瓶经验放到最后（星星之后）
+        players.print_exp(target, sink)
+        -- 经验与底部"领取星星"按钮之间留一个空行间隔（仅当有领取按钮时才需要）
+        if #bottom_buttons > 0 then sink.lines[#sink.lines + 1] = '' end
     end
     gui.show_popup(player, title, sink.lines, top_buttons, false, bottom_buttons)
 end
@@ -395,7 +399,7 @@ function M.star_unlocked(player)
 end
 
 function M.charge_pending(player)   -- 返回 待领 tick（封顶 charge_max_hours 小时）
-    local maxt = (storage.charge_max_hours or 100) * constants.hour_to_tick
+    local maxt = (storage.charge_max_hours or 30) * constants.hour_to_tick
     local last = (storage.charge or {})[player.name] or game.tick
     return math.min(game.tick - last, maxt)
 end
@@ -405,7 +409,7 @@ function M.claim_charge(player)
     storage.charge, storage.star = storage.charge or {}, storage.star or {}
     local unit = star_tick()
     local last = storage.charge[player.name] or game.tick
-    local maxt = (storage.charge_max_hours or 100) * constants.hour_to_tick
+    local maxt = (storage.charge_max_hours or 30) * constants.hour_to_tick
     local pend = math.min(game.tick - last, maxt)
     local n = math.floor(pend / unit)                  -- 整数星星数（只领整颗）
     if n <= 0 then player.print({'wn.star-none-yet'}); return end
