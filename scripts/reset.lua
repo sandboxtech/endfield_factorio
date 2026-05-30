@@ -71,7 +71,8 @@ function M.reset()
         end
     end
 
-    -- 先扫描所有在线玩家的科技瓶累积经验（必须在清背包之前），同时统计本轮结算
+    -- 先扫描所有在线玩家的科技瓶累积经验（collect 必须在清背包之前），同时统计本轮结算。
+    -- 排行榜【存进 storage 保留上一个世界】（/lastrank 可查），广播则延迟到下方【杀玩家之后】再打印。
     local summaries = {}
     for _, player in pairs(game.players) do
         local gain = science_exp.collect(player)
@@ -88,14 +89,10 @@ function M.reset()
             end
         end
     end
-    -- 本轮结算：按本轮带走经验从多到少广播（顺带成了小排行榜）
-    if #summaries > 0 then
-        table.sort(summaries, function(a, b) return a.total > b.total end)
-        game.print({'wn.summary-title'})
-        for _, s in ipairs(summaries) do
-            game.print({'wn.summary-player', s.name, s.total, s.detail})
-        end
-    end
+    -- 按本轮带走经验从多到少排序后存档：storage.last_leaderboard 只保留【上一个世界】这一份，
+    -- 每次跃迁覆盖，供 /lastrank（/排行）随时查看。广播见下方杀玩家之后。
+    table.sort(summaries, function(a, b) return a.total > b.total end)
+    storage.last_leaderboard = summaries
 
     -- 清理长期不活跃玩家（3 天没上线）：删除其玩家对象，释放蓝图/快捷键等存档膨胀。
     -- 经验/统计按【名字】存储（player_stats / science_exp），删玩家不动这些数据；
@@ -128,6 +125,14 @@ function M.reset()
         end
     end
 
+    -- 本轮结算广播：延迟到【杀死玩家之后】才打印，避免被满屏死亡/复活提示顶掉。
+    -- （排行榜已在上方存进 storage.last_leaderboard，保留上一个世界，/lastrank 可查。）
+    if #summaries > 0 then
+        game.print({'wn.summary-title'})
+        for _, s in ipairs(summaries) do
+            game.print({'wn.summary-player', s.name, s.total, s.detail})
+        end
+    end
 
     -- 清空所有星球上的地图标记
     for _, surface in pairs(game.surfaces) do

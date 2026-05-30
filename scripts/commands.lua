@@ -185,6 +185,22 @@ end
 add_command('preview', {'wn.preview-help'}, preview_cmd)
 add_command('yulan', {'wn.preview-help'}, preview_cmd)
 
+-- /lastrank（/paihang 同功能，中文别名 /排行）：查看【上一个世界】每人带走的科技瓶经验排行榜。
+-- 数据在跃迁时由 reset.lua 存进 storage.last_leaderboard（只保留上一个世界这一份，每次跃迁覆盖）。
+local function last_rank_cmd(command)
+    local player = command.player_index and game.get_player(command.player_index)
+    if not player then return end
+    local lines = {}
+    for _, s in ipairs(storage.last_leaderboard or {}) do
+        lines[#lines + 1] = {'wn.summary-player', s.name, s.total, s.detail}
+    end
+    if #lines == 0 then lines[1] = {'wn.lastrank-none'} end
+    gui.show_popup(player, {'wn.lastrank-header'}, lines)
+end
+
+add_command('lastrank', {'wn.lastrank-help'}, last_rank_cmd)
+add_command('paihang', {'wn.lastrank-help'}, last_rank_cmd)
+
 -- （/settle、/jiesuan 已移除：只有【自动跃迁】才结算科技瓶经验，不再支持提前手动结算。）
 
 -- /suicide（/zisha 同功能）：自杀脱困。死后回母星出生点复活（见 players.lua kill_on_nauvis）。
@@ -303,6 +319,7 @@ local function zh_alias(name, help, fn) pcall(add_command, name, help, fn) end
 zh_alias('教程', {'wn.tutorial-help'}, tutorial_cmd)
 zh_alias('查看', {'wn.inspect-help'}, inspect_cmd)
 zh_alias('预览', {'wn.preview-help'}, preview_cmd)
+zh_alias('排行', {'wn.lastrank-help'}, last_rank_cmd)
 zh_alias('自杀', {'wn.suicide-help'}, suicide_cmd)
 zh_alias('跃迁', '投票同意本世界提前跃迁（够票则倒计时-1分钟、同意者死亡）', warp_vote_cmd('agree'))
 zh_alias('停留', '投票反对本世界跃迁（每个反对抵消1个同意）', warp_vote_cmd('oppose'))
