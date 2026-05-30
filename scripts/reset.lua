@@ -7,6 +7,7 @@ local passives = require('scripts.passives')
 local science_exp = require('scripts.science_exp')
 local respawn_gifts = require('scripts.respawn_gifts')
 local player_stats = require('scripts.player_stats')
+local map_features = require('scripts.map_features')   -- 本轮危险度 knobs().danger（敌人伤害缩放用）
 
 local M = {}
 
@@ -205,6 +206,14 @@ function M.reset()
     -- 污染/敌人/腐败等【影响玩法节奏】的全局参数：大概率正常值，小概率小幅偏离（util.mostly_normal）。
     -- 不再大幅随机——极端的污染/虫子/腐败速度会毁掉一局的可玩性。（difficulty 默认值见 constants.ensure_defaults）
     game.forces.enemy.reset_evolution()
+
+    -- 本世界【敌人武器伤害】随危险度 knobs().danger 缩放（danger 多半低 → 多数世界小幅加成，偶尔高危世界重伤）。
+    -- 加法修正 = danger × enemy_dmg_scale（0=原版伤害、1=+100%）。对敌方常见弹种(机枪/激光/喷火塔+虫/沙虫)生效。
+    local dmg = map_features.knobs().danger * (storage.enemy_dmg_scale or 2)
+    for _, cat in ipairs({'bullet', 'laser', 'flamethrower', 'melee', 'biological', 'rocket', 'electric', 'tesla', 'capsule', 'grenade'}) do
+        if prototypes.ammo_category[cat] then game.forces.enemy.set_ammo_damage_modifier(cat, dmg) end
+    end
+
     game.map_settings.enemy_expansion.enabled = false
     game.map_settings.pollution.enabled = true
     game.map_settings.pollution.ageing = util.mostly_normal()

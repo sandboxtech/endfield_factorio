@@ -94,8 +94,8 @@ function M.player_gui(player)
     -- 三个常用按钮（sprite-button，风格同角色面板按钮）：教程 / 投票跃迁 / 投票停留。点击由 tick.on_gui_click 路由。
     for _, b in ipairs({
         {name = 'wn_btn_tutorial', sprite = 'virtual-signal/signal-info',       tip = {'wn.tutorial-help'}},
-        {name = 'wn_btn_warp',     sprite = 'space-location/solar-system-edge', tip = {'wn.btn-warp-tip'}},
-        {name = 'wn_btn_stay',     sprite = 'virtual-signal/signal-deny',       tip = {'wn.btn-stay-tip'}},
+        {name = 'wn_btn_warp',     sprite = 'virtual-signal/signal-white-flag', tip = {'wn.btn-warp-tip'}},
+        {name = 'wn_btn_stay',     sprite = 'virtual-signal/signal-trash-bin',  tip = {'wn.btn-stay-tip'}},
     }) do
         player.gui.top.add{type = 'sprite-button', name = b.name, sprite = b.sprite, tooltip = b.tip}
     end

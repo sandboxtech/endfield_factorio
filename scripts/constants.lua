@@ -77,6 +77,7 @@ function M.ensure_defaults()
         prob_danger = 1,                  -- 危险世界
         prob_event = 1,                   -- 每分钟事件世界
         danger_density = 1,               -- 危险世界里敌人/残骸的密度
+        enemy_dmg_scale = 2,              -- 敌人武器伤害随危险度的缩放：加成 = knobs.danger × 此值（0=原版、2=最高危世界约+200%）
         -- 战利品密度：全局乘数 × 各类乘数（相乘共同影响）。默认全 1，可 /c 单独热改：2 更多、0.5 更少、0 不刷。
         loot_density           = 1,        -- 全局总乘数（对所有类型一起生效）
         loot_density_material  = 1,        -- 钢箱（材料）
