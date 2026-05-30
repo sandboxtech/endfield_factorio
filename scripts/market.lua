@@ -1,6 +1,6 @@
--- 母星出生点的金币市场（仅一个）：用挂机赚的金币(√在线分钟)买各种普通装备零件。
+-- 各星球出生点的金币市场（母星 + 其余 4 个星球，共 5 个，内容相同）：用挂机赚的金币(√在线分钟)买各种普通装备零件。
 -- 卖装备而非建筑/瓶子——是个人增益，不替代"建工厂"的核心循环。
--- 每轮跃迁后由 surface.lua 的 on_surface_cleared（母星分支、clear 结算后）放置；不可摧毁/挖取。
+-- 每轮跃迁后由 surface.lua 的 on_surface_cleared（每个 PLANET_GEN 星球、clear 结算后）放置；不可摧毁/挖取。
 local M = {}
 
 -- 出售清单：{物品, 数量, 金币价}。金币来自在线（开局 √在线分钟 + 每分钟 +1）。
@@ -44,50 +44,51 @@ local function stock(ent)
 end
 
 -- 出生点【保底铺地】：以出生点(地图中心)为心抽 4×4=16 个采样点（散布在 64×64 内），
--- 若【过半(>8)】落在不可通行地形(水/深水/熔岩/油海/氨海/虚空…，按 tile.collides_with('player') 判定)，
+-- 若【(>4)】落在不可通行地形(水/深水/熔岩/油海/氨海/虚空…，按 tile.collides_with('player') 判定)，
 -- 说明这是个水/exotic 世界、开局没立足之地 → 铺一整块 64×64 精炼混凝土保底。否则(多半是陆地)不动。
 local SAFE_HALF = 32                         -- 64×64 的半边
 local SAMPLE_OFFSETS = {-24, -8, 8, 24}      -- 采样网格偏移（4×4 共 16 点，均匀铺在 64×64 内）
-local function ensure_spawn_ground(nauvis, sx, sy)
+local function ensure_spawn_ground(surface, sx, sy)
     local bad = 0
     for _, dx in ipairs(SAMPLE_OFFSETS) do
         for _, dy in ipairs(SAMPLE_OFFSETS) do
-            local t = nauvis.get_tile(sx + dx, sy + dy)
+            local t = surface.get_tile(sx + dx, sy + dy)
             if t and t.valid and t.collides_with('player') then bad = bad + 1 end
         end
     end
-    if bad <= 8 then return end              -- 过半可通行 → 无需保底
+    if bad <= 4 then return end              -- 过半可通行 → 无需保底
     local tiles = {}
     for dx = -SAFE_HALF, SAFE_HALF - 1 do
         for dy = -SAFE_HALF, SAFE_HALF - 1 do
             tiles[#tiles + 1] = {name = 'refined-concrete', position = {sx + dx, sy + dy}}
         end
     end
-    nauvis.set_tiles(tiles)
+    surface.set_tiles(tiles)
 end
 
--- 每轮跃迁后调用：在出生点正北放一个金币市场并上架装备。
-function M.place_on_nauvis()
-    local nauvis = game.surfaces['nauvis']
-    if not nauvis then return end
+-- 每轮跃迁后调用：在【指定星球】出生点正北放一个金币市场并上架装备。
+-- 母星 + 其余 4 个星球各放一个同样的市场（由 surface.lua 在各星球清场重生后调用）。
+function M.place_on_surface(surface_name)
+    local surface = game.surfaces[surface_name]
+    if not surface then return end
     local force = game.forces.player
-    local s = force.get_spawn_position(nauvis)
+    local s = force.get_spawn_position(surface)
     local sx, sy = math.floor(s.x), math.floor(s.y)
     local bx, by = sx, sy - 8   -- 市场放出生点正北 8 格（北 = -Y）
 
     -- 紧接 surface.clear 之后，必须强制生成出生区（覆盖 64×64 保底范围 + 市场），否则读 tile / create_entity 会失败
-    nauvis.request_to_generate_chunks({sx, sy}, 2)
-    nauvis.force_generate_chunk_requests()
+    surface.request_to_generate_chunks({sx, sy}, 2)
+    surface.force_generate_chunk_requests()
 
     -- 出生点保底铺地（极端水/exotic 世界用；判过半不可通行才铺）
-    ensure_spawn_ground(nauvis, sx, sy)
+    ensure_spawn_ground(surface, sx, sy)
 
     -- 安全网：重复调用时清掉旧市场
-    for _, old in pairs(nauvis.find_entities_filtered{name = 'market', position = {bx, by}, radius = 8}) do
+    for _, old in pairs(surface.find_entities_filtered{name = 'market', position = {bx, by}, radius = 8}) do
         old.destroy()
     end
     -- 清掉挡路实体（树/悬崖/石头；矿脉不挡建筑，保留）
-    for _, e in pairs(nauvis.find_entities_filtered{position = {bx, by}, radius = 3, type = {'tree', 'cliff', 'simple-entity'}}) do
+    for _, e in pairs(surface.find_entities_filtered{position = {bx, by}, radius = 3, type = {'tree', 'cliff', 'simple-entity'}}) do
         if e.valid then e.destroy() end
     end
     -- 铺一块 5×5 混凝土地坪，去掉水/不平地形保证放置成功
@@ -97,9 +98,9 @@ function M.place_on_nauvis()
             tiles[#tiles + 1] = {name = 'refined-concrete', position = {bx + dx, by + dy}}
         end
     end
-    nauvis.set_tiles(tiles)
+    surface.set_tiles(tiles)
 
-    local ent = nauvis.create_entity{name = 'market', position = {bx, by}, force = force}
+    local ent = surface.create_entity{name = 'market', position = {bx, by}, force = force}
     if not ent then return end
     ent.destructible = false   -- 不可摧毁
     ent.minable = false        -- 不可挖取

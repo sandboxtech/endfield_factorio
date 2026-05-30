@@ -76,11 +76,11 @@ local function try_gift_first_in_world(player)
     respawn_gifts.on_first_respawn(player)
 end
 
--- 死亡复活落点：一律回母星 nauvis 出生点（不再随机散落到各星球）——
--- 被杀/下线/自杀/warp 死亡的玩家都回家集结。确保出生区已生成，传送过去并 chart 周围 256。
-local function place_on_nauvis(player)
+-- 把玩家安全送到【指定星球】出生点：先生成出生区块、找无碰撞落点、传送，再揭图周围 256。
+-- 复活落点(place_on_nauvis) 与 /前往星球 命令共用。无 character 或星球不存在则跳过。
+function M.place_on_surface(player, surface_name)
     if not player or not player.character then return end
-    local surface = game.surfaces.nauvis
+    local surface = game.surfaces[surface_name]
     if not surface then return end
     local origin = player.force.get_spawn_position(surface)
     surface.request_to_generate_chunks(origin, 3)
@@ -88,10 +88,16 @@ local function place_on_nauvis(player)
     local pos = surface.find_non_colliding_position('character', origin, 128, 1) or origin
     player.teleport(pos, surface)
     -- chart 只揭示【已生成】的区块，先强制生成 ±256 再 chart。
-    -- （生成母星区块会触发 map_features，较重；嫌卡把这里的 8 调小，如 4=±128。）
+    -- （生成区块会触发 map_features，较重；嫌卡把这里的 8 调小，如 4=±128。）
     surface.request_to_generate_chunks(pos, 8)   -- 8 区块 ≈ 256 格
     surface.force_generate_chunk_requests()
     player.force.chart(surface, {{pos.x - 256, pos.y - 256}, {pos.x + 256, pos.y + 256}})
+end
+
+-- 死亡复活落点：一律回母星 nauvis 出生点（不再随机散落到各星球）——
+-- 被杀/下线/自杀/warp 死亡的玩家都回家集结。
+local function place_on_nauvis(player)
+    M.place_on_surface(player, 'nauvis')
 end
 
 -- 死亡：把复活倒计时压到 3 秒；只把【有 cause 的真实死亡】（被敌人/环境打死）计入该玩家 death_count，

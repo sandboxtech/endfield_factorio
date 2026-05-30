@@ -594,16 +594,17 @@ script.on_event(defines.events.on_surface_cleared, function(event)
 
     surface.map_gen_settings = mgs
 
-    -- 仅母星预先 chart 一块区域，方便玩家落地后立刻看清地形
-    if surface ~= game.surfaces.nauvis then
-        return
+    -- 在出生点放金币市场：5 个星球（母星 + 其余 4 个，凡 PLANET_GEN 有配置的）都放同一个市场。
+    -- 飞船平台等 cfg 为 nil → 不放。此时 surface.clear 已结算，放置的实体不会再被清掉。
+    if cfg then
+        market.place_on_surface(surface.name)
     end
-    -- 每次跃迁后预先 chart 母星出生点附近（半径约 128），落地即可看清周围地形
-    local radius = 128
-    game.forces.player.chart(game.surfaces.nauvis, {{x = -radius, y = -radius}, {x = radius, y = radius}})
 
-    -- 在出生点放金币市场。此时 surface.clear 已结算，放置的实体不会再被清掉。
-    market.place_on_nauvis()
+    -- 仅母星预先 chart 一块区域，方便玩家落地后立刻看清周围地形（半径约 128）
+    if surface == game.surfaces.nauvis then
+        local radius = 128
+        game.forces.player.chart(game.surfaces.nauvis, {{x = -radius, y = -radius}, {x = radius, y = radius}})
+    end
 end)
 
 -- 圆形地图：超出半径的格子全部铺成虚空。

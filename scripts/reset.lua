@@ -160,16 +160,28 @@ function M.reset()
     for name in pairs(game.planets) do
         force.unlock_space_location(name)
     end
+    -- 同时把四个星球的【发现科技】直接标记为已研究（科技树里显示已发现）。
+    for _, planet in ipairs({'vulcanus', 'gleba', 'fulgora', 'aquilo'}) do
+        local tech = force.technologies['planet-discovery-' .. planet]
+        if tech then tech.researched = true end
+    end
 
     -- 跃迁倒计时重置为初始值（storage.warp_initial_minutes 分钟，可 /c 热改）；研究科技瓶科技按
     -- storage.warp_extend_minutes 各自延长。内部以小时记账，故 /60。
     storage.warp_hours = (storage.warp_initial_minutes or 10) / 60
     storage.warp_vote = {}   -- 新世界清空跃迁投票（上一世界的同意/反对作废）
 
-    -- 飞船全部瞬移回母星轨道并暂停
+    -- 飞船全部瞬移回母星轨道并暂停；顺带清空各平台 surface 上的所有陨石(asteroid + asteroid-chunk)，
+    -- 避免上一轮飞来的陨石跨轮残留/继续砸船。
     for _, platform in pairs(force.platforms) do
         platform.space_location = 'nauvis'
         platform.paused = true
+        local psurface = platform.surface
+        if psurface and psurface.valid then
+            for _, a in pairs(psurface.find_entities_filtered{type = {'asteroid', 'asteroid-chunk'}}) do
+                a.destroy()
+            end
+        end
     end
 
     game.reset_time_played()

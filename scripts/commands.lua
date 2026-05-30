@@ -201,6 +201,40 @@ end
 add_command('lastrank', {'wn.lastrank-help'}, last_rank_cmd)
 add_command('paihang', {'wn.lastrank-help'}, last_rank_cmd)
 
+-- ── 前往星球 ─────────────────────────────────────────────────────────────────
+-- /nauvis /vulcanus /gleba /fulgora /aquilo：把自己直接传送到对应星球出生点（每次跃迁已自动解锁所有星球）。
+-- 要求【鼠标 / 背包 / 物流(回收) / 弹药】四个区都为空——不为空则拒绝，防止跨星球夹带物资（不主动清空，避免误删）。
+local function travel_inventories_empty(player)
+    local cur = player.cursor_stack
+    if cur and cur.valid_for_read then return false end
+    for _, inv in ipairs({defines.inventory.character_main,
+                          defines.inventory.character_trash,
+                          defines.inventory.character_ammo}) do
+        local i = player.get_inventory(inv)
+        if i and not i.is_empty() then return false end
+    end
+    return true
+end
+
+local function travel_cmd(planet)
+    return function(command)
+        local player = command.player_index and game.get_player(command.player_index)
+        if not player then return end
+        if not player.character then player.print('你现在没有角色，无法前往星球'); return end
+        if not game.surfaces[planet] then player.print('星球 ' .. planet .. ' 还没生成'); return end
+        if not travel_inventories_empty(player) then
+            player.print('前往星球前，请先清空：鼠标、背包、物流(回收)、弹药 这四个区')
+            return
+        end
+        players.place_on_surface(player, planet)
+    end
+end
+add_command('nauvis',   '前往母星 Nauvis',    travel_cmd('nauvis'))
+add_command('vulcanus', '前往星球 Vulcanus', travel_cmd('vulcanus'))
+add_command('gleba',    '前往星球 Gleba',       travel_cmd('gleba'))
+add_command('fulgora',  '前往星球 Fulgora',   travel_cmd('fulgora'))
+add_command('aquilo',   '前往星球 Aquilo',      travel_cmd('aquilo'))
+
 -- （/settle、/jiesuan 已移除：只有【自动跃迁】才结算科技瓶经验，不再支持提前手动结算。）
 
 -- /suicide（/zisha 同功能）：自杀脱困。死后回母星出生点复活（见 players.lua kill_on_nauvis）。
