@@ -641,14 +641,14 @@ script.on_event(defines.events.on_chunk_generated, events.safe('chunk_generated'
         surface.set_tiles(tiles)
         return
     else
-        -- 跨边界：逐格判定（rough>0 时加噪声扰动边缘 → 海湾/半岛/锯齿）
+        -- 跨边界：逐格判定（rough>0 时加噪声扰动边缘 → 平滑海湾/半岛）。用 smooth 倍频（低频大团块）避免边缘密集锯齿。
         local tiles = {}
         for x = -1, 32 do
             for y = -1, 32 do
                 local px, py = left_top.x + x, left_top.y + y
                 local dx, dy = (px - cx) / rw, (py - cy) / rh
                 local edge = 1
-                if rough > 0 then edge = 1 + rough * noise.fractal(noise.octaves.blob, px, py, seed) end
+                if rough > 0 then edge = 1 + rough * noise.fractal(noise.octaves.smooth, px, py, seed) end
                 if dx * dx + dy * dy > edge * edge then
                     tiles[#tiles + 1] = {name = 'empty-space', position = {x = px, y = py}}
                 end
