@@ -6,6 +6,12 @@ local classes = require('scripts.classes')
 local M = {}
 
 local CLASS_MAX_LEVEL = 10000   -- 职业后者满级基准（与 respawn_gifts.MAX_LEVEL 一致）
+
+-- 玩家人物等级 = floor(√在线分钟)（与 respawn_gifts.coin_reward 同公式）。用于按等级显隐 HUD 元素。
+local function player_level(player)
+    local st = storage.player_stats and storage.player_stats[player.name]
+    return math.floor(math.sqrt((st and st.online_minutes) or 0))
+end
 local function gcd(a, b) while b ~= 0 do a, b = b, a % b end return a end
 
 -- 距下次跃迁剩余（整数小时, 整数分钟）；与 tick.lua 告警同一公式。
@@ -32,6 +38,7 @@ end
 -- 渲染单个玩家的 HUD。
 function M.player_gui(player)
     player.gui.top.clear()
+    local lvl = player_level(player)   -- 用于按等级显隐（星星按钮仅 star_unlock_level 级以上显示）
 
     -- HUD 按钮【放最前】：位置固定，不会被后面变长的世界标签挤动。点击由 tick.on_gui_click 路由。
     --   玩法&指令（弹窗）  |间隔|  角色面板 / 跃迁(投同意✓) / 停留(投反对✗)。
@@ -45,16 +52,20 @@ function M.player_gui(player)
         {name = 'wn_btn_skills',   sprite = 'virtual-signal/signal-science-pack', tip = {'', '[font=default-bold]瓶子经验[/font]\n', {'wn.panel-help'}}},
         {name = 'wn_btn_stats',    sprite = 'entity/character',                 tip = {'', '[font=default-bold]统计[/font]\n', {'wn.stats-help'}}},
         {name = 'wn_btn_class',    sprite = 'virtual-signal/signal-mining',     tip = {'', '[font=default-bold]职业[/font]\n', {'wn.class-help'}}},
-        {name = 'wn_btn_star',     sprite = 'virtual-signal/signal-star',       tip = {'', '[font=default-bold]星星[/font]\n', {'wn.star-help'}}},
+        {name = 'wn_btn_star',     sprite = 'virtual-signal/signal-star',       tip = {'', '[font=default-bold]星星[/font]\n', {'wn.star-help'}}, min_level = storage.star_unlock_level or 0},
         {spacer = true},
         -- 跃迁规则组：跃迁投票 / 停留投票（放一起，都是对"是否提前跃迁"投票）。
-        {name = 'wn_btn_warp',     sprite = 'virtual-signal/signal-trash-bin',  tip = {'wn.btn-warp-tip'}},
-        {name = 'wn_btn_stay',     sprite = 'virtual-signal/signal-white-flag', tip = {'wn.btn-stay-tip'}},
+        {name = 'wn_btn_warp',     sprite = 'virtual-signal/signal-trash-bin',  tip = {'wn.btn-warp-tip'},  min_level = storage.vote_unlock_level or 10},
+        {name = 'wn_btn_stay',     sprite = 'virtual-signal/signal-white-flag', tip = {'wn.btn-stay-tip'}, min_level = storage.vote_unlock_level or 10},
     }) do
         if b.spacer then
             player.gui.top.add{type = 'empty-widget'}.style.width = 12   -- 玩法 与 操作组 之间的间隔
         else
-            player.gui.top.add{type = 'sprite-button', name = b.name, sprite = b.sprite, tooltip = b.tip}
+            -- 等级不足 → 按钮【置灰不可点】，tooltip 提示"X 级解锁"（不隐藏，让玩家看到目标）。
+            local locked = b.min_level and lvl < b.min_level
+            local btn = player.gui.top.add{type = 'sprite-button', name = b.name, sprite = b.sprite,
+                tooltip = locked and {'wn.locked-level', b.min_level} or b.tip}
+            btn.enabled = not locked
         end
     end
 
