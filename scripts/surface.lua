@@ -464,13 +464,14 @@ script.on_event(defines.events.on_surface_cleared, events.safe('surface_cleared'
 
 
     -- 事件世界：每分钟触发一种事件（独立于危险度，奖励/危险皆有）。详见 tick.lua run_world_events。
-    --   raid 空降虫 / meteor 矿石陨石雨 / supply 物资空投 / coinfall 金币雨 / drones 无人机来袭 / barrage 重炮落点。
+    --   raid 空降虫 / meteor 矿石陨石雨 / supply 物资空投 / coinfall 金币雨 / drones 无人机来袭 / barrage 重炮落点 / tech 科技 / thunder 雷暴。
+    --   注：thunder(雷暴星球)不走每分钟机制，由 tick.lua 的独立 on_tick 每 tick 小概率对该星球玩家直接劈闪电。
     storage.event_world[surface.name] = nil
     if math.random() < constants.balance.event.base * prob('event') then
         -- 只从【已启用】的事件类型里【按权重】滚（false 排除；权重见 balance.event.weights，缺省 1，drones 更低 → 更罕见）
         local weights = constants.balance.event.weights or {}
         local pool, total = {}, 0
-        for _, et in ipairs({'raid', 'meteor', 'supply', 'coinfall', 'drones', 'barrage', 'tech'}) do
+        for _, et in ipairs({'raid', 'meteor', 'supply', 'coinfall', 'drones', 'barrage', 'tech', 'thunder'}) do
             if storage.event_types[et] ~= false then   -- nil/true 启用，仅显式 false 排除
                 local w = weights[et] or 1
                 pool[#pool + 1] = {et = et, w = w}

@@ -218,6 +218,21 @@ local function run_world_events()
     WORLD_EVENTS[pick.et](pick.player, pick.player.surface, pick.ch, danger, k)
 end
 
+-- 雷暴星球(thunder)：身处该星球的【每个】在线玩家，每 tick 以极小概率被闪电直击（lightning：100 伤害+震屏，
+-- 有护盾/护甲可扛）。逐玩家独立判定 → 全局雷击频率自然随在线人数增多（"概率×人数"）。
+-- THUNDER_CHANCE = 1/36000：单玩家期望 36000 tick = 10 分钟被劈一次。math.random 多端同步、不会 desync。
+local THUNDER_CHANCE = 1 / 36000
+events.on(defines.events.on_tick, events.safe('thunder', function()
+    if not storage.event_world then return end
+    for _, player in pairs(game.connected_players) do
+        local ch = player.character
+        if ch and storage.event_world[player.surface.name] == 'thunder'
+           and math.random() < THUNDER_CHANCE then
+            player.surface.create_entity{name = 'lightning', position = player.position}
+        end
+    end
+end))
+
 -- HUD 6 按钮点击路由（简介/玩法/指令/角色面板/跃迁/停留）；点弹窗 × = 关闭。（自杀脱困改用 /suicide /zisha 命令）
 script.on_event(defines.events.on_gui_click, events.safe('gui_click', function(event)
     local player = game.get_player(event.player_index)

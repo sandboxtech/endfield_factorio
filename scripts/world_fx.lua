@@ -5,6 +5,7 @@
 -- 加新 fx：在此 register 一个，并到 constants.ensure_defaults 的 world_fx 默认列表补上同名键。
 local events = require('scripts.events')
 local util = require('scripts.util')
+local map_features = require('scripts.map_features')
 
 local M = {}
 
@@ -25,7 +26,7 @@ register('replicant', defines.events.on_entity_died, function(e)
     if not (ent.force and ent.force.name == 'player') then return end
     local cause = e.cause
     if not (cause and cause.valid and cause.force and cause.force.name == 'enemy') then return end
-    if math.random() >= (storage.replicant_chance or 0.5) then return end   -- 常数概率门控
+    if math.random() >= map_features.knobs().danger then return end   -- 概率 = 本轮危险度 danger（危险世界爆虫多、易滚雪球）
     local surface = ent.surface
     local evo = game.forces.enemy.get_evolution_factor(surface)
     for _ = 1, math.random(1, 2) do

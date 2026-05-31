@@ -163,6 +163,14 @@ local DEFAULT_CLASSES = {
         {pack = 'cryogenic-science-pack', item = 'productivity-module', groups = 5},
     }},
 
+    {key = 'qualityman', name = '品质大师', full = 10000, starter = {
+        {item = 'quality-module', groups = 1},
+    }, unlock = {{pack = 'electromagnetic-science-pack', level = 10}}, rewards = {
+        {pack = 'chemical-science-pack',      item = 'quality-module',              groups = 10},
+        {pack = 'space-science-pack',      item = 'quality-module-2',              groups = 10},
+        {pack = 'electromagnetic-science-pack', item = 'quality-module-3',          groups = 10},
+    }},
+
 
     {},
     -- 分组换行：基础生产 ↔ 能源化工
@@ -263,13 +271,6 @@ local DEFAULT_CLASSES = {
         {pack = 'utility-science-pack',  item = 'buffer-chest',           groups = 5},
     }},
 
-    {key = 'recyclerman', name = '品质大师', full = 1000, starter = {
-        {item = 'quality-module', groups = 1},
-    }, unlock = {{pack = 'electromagnetic-science-pack', level = 10}}, rewards = {
-        {pack = 'electromagnetic-science-pack',      item = 'recycler',              groups = 30},
-        {pack = 'electromagnetic-science-pack', item = 'scrap',                 groups = 10},
-    }},
-
     {key = 'recyclerman', name = '回收工人', full = 1000, starter = {
         {item = 'recycler', groups = 1},
     }, unlock = {{pack = 'electromagnetic-science-pack', level = 10}}, rewards = {
@@ -292,7 +293,6 @@ local DEFAULT_CLASSES = {
         {pack = 'space-science-pack',    item = 'buffer-chest',           groups = 2},   -- 白：缓冲箱
         {pack = 'space-science-pack',   item = 'logistic-robot',         groups = 10},  -- 绿：物流机器人
     }},
-
 
     {},
     -- 分组换行：物流 ↔ 战斗
