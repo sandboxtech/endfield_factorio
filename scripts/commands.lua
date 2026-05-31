@@ -326,8 +326,9 @@ function M.show_stats(player)
         local lv = respawn_gifts.coin_reward(passives.get_stat(p.index, 'online_minutes'))
         local def = classes.def_of(p)
         local cname = def and (def.name or {'wn.class-name-' .. def.key}) or ''
-        buttons[#buttons + 1] = {name = 'wn_stats_view_' .. p.index,
-            caption = {'wn.stats-entry', p.name, lv, cname}, tags = {wn_stats_view = p.name}}
+        local stars = math.floor(((storage.star or {})[p.name] or 0) / constants.min_to_tick)
+        buttons[#buttons + 1] = {name = 'wn_stats_view_' .. p.index,   -- 名称 职业 等级 星星
+            caption = {'wn.stats-entry', p.name, cname, lv, stars}, tags = {wn_stats_view = p.name}}
     end
     gui.show_popup(player, {'wn.stats-title'}, {}, buttons)
 end
