@@ -227,7 +227,7 @@ function M.show_classes(player)
         end
         -- 未解锁 → 按钮置灰(enabled=false，不可点)，但 tooltip 仍显示解锁条件。
         buttons[#buttons + 1] = {name = 'wn_act_class_' .. def.key,
-            caption = {def.key == cur and 'wn.class-cur' or 'wn.class-pick', name_loc},
+            caption = {def.key == cur and 'wn.class-cur' or 'wn.class-pick', name_loc, starter_img},
             tooltip = tip, enabled = classes.unlocked(player, def), tags = {wn_class = def.key}}
     end
     -- 顶部自带说明（buttons_at_bottom=true → 说明在上、职业按钮在下）。

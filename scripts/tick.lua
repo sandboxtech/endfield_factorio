@@ -179,12 +179,12 @@ local WORLD_EVENTS = {
         if t.researched then
             if math.random() < (storage.tech_world_lose_chance or 0.25) then
                 t.researched = false
-                game.print({'wn.tech-lose', t.localised_name})
+                game.print({'wn.tech-lose', t.name, t.localised_name})
             end
         else
             if math.random() < (storage.tech_world_gain_chance or 0.5) then
                 t.researched = true
-                game.print({'wn.tech-gain', t.localised_name})
+                game.print({'wn.tech-gain', t.name, t.localised_name})
             end
         end
     end,
@@ -294,7 +294,7 @@ function grant_random_tech()
     if #pool == 0 then return end
     local tech = pool[math.random(#pool)]
     tech.researched = true
-    game.print({'wn.tech-gain', tech.localised_name})
+    game.print({'wn.tech-gain', tech.name, tech.localised_name})
 end
 
 -- 每分钟统一处理：在线时长采样 + 跃迁倒计时 + 撤离提醒。

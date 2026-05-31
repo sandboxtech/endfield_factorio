@@ -2,7 +2,7 @@
 更多事件
 更多文案
 
-/c local r = 333;game.forces.player.chart(game.surfaces.nauvis, {{-r, -r}, {r, r}})
+/c local r = 333;game.forces.player.chart(game.surfaces.nauvis, {{-r, -r}, {r, r}}))
 
 
   /sc local s=storage local now=game.tick local rs=s.run_start_tick or now local wh=s.warp_hours
