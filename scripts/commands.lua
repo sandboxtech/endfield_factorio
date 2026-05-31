@@ -378,8 +378,8 @@ function M.set_home_planet(player, planet)
     gui.show_actions(player)   -- 重开功能弹窗 → 当前出生星球按钮标 ✓
 end
 
--- 选择职业（HUD 独立按钮窗口）：纯个人设置——只改 storage.player_class[名]，不公告、不传送。
--- 同时只能一种职业；未解锁的职业不可选（按钮已置灰，这里兜底）。带短冷却防刷消息。
+-- 选择职业（HUD 独立按钮窗口）：改 storage.player_class[名] + 全服公告切换；不传送（下次开局生效）。
+-- 同时只能一种职业；未解锁的职业不可选（按钮已置灰，这里兜底）。带短冷却防刷消息/防刷屏。
 function M.set_class(player, key)
     local def = classes.def_for_key(key)
     if not (player and def) then return end
@@ -396,7 +396,7 @@ function M.set_class(player, key)
     end
     classes.set(player, key)
     storage.class_cd[player.name] = game.tick
-    player.print({'wn.class-set', (def.name or {'wn.class-name-' .. key})})
+    game.print({'wn.class-changed', player.name, (def.name or {'wn.class-name-' .. key})})   -- 全服公告切换
     gui.show_classes(player)   -- 重开职业弹窗 → 当前职业按钮标 ✓
 end
 

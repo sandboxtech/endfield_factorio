@@ -227,21 +227,15 @@ function M.show_classes(player)
             buttons[#buttons + 1] = {newrow = true}   -- 空职业（无 key 的 {} 占位）= UI 换行/分组分隔
         else
         local name_loc = def.name or {'wn.class-name-' .. def.key}   -- 职业定义可内嵌 name 字符串（绕过 locale）
-        -- tooltip：白送(starter)每物品一行"x 个 [img]"；奖励(rewards)每条一行"每 a 级 [瓶] b 个 [物品]"。
+        -- tooltip：白送(starter)每物品一行"+N [img]"；奖励(rewards)每条一行"每 a 级 [瓶] b 个 [物品]"。两者都换行。
         -- 按钮图标 starter_img 取第一件白送物品；a:b 为 满级:满级总个数 的最简比(gcd 约分)。
         local starter_img = (def.starter and def.starter[1]) and ('[img=item/' .. def.starter[1].item .. ']') or ''
         local tip = {''}
         for _, s in ipairs(def.starter or {}) do
-            local img = '[img=item/' .. s.item .. ']'
-            if s.count then
-                -- 指定个数：直接显示 "N 个 [图]"。
-                tip[#tip + 1] = {'wn.class-tip-head-n', s.count, img}
-            else
-                -- 否则按组：显示 "组数 × 堆叠 = 总数 [图]"。
-                local stack = (prototypes.item[s.item] and prototypes.item[s.item].stack_size) or 1
-                local groups = s.groups or 1
-                tip[#tip + 1] = {'wn.class-tip-head', groups, stack, stack * groups, img}
-            end
+            local proto = prototypes.item[s.item]
+            -- 白送总个数 = count 个，或 groups 组 × 堆叠（默认 1 组）。每条一行，只显示算好的总数。
+            local total = s.count or (((proto and proto.stack_size) or 1) * (s.groups or 1))
+            tip[#tip + 1] = {'wn.class-tip-head', total, '[img=item/' .. s.item .. ']'}
         end
         for _, r in ipairs(def.rewards or {}) do
             local proto = prototypes.item[r.item]
