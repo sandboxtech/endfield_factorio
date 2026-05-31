@@ -218,7 +218,7 @@ function M.show_classes(player)
     local cur = classes.selected_key(player)
     local buttons = {}
     for _, def in ipairs(classes.all()) do
-        local name_loc = {'wn.class-name-' .. def.key}
+        local name_loc = def.name or {'wn.class-name-' .. def.key}   -- 职业定义可内嵌 name 字符串（绕过 locale）
         -- 白送清单 → 图标串：1 组只显图标，多组显 "N×[img]"；按钮图标取第一件白送物品。
         local parts, starter_img = {}, ''
         for _, s in ipairs(def.starter or {}) do
