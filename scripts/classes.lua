@@ -28,90 +28,122 @@ M.MAX_LEVEL = 10000   -- 满级基准（与 respawn_gifts.MAX_LEVEL / gui CLASS_
 -- 默认职业表（顺序即面板显示顺序），分组：基础生产 / 能源化工 / 物流 / 战斗 / 装备护甲 / 农牧 / 星球专精，空职业 {} 分隔。
 local DEFAULT_CLASSES = {
     -- ── 基础生产组（红瓶起步：矿/板/齿轮/电路，满级线低 full=100，开局速成大宗）──
-    {key = 'civilian', name = '汽车司机', full = 100, starter = {
-        {item = 'car', groups = 1},
+    -- 默认职业。
+    {key = 'civilian', name = '平民', full = 10000, starter = {
+        {item = 'car', count = 1},
         {item = 'nuclear-fuel', groups = 1},
     }, rewards = {
-        {pack = 'automation-science-pack', item = 'coin',   count = 1},
-        {pack = 'automation-science-pack', item = 'coin',   count = 1},
-        {pack = 'logistic-science-pack', item = 'coin',   count = 1},
-        {pack = 'military-science-pack', item = 'coin',   count = 1},
-        {pack = 'chemical-science-pack', item = 'coin',   count = 1},
-        {pack = 'production-science-pack', item = 'coin',   count = 1},
-        {pack = 'utility-science-pack', item = 'coin',   count = 1},
-        {pack = 'space-science-pack', item = 'coin', count = 1},
+        {pack = 'automation-science-pack', item = 'coin',   count = 100},
+        {pack = 'automation-science-pack', item = 'coin',   count = 100},
+        {pack = 'logistic-science-pack', item = 'coin',   count = 100},
+        {pack = 'military-science-pack', item = 'coin',   count = 100},
+        {pack = 'chemical-science-pack', item = 'coin',   count = 100},
+        {pack = 'production-science-pack', item = 'coin',   count = 100},
+        {pack = 'utility-science-pack', item = 'coin',   count = 100},
+        {pack = 'space-science-pack', item = 'coin', count = 100},
+        --
+        {pack = 'metallurgic-science-pack',     item = 'coin', count = 100},
+        {pack = 'electromagnetic-science-pack', item = 'coin',  count = 100},
+        {pack = 'agricultural-science-pack', item = 'coin', count = 100},
+        {pack = 'cryogenic-science-pack', item = 'coin', count = 100},
+        {pack = 'promethium-science-pack', item = 'coin', count = 100},
+    }},
+    -- 矿物
+    {key = 'oreman', name = '矿物学家', full = 100, starter = {
+        {item = 'iron-ore', groups = 5},
+        {item = 'copper-ore', groups = 5},
+        {item = 'stone', groups = 5},
+        {item = 'coal', groups = 5},
+    }, rewards = {
+        {pack = 'automation-science-pack',      item = 'iron-ore',     groups = 5},   -- 红：铁矿
+        {pack = 'logistic-science-pack',        item = 'copper-ore',   groups = 5},   -- 绿：铜矿
+        {pack = 'military-science-pack',        item = 'coal',         groups = 5},   -- 灰：煤
+        {pack = 'chemical-science-pack',        item = 'stone',  groups = 5},   -- 蓝：铀矿(需硫酸,蓝瓶时代)
+        {pack = 'production-science-pack',      item = 'iron-ore',        groups = 1},   -- 紫：石头
+        {pack = 'utility-science-pack',      item = 'copper',        groups = 1},   -- 紫：石头
+        {pack = 'space-science-pack', item = 'uranium-ore', groups = 1},
+        --
+        {pack = 'metallurgic-science-pack',     item = 'tungsten-ore', groups = 1},   -- 橙：钨矿(火山)
+        {pack = 'metallurgic-science-pack',     item = 'calcite',      groups = 1},   -- 橙：方解石(火山)
+        {pack = 'electromagnetic-science-pack', item = 'holmium-ore',  groups = 1},   -- 粉：钬矿(电浆星)
+        {pack = 'electromagnetic-science-pack', item = 'scrap',        groups = 1},   -- 粉：废料(电浆星)
+        {pack = 'agricultural-science-pack', item = 'stone', groups = 1},
+        {pack = 'agricultural-science-pack', item = 'carbon', groups = 1},
+        {pack = 'cryogenic-science-pack', item = 'lithium', groups = 1},
+        {pack = 'promethium-science-pack', item = 'promethium-asteroid-chunk', groups = 1},
     }},
     -- 材料
-    {key = 'material', name = '杂货老板', full = 100, starter = {
-        {item = 'transport-belt', groups = 1},
-        {item = 'burner-mining-drill', groups = 1},
-        {item = 'burner-inserter', groups = 1},
+    {key = 'material', name = '材料学家', full = 100, starter = {
+        {item = 'iron-plate', groups = 5},
+        {item = 'copper-plate', groups = 5},
     }, rewards = {
         {pack = 'automation-science-pack', item = 'iron-plate',   groups = 1},
         {pack = 'logistic-science-pack', item = 'copper-plate',   groups = 1},
         {pack = 'military-science-pack', item = 'stone-brick',   groups = 1},
         {pack = 'chemical-science-pack', item = 'plastic-bar',   groups = 1},
         {pack = 'production-science-pack', item = 'steel-plate',   groups = 1},
-        {pack = 'utility-science-pack', item = 'battery',   groups = 1},
-        {pack = 'space-science-pack', item = 'electric-engine-unit', groups = 1},
+        {pack = 'utility-science-pack', item = 'sulfur',   groups = 1},
+        {pack = 'space-science-pack', item = 'uranium-238', groups = 1},
+        --
+        {pack = 'metallurgic-science-pack',     item = 'tungsten-carbide', groups = 1},
+        {pack = 'metallurgic-science-pack',     item = 'tungsten-plate', groups = 1},
+        {pack = 'electromagnetic-science-pack', item = 'holmium-plate',  groups = 1},
+        {pack = 'agricultural-science-pack', item = 'carbon-fiber', groups = 1},
+        {pack = 'cryogenic-science-pack', item = 'lithium-plate', groups = 1},
+        {pack = 'promethium-science-pack', item = 'uranium-235', groups = 1},
     }},
-    -- 炉子 燃料
+
+    {key = 'miner', name = '采矿工人', full = 100, starter = {
+        {item = 'burner-mining-drill', groups = 1},
+        -- {item = 'electric-mining-drill', groups = 1},
+        -- {item = 'big-mining-drill', groups = 1},
+    }, rewards = {
+        {pack = 'automation-science-pack',      item = 'burner-mining-drill',     groups = 5},   -- 红：铁矿
+        {pack = 'metallurgic-science-pack',     item = 'electric-mining-drill',      groups = 5},
+        {pack = 'promethium-science-pack', item = 'big-mining-drill', groups = 5},
+        --
+        {pack = 'logistic-science-pack',        item = 'iron-ore',   groups = 1},   -- 绿：铜矿
+        {pack = 'military-science-pack',        item = 'coal',         groups = 1},   -- 灰：煤
+        {pack = 'chemical-science-pack',        item = 'uranium-ore',  groups = 1},   -- 蓝：铀矿(需硫酸,蓝瓶时代)
+        {pack = 'production-science-pack',      item = 'copper-ore',        groups = 1},   -- 紫：石头
+        {pack = 'utility-science-pack',      item = 'stone',        groups = 1},   -- 紫：石头
+        {pack = 'space-science-pack', item = 'uranium-ore', groups = 1},
+        --
+        {pack = 'metallurgic-science-pack',     item = 'tungsten-ore', groups = 1},   -- 橙：钨矿(火山)
+        {pack = 'metallurgic-science-pack',     item = 'calcite',      groups = 1},   -- 橙：方解石(火山)
+        {pack = 'electromagnetic-science-pack', item = 'holmium-ore',  groups = 1},   -- 粉：钬矿(电浆星)
+        {pack = 'electromagnetic-science-pack', item = 'scrap',        groups = 1},   -- 粉：废料(电浆星)
+        {pack = 'agricultural-science-pack', item = 'stone', groups = 1},
+        {pack = 'cryogenic-science-pack', item = 'lithium', groups = 1},
+    }},
+
     {key = 'smelter', name = '冶炼工人', full = 100, starter = {
         {item = 'stone-furnace', groups = 1},
-        {item = 'steel-furnace', groups = 1},
-        {item = 'electric-furnace', groups = 1},
+        -- {item = 'steel-furnace', groups = 1},
+        -- {item = 'electric-furnace', groups = 1},
     }, rewards = {
         {pack = 'automation-science-pack', item = 'stone-furnace',       groups = 2},
-        {pack = 'logistic-science-pack', item = 'steel-furnace',       groups = 2},
-        {pack = 'chemical-science-pack', item = 'electric-furnace',   groups = 2},
+        {pack = 'metallurgic-science-pack', item = 'steel-furnace',       groups = 2},
+        {pack = 'promethium-science-pack', item = 'electric-furnace',   groups = 2},
+        --
         {pack = 'military-science-pack', item = 'coal', groups = 2},
         {pack = 'production-science-pack', item = 'solid-fuel',      groups = 2},
         {pack = 'utility-science-pack', item = 'rocket-fuel', groups = 2},
         {pack = 'space-science-pack', item = 'carbon', groups = 2},
     }},
-    {key = 'miner', name = '采矿工人', full = 100, starter = {
-        {item = 'electric-mining-drill', count = 50},
-        {item = 'stone', groups = 3},
-        {item = 'coal', groups = 3},
-    }, rewards = {
-        {pack = 'automation-science-pack',  item = 'electric-mining-drill', groups = 10},
-        {pack = 'metallurgic-science-pack', item = 'big-mining-drill',      groups = 10},
-        {pack = 'automation-science-pack',  item = 'iron-ore',   groups = 10},
-        {pack = 'automation-science-pack',  item = 'copper-ore', groups = 8},
-    }},
-    {key = 'steelworker', name = '炼钢工人', full = 100, starter = {
-        {item = 'steel-furnace', count = 50},
-        {item = 'coal', groups = 5},
-        {item = 'iron-ore', groups = 5},
-    }, rewards = {
-        {pack = 'automation-science-pack', item = 'coal',        groups = 1},
-        {pack = 'automation-science-pack', item = 'iron-plate',  groups = 15},
-        {pack = 'automation-science-pack', item = 'steel-plate', groups = 3},
-        {pack = 'automation-science-pack', item = 'copper-plate', groups = 10},
-    }},
-    {key = 'artisan', name = '螺丝装配工人', full = 100, starter = {
-        {item = 'assembling-machine-1', count = 50},
+
+    {key = 'artisan', name = '装配工人', full = 100, starter = {
+        {item = 'assembling-machine-1', groups = 1},
         {item = 'iron-plate', groups = 5},
         {item = 'iron-gear-wheel', groups = 3},
     }, rewards = {
         {pack = 'automation-science-pack', item = 'assembling-machine-1', groups = 1},
         {pack = 'logistic-science-pack',   item = 'assembling-machine-2', groups = 1},   -- 绿瓶：二级组装机
         {pack = 'production-science-pack', item = 'assembling-machine-3', groups = 1},   -- 紫瓶：三级组装机
+
         {pack = 'automation-science-pack', item = 'iron-plate',      groups = 12},
         {pack = 'automation-science-pack', item = 'iron-gear-wheel', groups = 6},
         {pack = 'automation-science-pack', item = 'copper-plate',    groups = 5},
-    }},
-    {key = 'circuiter', name = '电路装配工人', full = 100, starter = {
-        {item = 'assembling-machine-1', count = 50},
-        {item = 'iron-plate', groups = 4},
-        {item = 'copper-cable', groups = 3},
-    }, rewards = {
-        {pack = 'automation-science-pack',      item = 'assembling-machine-1', groups = 1},
-        {pack = 'automation-science-pack',      item = 'copper-cable',       groups = 8},
-        {pack = 'automation-science-pack',      item = 'electronic-circuit', groups = 4},
-        {pack = 'chemical-science-pack',        item = 'advanced-circuit',   groups = 5},   -- 蓝瓶：进阶电路
-        {pack = 'electromagnetic-science-pack', item = 'processing-unit',    groups = 4},   -- 粉瓶：处理器（电磁厂高效造）
-        {pack = 'automation-science-pack',      item = 'iron-plate',         groups = 2},
     }},
 
     {},
