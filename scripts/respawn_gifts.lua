@@ -4,7 +4,7 @@
 -- 发放分两部分：
 --   ① 固定起手护甲（give_starter_armor，发到护甲格，不占主格）。
 --   ② 主格物品清单（M.gift_list）= 起手基础物资 + 开局金币 + 【职业】starter(无条件按组发) + rewards(按瓶等级 floor 发)。
---      背包格数加成 = 该清单总格数 → 初始给多少格物品就扩多少格背包、刚好装下（见 apply_inventory_bonus）。
+--      背包格数加成已改为 force 级固定 +50（见 reset.lua，随机器人跟随上限一起每轮重设），不再按礼包格数 per-player 动态扩。
 local passives = require('scripts.passives')
 local classes = require('scripts.classes')
 
@@ -60,19 +60,7 @@ function M.gift_list(player)
     return list
 end
 
--- gift_list 占用的背包格数（每种 = ceil(数量/堆叠)）。
-local function gift_slot_count(list)
-    local slots = 0
-    for _, it in ipairs(list) do slots = slots + math.ceil(it.count / stack_size(it.name)) end
-    return slots
-end
-
--- 背包格数加成 = 本轮首发清单的总格数（首发时存进 storage.gift_slots[名]）。
--- 每次复活/创建重设（新角色加成清零），读存值即可、不重算（避免本轮切职业后格数与已发物品不符）。
-function M.apply_inventory_bonus(player)
-    if not player or not player.character then return end
-    player.character_inventory_slots_bonus = (storage.gift_slots or {})[player.name] or 0
-end
+-- 背包格数加成已移到 force 级固定 +50（reset.lua 里随机器人跟随上限一起每轮重设），此处不再 per-player 计算。
 
 -- ----------------------------------------------------------------------------
 -- 固定起手护甲（不随等级变化）：modular-armor 内置 1 个人机器人端口 + 1 夜视仪 + 1 个 1 级电池 + 10 块太阳能板。
@@ -107,10 +95,6 @@ function M.on_first_respawn(player)
     local main = player.get_inventory(defines.inventory.character_main)
     if not main then return end
     local list = M.gift_list(player)
-    local slots = gift_slot_count(list)
-    storage.gift_slots = storage.gift_slots or {}
-    storage.gift_slots[player.name] = slots
-    player.character_inventory_slots_bonus = slots   -- 首发当场设格；后续复活由 apply_inventory_bonus 读存值保持
     for _, it in ipairs(list) do
         main.insert{name = it.name, count = it.count}
     end

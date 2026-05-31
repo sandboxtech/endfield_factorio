@@ -17,6 +17,7 @@
 --   {}       空表 = 占位，在职业窗口里作【换行/分组】分隔（无 key，选不到）。
 --
 -- 【容量约束】每个职业「满级资源含量」（starter 固定组 + 各 rewards 满级 groups 之和）控制在 50 组以内。
+--
 local passives = require('scripts.passives')
 
 local M = {}
@@ -28,36 +29,40 @@ M.MAX_LEVEL = 10000   -- 满级基准（与 respawn_gifts.MAX_LEVEL / gui CLASS_
 local DEFAULT_CLASSES = {
     -- ── 基础生产组（红瓶起步：矿/板/齿轮/电路，满级线低 full=100，开局速成大宗）──
     {key = 'civilian', name = '平民', full = 100, starter = {
-        {item = 'burner-mining-drill', count = 1},
-        {item = 'transport-belt'},
-        {item = 'coal', groups = 3}, {item = 'iron-plate', groups = 3},
-        {item = 'copper-plate', groups = 2}, {item = 'stone', groups = 2}}, rewards = {
-        {pack = 'automation-science-pack', item = 'iron-ore',   groups = 10},
-        {pack = 'automation-science-pack', item = 'copper-ore', groups = 8},
-        {pack = 'automation-science-pack', item = 'coal',       groups = 5},
-        {pack = 'automation-science-pack', item = 'stone',      groups = 5}}},
-    {key = 'smelter', name = '炉工', full = 100, starter = {
-        {item = 'stone-furnace', count = 50},
-        {item = 'coal', groups = 5}, {item = 'iron-ore', groups = 3}, {item = 'copper-ore', groups = 2}}, rewards = {
-        {pack = 'automation-science-pack', item = 'coal',       groups = 1},
+        {item = 'burner-mining-drill', groups = 1},
+        {item = 'burner-inserter', groups = 1},
+        {item = 'transport-belt'},   groups = 2}, rewards = {
+        {pack = 'automation-science-pack', item = 'iron-plate',   groups = 1},
+        {pack = 'logistic-science-pack', item = 'iron-plate',   groups = 1},
+        {pack = 'military-science-pack', item = 'stone-brick',   groups = 1},
+        {pack = 'chemical-science-pack', item = 'plastic-bar',   groups = 1},
+        {pack = 'production-science-pack', item = 'steel-plate',   groups = 1},
+        {pack = 'utility-science-pack', item = 'battery',   groups = 1},
+        {pack = 'space-science-pack', item = 'electric-engine-unit', groups = 1}}},
+    {key = 'smelter', name = '冶炼工人', full = 100, starter = {
+        {item = 'stone-furnace', groups = 1},
+        {item = 'burner-inserter', groups = 1},
+        {item = 'transport-belt', groups = 2}
+    }, rewards = {
+        {pack = 'automation-science-pack', item = 'stone-furnace',       groups = 1},
         {pack = 'automation-science-pack', item = 'iron-ore',   groups = 10},
         {pack = 'automation-science-pack', item = 'copper-ore', groups = 5},
         {pack = 'automation-science-pack', item = 'stone',      groups = 2}}},
-    {key = 'miner', name = '矿工', full = 100, starter = {
+    {key = 'miner', name = '采矿工人', full = 100, starter = {
         {item = 'electric-mining-drill', count = 50},
         {item = 'stone', groups = 3}, {item = 'coal', groups = 3}}, rewards = {   -- 矿工只送矿/钻头，不送铁板
         {pack = 'automation-science-pack',  item = 'electric-mining-drill', groups = 10},
         {pack = 'metallurgic-science-pack', item = 'big-mining-drill',      groups = 10},
         {pack = 'automation-science-pack',  item = 'iron-ore',   groups = 10},
         {pack = 'automation-science-pack',  item = 'copper-ore', groups = 8}}},
-    {key = 'steelworker', name = '炼钢工', full = 100, starter = {
+    {key = 'steelworker', name = '炼钢工人', full = 100, starter = {
         {item = 'steel-furnace', count = 50},
         {item = 'coal', groups = 5}, {item = 'iron-ore', groups = 5}}, rewards = {
         {pack = 'automation-science-pack', item = 'coal',        groups = 1},
         {pack = 'automation-science-pack', item = 'iron-plate',  groups = 15},
         {pack = 'automation-science-pack', item = 'steel-plate', groups = 3},
         {pack = 'automation-science-pack', item = 'copper-plate', groups = 10}}},
-    {key = 'artisan', name = '螺丝装配工', full = 100, starter = {
+    {key = 'artisan', name = '螺丝装配工人', full = 100, starter = {
         {item = 'assembling-machine-1', count = 50},
         {item = 'iron-plate', groups = 5}, {item = 'iron-gear-wheel', groups = 3}}, rewards = {
         {pack = 'automation-science-pack', item = 'assembling-machine-1', groups = 1},
@@ -66,7 +71,7 @@ local DEFAULT_CLASSES = {
         {pack = 'automation-science-pack', item = 'iron-plate',      groups = 12},
         {pack = 'automation-science-pack', item = 'iron-gear-wheel', groups = 6},
         {pack = 'automation-science-pack', item = 'copper-plate',    groups = 5}}},
-    {key = 'circuiter', name = '电路装配工', full = 100, starter = {
+    {key = 'circuiter', name = '电路装配工人', full = 100, starter = {
         {item = 'assembling-machine-1', count = 50},
         {item = 'iron-plate', groups = 4}, {item = 'copper-cable', groups = 3}}, rewards = {   -- 电路工不送铜板
         {pack = 'automation-science-pack',      item = 'assembling-machine-1', groups = 1},
@@ -79,7 +84,7 @@ local DEFAULT_CLASSES = {
     {},   -- 分组换行：基础生产 ↔ 能源化工
 
     -- ── 能源化工组（电力/蒸汽/太阳能/化工/石油/管道/核能/回收）──
-    {key = 'electrician', name = '烧煤工', full = 100, starter = {
+    {key = 'electrician', name = '火电工人', full = 100, starter = {
         {item = 'coal', groups = 5},
         {item = 'small-electric-pole', groups = 1}}, rewards = {   -- 烧煤工只送煤/电力设备，不送铁板
         {pack = 'production-science-pack', item = 'small-electric-pole', groups = 5},

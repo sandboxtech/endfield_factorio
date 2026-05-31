@@ -152,7 +152,6 @@ script.on_event(defines.events.on_player_respawned, function(event)
     place_on_respawn(player)   -- 回玩家的复活星球出生点（默认/兜底母星）+ chart 256
     player.disable_flashlight()
     passives.apply(player)     -- 重算手搓/移动/挖矿速度技能（换新角色后 modifier 清零，需重设）
-    respawn_gifts.apply_inventory_bonus(player)   -- 背包格数加成（按本轮首发清单格数，读存值保持）
     try_gift_first_in_world(player)
 end)
 
@@ -187,7 +186,6 @@ script.on_event(defines.events.on_player_created, function(event)
     M.player_reset(player)
     gui.player_gui(player)
     passives.apply(player)     -- 施加手搓/移动/挖矿速度技能（新角色 modifier 默认 0）
-    respawn_gifts.apply_inventory_bonus(player)   -- 背包格数加成（按本轮首发清单格数，读存值保持）
     try_gift_first_in_world(player)
     gui.show_intro(player)   -- 新玩家首次进服自动弹简介（即世界标签的悬停内容）
 end)
