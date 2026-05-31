@@ -127,7 +127,7 @@ local EXOTIC = {
 
 -- 战利品池：手动穷举的全物品名单（从游戏数据导出，不在运行时枚举 prototypes），按【类】分组。
 -- 不再带全局权重 w，每种箱子用各自的【类权重表】(见 LOOT_WEIGHTS)抽取，掉落构成因箱而异。
-local LOOT = {
+local DEFAULT_LOOT = {
     -- 原料/矿
     {cat = 'raw',        items = {
         'iron-ore',  'copper-ore',  'uranium-ore',  'tungsten-ore',  'holmium-ore',   -- 金属矿
@@ -232,11 +232,11 @@ local LOOT = {
 -- 各【按外观区分】的箱子对 LOOT 各【类】的权重：先按权重选类、再类内等概率选物品。
 -- 每表都【列全所有类】(顺序同 LOOT)，不要的标 0 方便手调，0 与省略等价，不影响运算。
 -- 木箱(宝箱)走单独精选池 TREASURE_POOL，不在这里。
-local LOOT_WEIGHTS = {
+local DEFAULT_LOOT_WEIGHTS = {
     -- 钢箱 = 材料箱：基础材料/原料 + 大概率普通科技瓶。普通品质、常见、装得多。
     material = {
-        raw = 25, material = 60, logistics = 10,  circuit = 1,  power = 1,
-        production = 0,  module = 2,  military = 1,  equipment = 1,  science = 3,
+        raw = 35, material = 80, logistics = 15,  circuit = 1,  power = 2,
+        production = 0,  module = 3,  military = 2,  equipment = 1,  science = 1,
         gleba = 1,  space = 1,
     },
     -- 铁箱 = 设备箱：实用设备/机器为主，含载具/太空件，少量科技瓶。普通品质、中等数量。
@@ -253,6 +253,22 @@ local LOOT_WEIGHTS = {
     },
 }
 
+-- 战利品权重【存 storage.loot_weights，可 /c 热改】（同 classes 那套）：DEFAULT 只是初始默认。
+--   例：/c storage.loot_weights.material.science = 5    调钢箱出科技瓶的权重
+--       /c storage.loot_weights.perp.science = 1        让永续箱也可能无限出瓶(很强,慎调)
+--       /c storage.loot_weights = nil                   恢复默认(下次加载重建)
+local function deepcopy(t)
+    if type(t) ~= 'table' then return t end
+    local c = {}
+    for k, v in pairs(t) do c[k] = deepcopy(v) end
+    return c
+end
+local function loot_weights() return storage.loot_weights or DEFAULT_LOOT_WEIGHTS end
+function M.ensure_loot()
+    storage.loot_weights = storage.loot_weights or deepcopy(DEFAULT_LOOT_WEIGHTS)
+    storage.loot = storage.loot or deepcopy(DEFAULT_LOOT)   -- 物品名单也存 storage，可 /c 热改（加减物品）
+end
+
 -- 木箱(宝箱)精选池：每箱 1~2 件高品质高价值物品。只放【玩家初始奖励(respawn_gifts.pack_gifts)里
 -- 没有的】顶级物品，顶级插件(3级，初始奖励只给基础级) + rocket-silo。
 -- foundry/electromagnetic-plant/biochamber/cryogenic-plant/recycler/big-mining-drill 已作为初始
@@ -268,11 +284,12 @@ local TREASURE_POOL = {
 -- 按给定【类权重表】选类、类内等概率选物品。weights[cat] 为 0/nil 即跳过该类。
 -- 用 ipairs 顺序确定 → 多人各端一致，math.random 取值不会 desync。
 local function pick_loot(weights)
+    local LOOT = storage.loot or DEFAULT_LOOT   -- 读 storage（可 /c 热改物品名单），未初始化退回默认
     local total = 0
     for _, c in ipairs(LOOT) do
         total = total + (weights[c.cat] or 0)
     end
-    if total <= 0 then return LOOT[1].items[1] end   -- 权重表为空时的兜底
+    if total <= 0 then return nil end   -- 没有任何可用类（cat 都没配权重/找不到）→ 返回 nil，调用方 item_ok 跳过本次
     local roll = math.random() * total
     for _, c in ipairs(LOOT) do
         local w = weights[c.cat] or 0
@@ -281,7 +298,7 @@ local function pick_loot(weights)
             if roll <= 0 then return c.items[math.random(#c.items)] end
         end
     end
-    return LOOT[1].items[1]   -- 浮点误差兜底
+    return nil   -- 浮点误差兜底（极罕见）：返回 nil 跳过本次，不强行塞第一个
 end
 
 -- 单件数量：1 到该物品 1 组(堆叠数) × random^exp。exp 越大越偏低：
@@ -330,6 +347,7 @@ end
 -- （如 Space Age 删了 'satellite'），运行时 insert 不存在的物品会报 "unknown item name" 崩档。
 -- 此处统一拦截：无效则跳过，并把名字报告给所有【在线管理员】（同名只报一次，避免刷屏）。
 local function item_ok(name)
+    if not name then return false end   -- pick_loot 抽不到合适类会返回 nil → 视为无效、跳过本次
     if prototypes.item[name] then return true end
     storage.bad_items = storage.bad_items or {}
     if not storage.bad_items[name] then
@@ -386,10 +404,10 @@ local function spawn_perpetual_chest(surface, pos)
         for dy = -3, 3 do tiles[#tiles + 1] = {name = floor, position = {cx + dx, cy + dy}} end
     end
     surface.set_tiles(tiles)
-    -- 永续箱只出基础材料/矿物(LOOT_WEIGHTS.perp)；选到无效物品名（item_ok 会报告管理员）就重抽，全失败则不放。
+    -- 永续箱只出基础材料/矿物(loot_weights().perp)；选到无效物品名（item_ok 会报告管理员）就重抽，全失败则不放。
     local item
     for _ = 1, 8 do
-        local cand = pick_loot(LOOT_WEIGHTS.perp)
+        local cand = pick_loot(loot_weights().perp)
         if item_ok(cand) then item = cand; break end
     end
     if not item then chest.destroy(); return false end
@@ -493,7 +511,7 @@ local function fill_material_chest(inv)
     -- 选 1~3 种材料（无效名跳过）
     local kinds = {}
     for _ = 1, math.random(1, 3) do
-        local name = pick_loot(LOOT_WEIGHTS.material)
+        local name = pick_loot(loot_weights().material)
         if item_ok(name) then kinds[#kinds + 1] = name end
     end
     if #kinds == 0 then return end
@@ -546,7 +564,7 @@ local function place_reward_chest(surface, pos, kind)
     chest.destructible = false
     local inv = chest.get_inventory(defines.inventory.chest)
     if not inv then return end
-    if kind == 'equipment' then fill_loot(chest, math.random(10, 24), LOOT_WEIGHTS.equipment, 2)
+    if kind == 'equipment' then fill_loot(chest, math.random(10, 24), loot_weights().equipment, 2)
     elseif kind == 'treasure' then fill_treasure_chest(inv)
     else fill_material_chest(inv) end
 end

@@ -55,6 +55,8 @@ function M.print_status(target, viewer)
     viewer.print({'wn.stat-warps',    s('warps')})
     viewer.print({'wn.stat-research', s('research')})
     viewer.print({'wn.stat-key',      s('key_research')})
+    viewer.print('')                  -- 战绩与瓶子经验之间留空行
+    M.print_exp(target, viewer)       -- 12 种科技瓶经验合并进数据页（经在线玩家列表可看他人）
 end
 
 

@@ -49,8 +49,7 @@ function M.player_gui(player)
         {name = 'wn_btn_actions',  sprite = 'item/blueprint-book',  tip = {'', '[font=default-bold]功能菜单[/font]\n', {'wn.actions-help'}}},
         {spacer = true},
         -- 个人组：科技瓶经验 / 统计 / 职业 / 星星。
-        {name = 'wn_btn_skills',   sprite = 'virtual-signal/signal-science-pack', tip = {'', '[font=default-bold]瓶子经验[/font]\n', {'wn.panel-help'}}},
-        {name = 'wn_btn_stats',    sprite = 'entity/character',                 tip = {'', '[font=default-bold]统计[/font]\n', {'wn.stats-btn-tip'}}},
+        {name = 'wn_btn_stats',    sprite = 'entity/character',                 tip = {'', '[font=default-bold]在线玩家[/font]\n', {'wn.stats-btn-tip'}}},
         {name = 'wn_btn_class',    sprite = 'virtual-signal/signal-mining',     tip = {'', '[font=default-bold]职业[/font]\n', {'wn.class-help'}}},
         {name = 'wn_btn_star',     sprite = 'virtual-signal/signal-star',       tip = {'', '[font=default-bold]星星[/font]\n', {'wn.star-help'}}, min_level = storage.star_unlock_level or 0},
         {spacer = true},

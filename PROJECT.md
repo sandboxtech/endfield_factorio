@@ -24,8 +24,8 @@
 | `util.lua` | 通用工具：`readable`、`random_exp` 指数分布、`random_nature`、`mostly_normal`、`evo_biter`（按进化度挑虫）。 |
 | `events.lua` | **事件总线**：同一事件多处 `events.on()` 订阅、内部只 `script.on_event` 注册一次再分发 → 避免单事件被多处注册互相覆盖。可能被多方监听的事件都走它。 |
 | `noise.lua` | 2D simplex + 分形多倍频 + 种子派生变换（旋转/拉伸/缩放）。供运行时手动铺设噪声地物（移植自 ComfyFactorio）。 |
-| `players.lua` | 玩家生命周期（创建/加入/离开/复活/死亡）。`kill_player`：先把玩家移到**当前所在表面**的出生点再杀死（**尸体/货物留在当前星球**，杜绝"外星捡货→自杀带回母星"）；**复活落点** `place_on_respawn` 去玩家的**复活星球** `storage.respawn_surface[名]`（前往某星球时由命令记下；该星球 surface 不存在则回**母星**），`place_on_surface` 仅**异步**请求生成区块、不强制。`print_inspection` 面板。 |
-| `respawn_gifts.lua` | 每世界首次复活时发：**固定**起手护甲（modular-armor 内置 1 机器人端口 + 1 夜视仪 + 1 个 1 级电池 + 10 块太阳能板，不随等级变）+ 起手基础物资 + **开局金币**(`floor(√在线分钟)`) + **职业开局物品**(`gift_list`)：所选职业的无条件起手物(`starter`，可多种·各几组) + 按职业用到的各科技瓶等级线性发的奖励物(`floor(堆叠×组数×等级/满级)`)。背包格数加成 = 首发清单总格数(`gift_slots`，`apply_inventory_bonus` 读存值保持)。 |
+| `players.lua` | 玩家生命周期（创建/加入/离开/复活/死亡）。`kill_player`：先把玩家移到**当前所在表面**的出生点再杀死（**尸体/货物留在当前星球**，杜绝"外星捡货→自杀带回母星"）；**复活落点** `place_on_respawn` 去玩家的**复活星球** `storage.respawn_surface[名]`（前往某星球时由命令记下；该星球 surface 不存在则回**母星**），`place_on_surface` 仅**异步**请求生成区块、不强制。`print_status`(等级/三能力/战绩/各瓶经验) + `print_exp` 供【在线玩家】窗口看自己或他人数据。 |
+| `respawn_gifts.lua` | 每世界首次复活时发：**固定**起手护甲（modular-armor 内置 1 机器人端口 + 1 夜视仪 + 1 个 1 级电池 + 10 块太阳能板，不随等级变）+ **建设机器人**(所有职业都发·配合护甲机器人端口；其余基础原料挪到【搬运工】职业) + **开局金币**(`floor(√在线分钟)`) + **职业开局物品**(`gift_list`)：所选职业的无条件起手物(`starter`，可多种·各几组) + 按职业用到的各科技瓶等级线性发的奖励物(`floor(堆叠×组数×等级/满级)`)。背包格数加成 = 首发清单总格数(`gift_slots`，`apply_inventory_bonus` 读存值保持)。 |
 | `classes.lua` | **职业系统**：每个职业是一个**专精主题**（采矿/自动化/机器人/军事/外星/博学…），决定开局发什么物品；HUD 独立按钮窗口选择（同时只能一种，存 `storage.player_class`，带短冷却）。`starter` 无条件起手物列表(可多种·各几组)；`rewards` 多条，每条用一种瓶等级**线性发**一种物品(`floor` 向下取整)；`unlock` 可选门槛(当前全部无门槛、人人可选)。**职业表存 `storage.classes`**(由 `M.ensure()` 从 `DEFAULT_CLASSES` 深拷贝，on_init/on_configuration_changed 调用)，**可 /c 热改**(改 groups/加减条目即时生效；`/c storage.classes=nil` 恢复默认)；读取走 `M.all()`/`M.def_for_key(key)`。详见『跨跃迁进度 2』。 |
 | `market.lua` | **5 个**金币市场（母星 + 其余 4 个星球，凡 `PLANET_GEN` 有配置，内容相同，不可摧毁/挖取）。**惰性放置**：由 `surface.lua` 的 `on_chunk_generated` 在**出生区块自然生成时**（玩家复活/传送到该星触发）调一次，**不强制生成区块**；每轮每星一次（`storage.market_run` 记录，成功才记）。同时做**出生点保底**：中心抽 16 点，过半不可通行(`collides_with('player')`：水/熔岩/油海/虚空…)就铺 64×64 精炼混凝土。 |
 | `passives.lua` | **动作即时升级的速度技能**：手搓/移动(封顶 +100%)/挖矿，曲线 -50% 下限、log 缓升；同时累积击杀/毁巢等统计。独占 craft/mine/changed_position 事件 + died(经总线)。展示在【状态】窗口。 |
@@ -38,8 +38,8 @@
 | `tick.lua` | `on_gui_click`(经 `events.safe` 包裹) + **每分钟周期任务**（不再用 `on_nth_tick`，改走 `events` 总线的 `on_tick` + `game.tick % 3600` 整除门控：多订阅安全、不被覆盖、间隔可扩展）：在线采样 + 倒计时/提醒 + **事件世界** `run_world_events`（按 `WORLD_EVENTS` 分发表：raid 撒虫卵/meteor/supply/coinfall/drones/barrage/tech；每分钟全服 `event_chance` 掷一次、命中挑一个事件世界玩家触发其星球事件；每种事件另有独立跳过钮 `storage.event_period_min[et]`)。 |
 | `player_stats.lua` | 行为统计存储（craft/mining/move/deaths/online_minutes，按玩家名，跨跃迁累积）；递增在 `passives.lua`。 |
 | `rocket.lua` | 发射火箭惩罚：每次 `on_rocket_launched` 令本轮 `warp_hours` -1 分钟，公告 + 打印载荷。 |
-| `commands.lua` | 命令（**全英文名、无中文/拼音别名**）：管理员 `/reset`（破坏性，保留打字命令；清空经验改用控制台 `/c storage.exp = {}`）；会员管理 `/member`/`/unmember`(仅管理员)/`/kickout`。**管理员的 gen / diff(=ensure_defaults+参数对比) / 刷新玩家界面 已改为左上角【红按钮】**（仅管理员可见，`M.admin_gen`/`admin_diff`/`admin_players_gui`）；查看/预览/排行/自杀/教程/前往/出生星球 = HUD 或功能菜单弹窗按钮。**前往星球** `M.travel`：受总开关 `storage.travel_enabled`(默认关) + 每轮每外星独立 `storage.travel_chance[星球]`(默认0.5，reset 滚定 `travel_open`) 双重控制，要求鼠标/背包/物流/弹药四区为空；**出生星球** `M.set_home_planet` 设 `respawn_surface[名]`(下次跃迁在此复活并领起手装备)。**跃迁投票** `M.cast_warp_vote`→`warp_vote_eval`：净同意 ≥ ceil(在线/`warp_vote_divisor`) 即把倒计时**砍到剩 `warp_vote_target_minutes`(默认5) 分钟**并记缩减量 `warp_vote_delta`；**票持续生效不清空**，改票跌破阈值则把时间**加回(取消提前)**，reset 清空、不杀玩家。**投票+前往共享每玩家冷却** `action_cd`(默认3分钟，`action_cd_minutes`)。`add_command` 包装层在执行前公告全体"谁用了什么"。 |
-| `gui.lua` | 左上角 HUD：**① 玩法&指令按钮**(`show_tutorial`，纯说明文字) **② 功能菜单按钮**(`show_actions`：角色面板/跃迁/停留/预览/排行/自杀/前往星球(未开放置灰)/出生星球(当前标✓)) + 角色面板/跃迁/停留快捷 sprite + **管理员专属红按钮 GEN/DIFF/玩家**（`style='red_button'`，仅 `player.admin` 创建 → 普通玩家看不到，点击经 tick 路由到 `commands.admin_*`）+ 轮次·倒计时标签。屏幕中央临时弹窗 `show_popup`(支持按钮 `enabled`/`tooltip`)。 |
+| `commands.lua` | 命令（**全英文名、无中文/拼音别名**）：管理员 `/reset`（破坏性，保留打字命令；清空经验改用控制台 `/c storage.exp = {}`）；会员管理 `/member`/`/unmember`(仅管理员)/`/kickout`。**管理员的 gen / diff(=ensure_defaults+参数对比) / 刷新玩家界面 已改为左上角【红按钮】**（仅管理员可见，`M.admin_gen`/`admin_diff`/`admin_players_gui`）；预览/排行/自杀/前往/出生星球 = HUD 或功能菜单弹窗按钮；**在线玩家**(原"统计")按钮列出所有在线玩家(等级+职业)、点开看其数据(`show_stats`/`show_stats_of`)。瓶子经验已并入该数据页，原独立"科技瓶经验"按钮(`show_panel`/`show_player_list`)已删。**前往星球** `M.travel`：受总开关 `storage.travel_enabled`(默认关) + 每轮每外星独立 `storage.travel_chance[星球]`(默认0.5，reset 滚定 `travel_open`) 双重控制，要求鼠标/背包/物流/弹药四区为空；**出生星球** `M.set_home_planet` 设 `respawn_surface[名]`(下次跃迁在此复活并领起手装备)。**跃迁投票** `M.cast_warp_vote`→`warp_vote_eval`：净同意 ≥ ceil(在线/`warp_vote_divisor`) 即把倒计时**砍到剩 `warp_vote_target_minutes`(默认5) 分钟**并记缩减量 `warp_vote_delta`；**票持续生效不清空**，改票跌破阈值则把时间**加回(取消提前)**，reset 清空、不杀玩家。**投票+前往共享每玩家冷却** `action_cd`(默认3分钟，`action_cd_minutes`)。`add_command` 包装层在执行前公告全体"谁用了什么"。 |
+| `gui.lua` | 左上角 HUD：**① 玩法&指令按钮**(`show_tutorial`，纯说明文字) **② 功能菜单按钮**(`show_actions`：预览/排行/自杀/前往星球(未开放置灰)/出生星球(当前标✓)) + **在线玩家**(列各玩家等级/职业,点开看能力/战绩/经验)/职业/星星/跃迁/停留 sprite 按钮(星星按 `star_unlock_level`、投票按 `vote_unlock_level` 级以下置灰；职业窗口 `columns` 多列平铺) + **管理员专属红按钮 GEN/DIFF**（`style='red_button'`，仅 `player.admin` 创建 → 普通玩家看不到，点击经 tick 路由到 `commands.admin_*`）+ 轮次·倒计时标签。屏幕中央临时弹窗 `show_popup`(支持按钮 `enabled`/`tooltip`)。 |
 
 ## 世界变体系统（`surface.lua` + `map_features.lua` + `noise.lua` + `tick.lua` + `world_fx.lua`）
 
@@ -143,14 +143,7 @@ on_entity_died（world_fx 经总线）: 玩家建筑被虫毁 -> 按 replicant_c
 
 **背包格联动**（`gift_slots`）：开局清单占多少格，就把 `character_inventory_slots_bonus` 设多少（首发存 `storage.gift_slots[名]`，后续复活由 `apply_inventory_bonus` 读存值保持）→ 刚好装下、不溢出。
 
-当前职业表（起手 starter / 奖励 rewards：练哪种瓶 → 出什么）：
-- **平民** 热能采矿机 / 无
-- **采矿专家** 热能采矿机 / 红瓶→电力采矿机、橙瓶(火山)→大型采矿机
-- **自动化专家** 组装机1 / 红瓶→组装机2·传送带·快爪·石炉
-- **机器人专家** 被动供应箱 / 绿瓶→建设机器人·物流机器人·机器人平台·存储箱，黄瓶→主动供应箱·请求箱·缓冲箱
-- **军事专家** 机枪炮塔 / 黑瓶→激光炮塔·坦克·火箭筒·机枪炮塔
-- **外星专家** 铸造厂 / 四外星瓶各→铸造厂·电磁工厂·农业塔·低温工厂
-- **博学专家** 组装机2 / 后 10 种瓶(去掉红绿)各→一组该阶段代表机器
+具体有哪些职业、各发什么，**以 `classes.lua` 的 `DEFAULT_CLASSES` 为准**（数量/物品/组数会随平衡调整变动，本文不再罗列，避免过时）；运行时实际生效的是 `storage.classes`（可 /c 热改）。
 
 ## 金币经济
 

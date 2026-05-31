@@ -316,22 +316,7 @@ add_command('kickout', {'wn.kickout-help'}, member_kick_cmd)
 -- 所有命令统一【只用英文名】，不再注册中文/拼音别名。
 
 -- ── 供 HUD 按钮调用（gui 点击经 tick.on_gui_click 路由到这里）──────────────────
--- 弹出【角色面板】= 科技瓶经验（每瓶等级+经验）。target 省略=看自己；看自己→"查看他人能力"，看别人→"返回"。
-function M.show_panel(player, target)
-    if not player then return end
-    target = target or player
-    local self = target.index == player.index
-    local sink = gui.popup_sink()
-    if self then   -- 看自己时顶部带一段说明（跃迁=瓶子转经验）；看别人只列其经验
-        sink.lines[#sink.lines + 1] = {'wn.panel-help'}
-        sink.lines[#sink.lines + 1] = ''
-    end
-    players.print_exp(target, sink)   -- 科技瓶经验（个人能力/战绩在独立的【统计】窗口）
-    local top_buttons = { self
-        and {name = 'wn_panel_others', caption = {'wn.panel-others'}}
-        or  {name = 'wn_panel_others', caption = {'wn.panel-back'}} }
-    gui.show_popup(player, {'wn.inspect-header', target.name}, sink.lines, top_buttons)
-end
+-- （show_panel / show_player_list 已删：瓶子经验已合并进【在线玩家】数据页，不再单独成窗。）
 
 -- 弹出【统计】窗口（HUD 独立按钮）：列出所有在线玩家（名字 + 等级 + 职业），点某人看其详细统计。
 function M.show_stats(player)
@@ -381,16 +366,6 @@ function M.show_star(player)
     gui.show_popup(player, {'wn.star-title'}, lines, nil, false, bottom_buttons)
 end
 
--- 弹出【在线玩家列表】：每个在线玩家一个名字按钮，点击查看其能力面板。
-function M.show_player_list(player)
-    if not player then return end
-    local buttons, i = {}, 0
-    for _, p in pairs(game.connected_players) do
-        i = i + 1
-        buttons[#buttons + 1] = {name = 'wn_view_player_' .. i, caption = p.name, tags = {wn_view = p.name}}
-    end
-    gui.show_popup(player, {'wn.panel-list-title'}, {}, buttons)
-end
 
 -- 设定【出生星球】：下次跃迁复活 + 领起手装备的星球（即 storage.respawn_surface[玩家名]）。
 -- 纯个人设置——不传送、不广播、不占冷却；任何星球可选（不受前往 30% 限制）。点完刷新教程弹窗让 ✓ 跟着动。
@@ -457,7 +432,7 @@ function M.claim_charge(player)
     if n <= 0 then player.print({'wn.star-none-yet'}); return end
     storage.star[player.name] = (storage.star[player.name] or 0) + n * unit
     storage.charge[player.name] = last + n * unit      -- 记录前移 N 颗的量，保留余数
-    player.print({'wn.star-claimed', n})
+    game.print({'wn.star-claimed', player.name, n})
     M.show_star(player)   -- 刷新星星窗口（充能减少、余额更新）
 end
 -- 把 stars 颗（整数）星星转给目标玩家（余额不足则转全部整颗）。内部按 颗×min_to_tick 存。
