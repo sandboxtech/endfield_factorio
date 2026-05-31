@@ -236,7 +236,9 @@ script.on_event(defines.events.on_gui_click, events.safe('gui_click', function(e
     elseif name == 'wn_admin_diff' then
         commands.admin_diff(player)                 -- 管理员红按钮：ensure_defaults + 参数对比
     elseif name == 'wn_btn_skills' then
-        commands.show_panel(player)                 -- 点角色面板按钮 = 弹出角色面板（同 /inspect 自己）
+        commands.show_panel(player)                 -- 角色面板按钮 = 科技瓶经验
+    elseif name == 'wn_btn_stats' then
+        commands.show_stats(player)                 -- 状态按钮 = 人物等级 + 三能力 + 统计
     elseif name == 'wn_btn_class' then
         gui.show_classes(player)                    -- 职业按钮：弹出职业选择窗口
     elseif name == 'wn_btn_star' then

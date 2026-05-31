@@ -22,8 +22,7 @@ local function progress_bar(frac)
 end
 M.progress_bar = progress_bar   -- 导出供 commands.show_panel 的星星充能进度条复用（同款方块字符条）
 
--- 每种科技瓶一行：只展示【瓶 + 累计等级 + 累计经验】。等级 = floor(√经验)，封顶 1000。
--- 单独成函数：角色面板里"看自己"时把经验放到统计之后，故由 show_panel 决定打印时机（print_inspection 默认仍打印）。
+-- 每种科技瓶一行：【瓶 + 累计等级 + 累计经验】。供【角色面板】（科技瓶经验窗口）用，看自己/他人皆可。
 function M.print_exp(target, viewer)
     for _, pack in ipairs(constants.science_packs) do
         local pexp = passives.exp_total_for_pack(target.index, pack)
@@ -31,27 +30,23 @@ function M.print_exp(target, viewer)
     end
 end
 
--- skip_exp=true 时不打印科技瓶经验（由调用方稍后用 M.print_exp 自行插到别处，如星星块之后）。
-function M.print_inspection(target, viewer, skip_exp)
-    viewer.print({'wn.inspect-header', target.name})
-    -- 人物等级 = 开局金币 = floor(√在线分钟)；升到下一级需 (等级+1)² 分钟在线
+-- 个人状态（供【状态】窗口用）：人物等级行 → 空行 → 三能力（手搓/移动/挖矿，带当前速度%）
+-- → 空行 → 6 项无功能统计（击杀/毁灭巢/阵亡/历经跃迁/普通研究/关键研究）。
+function M.print_status(target, viewer)
+    -- 人物等级 = 开局金币 = floor(√在线分钟)
     local om = passives.get_stat(target.index, 'online_minutes')
-    local lv = respawn_gifts.coin_reward(om)
-    viewer.print({'wn.ability-online', om, lv})
-    if not skip_exp then   -- 看别人：经验 + 空行 + 统计接着打印；看自己由 show_panel 控制顺序
-        M.print_exp(target, viewer)
-        viewer.print('')
-        M.print_stats(target, viewer)
+    viewer.print({'wn.ability-online', om, respawn_gifts.coin_reward(om)})
+    viewer.print('')
+    -- 三能力：统计值 · 等级(floor√统计) · 当前实际速度%(=100%+修正系数，开局 50%)
+    for _, ab in ipairs(passives.abilities) do
+        local val = passives.get_stat(target.index, ab.stat)
+        local f = passives.skill_factor(target.index, ab)
+        viewer.print({ab.locale, math.floor(val), math.floor(math.sqrt(val)),
+                      math.floor((1 + f) * 100 + 0.5)})
     end
-end
-
--- 统计数据（终身累积，仅展示、不再驱动任何加成）：手搓秒/移动格/采矿次 在前，
--- 击杀/毁灭巢/阵亡/历经跃迁/普通研究/关键研究 在后，每项一行，放在面板最后。
-function M.print_stats(target, viewer)
+    viewer.print('')
+    -- 6 项无实际功能的统计
     local function s(k) return passives.get_stat(target.index, k) end
-    viewer.print({'wn.stat-craft', math.floor(s('craft_count'))})
-    viewer.print({'wn.stat-move',  math.floor(s('move_distance'))})
-    viewer.print({'wn.stat-mine',  s('mining_count')})
     viewer.print({'wn.stat-kill',     s('kill_count')})
     viewer.print({'wn.stat-nest',     s('nest_count')})
     viewer.print({'wn.stat-death',    s('death_count')})
@@ -146,6 +141,7 @@ script.on_event(defines.events.on_player_respawned, function(event)
     local player = game.get_player(event.player_index)
     place_on_respawn(player)   -- 回玩家的复活星球出生点（默认/兜底母星）+ chart 256
     player.disable_flashlight()
+    passives.apply(player)     -- 重算手搓/移动/挖矿速度技能（换新角色后 modifier 清零，需重设）
     respawn_gifts.apply_inventory_bonus(player)   -- 背包格数加成（按本轮首发清单格数，读存值保持）
     try_gift_first_in_world(player)
 end)
@@ -180,6 +176,7 @@ script.on_event(defines.events.on_player_created, function(event)
     local player = game.get_player(event.player_index)
     M.player_reset(player)
     gui.player_gui(player)
+    passives.apply(player)     -- 施加手搓/移动/挖矿速度技能（新角色 modifier 默认 0）
     respawn_gifts.apply_inventory_bonus(player)   -- 背包格数加成（按本轮首发清单格数，读存值保持）
     try_gift_first_in_world(player)
     gui.show_intro(player)   -- 新玩家首次进服自动弹简介（即世界标签的悬停内容）

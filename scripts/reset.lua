@@ -3,6 +3,7 @@ local constants = require('scripts.constants')
 local util = require('scripts.util')
 local gui = require('scripts.gui')
 local players = require('scripts.players')
+local passives = require('scripts.passives')
 local science_exp = require('scripts.science_exp')
 local respawn_gifts = require('scripts.respawn_gifts')
 local player_stats = require('scripts.player_stats')
@@ -235,8 +236,9 @@ function M.reset()
     game.difficulty_settings.spoil_time_modifier = util.mostly_normal()   -- 腐败速度：大概率正常
     game.difficulty_settings.technology_price_multiplier = 2              -- 每个世界科技成本恒为 2 倍
 
-    -- 对在线玩家重算背包格数加成（星球上的会随 on_player_respawned 自然触发；飞船上的在此手动应用）。
+    -- 对在线玩家重算速度技能 + 背包格数加成（星球上的会随 on_player_respawned 自然触发；飞船上的在此手动应用）。
     for _, player in pairs(game.connected_players) do
+        passives.apply(player)
         respawn_gifts.apply_inventory_bonus(player)
     end
 

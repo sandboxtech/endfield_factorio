@@ -105,8 +105,8 @@ end
 
 -- （玩家加入时由 players.lua 的 on_player_joined_game → gui.show_intro 弹场景简介。）
 
--- （/inspect /chakan /查看 指令已移除：顶部"角色面板"按钮 + "查看他人能力"列表等价。
---   print_inspection 仍由 M.show_panel（按钮）调用。）
+-- （/inspect /查看 指令已移除：顶部"角色面板"按钮(科技瓶经验) + "查看他人能力"列表等价；
+--   个人能力/统计在【状态】按钮窗口。print_exp / print_status 由 M.show_panel / M.show_stats 调用。）
 
 add_command('exp_clear', {'wn.exp-clear-help'}, function(command)
     if not require_admin(command) then return end
@@ -327,26 +327,27 @@ add_command('kickout', {'wn.kickout-help'}, member_kick_cmd)
 -- 所有命令统一【只用英文名】，不再注册中文/拼音别名。
 
 -- ── 供 HUD 按钮调用（gui 点击经 tick.on_gui_click 路由到这里）──────────────────
--- 弹出角色面板：target 省略=看自己。看自己→底部带"查看他人能力"按钮；看别人→带"返回"按钮（回玩家列表）。
+-- 弹出【角色面板】= 科技瓶经验（每瓶等级+经验）。target 省略=看自己；看自己→"查看他人能力"，看别人→"返回"。
 function M.show_panel(player, target)
     if not player then return end
     target = target or player
     local self = target.index == player.index
     local sink = gui.popup_sink()
-    players.print_inspection(target, sink, self)   -- 看自己：先不打印经验，留到统计之后（看别人：照常打印）
-    local title = table.remove(sink.lines, 1)   -- 首行 inspect-header 提作弹窗标题
-    -- 顶部导航按钮：看自己→"查看他人能力"；看别人→"返回玩家列表"。两者复用同名 wn_panel_others（tick 路由按上下文处理）。
+    players.print_exp(target, sink)   -- 只科技瓶经验（个人状态/能力/战绩在独立的【状态】窗口）
     local top_buttons = { self
         and {name = 'wn_panel_others', caption = {'wn.panel-others'}}
         or  {name = 'wn_panel_others', caption = {'wn.panel-back'}} }
-    if self then
-        -- 看自己时 print_inspection 跳过了经验/战绩，这里补打印：经验，再个人战绩放最后。星星已独立成单独 HUD 窗口。
-        sink.lines[#sink.lines + 1] = ''   -- 技能与经验之间留空行
-        players.print_exp(target, sink)
-        sink.lines[#sink.lines + 1] = ''   -- 经验与战绩之间留空行
-        players.print_stats(target, sink)
-    end
-    gui.show_popup(player, title, sink.lines, top_buttons)
+    gui.show_popup(player, {'wn.inspect-header', target.name}, sink.lines, top_buttons)
+end
+
+-- 弹出【状态】窗口（HUD 独立按钮）：顶部说明 + 人物等级 + 三能力(手搓/移动/挖矿速度) + 6 项统计。仅看自己。
+function M.show_stats(player)
+    if not player then return end
+    local sink = gui.popup_sink()
+    sink.lines[#sink.lines + 1] = {'wn.stats-help'}
+    sink.lines[#sink.lines + 1] = ''
+    players.print_status(player, sink)
+    gui.show_popup(player, {'wn.stats-title'}, sink.lines)
 end
 
 -- 弹出【星星】窗口（HUD 独立按钮）：星星余额（所有等级都显示）+ 充能进度条 + 领取按钮（仅达 star_unlock_level）。
@@ -392,9 +393,14 @@ function M.set_home_planet(player, planet)
 end
 
 -- 选择职业（HUD 独立按钮窗口）：纯个人设置——只改 storage.player_class[名]，不公告、不传送。
--- 同时只能一种职业。效果暂未实现（选定后拟在该领域开局多发对应物品）。带短冷却防刷消息。
+-- 同时只能一种职业；未解锁的职业不可选（按钮已置灰，这里兜底）。带短冷却防刷消息。
 function M.set_class(player, key)
-    if not player or not classes.by_key[key] then return end
+    local def = classes.by_key[key]
+    if not (player and def) then return end
+    if not classes.unlocked(player, def) then   -- 兜底：按钮置灰已拦截，命令/异常仍校验
+        player.print({'wn.class-locked-msg', {'wn.class-name-' .. key}})
+        return
+    end
     storage.class_cd = storage.class_cd or {}
     local last = storage.class_cd[player.name]
     local cd = (storage.class_cd_minutes or 0.5) * constants.min_to_tick

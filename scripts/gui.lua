@@ -5,6 +5,9 @@ local classes = require('scripts.classes')
 
 local M = {}
 
+local CLASS_MAX_LEVEL = 10000   -- 职业后者满级基准（与 respawn_gifts.MAX_LEVEL 一致）
+local function gcd(a, b) while b ~= 0 do a, b = b, a % b end return a end
+
 -- 距下次跃迁剩余（整数小时, 整数分钟）；与 tick.lua 告警同一公式。
 function M.warp_hm()
     local last = game.tick - (storage.run_start_tick or game.tick)
@@ -37,6 +40,7 @@ function M.player_gui(player)
         {name = 'wn_btn_actions',  sprite = 'item/blueprint-book',  tip = {'wn.btn-actions-tip'}},
         -- {spacer = true},
         {name = 'wn_btn_skills',          sprite = 'entity/character',            tip = {'wn.skills-btn-tip'}},
+        {name = 'wn_btn_stats',    sprite = 'item/exoskeleton-equipment',       tip = {'wn.btn-stats-tip'}},
         {name = 'wn_btn_class',    sprite = 'virtual-signal/signal-science-pack', tip = {'wn.btn-class-tip'}},
         {name = 'wn_btn_star',     sprite = 'virtual-signal/signal-star',       tip = {'wn.btn-star-tip'}},
         {name = 'wn_btn_warp',     sprite = 'virtual-signal/signal-trash-bin',  tip = {'wn.btn-warp-tip'}},
@@ -145,17 +149,11 @@ function M.show_intro(player)
     M.show_popup(player, {'wn.intro-title'}, {{'description', ''}})
 end
 
--- 弹出【游戏玩法 & 指令】（HUD 第一个按钮）：纯【说明文字】——玩法机制段 + 会员指令段（会员/管理员可见）。
--- 功能按钮已拆到独立的 show_actions（HUD 第二个按钮）。
+-- 弹出【游戏玩法】（HUD 第一个按钮）：纯玩法说明文字。功能按钮在 show_actions（第二个按钮）。
 function M.show_tutorial(player)
-    local lines = {
+    M.show_popup(player, {'wn.tutorial-title'}, {
         {'wn.guide-gameplay', storage.warp_initial_minutes or 10, storage.platform_lifetime or 10},
-    }
-    if player and (player.admin or (storage.members and storage.members[player.name])) then
-        lines[#lines + 1] = ''
-        lines[#lines + 1] = {'wn.tutorial-member'}   -- 会员/管理：仍是控制台指令（无按钮）
-    end
-    M.show_popup(player, {'wn.tutorial-title'}, lines)
+    })
 end
 
 -- 弹出【功能按钮】（HUD 第二个按钮）：把原先挤在教程弹窗末尾的一堆操作按钮单独成窗。
@@ -198,17 +196,27 @@ function M.show_classes(player)
     for _, def in ipairs(classes.list) do
         local name_loc = {'wn.class-name-' .. def.key}
         local starter_img = def.starter and ('[img=item/' .. def.starter .. ']') or ''
-        -- tooltip 用空键拼接：首行"开局给 X ×1组"，再每条后者一行"每 x 级 +1 Y"（x=100/堆叠，动态）。
+        -- tooltip 用空键拼接：首行"无条件送 1 组 X"，再每条后者一行"[瓶] 每 a 级送 b 个 [物品]"。
+        -- a:b = 满级:满级总个数(堆叠×groups) 的【最简比】(gcd 约分)，并标明是哪种瓶的等级。
         local tip = {'', {'wn.class-tip-head', starter_img}}
         for _, r in ipairs(def.rewards or {}) do
             local proto = prototypes.item[r.item]
-            local stack = (proto and proto.stack_size) or 1
-            -- "每 100 级送 1 组(=stack 个)"：级数、个数都作参数（个数 = 该物品堆叠数）。
-            tip[#tip + 1] = {'wn.class-tip-reward', 100, stack, '[img=item/' .. r.item .. ']'}
+            local total = ((proto and proto.stack_size) or 1) * (r.groups or 1)   -- 满级该发的总个数
+            local g = gcd(CLASS_MAX_LEVEL, total)
+            tip[#tip + 1] = {'wn.class-tip-reward',
+                '[img=item/' .. r.pack .. ']',      -- 等级来源：哪种科技瓶
+                math.floor(CLASS_MAX_LEVEL / g),    -- 每 a 级
+                math.floor(total / g),              -- 送 b 个
+                '[img=item/' .. r.item .. ']'}
         end
+        -- 解锁条件（需全部满足）：附在 tooltip 末尾，显示 需求瓶/等级 + 当前等级。
+        for _, u in ipairs(def.unlock or {}) do
+            tip[#tip + 1] = {'wn.class-tip-unlock', '[img=item/' .. u.pack .. ']', u.level, classes.pack_level(player, u.pack)}
+        end
+        -- 未解锁 → 按钮置灰(enabled=false，不可点)，但 tooltip 仍显示解锁条件。
         buttons[#buttons + 1] = {name = 'wn_act_class_' .. def.key,
             caption = {def.key == cur and 'wn.class-cur' or 'wn.class-pick', name_loc},
-            tooltip = tip, tags = {wn_class = def.key}}
+            tooltip = tip, enabled = classes.unlocked(player, def), tags = {wn_class = def.key}}
     end
     -- 顶部自带说明（buttons_at_bottom=true → 说明在上、职业按钮在下）。
     M.show_popup(player, {'wn.class-title'}, {{'wn.class-help'}}, buttons, true)
@@ -222,7 +230,7 @@ function M.close_popup(player)
 end
 
 -- "打印汇集器"：仿 player/game 的 .print(msg)，把行收集进 sink.lines，交给 show_popup。
--- 让原本 viewer.print 多行的函数(如 players.print_inspection)无需改写即可输出到弹窗。
+-- 让原本 viewer.print 多行的函数(如 players.print_exp / print_status)无需改写即可输出到弹窗。
 function M.popup_sink()
     local sink = {lines = {}}
     function sink.print(msg) sink.lines[#sink.lines + 1] = msg end

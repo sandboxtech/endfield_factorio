@@ -48,11 +48,11 @@ function M.gift_list(player)
     local def = classes.def_of(player)
     if def then
         if def.starter then add(def.starter, stack_size(def.starter)) end             -- 前者：无条件 1 组
-        -- 后者（可多条 → 多瓶职业）：各按对应瓶等级发。100 级 = 1 组(堆叠)，按堆叠摊到每级
-        -- → 个数 = ceil(等级 × 堆叠 / 100)。例堆叠 50：每 2 级 +1（0级0个、1级1个、3级2个）。
+        -- 后者（可多条 → 多瓶职业）：各按对应瓶等级线性发。满级(MAX_LEVEL) 发 r.groups 组(=堆叠×groups 个)，
+        -- 故 个数 = ceil(堆叠 × groups × 等级 / 满级)。groups 逐物品配置（见 classes.lua）。
         for _, r in ipairs(def.rewards or {}) do
             local lv = M.pack_level(passives.exp_total_for_pack(player.index, r.pack))
-            add(r.item, math.ceil(lv * stack_size(r.item) / 100))
+            add(r.item, math.ceil(stack_size(r.item) * (r.groups or 1) * lv / M.MAX_LEVEL))
         end
     end
     return list

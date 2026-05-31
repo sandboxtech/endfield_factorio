@@ -334,33 +334,32 @@ script.on_event(defines.events.on_surface_cleared, events.safe('surface_cleared'
     surface.wind_orientation_change = 0.0001 * (0.5 + math.random())
 
     -- 外观随机（纯表现）：brightness_visual_weights = 昼夜明暗(brightness)对各通道 LUT 的【影响权重】。
-    --   引擎公式 LUT ×= (1-w) + brightness×w：w 越大 → 画面越紧贴昼夜曲线、非正午越暗；
-    --   默认 {0,0,0} = 完全不受影响、永远全亮。【所以权重越大越暗，不是越亮】，故只取很小的值：
-    --   常态白天基本全亮、只在晨昏/夜里透出极淡色调；1/6 概率色调略强（仍只在非正午显现）。
+    --   引擎公式 LUT ×= (1-w) + brightness×w：w 越大 → 画面越紧贴昼夜曲线、夜晚越暗。
+    --   要【恢复黑夜】故取较大权重：常态 0.8~0.95（夜晚明显变暗、淡色调）；1/6 概率冷暖偏色更强。
     local cr, cg, cb
     if math.random(1, 6) == 1 then
-        cr = 0.15 + math.random() * 0.5   -- 0.15~0.65 各自独立 → 通道差异大 = 较强色调（晨昏/夜显现）
-        cg = 0.15 + math.random() * 0.5
-        cb = 0.15 + math.random() * 0.5
+        cr = 0.6 + math.random() * 0.4   -- 0.6~1.0 各自独立 → 通道差异大 = 较强冷暖色调
+        cg = 0.6 + math.random() * 0.4
+        cb = 0.6 + math.random() * 0.4
     else
-        local base = 0.08 + 0.12 * math.random()   -- 0.08~0.20 极弱影响 → 白天几乎全亮
-        cr = base + (math.random() - 0.5) * 0.10    -- 通道间小幅错开 → 极淡色调
+        local base = 0.8 + 0.15 * math.random()    -- 0.8~0.95 → 夜晚正常变暗
+        cr = base + (math.random() - 0.5) * 0.10   -- 通道间小幅错开 → 淡色调
         cg = base + (math.random() - 0.5) * 0.10
         cb = base + (math.random() - 0.5) * 0.10
     end
     surface.brightness_visual_weights = {r = cr, g = cg, b = cb}
-    surface.min_brightness = 0.4 * math.random()         -- 夜晚黑暗程度 0~0.4（0=漆黑），纯表现
+    surface.min_brightness = 0.15 * math.random()        -- 夜晚黑暗程度 0~0.15（越小越黑），纯表现
     surface.show_clouds = math.random(1, 5) > 1          -- 1/5 概率无云，纯表现
     -- 阳光强度影响太阳能发电（玩法）→ 大概率正常、小概率小幅偏离
     surface.solar_power_multiplier = util.mostly_normal()
 
-    -- aquilo 不参与永夜/永昼抽奖（本来就极地气候）。永昼优先且概率更高，永夜更稀有：
-    --   永昼 ≈ 1/3；永夜 ≈ (剩余 2/3) × 1/10 ≈ 6.7%；其余为正常昼夜循环。
+    -- aquilo 不参与永夜/永昼抽奖（本来就极地气候）。永昼调稀（原 1/3 太多、总是白天）、永夜略多，
+    -- 绝大多数世界【正常昼夜循环】：永昼 ≈ 1/10；永夜 ≈ (剩余 9/10) × 1/6 ≈ 15%；其余正常昼夜。
     local polar = surface == game.surfaces.aquilo
-    if not polar and math.random(1, 3) == 1 then
+    if not polar and math.random(1, 10) == 1 then
         surface.freeze_daytime = true
         surface.daytime = 0      -- 永昼
-    elseif not polar and math.random(1, 10) == 1 then
+    elseif not polar and math.random(1, 6) == 1 then
         surface.freeze_daytime = true
         surface.daytime = 0.56   -- 永夜
     end
