@@ -239,12 +239,11 @@ function M.show_classes(player)
         end
         for _, r in ipairs(def.rewards or {}) do
             local proto = prototypes.item[r.item]
-            local total = ((proto and proto.stack_size) or 1) * (r.groups or 1)   -- 满级该发的总个数
-            local g = gcd(CLASS_MAX_LEVEL, total)
+            local total = ((proto and proto.stack_size) or 1) * (r.groups or 1)   -- 达到 full 级时该物品最多拿多少个
             tip[#tip + 1] = {'wn.class-tip-reward',
-                '[img=item/' .. r.pack .. ']',      -- 等级来源：哪种科技瓶
-                math.floor(CLASS_MAX_LEVEL / g),    -- 每 a 级
-                math.floor(total / g),              -- 送 b 个
+                '[img=item/' .. r.pack .. ']',       -- 等级来源：哪种科技瓶
+                def.full or CLASS_MAX_LEVEL,         -- 该职业满级线：此瓶练到这级即拿满
+                total,                               -- 满时最多给多少个
                 '[img=item/' .. r.item .. ']'}
         end
         -- 解锁条件（需全部满足）：附在 tooltip 末尾，显示 需求瓶/等级 + 当前等级。
