@@ -12,14 +12,7 @@ local util = require('scripts.util')
 
 local M = {}   -- 导出给 HUD 按钮复用（gui 点击经 tick 路由到这里）
 
--- 包装：仅管理员可执行；返回 player 或 nil（控制台也算管理员）
-local function require_admin(command)
-    local player = game.get_player(command.player_index)
-    if not player then return nil end
-    if player.admin then return player end
-    player.print(constants.not_admin_text)
-    return nil
-end
+-- （require_admin 已随 /exp_clear 一并移除：现有管理操作改用 player.admin 内联校验。）
 
 -- 任何自定义指令被使用时，公告给【所有在线玩家】：谁用了什么指令（含参数）。
 -- 控制台调用（无 player_index）不公告。
@@ -108,11 +101,7 @@ end
 -- （/inspect /查看 指令已移除：顶部"角色面板"按钮(科技瓶经验) + "查看他人能力"列表等价；
 --   个人能力/统计在【状态】按钮窗口。print_exp / print_status 由 M.show_panel / M.show_stats 调用。）
 
-add_command('exp_clear', {'wn.exp-clear-help'}, function(command)
-    if not require_admin(command) then return end
-    storage.exp = {}
-    game.print({'wn.exp-cleared'})
-end)
+-- （/exp_clear 已移除：清空所有人瓶子经验改用控制台 /c storage.exp = {}。）
 
 -- 参数 diff（合并了原 /ensuredefaults + /config）：先跑一次 constants.ensure_defaults（补默认/必需表 + 清废弃键/修类型，
 -- 迁移），再弹窗对比【当前 storage】与【默认值】、改过的高亮。仅标量常量(constants.scalar_defaults)；
