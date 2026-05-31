@@ -28,28 +28,46 @@ M.MAX_LEVEL = 10000   -- 满级基准（与 respawn_gifts.MAX_LEVEL / gui CLASS_
 -- 默认职业表（顺序即面板显示顺序），分组：基础生产 / 能源化工 / 物流 / 战斗 / 装备护甲 / 农牧 / 星球专精，空职业 {} 分隔。
 local DEFAULT_CLASSES = {
     -- ── 基础生产组（红瓶起步：矿/板/齿轮/电路，满级线低 full=100，开局速成大宗）──
-    {key = 'civilian', name = '平民', full = 100, starter = {
+    {key = 'civilian', name = '汽车司机', full = 100, starter = {
+        {item = 'car', groups = 1},
+        {item = 'nuclear-fuel', groups = 1},
+    }, rewards = {
+        {pack = 'automation-science-pack', item = 'coin',   count = 1},
+        {pack = 'automation-science-pack', item = 'coin',   count = 1},
+        {pack = 'logistic-science-pack', item = 'coin',   count = 1},
+        {pack = 'military-science-pack', item = 'coin',   count = 1},
+        {pack = 'chemical-science-pack', item = 'coin',   count = 1},
+        {pack = 'production-science-pack', item = 'coin',   count = 1},
+        {pack = 'utility-science-pack', item = 'coin',   count = 1},
+        {pack = 'space-science-pack', item = 'coin', count = 1},
+    }},
+    -- 材料
+    {key = 'material', name = '杂货老板', full = 100, starter = {
+        {item = 'transport-belt', groups = 1},
         {item = 'burner-mining-drill', groups = 1},
         {item = 'burner-inserter', groups = 1},
-        {item = 'transport-belt', groups = 2},
     }, rewards = {
         {pack = 'automation-science-pack', item = 'iron-plate',   groups = 1},
-        {pack = 'logistic-science-pack', item = 'iron-plate',   groups = 1},
+        {pack = 'logistic-science-pack', item = 'copper-plate',   groups = 1},
         {pack = 'military-science-pack', item = 'stone-brick',   groups = 1},
         {pack = 'chemical-science-pack', item = 'plastic-bar',   groups = 1},
         {pack = 'production-science-pack', item = 'steel-plate',   groups = 1},
         {pack = 'utility-science-pack', item = 'battery',   groups = 1},
         {pack = 'space-science-pack', item = 'electric-engine-unit', groups = 1},
     }},
+    -- 炉子 燃料
     {key = 'smelter', name = '冶炼工人', full = 100, starter = {
         {item = 'stone-furnace', groups = 1},
-        {item = 'burner-inserter', groups = 1},
-        {item = 'transport-belt', groups = 2},
+        {item = 'steel-furnace', groups = 1},
+        {item = 'electric-furnace', groups = 1},
     }, rewards = {
-        {pack = 'automation-science-pack', item = 'stone-furnace',       groups = 1},
-        {pack = 'automation-science-pack', item = 'iron-ore',   groups = 10},
-        {pack = 'automation-science-pack', item = 'copper-ore', groups = 5},
-        {pack = 'automation-science-pack', item = 'stone',      groups = 2},
+        {pack = 'automation-science-pack', item = 'stone-furnace',       groups = 2},
+        {pack = 'logistic-science-pack', item = 'steel-furnace',       groups = 2},
+        {pack = 'chemical-science-pack', item = 'electric-furnace',   groups = 2},
+        {pack = 'military-science-pack', item = 'coal', groups = 2},
+        {pack = 'production-science-pack', item = 'solid-fuel',      groups = 2},
+        {pack = 'utility-science-pack', item = 'rocket-fuel', groups = 2},
+        {pack = 'space-science-pack', item = 'carbon', groups = 2},
     }},
     {key = 'miner', name = '采矿工人', full = 100, starter = {
         {item = 'electric-mining-drill', count = 50},
