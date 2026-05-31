@@ -416,12 +416,12 @@ local DEFAULT_CLASSES = {
 
     {key = 'thorman', name = '雷神', full = 1000, starter = {
         {item = 'land-mine', groups = 1},
-    }, rewards = {
+    }, unlock = {{pack = 'military-science-pack', level = 100}}, rewards = {
         {pack = 'military-science-pack', item = 'land-mine', groups = 20},   -- 灰：地雷(海量布雷)
     }},
     {key = 'spiderman', name = '蜘蛛侠', full = 1000, starter = {
         {item = 'spidertron', count = 1},
-    }, rewards = {
+    }, unlock = {{pack = 'utility-science-pack', level = 100}}, rewards = {
         {pack = 'utility-science-pack', item = 'spidertron', groups = 2},   -- 黄：蜘蛛机甲
     }},
 
@@ -464,6 +464,15 @@ local DEFAULT_CLASSES = {
         {item = 'toolbelt-equipment', count = 1},
     }, rewards = {
         {pack = 'logistic-science-pack', item = 'toolbelt-equipment', groups = 10},   -- 绿：工具腰带(扩快捷栏)
+    }},
+    {key = 'transformer', name = '变形金刚', full = 10000, starter = {   -- 终极机甲：粉瓶 1000 级解锁
+        {item = 'mech-armor', count = 1},
+    }, unlock = {{pack = 'electromagnetic-science-pack', level = 1000}}, rewards = {
+        {pack = 'electromagnetic-science-pack', item = 'mech-armor',                      groups = 1},   -- 粉：机甲护甲(终极)
+        {pack = 'cryogenic-science-pack',       item = 'fusion-reactor-equipment',        groups = 1},   -- 靛：聚变堆装备
+        {pack = 'electromagnetic-science-pack', item = 'battery-mk3-equipment',           groups = 1},   -- 粉：mk3 电池
+        {pack = 'utility-science-pack',         item = 'energy-shield-mk2-equipment',     groups = 1},   -- 黄：能量盾 mk2
+        {pack = 'utility-science-pack',         item = 'personal-roboport-mk2-equipment', groups = 1},   -- 黄：机器人网格 mk2
     }},
 
     {section = '农牧'},
