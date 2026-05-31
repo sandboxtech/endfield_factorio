@@ -49,12 +49,13 @@ function M.gift_list(player)
     if def then
         for _, s in ipairs(def.starter or {}) do add(s.item, s.count or (stack_size(s.item) * (s.groups or 1))) end   -- 前者无条件：有 count 按个数，否则 groups 组(默认 1 组=1 堆叠)
         -- 后者（可多条 → 多瓶职业）：各按对应瓶等级线性发。职业级满级线 def.full：该职业每种瓶练到 full 级，
-        -- 即拿满各条 r.groups 组(=堆叠×groups 个，该物品开局上限)——是这个职业的“完美追求”目标。
-        -- 个数 = floor(堆叠 × groups × min(瓶等级,full) / full)【向下取整】：full 越小越快满。
+        -- 即拿满该条【满级配额】——是这个职业的“完美追求”目标。满级配额 = count 个 或 堆叠×groups 组(默认 1 组)。
+        -- 个数 = floor(满级配额 × min(瓶等级,full) / full)【向下取整】：full 越小越快满。
         local full = def.full or M.MAX_LEVEL
         for _, r in ipairs(def.rewards or {}) do
             local lv = math.min(M.pack_level(passives.exp_total_for_pack(player.index, r.pack)), full)
-            add(r.item, math.floor(stack_size(r.item) * (r.groups or 1) * lv / full))
+            local cap = r.count or (stack_size(r.item) * (r.groups or 1))   -- 满级配额：有 count 按个数，否则 堆叠×groups
+            add(r.item, math.floor(cap * lv / full))
         end
     end
     return list

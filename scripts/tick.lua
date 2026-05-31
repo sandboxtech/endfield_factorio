@@ -218,18 +218,22 @@ local function run_world_events()
     WORLD_EVENTS[pick.et](pick.player, pick.player.surface, pick.ch, danger, k)
 end
 
--- 雷暴星球(thunder)：身处该星球的【每个】在线玩家，每 tick 以极小概率被闪电直击（lightning：100 伤害+震屏，
--- 有护盾/护甲可扛）。逐玩家独立判定 → 全局雷击频率自然随在线人数增多（"概率×人数"）。
--- THUNDER_CHANCE = 1/36000：单玩家期望 36000 tick = 10 分钟被劈一次。math.random 多端同步、不会 desync。
+-- 雷暴星球(thunder)：身处该星球的在线玩家，被闪电直击（lightning：100 伤害+震屏，有护盾/护甲可扛）。
+-- 高效判定：先收集雷暴星球上的在线玩家(n 人)，整体只滚【一次】random < 单人概率×n，命中才随机抽一人劈。
+-- 等价于逐人独立判定但只 1 次 random：单玩家期望仍 36000 tick = 10 分钟一次；全局频率随人数线性增多。
 local THUNDER_CHANCE = 1 / 36000
 events.on(defines.events.on_tick, events.safe('thunder', function()
     if not storage.event_world then return end
+    local victims = {}
     for _, player in pairs(game.connected_players) do
-        local ch = player.character
-        if ch and storage.event_world[player.surface.name] == 'thunder'
-           and math.random() < THUNDER_CHANCE then
-            player.surface.create_entity{name = 'lightning', position = player.position}
+        if player.character and storage.event_world[player.surface.name] == 'thunder' then
+            victims[#victims + 1] = player
         end
+    end
+    local n = #victims
+    if n > 0 and math.random() < THUNDER_CHANCE * n then
+        local p = victims[math.random(n)]
+        p.surface.create_entity{name = 'lightning', position = p.position}
     end
 end))
 

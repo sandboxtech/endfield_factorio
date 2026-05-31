@@ -224,7 +224,10 @@ function M.show_classes(player)
     local buttons = {}
     for _, def in ipairs(classes.all()) do
         if not def.key or def.key == '' then
-            buttons[#buttons + 1] = {newrow = true}   -- 空职业（无 key 的 {} 占位）= UI 换行/分组分隔
+            if def.section then
+                buttons[#buttons + 1] = {label = true, caption = def.section}   -- 分区标题（粗体单行，{section='组名'} 占位携带）
+            end
+            buttons[#buttons + 1] = {newrow = true}   -- 空职业（无 key 的 {}/{section=} 占位）= UI 换行/分组分隔
         else
         local name_loc = def.name or {'wn.class-name-' .. def.key}   -- 职业定义可内嵌 name 字符串（绕过 locale）
         -- tooltip：白送(starter)每物品一行"+N [img]"；奖励(rewards)每条一行"每 a 级 [瓶] b 个 [物品]"。两者都换行。

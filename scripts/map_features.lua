@@ -482,7 +482,7 @@ local OUTPOST_GUARDS = {
     {name = 'flamethrower-turret', fluid = 'crude-oil'},  -- 喷火：fluid_box 无 filter，灌原油即可开火
     {name = 'gun-turret', mag = true},                    -- 机枪：per 个随机弹种、加满
     {name = 'rocket-turret', rocket = true},              -- 火箭炮：ammo-turret，随机普通/爆破火箭，极小概率核弹(少量)
-    {name = 'railgun-turret', ammo = 'railgun-ammo'},     -- 磁轨炮：ammo-turret，塞磁轨弹
+    {name = 'railgun-turret', electric = true, ammo = 'railgun-ammo'},   -- 磁轨炮：ammo-turret 但【耗电】，需子电网供电 + 塞磁轨弹（缺一不开火）
     {variants = {'small-worm-turret', 'medium-worm-turret', 'big-worm-turret'}},  -- 沙虫：随机一档，无需弹/电
     {name = 'land-mine'},                                 -- 地雷：无需弹
     {name = 'artillery-turret', ammo = 'artillery-shell'},-- 重炮：炮弹
