@@ -32,31 +32,37 @@ function M.print_exp(target, viewer)
     end
 end
 
--- 个人状态（供【状态】窗口用）：人物等级行 → 空行 → 三能力（手搓/移动/挖矿，带当前速度%）
--- → 空行 → 6 项无功能统计（击杀/毁灭巢/阵亡/历经跃迁/普通研究/关键研究）。
+-- 个人数据（供【在线玩家】窗口看自己/他人）。【按段输出，调整顺序只需上下移动整段、互不影响】：
+--   ① 人物等级(在线分钟/开局金币) → ② 三能力(手搓/移动/采矿拆除) → ③ 12 瓶经验 → ④ 6 项战绩(放最后)。
 function M.print_status(target, viewer)
-    -- 人物等级 = 开局金币 = floor(√在线分钟)
-    local om = passives.get_stat(target.index, 'online_minutes')
-    viewer.print({'wn.ability-online', om, respawn_gifts.coin_reward(om)})
-    viewer.print('')
-    -- 三能力：统计值 · 等级(floor√统计) · 当前实际速度%(=100%+修正系数，开局 50%)
-    for _, ab in ipairs(passives.abilities) do
-        local val = passives.get_stat(target.index, ab.stat)
-        local f = passives.skill_factor(target.index, ab)
-        viewer.print({ab.locale, math.floor(val), math.floor(math.sqrt(val)),
-                      math.floor((1 + f) * 100 + 0.5)})
-    end
-    viewer.print('')
-    -- 6 项无实际功能的统计
     local function s(k) return passives.get_stat(target.index, k) end
+    local function blank() viewer.print('') end
+
+    -- ① 人物等级 = 开局金币 = floor(√在线分钟)
+    local om = s('online_minutes')
+    viewer.print({'wn.ability-online', om, respawn_gifts.coin_reward(om)})
+    blank()
+
+    -- ② 三能力：统计值 · 等级(floor√统计) · 当前实际速度%(开局 50%)
+    for _, ab in ipairs(passives.abilities) do
+        local val = s(ab.stat)
+        viewer.print({ab.locale, math.floor(val), math.floor(math.sqrt(val)),
+                      math.floor((1 + passives.skill_factor(target.index, ab)) * 100 + 0.5)})
+    end
+    blank()
+
+    -- ③ 12 种科技瓶经验
+    M.print_exp(target, viewer)
+    blank()
+    blank()
+
+    -- ④ 6 项战绩（纯纪录、无功能）放最后
     viewer.print({'wn.stat-kill',     s('kill_count')})
     viewer.print({'wn.stat-nest',     s('nest_count')})
     viewer.print({'wn.stat-death',    s('death_count')})
     viewer.print({'wn.stat-warps',    s('warps')})
     viewer.print({'wn.stat-research', s('research')})
     viewer.print({'wn.stat-key',      s('key_research')})
-    viewer.print('')                  -- 战绩与瓶子经验之间留空行
-    M.print_exp(target, viewer)       -- 12 种科技瓶经验合并进数据页（经在线玩家列表可看他人）
 end
 
 

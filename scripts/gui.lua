@@ -149,7 +149,8 @@ function M.show_popup(player, title, lines, buttons, buttons_at_bottom, bottom_b
                 l.style.font = 'default-bold'
                 l.style.top_margin = 6
             elseif b.newrow then
-                -- 空职业占位：开一个新 table，后面的按钮另起一组（视觉换行/分组）。
+                -- 空职业占位：加一条分隔线 + 开新 table，后面的按钮另起一组（明显分隔，不会和上一组贴在一起）。
+                if cols and cols > 1 then pane.add{type = 'line'} end
                 box = (cols and cols > 1) and pane.add{type = 'table', column_count = cols} or pane
             else
                 -- enabled=false → 按钮置灰且不触发 on_gui_click（如本轮关闭的星球）。tooltip 说明为何不可点。
