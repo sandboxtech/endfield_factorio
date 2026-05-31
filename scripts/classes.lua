@@ -76,7 +76,7 @@ local DEFAULT_CLASSES = {
     {key = 'material', name = '材料学家', full = 100, starter = {
         {item = 'iron-plate', groups = 5},
         {item = 'copper-plate', groups = 5},
-    }, rewards = {
+    }, unlock = {{pack = 'automation-science-pack', level = 10}}, rewards = {
         {pack = 'automation-science-pack', item = 'iron-plate',   groups = 1},
         {pack = 'logistic-science-pack', item = 'copper-plate',   groups = 1},
         {pack = 'military-science-pack', item = 'stone-brick',   groups = 1},
@@ -117,14 +117,14 @@ local DEFAULT_CLASSES = {
         {pack = 'cryogenic-science-pack', item = 'lithium', groups = 1},
     }},
 
-    {key = 'smelter', name = '冶炼工人', full = 100, starter = {
+    {key = 'smelter', name = '冶炼工人', full = 1000, starter = {
         {item = 'stone-furnace', groups = 1},
         -- {item = 'steel-furnace', groups = 1},
         -- {item = 'electric-furnace', groups = 1},
-    }, rewards = {
+    }, unlock = {{pack = 'automation-science-pack', level = 10}}, rewards = {
         {pack = 'automation-science-pack', item = 'stone-furnace',       groups = 2},
-        {pack = 'metallurgic-science-pack', item = 'steel-furnace',       groups = 2},
-        {pack = 'promethium-science-pack', item = 'electric-furnace',   groups = 2},
+        {pack = 'logistic-science-pack', item = 'steel-furnace',       groups = 2},
+        {pack = 'chemical-science-pack', item = 'electric-furnace',   groups = 2},
         --
         {pack = 'military-science-pack', item = 'coal', groups = 2},
         {pack = 'production-science-pack', item = 'solid-fuel',      groups = 2},
@@ -132,19 +132,42 @@ local DEFAULT_CLASSES = {
         {pack = 'space-science-pack', item = 'carbon', groups = 2},
     }},
 
-    {key = 'artisan', name = '装配工人', full = 100, starter = {
+    {key = 'artisan', name = '装配工人', full = 1000, starter = {
         {item = 'assembling-machine-1', groups = 1},
-        {item = 'iron-plate', groups = 5},
-        {item = 'iron-gear-wheel', groups = 3},
-    }, rewards = {
-        {pack = 'automation-science-pack', item = 'assembling-machine-1', groups = 1},
-        {pack = 'logistic-science-pack',   item = 'assembling-machine-2', groups = 1},   -- 绿瓶：二级组装机
-        {pack = 'production-science-pack', item = 'assembling-machine-3', groups = 1},   -- 紫瓶：三级组装机
-
-        {pack = 'automation-science-pack', item = 'iron-plate',      groups = 12},
-        {pack = 'automation-science-pack', item = 'iron-gear-wheel', groups = 6},
-        {pack = 'automation-science-pack', item = 'copper-plate',    groups = 5},
+        -- {item = 'assembling-machine-2', groups = 1},
+        -- {item = 'assembling-machine-3', groups = 1},
+    }, unlock = {{pack = 'automation-science-pack', level = 10}}, rewards = {
+        {pack = 'automation-science-pack', item = 'assembling-machine-1', groups = 5},
+        {pack = 'space-science-pack',   item = 'assembling-machine-2', groups = 5},
+        {pack = 'promethium-science-pack', item = 'assembling-machine-3', groups = 5},
+        --
+        {pack = 'automation-science-pack', item = 'iron-gear-wheel',   groups = 1},
+        {pack = 'logistic-science-pack', item = 'electronic-circuit',   groups = 1},
+        {pack = 'military-science-pack', item = 'firearm-magazine',   groups = 1},
+        {pack = 'chemical-science-pack', item = 'advanced-circuit',   groups = 1},
+        {pack = 'production-science-pack', item = 'engine-unit',   groups = 1},
+        {pack = 'utility-science-pack', item = 'electric-engine-unit',   groups = 1},
+        {pack = 'cryogenic-science-pack', item = 'processing-unit', groups = 1},
     }},
+
+    {key = 'artisan', name = '插件工人', full = 10000, starter = {
+        {item = 'beacon', count=10},
+        {item = 'speed-module', count=10},
+        {item = 'efficiency-module', count=10},
+        {item = 'productivity-module', count=10},
+        {item = 'quality-module', count=10},
+    }, unlock = {{pack = 'production-science-pack', level = 10}}, rewards = {
+        {pack = 'production-science-pack', item = 'beacon', groups = 5},
+        {pack = 'space-science-pack', item = 'beacon', groups = 5},
+        {pack = 'promethium-science-pack', item = 'beacon', groups = 5},
+        --
+        {pack = 'metallurgic-science-pack',     item = 'speed-module', groups = 5},
+        {pack = 'electromagnetic-science-pack', item = 'quality-module',  groups = 5},
+        {pack = 'agricultural-science-pack', item = 'efficiency-module', groups = 5},
+        {pack = 'cryogenic-science-pack', item = 'productivity-module', groups = 5},
+        --[item=speed-module-2][item=efficiency-module-2][item=productivity-module-2]
+    }},
+
 
     {},
     -- 分组换行：基础生产 ↔ 能源化工
@@ -166,7 +189,7 @@ local DEFAULT_CLASSES = {
         {pack = 'chemical-science-pack',   item = 'efficiency-module',     groups = 2},
         {pack = 'production-science-pack', item = 'accumulator',          groups = 5},
     }},
-    {key = 'chemist', name = '化学家', full = 100, starter = {
+    {key = 'chemist', name = '化工工人', full = 100, starter = {
         {item = 'chemical-plant', count = 50},
         {item = 'coal', groups = 3},
         {item = 'iron-plate', groups = 2},
