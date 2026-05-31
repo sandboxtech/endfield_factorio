@@ -36,15 +36,16 @@ function M.player_gui(player)
     -- HUD 按钮【放最前】：位置固定，不会被后面变长的世界标签挤动。点击由 tick.on_gui_click 路由。
     --   玩法&指令（弹窗）  |间隔|  角色面板 / 跃迁(投同意✓) / 停留(投反对✗)。
     for _, b in ipairs({
-        -- 信息组：玩法（最左，悬停含整排按钮导览）+ 功能菜单。
-        {name = 'wn_btn_gameplay', sprite = 'virtual-signal/signal-info',  tip = {'wn.btn-gameplay-tip'}},
-        {name = 'wn_btn_actions',  sprite = 'item/blueprint-book',  tip = {'wn.btn-actions-tip'}},
+        -- 信息组：玩法（最左）+ 功能菜单。玩法按钮 tooltip【就是其正文】，与点开的窗口完全同一段 guide-gameplay。
+        -- 每个按钮的 tooltip = 标题 + 它打开窗口顶部的同一段简介（共用 *-help，两处一致）。
+        {name = 'wn_btn_gameplay', sprite = 'virtual-signal/signal-info',  tip = {'wn.guide-gameplay', storage.warp_initial_minutes or 10, storage.platform_lifetime or 10}},
+        {name = 'wn_btn_actions',  sprite = 'item/blueprint-book',  tip = {'', '[font=default-bold]功能菜单[/font]\n', {'wn.actions-help'}}},
         {spacer = true},
         -- 个人组：科技瓶经验 / 统计 / 职业 / 星星。
-        {name = 'wn_btn_skills',   sprite = 'virtual-signal/signal-science-pack', tip = {'wn.skills-btn-tip'}},
-        {name = 'wn_btn_stats',    sprite = 'entity/character',                 tip = {'wn.btn-stats-tip'}},
-        {name = 'wn_btn_class',    sprite = 'item/power-armor-mk2',             tip = {'wn.btn-class-tip'}},
-        {name = 'wn_btn_star',     sprite = 'virtual-signal/signal-star',       tip = {'wn.btn-star-tip'}},
+        {name = 'wn_btn_skills',   sprite = 'virtual-signal/signal-science-pack', tip = {'', '[font=default-bold]科技瓶经验[/font]\n', {'wn.panel-help'}}},
+        {name = 'wn_btn_stats',    sprite = 'entity/character',                 tip = {'', '[font=default-bold]统计[/font]\n', {'wn.stats-help'}}},
+        {name = 'wn_btn_class',    sprite = 'item/power-armor-mk2',             tip = {'', '[font=default-bold]职业[/font]\n', {'wn.class-help'}}},
+        {name = 'wn_btn_star',     sprite = 'virtual-signal/signal-star',       tip = {'', '[font=default-bold]星星[/font]\n', {'wn.star-help'}}},
         {spacer = true},
         -- 跃迁规则组：跃迁投票 / 停留投票（放一起，都是对"是否提前跃迁"投票）。
         {name = 'wn_btn_warp',     sprite = 'virtual-signal/signal-trash-bin',  tip = {'wn.btn-warp-tip'}},
@@ -75,7 +76,7 @@ function M.player_gui(player)
         type = 'button',
         name = 'warp_countdown',
         caption = M.countdown_caption(),
-        tooltip = {'description', ''},
+        tooltip = {'wn.guide-gameplay', storage.warp_initial_minutes or 10, storage.platform_lifetime or 10},
         style = 'transparent_button',   -- 内置全透明 button 样式：外观如 label，但可点击（label 不触发 on_gui_click）
     }
     cd.style.font = 'heading-1'
@@ -155,9 +156,10 @@ function M.show_popup(player, title, lines, buttons, buttons_at_bottom, bottom_b
     return frame
 end
 
--- 弹出【简介】：本场景的故事背景（即左上 run 标签的悬停内容，搬成可读弹窗）。
+-- 弹出【简介】：与玩法窗口、倒计时标签悬停【共用同一段 guide-gameplay】（含场景背景 + 核心玩法）。
 function M.show_intro(player)
-    M.show_popup(player, {'wn.intro-title'}, {{'description', ''}})
+    M.show_popup(player, {'wn.intro-title'},
+        {{'wn.guide-gameplay', storage.warp_initial_minutes or 10, storage.platform_lifetime or 10}})
 end
 
 -- 弹出【游戏玩法】（HUD 第一个按钮）：纯玩法说明文字。功能按钮在 show_actions（第二个按钮）。
@@ -193,7 +195,8 @@ function M.show_actions(player)
         buttons[#buttons + 1] = {name = 'wn_act_home_' .. p,
             caption = {p == home and 'wn.act-home-cur' or 'wn.act-home', p}, tags = {wn_home = p}, tooltip = {'wn.act-home-tip'}}
     end
-    M.show_popup(player, {'wn.actions-title'}, {}, buttons)
+    -- 顶部放与按钮 tooltip 同一段简介（buttons_at_bottom=true → 说明在上、操作按钮在下）。
+    M.show_popup(player, {'wn.actions-title'}, {{'wn.actions-help'}, ''}, buttons, true)
 end
 
 -- 弹出【职业】窗口（HUD 独立按钮）：每个职业一个按钮，当前职业标 ✓、悬停说明专精瓶。

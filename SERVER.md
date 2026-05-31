@@ -1,6 +1,6 @@
-[space-age] [color=acid]《异星工厂·无尽旅行》Spaceage Warptorio[/color]。
+[space-age] [color=acid]《异星工厂·无尽跃迁》Spaceage Warptorio[/color]。
 。
-[img=space-location/solar-system-edge]全服每几小时集体[color=yellow]跃迁[/color]逃往新星系，无尽的新世界     [img=virtual-signal/signal-science-pack]。
+[img=space-location/solar-system-edge]全服每几小时集体[color=yellow][space-age]跃迁[/color]逃往新星系，无尽的新世界     [img=virtual-signal/signal-science-pack]。
 。
 跃迁时，背包里的[color=acid]科技瓶[/color]变成永久经验值，决定你每局的[color=acid]开局物资[/color]。
 [img=item/exoskeleton-equipment]各种技能[color=acid]  边玩边练、能力永久[/color]。

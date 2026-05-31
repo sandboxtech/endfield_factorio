@@ -2,7 +2,7 @@
 -- 设计意图：跃迁是"从头再来"的核心节奏，把资源送上太空会拖慢/逃避这个节奏，故施加时间惩罚。
 -- 2.0 SA：货物不在火箭本体，而在它发射的 cargo pod 的 cargo_unit 库存里。on_rocket_launched 那一刻
 -- pod 往往还没挂上货（读出来是空），所以改在 on_cargo_pod_finished_ascending 读，此刻 pod 已带货
--- 升空完成、尚未在目的地卸货；其 launched_by_rocket 字段又能精确区分"火箭发射"与玩家手动 pod 旅行。
+-- 升空完成、尚未在目的地卸货；其 launched_by_rocket 字段又能精确区分"火箭发射"与玩家手动 pod 跃迁。
 local constants = require('scripts.constants')
 local util = require('scripts.util')
 local gui = require('scripts.gui')
@@ -25,7 +25,7 @@ local function payload_text(pod)
 end
 
 script.on_event(defines.events.on_cargo_pod_finished_ascending, function(event)
-    if not event.launched_by_rocket then return end   -- 仅火箭发射的 pod（排除玩家手动 pod 旅行/下行）
+    if not event.launched_by_rocket then return end   -- 仅火箭发射的 pod（排除玩家手动 pod 跃迁/下行）
 
     storage.warp_hours = (storage.warp_hours or 1) - PENALTY_MINUTES / 60
 
