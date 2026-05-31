@@ -35,6 +35,12 @@ M.offers = {
     {'solar-panel-equipment',            1,   1},
     {'fission-reactor-equipment',        1,  10},
     {'fusion-reactor-equipment',         1,  40},
+
+    -- 矿石补给：1 金币换 50 矿石（1 组），开局/缺料时应急补给。
+    {'iron-ore',                        50,   1},
+    {'copper-ore',                      50,   1},
+    {'stone',                           50,   1},
+    {'coal',                            50,   1},
 }
 
 local function stock(ent)

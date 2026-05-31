@@ -167,7 +167,7 @@ function M.reset()
     -- 科技进度全部清零，不再保留无限科技 level
     force.reset()
     force.friendly_fire = false   -- 禁止友军伤害：玩家的武器/爆炸不再伤到自家(同 force)建筑与队友
-    force.maximum_following_robots_count = 50   -- 战斗无人机跟随上限提到 50（force.reset 会打回默认，故每次跃迁后重设）
+    force.maximum_following_robot_count = 50   -- 战斗无人机跟随上限提到 50（force.reset 会打回默认，故每次跃迁后重设）
 
     -- 每次跃迁后自动解锁所有星球：无需研究 planet-discovery 科技即可前往。
     -- 必须放在 force.reset() 之后，reset 会清空科技/解锁状态，先解锁会被冲掉。
@@ -178,6 +178,16 @@ function M.reset()
     for _, planet in ipairs({'vulcanus', 'gleba', 'fulgora', 'aquilo'}) do
         local tech = force.technologies['planet-discovery-' .. planet]
         if tech then tech.researched = true end
+    end
+    -- 开局赠送所有【触发科技】：这类科技靠特定动作触发(捕获虫巢/扔物入太空…)而非投瓶，
+    -- 直接标记已研究，省去玩家逐个触发的繁琐。research_trigger 非 nil 即触发科技。
+    -- 受开关 storage.grant_trigger_techs 控制（默认 true，可 /c 热改关闭）。
+    if storage.grant_trigger_techs then
+        for _, tech in pairs(force.technologies) do
+            if tech.prototype.research_trigger and not tech.researched then
+                tech.researched = true
+            end
+        end
     end
 
     -- （科技世界已并入事件世界：tech 现作为事件类型之一，由 surface.lua 的事件世界 roll 按星球抽中、

@@ -122,6 +122,7 @@ function M.ensure_defaults()
         star_unlock_level = 20,           -- 显示【星星按钮及其窗口】所需的人物等级(=floor√在线分钟)；20 级≈在线 6.7 小时(400 分钟)，低于此不显示星星按钮
         vote_unlock_level = 10,           -- 显示【提前跃迁/停留投票】两个按钮所需的人物等级(=floor√在线分钟)；10 级=在线 100 分钟
         class_cd_minutes = 0.5,           -- 切换职业的冷却（分钟）：纯防刷消息，切换本就要下次跃迁才生效
+        grant_trigger_techs = true,       -- 开局是否赠送所有【触发科技】（捕获虫巢/扔物入太空那类）。关：/c storage.grant_trigger_techs=false
     }
     M.scalar_defaults = d   -- 暴露标量默认值（供 /config 命令对比当前 storage 与默认）
     for k, v in pairs(d) do
@@ -141,11 +142,11 @@ function M.ensure_defaults()
     for pack, m in pairs(warp_ext) do
         if storage.warp_extend_minutes[pack] == nil then storage.warp_extend_minutes[pack] = m end
     end
-    -- 每个【外星球】单独的开放概率：每次跃迁各自掷一次决定本轮能否前往（"外星来人帮忙"）。默认 0.5（50%）。
+    -- 每个【外星球】单独的开放概率：每次跃迁各自掷一次决定本轮能否前往（"外星来人帮忙"）。默认 1.0（恒开）。
     -- 缺失才补 → 保留管理员 /c 的单独调整。热改示例：/c storage.travel_chance['fulgora'] = 0.6
     storage.travel_chance = storage.travel_chance or {}
     for _, p in ipairs({'vulcanus', 'gleba', 'fulgora', 'aquilo'}) do
-        if storage.travel_chance[p] == nil then storage.travel_chance[p] = 0.5 end
+        if storage.travel_chance[p] == nil then storage.travel_chance[p] = 1.0 end
     end
     -- 必需表（累积数据 / 每星球状态 / 运行时缓存），缺失则建空表。
     -- 这是所有 storage 表的【唯一出生地】，各模块不再各自 `storage.x = storage.x or {}`，统一在此补齐。
