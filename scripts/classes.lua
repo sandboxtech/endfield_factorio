@@ -56,6 +56,9 @@ local DEFAULT_CLASSES = {
     {key = 'crew',         name = '船员',       starter = {{item = 'rocket-silo'}},
         unlock = {{pack = 'space-science-pack', level = 5}}, rewards = {
         {pack = 'space-science-pack',           item = 'space-platform-starter-pack', groups = 10}}},
+
+    {},   -- 空职业占位：船员(单瓶职业末) 与 冶金大师(大师职业) 之间换行分组
+
     {key = 'metallurgist', name = '冶金大师',   starter = {{item = 'foundry'}},
         unlock = {{pack = 'metallurgic-science-pack', level = 5}}, rewards = {
         {pack = 'metallurgic-science-pack',     item = 'speed-module-3',       groups = 10}}},

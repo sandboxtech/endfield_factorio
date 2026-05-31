@@ -148,10 +148,14 @@ function M.show_popup(player, title, lines, buttons, buttons_at_bottom, bottom_b
                 local l = pane.add{type = 'label', caption = b.caption}
                 l.style.font = 'default-bold'
                 l.style.top_margin = 6
+            elseif b.newrow then
+                -- 空职业占位：开一个新 table，后面的按钮另起一组（视觉换行/分组）。
+                box = (cols and cols > 1) and pane.add{type = 'table', column_count = cols} or pane
             else
                 -- enabled=false → 按钮置灰且不触发 on_gui_click（如本轮关闭的星球）。tooltip 说明为何不可点。
-                box.add{type = 'button', name = b.name, caption = b.caption, tags = b.tags,
+                local btn = box.add{type = 'button', name = b.name, caption = b.caption, tags = b.tags,
                         enabled = b.enabled, tooltip = b.tooltip}
+                if cols and cols > 1 then btn.style.minimal_width = 150 end   -- 网格按钮统一最小宽，列对齐
             end
         end
     end
@@ -218,6 +222,9 @@ function M.show_classes(player)
     local cur = classes.selected_key(player)
     local buttons = {}
     for _, def in ipairs(classes.all()) do
+        if not def.key or def.key == '' then
+            buttons[#buttons + 1] = {newrow = true}   -- 空职业（无 key 的 {} 占位）= UI 换行/分组分隔
+        else
         local name_loc = def.name or {'wn.class-name-' .. def.key}   -- 职业定义可内嵌 name 字符串（绕过 locale）
         -- tooltip：白送(starter)每物品一行"x 个 [img]"；奖励(rewards)每条一行"每 a 级 [瓶] b 个 [物品]"。
         -- 按钮图标 starter_img 取第一件白送物品；a:b 为 满级:满级总个数 的最简比(gcd 约分)。
@@ -248,6 +255,7 @@ function M.show_classes(player)
         buttons[#buttons + 1] = {name = 'wn_act_class_' .. def.key,
             caption = {def.key == cur and 'wn.class-cur' or 'wn.class-pick', name_loc, starter_img},
             tooltip = tip, enabled = classes.unlocked(player, def), tags = {wn_class = def.key}}
+        end
     end
     -- 顶部自带说明（buttons_at_bottom=true → 说明在上、职业按钮在下）。
     M.show_popup(player, {'wn.class-title'}, {{'wn.class-help'}}, buttons, true, nil, 3)   -- 职业按钮 3 列平铺

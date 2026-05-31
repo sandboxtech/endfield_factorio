@@ -8,6 +8,7 @@
 {key='worker',name='工人',starter={{item='medium-electric-pole'}},rewards={{pack='production-science-pack',item='beacon',groups=10}}},
 {key='merchant',name='商人',starter={{item='passive-provider-chest'}},rewards={{pack='utility-science-pack',item='roboport',groups=10}}},
 {key='crew',name='船员',starter={{item='rocket-silo'}},unlock={{pack='space-science-pack',level=5}},rewards={{pack='space-science-pack',item='space-platform-starter-pack',groups=10}}},
+{},
 {key='metallurgist',name='冶金大师',starter={{item='foundry'}},unlock={{pack='metallurgic-science-pack',level=5}},rewards={{pack='metallurgic-science-pack',item='speed-module-3',groups=10}}},
 {key='electrician',name='电气大师',starter={{item='electromagnetic-plant'}},unlock={{pack='electromagnetic-science-pack',level=5}},rewards={{pack='electromagnetic-science-pack',item='quality-module-3',groups=10}}},
 {key='biologist',name='生物大师',starter={{item='agricultural-tower'}},unlock={{pack='agricultural-science-pack',level=5}},rewards={{pack='agricultural-science-pack',item='efficiency-module-3',groups=10}}},
