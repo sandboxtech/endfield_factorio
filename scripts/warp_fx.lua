@@ -134,9 +134,15 @@ events.on(defines.events.on_tick, function()
         storage.warp_fx = nil          -- 先清状态：reset 会重置 run_start_tick，下个 tick 不会误判再起一轮
         finale()
         -- pcall 兜底：reset 万一抛错，warp_fx 已为 nil、warp_hours 未重置 → 空闲分支(上面 ≤窗口守卫)会在 ≤60 tick 内重新起倒计时重试，
-        -- 自愈而非永久卡死；reset 持续失败则每分钟重试一次(并把错误抛给总线播报给管理员)，是显式告警而非静默死掉。
+        -- 自愈而非永久卡死。reset 抛错时【直接把错误红字打印给所有在线管理员 + 写日志】，每次都报、不静默、不去重，便于现场定位真凶。
         local ok, gained = pcall(reset.reset)
-        if not ok then error(gained) end                  -- 交给 events 总线 pcall：记日志 + 通知管理员（同一错一会话只播一次）
+        if not ok then
+            log('endfield warp reset error: ' .. tostring(gained))
+            for _, p in pairs(game.connected_players) do
+                if p.admin then p.print('[color=red][跃迁失败][/color] reset 抛错：' .. tostring(gained)) end
+            end
+            return
+        end
         play(gained and SUCCESS_SOUND or PLAIN_SOUND)
         return
     end

@@ -26,7 +26,9 @@ M.progress_bar = progress_bar   -- 导出供 commands.show_panel 的星星充能
 function M.print_exp(target, viewer)
     for _, pack in ipairs(constants.science_packs) do
         local pexp = passives.exp_total_for_pack(target.index, pack)
-        viewer.print({'wn.exp-detail', pack, respawn_gifts.pack_level(pexp), math.floor(pexp)})
+        local need = respawn_gifts.exp_for_next_level(pexp)        -- 升下一级所需累计经验；满级=nil
+        local diff = need and (need - pexp) or 0                   -- 距下一级还差的经验；满级=0
+        viewer.print({'wn.exp-detail', pack, respawn_gifts.pack_level(pexp), math.floor(pexp), math.floor(diff)})
     end
 end
 

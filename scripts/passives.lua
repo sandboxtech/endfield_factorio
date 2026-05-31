@@ -14,12 +14,12 @@ local M = {}
 local LOG10 = math.log(10)
 local MOVE_MAX_STEP = 50   -- 单次采样位移上限（格）：超过视为瞬移/换面，不计入移动距离
 
--- 某瓶累计科技瓶经验（= 存的瓶数 ÷ bottles_per_exp，现 =1 故即瓶数×品质）。供 gui / respawn_gifts / inspect 读取。
+-- 某瓶累计科技瓶经验（= 存储的经验值，单位 = 瓶数×品质系数）。供 gui / respawn_gifts / inspect 读取。
 function M.exp_total_for_pack(player_index, pack_name)
     local player = game.get_player(player_index)
     if not player then return 0 end
     local exp = science_exp.player_exp(player)
-    return ((exp and exp[pack_name]) or 0) / constants.bottles_per_exp
+    return (exp and exp[pack_name]) or 0
 end
 
 function M.get_stat(player_index, stat_name)

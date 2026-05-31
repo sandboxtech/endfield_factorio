@@ -11,7 +11,7 @@ local classes = require('scripts.classes')
 local M = {}
 
 -- 等级 = floor(√经验)，封顶 10000（经验本身无上限；升下一级需 (lv+1)² 经验）。
--- 经验 = 累计瓶数×品质系数（每个瓶 1 点，见 constants.bottles_per_exp=1）；满级(10000 级)需该瓶累计 1×10^8 经验。
+-- 经验 = 累计瓶数×品质系数（每个瓶 1 点）；满级(10000 级)需该瓶累计 1×10^8 经验。
 M.MAX_LEVEL = 10000
 
 local function stack_size(item_name)

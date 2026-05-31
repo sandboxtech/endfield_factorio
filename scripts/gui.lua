@@ -217,7 +217,7 @@ function M.show_classes(player)
     if not player then return end
     local cur = classes.selected_key(player)
     local buttons = {}
-    for _, def in ipairs(classes.list) do
+    for _, def in ipairs(classes.all()) do
         local name_loc = {'wn.class-name-' .. def.key}
         -- 白送清单 → 图标串：1 组只显图标，多组显 "N×[img]"；按钮图标取第一件白送物品。
         local parts, starter_img = {}, ''

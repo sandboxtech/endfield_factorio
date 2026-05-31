@@ -26,10 +26,10 @@
 | `noise.lua` | 2D simplex + 分形多倍频 + 种子派生变换（旋转/拉伸/缩放）。供运行时手动铺设噪声地物（移植自 ComfyFactorio）。 |
 | `players.lua` | 玩家生命周期（创建/加入/离开/复活/死亡）。`kill_player`：先把玩家移到**当前所在表面**的出生点再杀死（**尸体/货物留在当前星球**，杜绝"外星捡货→自杀带回母星"）；**复活落点** `place_on_respawn` 去玩家的**复活星球** `storage.respawn_surface[名]`（前往某星球时由命令记下；该星球 surface 不存在则回**母星**），`place_on_surface` 仅**异步**请求生成区块、不强制。`print_inspection` 面板。 |
 | `respawn_gifts.lua` | 每世界首次复活时发：**固定**起手护甲（modular-armor 内置 1 机器人端口 + 1 夜视仪 + 1 个 1 级电池 + 10 块太阳能板，不随等级变）+ 起手基础物资 + **开局金币**(`floor(√在线分钟)`) + **职业开局物品**(`gift_list`)：所选职业的无条件起手物(`starter`，可多种·各几组) + 按职业用到的各科技瓶等级线性发的奖励物(`floor(堆叠×组数×等级/满级)`)。背包格数加成 = 首发清单总格数(`gift_slots`，`apply_inventory_bonus` 读存值保持)。 |
-| `classes.lua` | **职业系统**：每个职业是一个**专精主题**（采矿/自动化/机器人/军事/外星/博学…），决定开局发什么物品；HUD 独立按钮窗口选择（同时只能一种，存 `storage.player_class`，带短冷却）。`starter` 无条件起手物列表(可多种·各几组)；`rewards` 多条，每条用一种瓶等级**线性发**一种物品(`floor` 向下取整)；`unlock` 可选门槛(当前全部无门槛、人人可选)。详见『跨跃迁进度 2』。 |
+| `classes.lua` | **职业系统**：每个职业是一个**专精主题**（采矿/自动化/机器人/军事/外星/博学…），决定开局发什么物品；HUD 独立按钮窗口选择（同时只能一种，存 `storage.player_class`，带短冷却）。`starter` 无条件起手物列表(可多种·各几组)；`rewards` 多条，每条用一种瓶等级**线性发**一种物品(`floor` 向下取整)；`unlock` 可选门槛(当前全部无门槛、人人可选)。**职业表存 `storage.classes`**(由 `M.ensure()` 从 `DEFAULT_CLASSES` 深拷贝，on_init/on_configuration_changed 调用)，**可 /c 热改**(改 groups/加减条目即时生效；`/c storage.classes=nil` 恢复默认)；读取走 `M.all()`/`M.def_for_key(key)`。详见『跨跃迁进度 2』。 |
 | `market.lua` | **5 个**金币市场（母星 + 其余 4 个星球，凡 `PLANET_GEN` 有配置，内容相同，不可摧毁/挖取）。**惰性放置**：由 `surface.lua` 的 `on_chunk_generated` 在**出生区块自然生成时**（玩家复活/传送到该星触发）调一次，**不强制生成区块**；每轮每星一次（`storage.market_run` 记录，成功才记）。同时做**出生点保底**：中心抽 16 点，过半不可通行(`collides_with('player')`：水/熔岩/油海/虚空…)就铺 64×64 精炼混凝土。 |
 | `passives.lua` | **动作即时升级的速度技能**：手搓/移动(封顶 +100%)/挖矿，曲线 -50% 下限、log 缓升；同时累积击杀/毁巢等统计。独占 craft/mine/changed_position 事件 + died(经总线)。展示在【状态】窗口。 |
-| `science_exp.lua` | `collect`（跃迁结算在线玩家背包科技瓶 = **每个瓶 1 点 × 品质系数**，不移除瓶子）/ `preview`（同算法预览，不写入）。经验按**玩家名**存 `storage.exp`（`bottles_per_exp=1`，不再缩放）。（提前结算 `/settle` 已移除：只有跃迁才结算。） |
+| `science_exp.lua` | `collect`（跃迁结算在线玩家背包科技瓶 = **每个瓶 1 点 × 品质系数**，不移除瓶子）/ `preview`（同算法预览，不写入）。经验按**玩家名**存 `storage.exp`（直接是经验值、不再做任何缩放；旧 `science_exp` 以"组"计的存档迁移时 ×200 转"瓶"刻度，见 `ensure_defaults`）。（提前结算 `/settle` 已移除：只有跃迁才结算。） |
 | `research.lua` | 研究含 `-science-pack` 名（非 trigger）的科技 → 本轮倒计时延长 `warp_extend_minutes[瓶]`(默认60) 分钟、公告、并 `gui.refresh_countdown()` 立刻刷新头顶倒计时。 |
 | `map_features.lua` | **每轮地图风味**（手动放置原生做不到的东西）：`M.knobs()` 本轮整局气质连续旋钮；跨星球 `EXOTIC` 异物（稀疏 simplex 散布）；`theme_trees` 改原生树颜色/灰度（连续插值）；**遭遇优先链** `place_encounter`（每地块**至多一个**，按稀有度依次尝试、命中即停）：永续箱 → 木箱 → 铁箱 → 钢箱 → 空据点(纯敌人)。箱均 `destructible=false` 不受伤但**可手拆**；每个遭遇都经**统一 `place_guards(danger)`** 放敌人（仅 danger 不同：永续/空据点高、普通箱低；出生点 96 格内只放箱不放敌、越远越猛）：`OUTPOST_GUARDS` 统一守卫池（激光/特斯拉/喷火/机枪/火箭/磁轨 + 沙虫/地雷/重炮，每种各自**非线性**数量；电炮首次出现才**惰性**建 enemy 子电网 substation+供电接口）+ **非线性飞船残骸**（neutral，不铺人造地板）。五类出现率统一经 `encounter_chance`(世界密度×`ENCOUNTER_BASE`×`loot_density`×各类乘数)。`M.generate` 逐区块调用。（原 `feat_material/equipment/treasure/outpost`、零星 `feat_danger`、散布 `feat_wrecks`、独立 `feat_perpetual`+`guard_perpetual` 已**全部并入** `place_encounter`；电网核心用 **legendary substation** 扩大供电范围。） |
 | `world_fx.lua` | 事件驱动的世界效果（经 `events` 总线）的**注册表**：`register(name,event,run)` 每项带全局开关 `storage.world_fx[name]`（默认开，`/c storage.world_fx.xxx=false` 禁用）。现有 **复制虫**(`replicant`)，玩家建筑被虫破坏时按**全局常数概率** `storage.replicant_chance`(默认0.5) 原地冒虫（不再按星球 danger_theme 滚，呼应 Comfy infested）。加新 fx 只动本文件 + `ensure_defaults` 开关列表。 |
@@ -69,7 +69,8 @@
 
 - `storage.run` / `run_start_tick` / `warp_hours`：轮次序号 / 本轮起始 / 本轮总时长。
 - `storage.platform_age[idx]` / `platform_lifetime`：飞船经历跃迁数 / 上限。船名前缀显示**剩余命数**(`[item=parameter-N][virtual-signal=signal-heart]` = 还剩 N 命 = `lifetime-age+1`)，每跃迁剥旧前缀换新；归零(`age>lifetime`)即摧毁。
-- `storage.science_exp[玩家名][瓶名] = exp`：每瓶累计经验（12 key，不分品质）。
+- `storage.exp[玩家名][瓶名] = exp`：每瓶累计经验（12 key，瓶数×品质，直接数值；等级=floor√exp）。
+- `storage.classes`：职业表（`M.ensure()` 从 `DEFAULT_CLASSES` 深拷贝；可 /c 热改，`=nil` 恢复默认）。
 - `storage.player_stats[玩家名]`：行为统计（驱动技能 + 金币）。
 - `storage.last_respawn_run[idx]`：上次复活的 `run`，判"本世界是否首次复活"。
 - `storage.last_leaderboard` / `last_leaderboard_run`：上个世界经验排行榜（经排行榜按钮查看）及其世界号。

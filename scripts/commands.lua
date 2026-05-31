@@ -135,11 +135,11 @@ end
 -- 预览：若现在立即跃迁，背包里的科技瓶各能换多少经验。
 function M.show_preview(player)
     if not player then return end
-    local gain = science_exp.preview(player)   -- 瓶数；显示 ÷bottles_per_exp = 组刻度
+    local gain = science_exp.preview(player)   -- 各瓶预计可得经验（瓶数×品质）
     local lines = {}
     for _, pack in ipairs(constants.science_packs) do
         if (gain[pack] or 0) > 0 then
-            lines[#lines + 1] = {'wn.preview-entry', pack, string.format('%g', gain[pack] / constants.bottles_per_exp)}
+            lines[#lines + 1] = {'wn.preview-entry', pack, string.format('%g', gain[pack])}
         end
     end
     if #lines == 0 then lines[1] = {'wn.preview-none'} end
@@ -388,7 +388,7 @@ end
 -- 选择职业（HUD 独立按钮窗口）：纯个人设置——只改 storage.player_class[名]，不公告、不传送。
 -- 同时只能一种职业；未解锁的职业不可选（按钮已置灰，这里兜底）。带短冷却防刷消息。
 function M.set_class(player, key)
-    local def = classes.by_key[key]
+    local def = classes.def_for_key(key)
     if not (player and def) then return end
     if not classes.unlocked(player, def) then   -- 兜底：按钮置灰已拦截，命令/异常仍校验
         player.print({'wn.class-locked-msg', {'wn.class-name-' .. key}})

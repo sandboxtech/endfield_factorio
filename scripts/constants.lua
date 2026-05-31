@@ -3,7 +3,6 @@
 local M = {
     hour_to_tick = 216000,
     min_to_tick = 3600,
-    bottles_per_exp = 1,     -- 经验 = 瓶数×品质系数（每个瓶 1 点经验）。保留此除数（=1，不再缩放）以兼容各处 ÷它 的旧调用。
 
     not_admin_text = {'wn.permission-denied'},
 
@@ -64,13 +63,13 @@ function M.ensure_defaults()
     end
     -- travel_chance 曾是标量、现改为【按星球的表】；旧标量会让 tc[星球] 索引数字崩服 → 非表一律清掉，由下方按星球重建。
     if type(storage.travel_chance) ~= 'table' then storage.travel_chance = nil end
-    -- 科技瓶经验改名+换刻度：旧 storage.science_exp(以"组"计) → 新 storage.exp(以"瓶"计 = 组×bottles_per_exp)。
+    -- 科技瓶经验改名+换刻度：旧 storage.science_exp(以"组"计) → 新 storage.exp(以"瓶"计；1 组 = 200 瓶，故 ×200)。
     -- 幂等：靠旧键 science_exp 是否存在；搬完置 nil，后续不再跑（故可常驻 ensure_defaults，不怕重复）。
     if storage.science_exp then
         storage.exp = storage.exp or {}
         for name, packs in pairs(storage.science_exp) do
             local d = storage.exp[name] or {}
-            for pk, v in pairs(packs) do d[pk] = (d[pk] or 0) + v * M.bottles_per_exp end
+            for pk, v in pairs(packs) do d[pk] = (d[pk] or 0) + v * 200 end
             storage.exp[name] = d
         end
         storage.science_exp = nil
