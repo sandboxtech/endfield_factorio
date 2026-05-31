@@ -9,20 +9,6 @@ local M = {}
 -- 商品按【组】排列，组间用 'sep' 标记分隔。市场货架每行 10 格，stock() 在每个 'sep' 处
 -- 补足 type='nothing' 的空占位到 10 的倍数 → 下一组从新的一行开始（同职业窗口的 {} 换行思路）。
 M.offers = {
-    -- 电池(储电)：mk1 20MJ / mk2 100MJ / mk3 250MJ，各占 2 格。每 MJ 单价 0.05→0.08→0.12 递增 → 多买低级更省钱。
-    {'battery-equipment',                1,   1},   -- 20MJ  · 2 格
-    {'battery-mk2-equipment',            1,   8},   -- 100MJ · 2 格
-    {'battery-mk3-equipment',            1,  30},   -- 250MJ · 2 格
-    'sep',
-
-    -- 护盾：50 / 150 点，每点单价 0.04→0.06 递增。
-    {'energy-shield-equipment',          1,   2},   -- 50 护盾  · 4 格
-    {'energy-shield-mk2-equipment',      1,   9},   -- 150 护盾 · 4 格
-    -- 个人机器人端口：mk2 更快、容纳更多机器人。
-    {'personal-roboport-equipment',      1,   3},   -- 35MJ 缓冲 · 4 格
-    {'personal-roboport-mk2-equipment',  1,  15},
-    'sep',
-
     -- 护甲格子（装零件用）：格子越多越贵，单格单价递增。
     {'modular-armor',                    1,   2},
     {'power-armor',                      1,  15},
@@ -43,11 +29,26 @@ M.offers = {
     {'fusion-reactor-equipment',         1,  40},
     'sep',
 
+    -- 电池(储电)：mk1 20MJ / mk2 100MJ / mk3 250MJ，各占 2 格。每 MJ 单价 0.05→0.08→0.12 递增 → 多买低级更省钱。
+    {'battery-equipment',                1,   1},   -- 20MJ  · 2 格
+    {'battery-mk2-equipment',            1,   8},   -- 100MJ · 2 格
+    {'battery-mk3-equipment',            1,  30},   -- 250MJ · 2 格
+    'sep',
+
+    -- 护盾：50 / 150 点，每点单价 0.04→0.06 递增。
+    {'energy-shield-equipment',          1,   2},   -- 50 护盾  · 4 格
+    {'energy-shield-mk2-equipment',      1,   9},   -- 150 护盾 · 4 格
+    -- 个人机器人端口：mk2 更快、容纳更多机器人。
+    {'personal-roboport-equipment',      1,   3},   -- 35MJ 缓冲 · 4 格
+    {'personal-roboport-mk2-equipment',  1,  15},
+    'sep',
+
     -- 矿石补给：1 金币换 50 矿石（1 组），开局/缺料时应急补给。
     {'iron-ore',                        50,   1},
     {'copper-ore',                      50,   1},
     {'stone',                           50,   1},
     {'coal',                            50,   1},
+    {'wood',                            50,   1},
 }
 
 local ROW = 10   -- 市场货架每行格数：每组补空占位到此倍数实现换行
