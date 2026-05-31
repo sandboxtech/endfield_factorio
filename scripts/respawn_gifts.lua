@@ -77,13 +77,9 @@ end
 -- 固定起手护甲（不随等级变化）：modular-armor 内置 1 个人机器人端口 + 1 夜视仪 + 1 个 1 级电池 + 10 块太阳能板。
 -- 背包另发起手基础物资。（旧的"随等级提高护甲品质 + 太阳能板数目/品质"机制已移除。）
 -- ----------------------------------------------------------------------------
+-- 起手基础物资：现在只发【建设机器人】给所有职业（配合护甲的机器人端口）；
 M.starter_inventory = {
     {name = 'construction-robot', count = 10},
-    {name = 'iron-plate',         count = 200},
-    {name = 'copper-plate',       count = 100},
-    {name = 'coal',               count = 50},
-    {name = 'stone',              count = 50},
-    {name = 'wood',               count = 50},
 }
 
 local function give_starter_armor(player)

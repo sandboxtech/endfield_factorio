@@ -50,7 +50,7 @@ function M.player_gui(player)
         {spacer = true},
         -- 个人组：科技瓶经验 / 统计 / 职业 / 星星。
         {name = 'wn_btn_skills',   sprite = 'virtual-signal/signal-science-pack', tip = {'', '[font=default-bold]瓶子经验[/font]\n', {'wn.panel-help'}}},
-        {name = 'wn_btn_stats',    sprite = 'entity/character',                 tip = {'', '[font=default-bold]统计[/font]\n', {'wn.stats-help'}}},
+        {name = 'wn_btn_stats',    sprite = 'entity/character',                 tip = {'', '[font=default-bold]统计[/font]\n', {'wn.stats-btn-tip'}}},
         {name = 'wn_btn_class',    sprite = 'virtual-signal/signal-mining',     tip = {'', '[font=default-bold]职业[/font]\n', {'wn.class-help'}}},
         {name = 'wn_btn_star',     sprite = 'virtual-signal/signal-star',       tip = {'', '[font=default-bold]星星[/font]\n', {'wn.star-help'}}, min_level = storage.star_unlock_level or 0},
         {spacer = true},
@@ -120,7 +120,7 @@ M.POPUP_CLOSE_NAME = POPUP_NAME .. '_close'
 -- buttons_at_bottom：true 时 buttons 放在文本行【之后】（用于教程末尾的"其它按钮"），否则放最前（用于面板导航）。
 -- bottom_buttons（可选）：与 buttons_at_bottom 无关，永远渲染在【所有文本行之后】。用于"顶部导航按钮 + 底部操作按钮"两段式布局
 --   （如角色面板：顶部"查看他人能力"，底部"领取星星"）。
-function M.show_popup(player, title, lines, buttons, buttons_at_bottom, bottom_buttons)
+function M.show_popup(player, title, lines, buttons, buttons_at_bottom, bottom_buttons, columns)
     if not (player and player.valid) then return end
     local screen = player.gui.screen
     if screen[POPUP_NAME] then screen[POPUP_NAME].destroy() end   -- 重开即替换
@@ -140,27 +140,28 @@ function M.show_popup(player, title, lines, buttons, buttons_at_bottom, bottom_b
     local pane = frame.add{type = 'scroll-pane', direction = 'vertical'}
     pane.style.maximal_height = 460
     pane.style.minimal_width = 380
-    local function add_buttons(list)
+    local function add_buttons(list, cols)
         if not list then return end
+        -- cols>1 时按钮放进 table 多列平铺；label 始终单独成行（加到 pane，不进网格）。
+        local box = (cols and cols > 1) and pane.add{type = 'table', column_count = cols} or pane
         for _, b in ipairs(list) do
             if b.label then
-                -- 分组小标题（非按钮）：加粗 label，用于把按钮分块。
                 local l = pane.add{type = 'label', caption = b.caption}
                 l.style.font = 'default-bold'
                 l.style.top_margin = 6
             else
                 -- enabled=false → 按钮置灰且不触发 on_gui_click（如本轮关闭的星球）。tooltip 说明为何不可点。
-                pane.add{type = 'button', name = b.name, caption = b.caption, tags = b.tags,
-                         enabled = b.enabled, tooltip = b.tooltip}
+                box.add{type = 'button', name = b.name, caption = b.caption, tags = b.tags,
+                        enabled = b.enabled, tooltip = b.tooltip}
             end
         end
     end
-    if not buttons_at_bottom then add_buttons(buttons) end
+    if not buttons_at_bottom then add_buttons(buttons, columns) end
     for _, line in ipairs(lines) do
         pane.add{type = 'label', caption = line}.style.single_line = false
     end
-    if buttons_at_bottom then add_buttons(buttons) end
-    add_buttons(bottom_buttons)   -- 永远在文本行之后
+    if buttons_at_bottom then add_buttons(buttons, columns) end
+    add_buttons(bottom_buttons)   -- 永远在文本行之后（不分列）
     frame.force_auto_center()
     player.opened = frame   -- Esc/E 关闭
 
@@ -225,8 +226,10 @@ function M.show_classes(player)
         local tip = {''}
         for _, s in ipairs(def.starter or {}) do
             local proto = prototypes.item[s.item]
-            local count = ((proto and proto.stack_size) or 1) * (s.groups or 1)   -- 白送个数 = 堆叠 × 组数
-            tip[#tip + 1] = {'wn.class-tip-head', count, '[img=item/' .. s.item .. ']'}
+            local stack = (proto and proto.stack_size) or 1
+            local groups = s.groups or 1
+            -- 显示"组数 × 堆叠 = 总数 [图]"，让玩家一眼看清白送多少。
+            tip[#tip + 1] = {'wn.class-tip-head', groups, stack, stack * groups, '[img=item/' .. s.item .. ']'}
         end
         for _, r in ipairs(def.rewards or {}) do
             local proto = prototypes.item[r.item]
@@ -248,7 +251,7 @@ function M.show_classes(player)
             tooltip = tip, enabled = classes.unlocked(player, def), tags = {wn_class = def.key}}
     end
     -- 顶部自带说明（buttons_at_bottom=true → 说明在上、职业按钮在下）。
-    M.show_popup(player, {'wn.class-title'}, {{'wn.class-help'}}, buttons, true)
+    M.show_popup(player, {'wn.class-title'}, {{'wn.class-help'}}, buttons, true, nil, 3)   -- 职业按钮 3 列平铺
 end
 
 function M.close_popup(player)

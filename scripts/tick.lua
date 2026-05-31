@@ -250,6 +250,9 @@ script.on_event(defines.events.on_gui_click, events.safe('gui_click', function(e
     elseif event.element.tags and event.element.tags.wn_view then
         local t = game.get_player(event.element.tags.wn_view)   -- 点列表里某玩家名 = 看其能力面板（带返回）
         if t then commands.show_panel(player, t) end
+    elseif event.element.tags and event.element.tags.wn_stats_view then
+        local t = game.get_player(event.element.tags.wn_stats_view)   -- 统计列表里点某玩家 = 看其详细统计
+        if t then commands.show_stats_of(player, t) end
     elseif name == 'wn_btn_warp' then
         commands.cast_warp_vote(player, 'agree')    -- 跃迁/停留 = 对应投票
     elseif name == 'wn_btn_stay' then

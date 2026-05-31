@@ -333,14 +333,29 @@ function M.show_panel(player, target)
     gui.show_popup(player, {'wn.inspect-header', target.name}, sink.lines, top_buttons)
 end
 
--- 弹出【状态】窗口（HUD 独立按钮）：顶部说明 + 人物等级 + 三能力(手搓/移动/挖矿速度) + 6 项统计。仅看自己。
+-- 弹出【统计】窗口（HUD 独立按钮）：列出所有在线玩家（名字 + 等级 + 职业），点某人看其详细统计。
 function M.show_stats(player)
     if not player then return end
+    local buttons = {}
+    for _, p in pairs(game.connected_players) do
+        local lv = respawn_gifts.coin_reward(passives.get_stat(p.index, 'online_minutes'))
+        local def = classes.def_of(p)
+        local cname = def and (def.name or {'wn.class-name-' .. def.key}) or ''
+        buttons[#buttons + 1] = {name = 'wn_stats_view_' .. p.index,
+            caption = {'wn.stats-entry', p.name, lv, cname}, tags = {wn_stats_view = p.name}}
+    end
+    gui.show_popup(player, {'wn.stats-title'}, {}, buttons)
+end
+
+-- 看某玩家的详细统计（顶部说明 + 人物等级 + 三能力 + 6 项战绩）；底部【返回】回到玩家列表。
+function M.show_stats_of(player, target)
+    if not (player and target) then return end
     local sink = gui.popup_sink()
     sink.lines[#sink.lines + 1] = {'wn.stats-help'}
     sink.lines[#sink.lines + 1] = ''
-    players.print_status(player, sink)
-    gui.show_popup(player, {'wn.stats-title'}, sink.lines)
+    players.print_status(target, sink)
+    gui.show_popup(player, {'wn.stats-of-header', target.name}, sink.lines,
+        {{name = 'wn_btn_stats', caption = {'wn.panel-back'}}})
 end
 
 -- 弹出【星星】窗口（HUD 独立按钮）：星星余额（所有等级都显示）+ 充能进度条 + 领取按钮（仅达 star_unlock_level）。
