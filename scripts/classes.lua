@@ -1,51 +1,51 @@
--- 职业系统：每个职业专精 1~2 种科技瓶，对应一个现实领域。
--- 玩家随时可在【职业】按钮窗口里切换职业（独立 HUD 按钮），同时只能是一种职业。
---   · 选择存 storage.player_class[名]，切换带短冷却防刷（冷却逻辑在 commands.set_class）。
+-- 职业系统：每个职业对应一个领域，决定开局发什么物品。
+-- 玩家随时可在【职业】按钮窗口里切换（同时只能一种，存 storage.player_class[名]，带短冷却）。
+-- 进服默认职业 = 平民（未选择时按平民对待，见 M.DEFAULT / selected_key 兜底）。
 --
--- 设计意图：选了职业 → 开局多发一些该领域的对应物品（专精瓶相关建筑）。
--- 【效果暂未实现】：当前只落地"选择"骨架，is_pack_boosted 已备好，
--- 将来在 respawn_gifts 接入即可。先不动开局赠品逻辑。
+-- 每个职业两类物品（见 respawn_gifts.gift_list 发放）：
+--   starter 无条件初始物品：每轮开局直接发 1 组（= 堆叠数）。
+--   reward  经验奖励物品：按该职业【专精瓶】等级，每 100 级发 1 组（floor(等级/100) 组）。
+-- 平民无专精瓶、无 reward；天文大师只有 starter、无 reward。
 local M = {}
 
--- 12 职业，与 constants.science_packs 一一对应（顺序即面板显示顺序）。
---   key    内部稳定标识（存档/路由用，不随语言变）
---   packs  专精的科技瓶（1~2 种）→ 将来的赠品加成作用在这些瓶
+M.DEFAULT = 'civilian'
+
+-- 职业表（顺序即面板显示顺序）：
+--   key     内部稳定标识（存档/路由用，不随语言变；显示名见 locale class-name-<key>）
+--   packs   专精的科技瓶（决定 reward 按哪个瓶的经验发；平民为空）
+--   starter 无条件初始物品（开局发 1 组）
+--   reward  经验奖励物品（每 100 级发 1 组；nil = 无）
 M.list = {
-    {key = 'mining',        packs = {'automation-science-pack'}},
-    {key = 'logistics',     packs = {'logistic-science-pack'}},
-    {key = 'chemistry',     packs = {'chemical-science-pack'}},
-    {key = 'manufacturing', packs = {'production-science-pack'}},
-    {key = 'engineering',   packs = {'utility-science-pack'}},
-    {key = 'aerospace',     packs = {'space-science-pack'}},
-    {key = 'metallurgy',    packs = {'metallurgic-science-pack'}},
-    {key = 'electronics',   packs = {'electromagnetic-science-pack'}},
-    {key = 'biology',       packs = {'agricultural-science-pack'}},
-    {key = 'physics',       packs = {'cryogenic-science-pack'}},
-    {key = 'astronomy',     packs = {'promethium-science-pack'}},
-    {key = 'military',      packs = {'military-science-pack'}},
+    {key = 'civilian',     packs = {},                                starter = 'burner-mining-drill'},
+    {key = 'miner',        packs = {'automation-science-pack'},       starter = 'electric-mining-drill', reward = 'big-mining-drill'},
+    {key = 'artisan',      packs = {'logistic-science-pack'},         starter = 'assembling-machine-2',  reward = 'assembling-machine-3'},
+    {key = 'smelter',      packs = {'chemical-science-pack'},         starter = 'medium-electric-pole',  reward = 'steam-turbine'},
+    {key = 'soldier',      packs = {'military-science-pack'},         starter = 'tank',                  reward = 'power-armor-mk2'},
+    {key = 'worker',       packs = {'production-science-pack'},       starter = 'electric-furnace',      reward = 'beacon'},
+    {key = 'merchant',     packs = {'utility-science-pack'},          starter = 'passive-provider-chest', reward = 'roboport'},
+    {key = 'crew',         packs = {'space-science-pack'},            starter = 'rocket-silo',           reward = 'space-platform-starter-pack'},
+    {key = 'metallurgist', packs = {'metallurgic-science-pack'},      starter = 'foundry',               reward = 'speed-module-3'},
+    {key = 'electrician',  packs = {'electromagnetic-science-pack'},  starter = 'electromagnetic-plant', reward = 'quality-module-3'},
+    {key = 'biologist',    packs = {'agricultural-science-pack'},     starter = 'agricultural-tower',    reward = 'efficiency-module-3'},
+    {key = 'physicist',    packs = {'cryogenic-science-pack'},        starter = 'cryogenic-plant',       reward = 'productivity-module-3'},
+    {key = 'astronomer',   packs = {'promethium-science-pack'},       starter = 'lab',                   reward = 'biolab'},
 }
 
--- key → 定义；以及某瓶 → 哪个职业专精它（供将来 respawn_gifts 反查）。
+-- key → 定义。
 M.by_key = {}
-local pack_to_class = {}
-for _, def in ipairs(M.list) do
-    M.by_key[def.key] = def
-    for _, pack in ipairs(def.packs) do pack_to_class[pack] = def.key end
-end
+for _, def in ipairs(M.list) do M.by_key[def.key] = def end
 
--- 玩家当前选择的职业 key（没选则 nil）。
+-- 玩家当前选择的职业 key（未选 → 默认平民）。
 function M.selected_key(player)
-    return player and (storage.player_class or {})[player.name]
+    return player and ((storage.player_class or {})[player.name] or M.DEFAULT)
 end
 
--- 玩家当前职业是否专精了某瓶（供将来发开局物品用）。
-function M.is_pack_boosted(player, pack)
-    local key = M.selected_key(player)
-    return key ~= nil and pack_to_class[pack] == key
+-- 玩家当前职业定义（一定返回一个，兜底平民）。
+function M.def_of(player)
+    return M.by_key[M.selected_key(player)] or M.by_key[M.DEFAULT]
 end
 
 -- 设定玩家选择的职业（仅校验 key 合法 + 写存储；冷却/广播由 commands 处理）。
--- key 传 nil 或非法则不改、返回 false。
 function M.set(player, key)
     if not (player and key and M.by_key[key]) then return false end
     storage.player_class = storage.player_class or {}

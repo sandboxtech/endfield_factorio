@@ -196,10 +196,20 @@ function M.show_classes(player)
     local cur = classes.selected_key(player)
     local buttons = {}
     for _, def in ipairs(classes.list) do
+        local name_loc = {'wn.class-name-' .. def.key}
+        local starter_img = def.starter and ('[img=item/' .. def.starter .. ']') or ''
+        local tip
+        if def.reward and def.packs[1] then
+            -- 后者动态："每 x 级 +1"，x = 100/堆叠（堆叠 50 → 每 2 级一个）。
+            local proto = prototypes.item[def.reward]
+            local per = string.format('%g', 100 / ((proto and proto.stack_size) or 1))
+            tip = {'wn.class-tip', starter_img, per, '[img=item/' .. def.reward .. ']'}
+        else
+            tip = {'wn.class-tip-basic', starter_img}   -- 平民/天文等无后者
+        end
         buttons[#buttons + 1] = {name = 'wn_act_class_' .. def.key,
-            caption = {def.key == cur and 'wn.class-cur' or 'wn.class-pick', {'wn.class-name-' .. def.key}},
-            tooltip = {'wn.class-tip', {'wn.class-name-' .. def.key}, '[img=item/' .. def.packs[1] .. ']'},
-            tags = {wn_class = def.key}}
+            caption = {def.key == cur and 'wn.class-cur' or 'wn.class-pick', name_loc},
+            tooltip = tip, tags = {wn_class = def.key}}
     end
     M.show_popup(player, {'wn.class-title'}, {}, buttons)
 end

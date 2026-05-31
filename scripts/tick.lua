@@ -304,17 +304,10 @@ local PER_MINUTE = 60 * 60
 events.on(defines.events.on_tick, function()
     if game.tick % PER_MINUTE ~= 0 then return end   -- 非整分钟：立即返回（廉价门控，省去整个每分钟处理）
     player_stats.sample_online()
-    -- 事件世界（刷怪/落点/科技世界）碰大量原型、最易出错，单独兜底，出错不影响金币/倒计时/跃迁。
+    -- 事件世界（刷怪/落点/科技世界）碰大量原型、最易出错，单独兜底，出错不影响倒计时/跃迁。
     events.safe('world_events', run_world_events)()
 
-    -- 每分钟尝试给每个在线玩家塞 1 个普通金币（背包满则塞不进，忽略即可）。
-    for _, player in pairs(game.connected_players) do
-        if player.character then
-            local main = player.get_inventory(defines.inventory.character_main)
-            if main then main.insert{name = 'coin', count = 1} end
-        end
-    end
-
+    -- （金币不再每分钟发放：只在每轮首次复活按 floor(√在线分钟) 一次性发，见 respawn_gifts.gift_list。）
     -- （科技世界已并入事件世界：tech 作为 WORLD_EVENTS 的一种，由 run_world_events 统一按事件机制触发，此处不再单独判定。）
 
     -- 刷新顶部跃迁倒计时标签（精确到分钟，每分钟一次）。

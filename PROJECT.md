@@ -2,7 +2,7 @@
 
 异星工厂 (Factorio 2.0 + Space Age) 自定义场景。核心玩法：每隔一段时间（起步约 `warp_initial_minutes`(默认30) 分钟，随解锁新科技瓶延长、发射火箭/投票缩短）触发一次"跃迁"，所有星球清空重建、玩家死亡复活、飞船保留有限轮次。**跨跃迁的永久进度**有两条：
 
-1. **科技瓶经验** → 下次开局直接发该瓶对应的代表物资（带得越多、开局越富）。
+1. **科技瓶经验** → 跃迁前背包里的科技瓶累加为各瓶经验（**每个瓶 1 点**、按品质加成），用于角色面板展示等级（`floor(√经验)`，上限 10000 级、经验无上限）。基于瓶等级直接发开局物资的旧奖励**已移除**，未来拟由职业系统决定开局物品。
 2. **角色技能**（边玩边练）→ 手搓/移动/挖矿越多越快、死亡越多血上限越高。
 
 每一轮的各星球还会随机出**世界变体**（地表换皮 / 染地 / 据点遭遇(箱+敌人) / 世界事件 / 障碍·流体互换…），
@@ -23,10 +23,11 @@
 | `events.lua` | **事件总线**：同一事件多处 `events.on()` 订阅、内部只 `script.on_event` 注册一次再分发 → 避免单事件被多处注册互相覆盖。可能被多方监听的事件都走它。 |
 | `noise.lua` | 2D simplex + 分形多倍频 + 种子派生变换（旋转/拉伸/缩放）。供运行时手动铺设噪声地物（移植自 ComfyFactorio）。 |
 | `players.lua` | 玩家生命周期（创建/加入/离开/复活/死亡）。`kill_player`：先把玩家移到**当前所在表面**的出生点再杀死（**尸体/货物留在当前星球**，杜绝"外星捡货→自杀带回母星"）；**复活落点** `place_on_respawn` 去玩家的**复活星球** `storage.respawn_surface[名]`（前往某星球时由命令记下；该星球 surface 不存在则回**母星**），`place_on_surface` 仅**异步**请求生成区块、不强制。`print_inspection` 面板。 |
-| `respawn_gifts.lua` | 每世界首次复活时发：起手护甲 + 起手物资 + **每瓶 2 种代表物资**（数量 = `ceil(堆叠数 × 等级/100)`，等级 = `floor(√exp)`，封顶 `MAX_GROUPS=10` 组）+ **开局金币**(`√在线分钟`)。 |
+| `respawn_gifts.lua` | 每世界首次复活时发：**固定**起手护甲（modular-armor 内置 1 机器人端口 + 1 夜视仪 + 1 个 1 级电池 + 10 块太阳能板，不随等级变）+ 起手基础物资 + **开局金币**(`floor(√在线分钟)`)。基于瓶等级发代表物资的奖励、护甲随等级成长**均已移除**（`pack_gifts`/`gift_count` 暂留备用）。 |
+| `classes.lua` | **职业系统**：12 职业与 12 科技瓶领域一一对应，HUD 独立按钮窗口选择（同时只能一种，存 `storage.player_class`，带短冷却）。效果（选职业→开局多发该领域物品）**暂未实现**，仅落地"选择"骨架（`is_pack_boosted` 已备好）。 |
 | `market.lua` | **5 个**金币市场（母星 + 其余 4 个星球，凡 `PLANET_GEN` 有配置，内容相同，不可摧毁/挖取）。**惰性放置**：由 `surface.lua` 的 `on_chunk_generated` 在**出生区块自然生成时**（玩家复活/传送到该星触发）调一次，**不强制生成区块**；每轮每星一次（`storage.market_run` 记录，成功才记）。同时做**出生点保底**：中心抽 16 点，过半不可通行(`collides_with('player')`：水/熔岩/油海/虚空…)就铺 64×64 精炼混凝土。 |
 | `passives.lua` | **动作即时升级的 4 技能**：手搓/移动(封顶 +100%)/挖矿/生命上限。曲线 -50% 下限、log 缓升。独占 craft/mine/changed_position/died 事件。 |
-| `science_exp.lua` | `collect`（跃迁结算在线玩家**整组**科技瓶 = `floor(数量/堆叠) × 品质系数`，不移除瓶子）/ `preview`（同算法预览，不写入）。经验按**玩家名**存 `storage.science_exp`。（提前结算 `/settle` 已移除：只有跃迁才结算。） |
+| `science_exp.lua` | `collect`（跃迁结算在线玩家背包科技瓶 = **每个瓶 1 点 × 品质系数**，不移除瓶子）/ `preview`（同算法预览，不写入）。经验按**玩家名**存 `storage.exp`（`bottles_per_exp=1`，不再缩放）。（提前结算 `/settle` 已移除：只有跃迁才结算。） |
 | `research.lua` | 研究含 `-science-pack` 名（非 trigger）的科技 → 本轮倒计时延长 `warp_extend_minutes[瓶]`(默认60) 分钟、公告、并 `gui.refresh_countdown()` 立刻刷新头顶倒计时。 |
 | `map_features.lua` | **每轮地图风味**（手动放置原生做不到的东西）：`M.knobs()` 本轮整局气质连续旋钮；跨星球 `EXOTIC` 异物（稀疏 simplex 散布）；`theme_trees` 改原生树颜色/灰度（连续插值）；**遭遇优先链** `place_encounter`（每地块**至多一个**，按稀有度依次尝试、命中即停）：永续箱 → 木箱 → 铁箱 → 钢箱 → 空据点(纯敌人)。箱均 `destructible=false` 不受伤但**可手拆**；每个遭遇都经**统一 `place_guards(danger)`** 放敌人（仅 danger 不同：永续/空据点高、普通箱低；出生点 96 格内只放箱不放敌、越远越猛）：`OUTPOST_GUARDS` 统一守卫池（激光/特斯拉/喷火/机枪/火箭/磁轨 + 沙虫/地雷/重炮，每种各自**非线性**数量；电炮首次出现才**惰性**建 enemy 子电网 substation+供电接口）+ **非线性飞船残骸**（neutral，不铺人造地板）。五类出现率统一经 `encounter_chance`(世界密度×`ENCOUNTER_BASE`×`loot_density`×各类乘数)。`M.generate` 逐区块调用。（原 `feat_material/equipment/treasure/outpost`、零星 `feat_danger`、散布 `feat_wrecks`、独立 `feat_perpetual`+`guard_perpetual` 已**全部并入** `place_encounter`；电网核心用 **legendary substation** 扩大供电范围。） |
 | `world_fx.lua` | 事件驱动的世界效果（经 `events` 总线）的**注册表**：`register(name,event,run)` 每项带全局开关 `storage.world_fx[name]`（默认开，`/c storage.world_fx.xxx=false` 禁用）。现有 **复制虫**(`replicant`)，玩家建筑被虫破坏时按**全局常数概率** `storage.replicant_chance`(默认0.5) 原地冒虫（不再按星球 danger_theme 滚，呼应 Comfy infested）。加新 fx 只动本文件 + `ensure_defaults` 开关列表。 |
@@ -106,7 +107,7 @@ on_chunk_generated（每区块）:
 
 on_player_respawned / on_player_created: passives.apply；本世界首次 -> respawn_gifts.on_first_respawn
 on_pre_player_left_game: kill_player（当前表面出生点死亡，尸体留当地；复活回其复活星球/母星）
-on_tick(经 events 总线)+整除门控: 每分钟 在线采样 + 各 +1 金币 + 倒计时/提醒 + run_world_events（事件世界，含 tech 得/失科技）；另 warp_fx 每 tick 看跃迁倒计时
+on_tick(经 events 总线)+整除门控: 每分钟 在线采样 + 倒计时/提醒 + run_world_events（事件世界，含 tech 得/失科技）；另 warp_fx 每 tick 看跃迁倒计时
 on_entity_died（world_fx 经总线）: 玩家建筑被虫毁 -> 按 replicant_chance 原地冒虫
 ```
 
@@ -118,13 +119,13 @@ on_entity_died（world_fx 经总线）: 玩家建筑被虫毁 -> 按 replicant_c
 
 ## 跨跃迁进度
 
-### 1. 科技瓶经验 → 开局直接发物资（`respawn_gifts`）
+### 1. 科技瓶经验（`science_exp` + 面板展示）
 
-跃迁前背包里的科技瓶由 `science_exp.collect` 按瓶累加经验（**只在跃迁结算**，无提前结算）。
-开局**直接**发每瓶对应的 **2 种代表物资**（`M.pack_gifts`）：
+跃迁前背包里的科技瓶由 `science_exp.collect` 按瓶累加经验（**只在跃迁结算**，无提前结算）：**每个瓶 1 点**，乘品质系数（normal 1 … legendary 5）。
 
-- 等级 = `floor(√exp)`，封顶 1000；单种数量 = `ceil(堆叠数 × 等级/100)`（等级100=1组、1000=10组，封顶 `MAX_GROUPS=10`）。
-- 🧪 面板每瓶一行：`瓶图标 经验N · 右侧=下局会发的 2 种物资×数量`。
+- 等级 = `floor(√经验)`，封顶 **10000**（经验无上限；`10^8` 经验 = `10^4` 级）。
+- 🧪 角色面板每瓶一行：`瓶图标 · N 级 · 经验M`。
+- 经验用途：**职业系统**的"后者"奖励物品按该职业专精瓶的等级发放（每 100 级 1 组，见下"职业系统"）。旧的"每瓶直接发代表物资"已移除。
 
 ### 2. 角色技能（`passives.lua`，边玩边练）
 
@@ -134,9 +135,23 @@ on_entity_died（world_fx 经总线）: 玩家建筑被虫毁 -> 按 replicant_c
 | 移动 | 移动速度 | 同上，封顶 +100% |
 | 采矿/拆除 | 挖矿速度 | 同上 |
 
+面板每行：`统计值 · 等级(=floor√统计) · 当前实际速度%`（实际速度 = 100% + 修正系数，开局 50%）。
+
+### 3. 职业系统（`classes.lua` + `respawn_gifts.gift_list`）
+
+进服默认【平民】。HUD「职业」按钮窗口随时切换（同时只能一种，存 `storage.player_class`，切换即时生效、带短冷却）。
+每个职业开局发两类物品（发到背包主格，见 `gift_list`）：
+
+- **前者**（无条件初始物品）：每轮开局 1 组。
+- **后者**（经验奖励物品）：按该职业【专精瓶】等级发，`个数 = ceil(等级 × 堆叠 / 100)`——即 100 级 = 1 组、按堆叠摊到每级（堆叠 50 → 每 2 级 +1；0级0个、1级1个、3级2个）。平民/天文无后者。
+
+**背包格联动**（`gift_slots`）：开局清单占多少格，就把 `character_inventory_slots_bonus` 设多少（首发存 `storage.gift_slots[名]`，后续复活由 `apply_inventory_bonus` 读存值保持）→ 刚好装下、不溢出。
+
+职业表（前者 / 后者）：平民 热能采矿机/—、矿工 采矿机/大矿机、匠人 组装机2/组装机3、炉工 中型电杆/汽轮机、军人 坦克/动力装甲mk2、工人 电炉/信标、商人 被动供应箱/机器人平台、船员 火箭发射井/太空平台基础包、冶金大师 铸造厂/速度模块3、电气大师 电磁工厂/品质模块3、生物大师 农业塔/节能模块3、物理大师 低温工厂/产能模块3、天文大师 实验室/生物研究中心。
+
 ## 金币经济
 
-来源：开局 `floor(√在线分钟)` + 每分钟在线 +1 +（罕见 coinfall 事件）。用途：母星金币市场买普通装备零件。
+来源：开局 `floor(√在线分钟)`（= 人物等级，每轮首次复活发放）+（罕见 coinfall 事件）。**不再每分钟发 +1 金币**。用途：母星金币市场买普通装备零件。
 装备是个人增益，不替代"建工厂"核心循环。
 
 ## 星球资源档位（`surface.lua`）

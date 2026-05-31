@@ -3,7 +3,7 @@
 local M = {
     hour_to_tick = 216000,
     min_to_tick = 3600,
-    bottles_per_exp = 200,   -- 经验以"瓶"存整数；200 瓶 = 1 旧"组"经验点（科技瓶堆叠=200）。读取/显示处 ÷它 = 组刻度。
+    bottles_per_exp = 1,     -- 经验 = 瓶数×品质系数（每个瓶 1 点经验）。保留此除数（=1，不再缩放）以兼容各处 ÷它 的旧调用。
 
     not_admin_text = {'wn.permission-denied'},
 
@@ -17,7 +17,7 @@ local M = {
     },
 
     -- 12 种科技瓶：跃迁经验种类、奖励物资遍历顺序、角色面板显示顺序的唯一来源。
-    -- 每种瓶 → 下次开局直接发的 2 种代表物资见 respawn_gifts.pack_gifts。
+    -- 每种瓶 → 对应一个职业领域（决定该职业开局发什么物品）见 classes.lua。
     science_packs = {
         'automation-science-pack', 'logistic-science-pack', 'chemical-science-pack',
         'production-science-pack', 'utility-science-pack', 'space-science-pack',
@@ -152,7 +152,7 @@ function M.ensure_defaults()
     for _, key in ipairs({'width_of', 'height_of', 'shape_of', 'exp', 'player_stats', 'platform_age',
                           'ground_tint', 'tile_remap', 'event_world', 'loot_style', 'members',
                           'last_respawn_run', 'move_pos', 'bad_items', 'bad_entities', 'gen_debug', 'warp_vote',
-                          'obstacle_remap', 'fluid_remap', 'last_leaderboard', 'market_run', 'respawn_surface', 'chat_bubble', 'enemy_floor', 'action_cd', 'travel_open', 'event_period_min', 'charge', 'star', 'player_class', 'class_cd', 'travel_cd', 'vote_cd'}) do
+                          'obstacle_remap', 'fluid_remap', 'last_leaderboard', 'market_run', 'respawn_surface', 'chat_bubble', 'enemy_floor', 'action_cd', 'travel_open', 'event_period_min', 'charge', 'star', 'player_class', 'class_cd', 'travel_cd', 'vote_cd', 'gift_slots'}) do
         storage[key] = storage[key] or {}
     end
     -- world_fx 全局开关（默认开；/c storage.world_fx.xxx=false 单独禁用某事件驱动效果）。

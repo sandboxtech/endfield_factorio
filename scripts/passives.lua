@@ -14,8 +14,8 @@ local M = {}
 local LOG10 = math.log(10)
 local MOVE_MAX_STEP = 50   -- 单次采样位移上限（格）：超过视为瞬移/换面，不计入移动距离
 
--- 某瓶累计科技瓶经验，返回【"组"刻度】（= 存的瓶数 ÷ bottles_per_exp）。供 gui / respawn_gifts / inspect 读取。
--- 存储以瓶为整数；此处单次除法 → 各公式(pack_level/gift_count…)仍按"组"工作、零浮点漂移。
+-- 某瓶累计科技瓶经验（= 存的瓶数 ÷ bottles_per_exp，现 bottles_per_exp=1 故即瓶数×品质）。供 gui / respawn_gifts / inspect 读取。
+-- 存储以瓶为整数；此处单次除法 → pack_level 等公式零浮点漂移。
 function M.exp_total_for_pack(player_index, pack_name)
     local player = game.get_player(player_index)
     if not player then return 0 end

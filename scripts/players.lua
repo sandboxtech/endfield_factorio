@@ -22,30 +22,12 @@ local function progress_bar(frac)
 end
 M.progress_bar = progress_bar   -- 导出供 commands.show_panel 的星星充能进度条复用（同款方块字符条）
 
--- 每种科技瓶：等级(0-1000) + 当前开局奖励 + 还差多少经验升级（仿人物等级那一行，去掉繁琐的下一档预览）。
--- 单独成函数：角色面板里"看自己"时把经验放到星星之后，故由 show_panel 决定打印时机（print_inspection 默认仍打印）。
+-- 每种科技瓶一行：只展示【瓶 + 累计等级 + 累计经验】。等级 = floor(√经验)，封顶 1000。
+-- 单独成函数：角色面板里"看自己"时把经验放到统计之后，故由 show_panel 决定打印时机（print_inspection 默认仍打印）。
 function M.print_exp(target, viewer)
     for _, pack in ipairs(constants.science_packs) do
-        local items = respawn_gifts.pack_gifts[pack]
-        if items then
-            local pexp = passives.exp_total_for_pack(target.index, pack)
-            local lv = respawn_gifts.pack_level(pexp)
-            local cur = {}
-            for _, item in ipairs(items) do
-                cur[#cur + 1] = '[img=item/' .. item .. ']×' .. respawn_gifts.gift_count(pexp, item)
-            end
-            local nx = respawn_gifts.exp_for_next_level(pexp)
-            if nx then
-                local base = lv * lv                                  -- 当前等级最低经验 = lv²
-                local frac = (nx > base) and (pexp - base) / (nx - base) or 0
-                viewer.print({'wn.exp-detail', pack, lv, table.concat(cur, ' '),
-                              progress_bar(frac), math.floor(frac * 100 + 0.5),
-                              pexp - base, nx - base})                 -- __6__/__7__ = 本级已得/本级跨度，百分比即其比值
-
-            else
-                viewer.print({'wn.exp-detail-max', pack, lv, table.concat(cur, ' '), pexp, progress_bar(1)})
-            end
-        end
+        local pexp = passives.exp_total_for_pack(target.index, pack)
+        viewer.print({'wn.exp-detail', pack, respawn_gifts.pack_level(pexp), math.floor(pexp)})
     end
 end
 
@@ -55,21 +37,29 @@ function M.print_inspection(target, viewer, skip_exp)
     -- 人物等级 = 开局金币 = floor(√在线分钟)；升到下一级需 (等级+1)² 分钟在线
     local om = passives.get_stat(target.index, 'online_minutes')
     local lv = respawn_gifts.coin_reward(om)
-    viewer.print({'wn.ability-online', om, lv, (lv + 1) * (lv + 1) - om})
-    -- 个人战绩（终身累积，仅展示、不驱动技能）：击杀/毁巢/阵亡/经历跃迁/研究(关键)。
-    viewer.print({'wn.panel-stats',
-        passives.get_stat(target.index, 'kill_count'),
-        passives.get_stat(target.index, 'nest_count'),
-        passives.get_stat(target.index, 'death_count'),
-        passives.get_stat(target.index, 'warps'),
-        passives.get_stat(target.index, 'research'),
-        passives.get_stat(target.index, 'key_research')})
-    -- 角色技能（实时值，每次 /inspect 现算）：手搓/移动/挖矿/生命
+    viewer.print({'wn.ability-online', om, lv})
+    -- 角色技能（实时值，每次现算）：统计值 · 等级(floor√统计) · 当前实际速度%(=1+修正系数，开局 50%)
     for _, ab in ipairs(passives.abilities) do
         local val = passives.get_stat(target.index, ab.stat)
-        viewer.print({ab.locale, math.floor(val), ab.fmt(passives.skill_factor(target.index, ab))})
+        local f = passives.skill_factor(target.index, ab)
+        viewer.print({ab.locale, math.floor(val), math.floor(math.sqrt(val)),
+                      math.floor((1 + f) * 100 + 0.5)})
     end
-    if not skip_exp then M.print_exp(target, viewer) end
+    if not skip_exp then   -- 看别人：经验 + 个人战绩接着打印；看自己由 show_panel 控制顺序
+        M.print_exp(target, viewer)
+        M.print_stats(target, viewer)
+    end
+end
+
+-- 个人战绩（终身累积，仅展示）：击杀/毁灭巢/阵亡/历经跃迁/普通研究/关键研究，每项一行，放在面板最后。
+function M.print_stats(target, viewer)
+    local function s(k) return passives.get_stat(target.index, k) end
+    viewer.print({'wn.stat-kill',     s('kill_count')})
+    viewer.print({'wn.stat-nest',     s('nest_count')})
+    viewer.print({'wn.stat-death',    s('death_count')})
+    viewer.print({'wn.stat-warps',    s('warps')})
+    viewer.print({'wn.stat-research', s('research')})
+    viewer.print({'wn.stat-key',      s('key_research')})
 end
 
 

@@ -173,12 +173,12 @@ end
 -- 前往星球(travel_cd)、投票跃迁/停留(vote_cd)、转账星星(action_cd) 各用一条【独立】冷却，互不挤占。
 -- 时长统一读 storage.action_cd_minutes（默认 3 分钟，可 /c 热改）。
 -- 时间戳按玩家名存 storage[桶][名]=tick；只有【成功执行】才计时，被拒（无角色/背包没清空等）不占冷却。
-local function on_cooldown(player, bucket)
+local function on_cooldown(player, bucket, msg_key)
     storage[bucket] = storage[bucket] or {}
     local last = storage[bucket][player.name]
     local cd = (storage.action_cd_minutes or 3) * constants.min_to_tick
     if last and game.tick - last < cd then
-        player.print({'wn.action-cd', math.ceil((cd - (game.tick - last)) / 60)})
+        player.print({msg_key or 'wn.action-cd', math.ceil((cd - (game.tick - last)) / 60)})
         return true
     end
     return false
@@ -216,7 +216,7 @@ function M.travel(player, planet)
         player.print('前往星球前，请先清空：鼠标、背包、物流(回收)、弹药 这四个区')
         return
     end
-    if on_cooldown(player, 'travel_cd') then return end   -- 前往星球独立冷却；校验全过后才查，被拒不占冷却
+    if on_cooldown(player, 'travel_cd', 'wn.cd-travel') then return end   -- 前往星球独立冷却；校验全过后才查，被拒不占冷却
     players.place_on_surface(player, planet)
     storage.respawn_surface = storage.respawn_surface or {}   -- 老存档兜底：ensure_defaults 没补到也不崩
     storage.respawn_surface[player.name] = planet   -- 前往后，该星球成为默认复活星球
@@ -340,9 +340,11 @@ function M.show_panel(player, target)
         and {name = 'wn_panel_others', caption = {'wn.panel-others'}}
         or  {name = 'wn_panel_others', caption = {'wn.panel-back'}} }
     if self then
-        -- 科技瓶经验放最后（看自己时 print_inspection 跳过了经验，这里补打印）。星星已独立成单独的 HUD 按钮窗口。
-        sink.lines[#sink.lines + 1] = ''   -- 统计与经验之间留空行
+        -- 看自己时 print_inspection 跳过了经验/战绩，这里补打印：经验，再个人战绩放最后。星星已独立成单独 HUD 窗口。
+        sink.lines[#sink.lines + 1] = ''   -- 技能与经验之间留空行
         players.print_exp(target, sink)
+        sink.lines[#sink.lines + 1] = ''   -- 经验与战绩之间留空行
+        players.print_stats(target, sink)
     end
     gui.show_popup(player, title, sink.lines, top_buttons)
 end
@@ -456,7 +458,7 @@ function M.give_star(player, target_name, stars)
     local have = math.floor((storage.star[player.name] or 0) / unit)   -- 余额有多少整颗
     if have <= 0 then player.print({'wn.star-insufficient'}); return end
     n = math.min(n, have)                              -- 余额不足则转全部整颗
-    if on_cooldown(player, 'action_cd') then return end   -- 转账独立冷却；校验全过后才查，被拒不占冷却
+    if on_cooldown(player, 'action_cd', 'wn.cd-star') then return end   -- 转账独立冷却；校验全过后才查，被拒不占冷却
     storage.star[player.name] = (storage.star[player.name] or 0) - n * unit
     storage.star[target.name] = (storage.star[target.name] or 0) + n * unit
     mark_action(player, 'action_cd')   -- 转账独立冷却
@@ -473,7 +475,7 @@ end)
 -- 投跃迁票（vote='agree'/'oppose'，等同 /跃迁 /停留）并结算广播。
 function M.cast_warp_vote(player, vote)
     if not player then return end
-    if on_cooldown(player, 'vote_cd') then return end   -- 投票跃迁/停留独立冷却
+    if on_cooldown(player, 'vote_cd', 'wn.cd-vote') then return end   -- 投票跃迁/停留独立冷却
     storage.warp_vote = storage.warp_vote or {}
     storage.warp_vote[player.name] = vote
     mark_action(player, 'vote_cd')
