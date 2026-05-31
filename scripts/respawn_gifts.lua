@@ -47,12 +47,13 @@ function M.gift_list(player)
     add('coin', M.coin_reward(passives.get_stat(player.index, 'online_minutes')))
     local def = classes.def_of(player)
     if def then
-        if def.starter then add(def.starter, stack_size(def.starter)) end             -- 前者：无条件 1 组
+        for _, s in ipairs(def.starter or {}) do add(s.item, stack_size(s.item) * (s.groups or 1)) end   -- 前者：无条件按组发（可多种）
         -- 后者（可多条 → 多瓶职业）：各按对应瓶等级线性发。满级(MAX_LEVEL) 发 r.groups 组(=堆叠×groups 个)，
-        -- 故 个数 = ceil(堆叠 × groups × 等级 / 满级)。groups 逐物品配置（见 classes.lua）。
+        -- 个数 = floor(堆叠 × groups × 等级 / 满级)【向下取整】：满 N 级才给第 1 个（不足 N 级给 0），
+        -- 例 N=20 时 0~19 级 0 个、20 级 1 个、40 级 2 个。groups 逐物品配置（见 classes.lua）。
         for _, r in ipairs(def.rewards or {}) do
             local lv = M.pack_level(passives.exp_total_for_pack(player.index, r.pack))
-            add(r.item, math.ceil(stack_size(r.item) * (r.groups or 1) * lv / M.MAX_LEVEL))
+            add(r.item, math.floor(stack_size(r.item) * (r.groups or 1) * lv / M.MAX_LEVEL))
         end
     end
     return list

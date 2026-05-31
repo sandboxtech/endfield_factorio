@@ -17,7 +17,7 @@ local M = {}
 local BAR_N = 12
 local function progress_bar(frac)
     frac = math.max(0, math.min(1, frac))
-    local f = math.floor(frac * BAR_N + 0.5)
+    local f = math.ceil(frac * BAR_N)   -- 向上取整：只要有进度(frac>0)就至少 1 格，哪怕只攒了 1 星星
     return '[color=acid]' .. string.rep('█', f) .. '[/color][color=70,70,70]' .. string.rep('█', BAR_N - f) .. '[/color]'
 end
 M.progress_bar = progress_bar   -- 导出供 commands.show_panel 的星星充能进度条复用（同款方块字符条）

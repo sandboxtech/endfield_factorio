@@ -589,6 +589,7 @@ script.on_event(defines.events.on_surface_cleared, events.safe('surface_cleared'
     surface.map_gen_settings = mgs
     -- 市场不在这里放（出生区块此刻尚未生成）：改由下方 on_chunk_generated 在出生区块自然生成时惰性放置，
     -- 避免强制生成区块。chart 同理改到出生区块生成后（见 on_chunk_generated 母星分支）。
+    -- 初始世界(on_init 首轮)的出生区块是场景预生成的、不会自然重生 → 首轮无市场，这是预期行为、不补。
 end))
 
 -- 圆形地图：超出半径的格子全部铺成虚空。

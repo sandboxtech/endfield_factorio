@@ -207,10 +207,17 @@ function M.show_classes(player)
     local buttons = {}
     for _, def in ipairs(classes.list) do
         local name_loc = {'wn.class-name-' .. def.key}
-        local starter_img = def.starter and ('[img=item/' .. def.starter .. ']') or ''
-        -- tooltip 用空键拼接：首行"无条件送 1 组 X"，再每条后者一行"[瓶] 每 a 级送 b 个 [物品]"。
+        -- 白送清单 → 图标串：1 组只显图标，多组显 "N×[img]"；按钮图标取第一件白送物品。
+        local parts, starter_img = {}, ''
+        for _, s in ipairs(def.starter or {}) do
+            local img = '[img=item/' .. s.item .. ']'
+            if starter_img == '' then starter_img = img end
+            parts[#parts + 1] = (s.groups and s.groups > 1) and (s.groups .. '×' .. img) or img
+        end
+        local starter_desc = table.concat(parts, ' ')
+        -- tooltip 用空键拼接：首行"开局白送 <清单>"，再每条后者一行"[瓶] 每 a 级送 b 个 [物品]"。
         -- a:b = 满级:满级总个数(堆叠×groups) 的【最简比】(gcd 约分)，并标明是哪种瓶的等级。
-        local tip = {'', {'wn.class-tip-head', starter_img}}
+        local tip = {'', {'wn.class-tip-head', starter_desc}}
         for _, r in ipairs(def.rewards or {}) do
             local proto = prototypes.item[r.item]
             local total = ((proto and proto.stack_size) or 1) * (r.groups or 1)   -- 满级该发的总个数
