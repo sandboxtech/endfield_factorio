@@ -353,7 +353,7 @@ end
 -- 原先嵌在角色面板里，现单独成窗。领取走 wn_claim_star（tick 路由 → M.claim_charge）。
 function M.show_star(player)
     if not player then return end
-    local lines = {}
+    local lines = {{'wn.star-help'}, ''}                            -- 顶部自带说明 + 空行
     local bal = math.floor(((storage.star or {})[player.name] or 0) / constants.min_to_tick)
     lines[#lines + 1] = {'wn.panel-star', bal}                      -- 星星余额（整数）
     local bottom_buttons = {}

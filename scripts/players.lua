@@ -38,22 +38,20 @@ function M.print_inspection(target, viewer, skip_exp)
     local om = passives.get_stat(target.index, 'online_minutes')
     local lv = respawn_gifts.coin_reward(om)
     viewer.print({'wn.ability-online', om, lv})
-    -- 角色技能（实时值，每次现算）：统计值 · 等级(floor√统计) · 当前实际速度%(=1+修正系数，开局 50%)
-    for _, ab in ipairs(passives.abilities) do
-        local val = passives.get_stat(target.index, ab.stat)
-        local f = passives.skill_factor(target.index, ab)
-        viewer.print({ab.locale, math.floor(val), math.floor(math.sqrt(val)),
-                      math.floor((1 + f) * 100 + 0.5)})
-    end
-    if not skip_exp then   -- 看别人：经验 + 个人战绩接着打印；看自己由 show_panel 控制顺序
+    if not skip_exp then   -- 看别人：经验 + 空行 + 统计接着打印；看自己由 show_panel 控制顺序
         M.print_exp(target, viewer)
+        viewer.print('')
         M.print_stats(target, viewer)
     end
 end
 
--- 个人战绩（终身累积，仅展示）：击杀/毁灭巢/阵亡/历经跃迁/普通研究/关键研究，每项一行，放在面板最后。
+-- 统计数据（终身累积，仅展示、不再驱动任何加成）：手搓秒/移动格/采矿次 在前，
+-- 击杀/毁灭巢/阵亡/历经跃迁/普通研究/关键研究 在后，每项一行，放在面板最后。
 function M.print_stats(target, viewer)
     local function s(k) return passives.get_stat(target.index, k) end
+    viewer.print({'wn.stat-craft', math.floor(s('craft_count'))})
+    viewer.print({'wn.stat-move',  math.floor(s('move_distance'))})
+    viewer.print({'wn.stat-mine',  s('mining_count')})
     viewer.print({'wn.stat-kill',     s('kill_count')})
     viewer.print({'wn.stat-nest',     s('nest_count')})
     viewer.print({'wn.stat-death',    s('death_count')})
@@ -148,8 +146,7 @@ script.on_event(defines.events.on_player_respawned, function(event)
     local player = game.get_player(event.player_index)
     place_on_respawn(player)   -- 回玩家的复活星球出生点（默认/兜底母星）+ chart 256
     player.disable_flashlight()
-    passives.apply(player)
-    respawn_gifts.apply_inventory_bonus(player)   -- 背包格数加成（按赠品总组数，每组 +1 格）
+    respawn_gifts.apply_inventory_bonus(player)   -- 背包格数加成（按本轮首发清单格数，读存值保持）
     try_gift_first_in_world(player)
 end)
 
@@ -183,8 +180,7 @@ script.on_event(defines.events.on_player_created, function(event)
     local player = game.get_player(event.player_index)
     M.player_reset(player)
     gui.player_gui(player)
-    passives.apply(player)
-    respawn_gifts.apply_inventory_bonus(player)   -- 背包格数加成（按赠品总组数，每组 +1 格）
+    respawn_gifts.apply_inventory_bonus(player)   -- 背包格数加成（按本轮首发清单格数，读存值保持）
     try_gift_first_in_world(player)
     gui.show_intro(player)   -- 新玩家首次进服自动弹简介（即世界标签的悬停内容）
 end)

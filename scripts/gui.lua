@@ -210,7 +210,8 @@ function M.show_classes(player)
             caption = {def.key == cur and 'wn.class-cur' or 'wn.class-pick', name_loc},
             tooltip = tip, tags = {wn_class = def.key}}
     end
-    M.show_popup(player, {'wn.class-title'}, {}, buttons)
+    -- 顶部自带说明（buttons_at_bottom=true → 说明在上、职业按钮在下）。
+    M.show_popup(player, {'wn.class-title'}, {{'wn.class-help'}}, buttons, true)
 end
 
 function M.close_popup(player)
