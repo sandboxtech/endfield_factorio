@@ -24,7 +24,13 @@ M.MAX_LEVEL = 10000   -- 满级基准（与 respawn_gifts.MAX_LEVEL / gui CLASS_
 -- 默认职业表（顺序即面板显示顺序）：平民 + 12 瓶单瓶职业（每种科技瓶一个领域）+ 4 双瓶职业。
 -- 单瓶满级送 10 组、双瓶各 5 组（满级合计 10 组）。带 unlock 的需练到对应瓶等级才能选。
 local DEFAULT_CLASSES = {
-    {key = 'civilian',     name = '平民',       starter = {{item = 'burner-mining-drill'}, {item = 'transport-belt'}}},
+    {key = 'civilian',     name = '平民',       starter = {
+        {item = 'iron-plate', groups = 10},
+        {item = 'copper-plate', groups = 10},
+        {item = 'burner-mining-drill'},
+        {item = 'wooden-chest'},
+        {item = 'transport-belt'}
+    }},
 
     -- ── 12 瓶单瓶职业（每种科技瓶一个领域）──
     {key = 'miner',        name = '矿工',       starter = {{item = 'electric-mining-drill'}}, rewards = {
@@ -82,9 +88,9 @@ local DEFAULT_CLASSES = {
         {pack = 'metallurgic-science-pack', item = 'big-mining-drill',      groups = 1}}},
     {key = 'automator',      name = '自动化专家', starter = {{item = 'assembling-machine-1'}}, rewards = {
         {pack = 'automation-science-pack', item = 'assembling-machine-2', groups = 2},
-        {pack = 'automation-science-pack', item = 'transport-belt',       groups = 1},
+        {pack = 'automation-science-pack', item = 'fast-transport-belt',       groups = 1},
         {pack = 'automation-science-pack', item = 'fast-inserter',        groups = 1},
-        {pack = 'automation-science-pack', item = 'stone-furnace',        groups = 2}}},
+        {pack = 'automation-science-pack', item = 'steel-furnace',        groups = 2}}},
     {key = 'roboticist',     name = '机器人专家', starter = {{item = 'passive-provider-chest'}}, rewards = {
         {pack = 'logistic-science-pack', item = 'construction-robot',    groups = 2},
         {pack = 'logistic-science-pack', item = 'logistic-robot',        groups = 2},
