@@ -44,7 +44,7 @@ function M.player_gui(player)
         -- 个人组：科技瓶经验 / 统计 / 职业 / 星星。
         {name = 'wn_btn_skills',   sprite = 'virtual-signal/signal-science-pack', tip = {'', '[font=default-bold]科技瓶经验[/font]\n', {'wn.panel-help'}}},
         {name = 'wn_btn_stats',    sprite = 'entity/character',                 tip = {'', '[font=default-bold]统计[/font]\n', {'wn.stats-help'}}},
-        {name = 'wn_btn_class',    sprite = 'item/power-armor-mk2',             tip = {'', '[font=default-bold]职业[/font]\n', {'wn.class-help'}}},
+        {name = 'wn_btn_class',    sprite = 'virtual-signal/signal-mining',     tip = {'', '[font=default-bold]职业[/font]\n', {'wn.class-help'}}},
         {name = 'wn_btn_star',     sprite = 'virtual-signal/signal-star',       tip = {'', '[font=default-bold]星星[/font]\n', {'wn.star-help'}}},
         {spacer = true},
         -- 跃迁规则组：跃迁投票 / 停留投票（放一起，都是对"是否提前跃迁"投票）。
