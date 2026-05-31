@@ -34,7 +34,6 @@ local DEFAULT_CLASSES = {
         {item = 'nuclear-fuel', groups = 1},
     }, rewards = {
         {pack = 'automation-science-pack', item = 'coin',   count = 100},
-        {pack = 'automation-science-pack', item = 'coin',   count = 100},
         {pack = 'logistic-science-pack', item = 'coin',   count = 100},
         {pack = 'military-science-pack', item = 'coin',   count = 100},
         {pack = 'chemical-science-pack', item = 'coin',   count = 100},
@@ -150,7 +149,7 @@ local DEFAULT_CLASSES = {
         {pack = 'cryogenic-science-pack', item = 'processing-unit', groups = 1},
     }},
 
-    {key = 'artisan', name = '插件工人', full = 10000, starter = {
+    {key = 'moduler', name = '插件工人', full = 10000, starter = {
         {item = 'beacon', count=10},
         {item = 'speed-module', count=10},
         {item = 'efficiency-module', count=10},
