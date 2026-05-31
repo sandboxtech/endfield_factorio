@@ -333,7 +333,11 @@ function M.show_panel(player, target)
     target = target or player
     local self = target.index == player.index
     local sink = gui.popup_sink()
-    players.print_exp(target, sink)   -- 只科技瓶经验（个人状态/能力/战绩在独立的【状态】窗口）
+    if self then   -- 看自己时顶部带一段说明（跃迁=瓶子转经验）；看别人只列其经验
+        sink.lines[#sink.lines + 1] = {'wn.panel-help'}
+        sink.lines[#sink.lines + 1] = ''
+    end
+    players.print_exp(target, sink)   -- 科技瓶经验（个人能力/战绩在独立的【统计】窗口）
     local top_buttons = { self
         and {name = 'wn_panel_others', caption = {'wn.panel-others'}}
         or  {name = 'wn_panel_others', caption = {'wn.panel-back'}} }

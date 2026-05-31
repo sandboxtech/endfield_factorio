@@ -36,13 +36,17 @@ function M.player_gui(player)
     -- HUD 按钮【放最前】：位置固定，不会被后面变长的世界标签挤动。点击由 tick.on_gui_click 路由。
     --   玩法&指令（弹窗）  |间隔|  角色面板 / 跃迁(投同意✓) / 停留(投反对✗)。
     for _, b in ipairs({
+        -- 信息组：玩法（最左，悬停含整排按钮导览）+ 功能菜单。
         {name = 'wn_btn_gameplay', sprite = 'virtual-signal/signal-info',  tip = {'wn.btn-gameplay-tip'}},
         {name = 'wn_btn_actions',  sprite = 'item/blueprint-book',  tip = {'wn.btn-actions-tip'}},
-        -- {spacer = true},
+        {spacer = true},
+        -- 个人组：科技瓶经验 / 统计 / 职业 / 星星。
         {name = 'wn_btn_skills',   sprite = 'virtual-signal/signal-science-pack', tip = {'wn.skills-btn-tip'}},
         {name = 'wn_btn_stats',    sprite = 'entity/character',                 tip = {'wn.btn-stats-tip'}},
         {name = 'wn_btn_class',    sprite = 'item/power-armor-mk2',             tip = {'wn.btn-class-tip'}},
         {name = 'wn_btn_star',     sprite = 'virtual-signal/signal-star',       tip = {'wn.btn-star-tip'}},
+        {spacer = true},
+        -- 跃迁规则组：跃迁投票 / 停留投票（放一起，都是对"是否提前跃迁"投票）。
         {name = 'wn_btn_warp',     sprite = 'virtual-signal/signal-trash-bin',  tip = {'wn.btn-warp-tip'}},
         {name = 'wn_btn_stay',     sprite = 'virtual-signal/signal-white-flag', tip = {'wn.btn-stay-tip'}},
     }) do
@@ -169,8 +173,8 @@ function M.show_actions(player)
     if not player then return end
     -- 真按钮：name 复用 HUD 同名按钮 或 wn_act_* / tags，点击经 tick.on_gui_click 路由到 commands.* 。
     local buttons = {
-        {name = 'wn_act_lastrank', caption = {'wn.act-lastrank'}},
-        {name = 'wn_act_suicide',  caption = {'wn.act-suicide'}},
+        {name = 'wn_act_lastrank', caption = {'wn.act-lastrank'}, tooltip = {'wn.act-lastrank-tip'}},
+        {name = 'wn_act_suicide',  caption = {'wn.act-suicide'},  tooltip = {'wn.act-suicide-tip'}},
     }
     -- 【前往星球】组：总开关 storage.travel_enabled 开启后 5 个星球全显示；本轮未开放的置灰不可点。
     if storage.travel_enabled then
@@ -179,7 +183,7 @@ function M.show_actions(player)
         for _, p in ipairs({'nauvis', 'vulcanus', 'gleba', 'fulgora', 'aquilo'}) do
             buttons[#buttons + 1] = {name = 'wn_act_travel_' .. p, caption = {'wn.act-travel', p}, tags = {wn_travel = p},
                 enabled = open[p] or false,
-                tooltip = (not open[p]) and {'wn.travel-closed', math.floor((tc[p] or 0.5) * 100)} or nil}
+                tooltip = open[p] and {'wn.act-travel-tip'} or {'wn.travel-closed', math.floor((tc[p] or 0.5) * 100)}}
         end
     end
     -- 【起始星球】组：设定下次跃迁复活 + 领起手装备的星球。不传送、全星球可选、当前选中标 ✓。
@@ -187,7 +191,7 @@ function M.show_actions(player)
     local home = (storage.respawn_surface or {})[player.name] or 'nauvis'
     for _, p in ipairs({'nauvis', 'vulcanus', 'gleba', 'fulgora', 'aquilo'}) do
         buttons[#buttons + 1] = {name = 'wn_act_home_' .. p,
-            caption = {p == home and 'wn.act-home-cur' or 'wn.act-home', p}, tags = {wn_home = p}}
+            caption = {p == home and 'wn.act-home-cur' or 'wn.act-home', p}, tags = {wn_home = p}, tooltip = {'wn.act-home-tip'}}
     end
     M.show_popup(player, {'wn.actions-title'}, {}, buttons)
 end
