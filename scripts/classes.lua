@@ -75,6 +75,45 @@ local DEFAULT_CLASSES = {
         unlock = {{pack = 'agricultural-science-pack', level = 8}, {pack = 'cryogenic-science-pack', level = 8}}, rewards = {
         {pack = 'agricultural-science-pack', item = 'biochamber',     groups = 5},
         {pack = 'cryogenic-science-pack',    item = 'fusion-reactor', groups = 5}}},
+
+    -- ── 主题专精职业（与上面按瓶领域的职业并存，玩法侧重不同；key 加后缀避开 miner/soldier 重名）──
+    {key = 'mining_expert',  name = '采矿专家',   starter = {{item = 'burner-mining-drill'}}, rewards = {
+        {pack = 'automation-science-pack',  item = 'electric-mining-drill', groups = 2},
+        {pack = 'metallurgic-science-pack', item = 'big-mining-drill',      groups = 1}}},
+    {key = 'automator',      name = '自动化专家', starter = {{item = 'assembling-machine-1'}}, rewards = {
+        {pack = 'automation-science-pack', item = 'assembling-machine-2', groups = 2},
+        {pack = 'automation-science-pack', item = 'transport-belt',       groups = 1},
+        {pack = 'automation-science-pack', item = 'fast-inserter',        groups = 1},
+        {pack = 'automation-science-pack', item = 'stone-furnace',        groups = 2}}},
+    {key = 'roboticist',     name = '机器人专家', starter = {{item = 'passive-provider-chest'}}, rewards = {
+        {pack = 'logistic-science-pack', item = 'construction-robot',    groups = 2},
+        {pack = 'logistic-science-pack', item = 'logistic-robot',        groups = 2},
+        {pack = 'logistic-science-pack', item = 'roboport',              groups = 1},
+        {pack = 'logistic-science-pack', item = 'storage-chest',         groups = 1},
+        {pack = 'utility-science-pack',  item = 'active-provider-chest', groups = 1},
+        {pack = 'utility-science-pack',  item = 'requester-chest',       groups = 1},
+        {pack = 'utility-science-pack',  item = 'buffer-chest',          groups = 1}}},
+    {key = 'soldier_expert', name = '军事专家',   starter = {{item = 'gun-turret'}}, rewards = {
+        {pack = 'military-science-pack', item = 'laser-turret',    groups = 2},
+        {pack = 'military-science-pack', item = 'tank',            groups = 1},
+        {pack = 'military-science-pack', item = 'rocket-launcher', groups = 1},
+        {pack = 'military-science-pack', item = 'gun-turret',      groups = 2}}},
+    {key = 'xeno',           name = '外星专家',   starter = {{item = 'foundry'}}, rewards = {
+        {pack = 'metallurgic-science-pack',     item = 'foundry',               groups = 1},
+        {pack = 'electromagnetic-science-pack', item = 'electromagnetic-plant', groups = 1},
+        {pack = 'agricultural-science-pack',    item = 'agricultural-tower',    groups = 1},
+        {pack = 'cryogenic-science-pack',       item = 'cryogenic-plant',       groups = 1}}},
+    {key = 'scholar',        name = '博学专家',   starter = {{item = 'assembling-machine-2'}}, rewards = {
+        {pack = 'chemical-science-pack',        item = 'chemical-plant',              groups = 1},
+        {pack = 'production-science-pack',      item = 'assembling-machine-3',        groups = 1},
+        {pack = 'utility-science-pack',         item = 'roboport',                    groups = 1},
+        {pack = 'space-science-pack',           item = 'space-platform-starter-pack', groups = 1},
+        {pack = 'metallurgic-science-pack',     item = 'foundry',                     groups = 1},
+        {pack = 'electromagnetic-science-pack', item = 'electromagnetic-plant',       groups = 1},
+        {pack = 'agricultural-science-pack',    item = 'biochamber',                  groups = 1},
+        {pack = 'cryogenic-science-pack',       item = 'cryogenic-plant',             groups = 1},
+        {pack = 'promethium-science-pack',      item = 'biolab',                      groups = 1},
+        {pack = 'military-science-pack',        item = 'artillery-turret',            groups = 1}}},
 }
 
 -- 纯数据深拷贝（DEFAULT_CLASSES 无函数/元表，递归拷贝即可）。

@@ -12,6 +12,7 @@ require('scripts.commands')
 require('scripts.tick')
 require('scripts.world_fx')
 require('scripts.warp_fx')
+require('scripts.chat')
 
 local constants = require('scripts.constants')
 local classes = require('scripts.classes')

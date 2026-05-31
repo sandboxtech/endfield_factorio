@@ -359,7 +359,9 @@ function M.show_star(player)
             players.progress_bar(frac),
             math.floor(pend / constants.min_to_tick),                         -- 当前可领整数星星
             math.floor(maxt / constants.min_to_tick)}                         -- 能领的最大值（=满充星星数）
-        bottom_buttons[#bottom_buttons + 1] = {name = 'wn_claim_star', caption = {'wn.act-claim-star'}}
+        if pend >= constants.min_to_tick then   -- 攒够至少 1 颗(3600 tick)才显示领取按钮，不足 1 颗只显示进度条
+            bottom_buttons[#bottom_buttons + 1] = {name = 'wn_claim_star', caption = {'wn.act-claim-star'}}
+        end
     end
     gui.show_popup(player, {'wn.star-title'}, lines, nil, false, bottom_buttons)
 end

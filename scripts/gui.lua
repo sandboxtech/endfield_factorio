@@ -219,17 +219,15 @@ function M.show_classes(player)
     local buttons = {}
     for _, def in ipairs(classes.all()) do
         local name_loc = def.name or {'wn.class-name-' .. def.key}   -- 职业定义可内嵌 name 字符串（绕过 locale）
-        -- 白送清单 → 图标串：1 组只显图标，多组显 "N×[img]"；按钮图标取第一件白送物品。
-        local parts, starter_img = {}, ''
+        -- tooltip：白送(starter)每物品一行"x 个 [img]"；奖励(rewards)每条一行"每 a 级 [瓶] b 个 [物品]"。
+        -- 按钮图标 starter_img 取第一件白送物品；a:b 为 满级:满级总个数 的最简比(gcd 约分)。
+        local starter_img = (def.starter and def.starter[1]) and ('[img=item/' .. def.starter[1].item .. ']') or ''
+        local tip = {''}
         for _, s in ipairs(def.starter or {}) do
-            local img = '[img=item/' .. s.item .. ']'
-            if starter_img == '' then starter_img = img end
-            parts[#parts + 1] = (s.groups and s.groups > 1) and (s.groups .. '×' .. img) or img
+            local proto = prototypes.item[s.item]
+            local count = ((proto and proto.stack_size) or 1) * (s.groups or 1)   -- 白送个数 = 堆叠 × 组数
+            tip[#tip + 1] = {'wn.class-tip-head', count, '[img=item/' .. s.item .. ']'}
         end
-        local starter_desc = table.concat(parts, ' ')
-        -- tooltip 用空键拼接：首行"开局白送 <清单>"，再每条后者一行"[瓶] 每 a 级送 b 个 [物品]"。
-        -- a:b = 满级:满级总个数(堆叠×groups) 的【最简比】(gcd 约分)，并标明是哪种瓶的等级。
-        local tip = {'', {'wn.class-tip-head', starter_desc}}
         for _, r in ipairs(def.rewards or {}) do
             local proto = prototypes.item[r.item]
             local total = ((proto and proto.stack_size) or 1) * (r.groups or 1)   -- 满级该发的总个数
