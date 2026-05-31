@@ -230,7 +230,7 @@ script.on_event(defines.events.on_gui_click, events.safe('gui_click', function(e
     elseif name == 'wn_btn_gameplay' then
         gui.show_tutorial(player)                   -- 第一个按钮：纯玩法&指令说明文字
     elseif name == 'wn_btn_actions' then
-        gui.show_actions(player)                    -- 第二个按钮：所有功能按钮（面板/投票/预览/排行/自杀/前往/起始星球）
+        gui.show_actions(player)                    -- 第二个按钮：所有功能按钮（面板/投票/预览/排行/自杀/前往/出生星球）
     elseif name == 'wn_admin_gen' then
         commands.admin_gen(player)                  -- 管理员红按钮：各星生成 debug
     elseif name == 'wn_admin_diff' then
@@ -263,7 +263,7 @@ script.on_event(defines.events.on_gui_click, events.safe('gui_click', function(e
     elseif event.element.tags and event.element.tags.wn_travel then
         commands.travel(player, event.element.tags.wn_travel)   -- 前往星球按钮（tags 带星球名）
     elseif event.element.tags and event.element.tags.wn_home then
-        commands.set_home_planet(player, event.element.tags.wn_home)   -- 起始星球按钮（设复活+领装备的星球）
+        commands.set_home_planet(player, event.element.tags.wn_home)   -- 出生星球按钮（设复活+领装备的星球）
     elseif event.element.tags and event.element.tags.wn_class then
         commands.set_class(player, event.element.tags.wn_class)   -- 选择职业按钮（设本人职业，下次跃迁生效）
     elseif name == gui.POPUP_CLOSE_NAME then

@@ -170,7 +170,7 @@ function M.show_tutorial(player)
 end
 
 -- 弹出【功能菜单】（HUD 第二个按钮）。科技瓶经验/跃迁/停留/预览 已各有独立入口，这里不再重复。
---   保留：上局排行 / 自杀；再按【前往星球】【起始星球】两组分块。
+--   保留：上局排行 / 自杀；再按【前往星球】【出生星球】两组分块。
 function M.show_actions(player)
     if not player then return end
     -- 真按钮：name 复用 HUD 同名按钮 或 wn_act_* / tags，点击经 tick.on_gui_click 路由到 commands.* 。
@@ -188,7 +188,7 @@ function M.show_actions(player)
                 tooltip = open[p] and {'wn.act-travel-tip'} or {'wn.travel-closed', math.floor((tc[p] or 0.5) * 100)}}
         end
     end
-    -- 【起始星球】组：设定下次跃迁复活 + 领起手装备的星球。不传送、全星球可选、当前选中标 ✓。
+    -- 【出生星球】组：设定下次跃迁复活 + 领起手装备的星球。不传送、全星球可选、当前选中标 ✓。
     buttons[#buttons + 1] = {label = true, caption = {'wn.actions-home-group'}}
     local home = (storage.respawn_surface or {})[player.name] or 'nauvis'
     for _, p in ipairs({'nauvis', 'vulcanus', 'gleba', 'fulgora', 'aquilo'}) do

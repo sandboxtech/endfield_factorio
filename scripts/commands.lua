@@ -386,14 +386,14 @@ function M.show_player_list(player)
     gui.show_popup(player, {'wn.panel-list-title'}, {}, buttons)
 end
 
--- 设定【起始星球】：下次跃迁复活 + 领起手装备的星球（即 storage.respawn_surface[玩家名]）。
+-- 设定【出生星球】：下次跃迁复活 + 领起手装备的星球（即 storage.respawn_surface[玩家名]）。
 -- 纯个人设置——不传送、不广播、不占冷却；任何星球可选（不受前往 30% 限制）。点完刷新教程弹窗让 ✓ 跟着动。
 function M.set_home_planet(player, planet)
     if not player then return end
     storage.respawn_surface = storage.respawn_surface or {}
     storage.respawn_surface[player.name] = planet
     player.print({'wn.home-set', planet})
-    gui.show_actions(player)   -- 重开功能弹窗 → 当前起始星球按钮标 ✓
+    gui.show_actions(player)   -- 重开功能弹窗 → 当前出生星球按钮标 ✓
 end
 
 -- 选择职业（HUD 独立按钮窗口）：纯个人设置——只改 storage.player_class[名]，不公告、不传送。
