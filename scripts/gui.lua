@@ -198,14 +198,13 @@ function M.show_classes(player)
     for _, def in ipairs(classes.list) do
         local name_loc = {'wn.class-name-' .. def.key}
         local starter_img = def.starter and ('[img=item/' .. def.starter .. ']') or ''
-        local tip
-        if def.reward and def.packs[1] then
-            -- 后者动态："每 x 级 +1"，x = 100/堆叠（堆叠 50 → 每 2 级一个）。
-            local proto = prototypes.item[def.reward]
-            local per = string.format('%g', 100 / ((proto and proto.stack_size) or 1))
-            tip = {'wn.class-tip', starter_img, per, '[img=item/' .. def.reward .. ']'}
-        else
-            tip = {'wn.class-tip-basic', starter_img}   -- 平民/天文等无后者
+        -- tooltip 用空键拼接：首行"开局给 X ×1组"，再每条后者一行"每 x 级 +1 Y"（x=100/堆叠，动态）。
+        local tip = {'', {'wn.class-tip-head', starter_img}}
+        for _, r in ipairs(def.rewards or {}) do
+            local proto = prototypes.item[r.item]
+            local stack = (proto and proto.stack_size) or 1
+            -- "每 100 级送 1 组(=stack 个)"：级数、个数都作参数（个数 = 该物品堆叠数）。
+            tip[#tip + 1] = {'wn.class-tip-reward', 100, stack, '[img=item/' .. r.item .. ']'}
         end
         buttons[#buttons + 1] = {name = 'wn_act_class_' .. def.key,
             caption = {def.key == cur and 'wn.class-cur' or 'wn.class-pick', name_loc},
