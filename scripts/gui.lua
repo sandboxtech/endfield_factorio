@@ -39,9 +39,9 @@ function M.player_gui(player)
         {name = 'wn_btn_gameplay', sprite = 'virtual-signal/signal-info',  tip = {'wn.btn-gameplay-tip'}},
         {name = 'wn_btn_actions',  sprite = 'item/blueprint-book',  tip = {'wn.btn-actions-tip'}},
         -- {spacer = true},
-        {name = 'wn_btn_skills',          sprite = 'entity/character',            tip = {'wn.skills-btn-tip'}},
-        {name = 'wn_btn_stats',    sprite = 'item/exoskeleton-equipment',       tip = {'wn.btn-stats-tip'}},
-        {name = 'wn_btn_class',    sprite = 'virtual-signal/signal-science-pack', tip = {'wn.btn-class-tip'}},
+        {name = 'wn_btn_skills',   sprite = 'virtual-signal/signal-science-pack', tip = {'wn.skills-btn-tip'}},
+        {name = 'wn_btn_stats',    sprite = 'entity/character',                 tip = {'wn.btn-stats-tip'}},
+        {name = 'wn_btn_class',    sprite = 'item/power-armor-mk2',             tip = {'wn.btn-class-tip'}},
         {name = 'wn_btn_star',     sprite = 'virtual-signal/signal-star',       tip = {'wn.btn-star-tip'}},
         {name = 'wn_btn_warp',     sprite = 'virtual-signal/signal-trash-bin',  tip = {'wn.btn-warp-tip'}},
         {name = 'wn_btn_stay',     sprite = 'virtual-signal/signal-white-flag', tip = {'wn.btn-stay-tip'}},
@@ -127,9 +127,16 @@ function M.show_popup(player, title, lines, buttons, buttons_at_bottom, bottom_b
     local function add_buttons(list)
         if not list then return end
         for _, b in ipairs(list) do
-            -- enabled=false → 按钮置灰且不触发 on_gui_click（如本轮关闭的星球）。tooltip 说明为何不可点。
-            pane.add{type = 'button', name = b.name, caption = b.caption, tags = b.tags,
-                     enabled = b.enabled, tooltip = b.tooltip}
+            if b.label then
+                -- 分组小标题（非按钮）：加粗 label，用于把按钮分块。
+                local l = pane.add{type = 'label', caption = b.caption}
+                l.style.font = 'default-bold'
+                l.style.top_margin = 6
+            else
+                -- enabled=false → 按钮置灰且不触发 on_gui_click（如本轮关闭的星球）。tooltip 说明为何不可点。
+                pane.add{type = 'button', name = b.name, caption = b.caption, tags = b.tags,
+                         enabled = b.enabled, tooltip = b.tooltip}
+            end
         end
     end
     if not buttons_at_bottom then add_buttons(buttons) end
@@ -156,29 +163,27 @@ function M.show_tutorial(player)
     })
 end
 
--- 弹出【功能按钮】（HUD 第二个按钮）：把原先挤在教程弹窗末尾的一堆操作按钮单独成窗。
---   角色面板 / 跃迁(✓) / 停留(✗) / 预览 / 上局排行 / 自杀脱困 + 前往星球（按本轮开放置灰）+ 起始星球（当前标 ✓）。
+-- 弹出【功能菜单】（HUD 第二个按钮）。科技瓶经验/跃迁/停留/预览 已各有独立入口，这里不再重复。
+--   保留：上局排行 / 自杀；再按【前往星球】【起始星球】两组分块。
 function M.show_actions(player)
     if not player then return end
     -- 真按钮：name 复用 HUD 同名按钮 或 wn_act_* / tags，点击经 tick.on_gui_click 路由到 commands.* 。
     local buttons = {
-        {name = 'wn_btn_skills',   caption = {'wn.act-panel'}},
-        {name = 'wn_btn_warp',     caption = {'wn.act-warp'}},
-        {name = 'wn_btn_stay',     caption = {'wn.act-stay'}},
-        {name = 'wn_act_preview',  caption = {'wn.act-preview'}},
         {name = 'wn_act_lastrank', caption = {'wn.act-lastrank'}},
         {name = 'wn_act_suicide',  caption = {'wn.act-suicide'}},
     }
-    -- "前往星球"按钮：总开关 storage.travel_enabled（默认关）开启后，5 个星球【全部显示】；本轮未开放(storage.travel_open[星球]=false)的【置灰】不可点。
+    -- 【前往星球】组：总开关 storage.travel_enabled 开启后 5 个星球全显示；本轮未开放的置灰不可点。
     if storage.travel_enabled then
+        buttons[#buttons + 1] = {label = true, caption = {'wn.actions-travel-group'}}
         local open, tc = storage.travel_open or {}, storage.travel_chance or {}
         for _, p in ipairs({'nauvis', 'vulcanus', 'gleba', 'fulgora', 'aquilo'}) do
             buttons[#buttons + 1] = {name = 'wn_act_travel_' .. p, caption = {'wn.act-travel', p}, tags = {wn_travel = p},
                 enabled = open[p] or false,
-                tooltip = (not open[p]) and {'wn.travel-closed', math.floor((tc[p] or 0.5) * 100)} or nil}   -- 传该星真实开放概率%
+                tooltip = (not open[p]) and {'wn.travel-closed', math.floor((tc[p] or 0.5) * 100)} or nil}
         end
     end
-    -- "起始星球"按钮：设定【下次跃迁复活+领起手装备】的星球（即 storage.respawn_surface[玩家名]）。不传送、全星球可选、当前选中标 ✓。
+    -- 【起始星球】组：设定下次跃迁复活 + 领起手装备的星球。不传送、全星球可选、当前选中标 ✓。
+    buttons[#buttons + 1] = {label = true, caption = {'wn.actions-home-group'}}
     local home = (storage.respawn_surface or {})[player.name] or 'nauvis'
     for _, p in ipairs({'nauvis', 'vulcanus', 'gleba', 'fulgora', 'aquilo'}) do
         buttons[#buttons + 1] = {name = 'wn_act_home_' .. p,
