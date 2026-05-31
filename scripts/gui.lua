@@ -232,11 +232,16 @@ function M.show_classes(player)
         local starter_img = (def.starter and def.starter[1]) and ('[img=item/' .. def.starter[1].item .. ']') or ''
         local tip = {''}
         for _, s in ipairs(def.starter or {}) do
-            local proto = prototypes.item[s.item]
-            local stack = (proto and proto.stack_size) or 1
-            local groups = s.groups or 1
-            -- 显示"组数 × 堆叠 = 总数 [图]"，让玩家一眼看清白送多少。
-            tip[#tip + 1] = {'wn.class-tip-head', groups, stack, stack * groups, '[img=item/' .. s.item .. ']'}
+            local img = '[img=item/' .. s.item .. ']'
+            if s.count then
+                -- 指定个数：直接显示 "N 个 [图]"。
+                tip[#tip + 1] = {'wn.class-tip-head-n', s.count, img}
+            else
+                -- 否则按组：显示 "组数 × 堆叠 = 总数 [图]"。
+                local stack = (prototypes.item[s.item] and prototypes.item[s.item].stack_size) or 1
+                local groups = s.groups or 1
+                tip[#tip + 1] = {'wn.class-tip-head', groups, stack, stack * groups, img}
+            end
         end
         for _, r in ipairs(def.rewards or {}) do
             local proto = prototypes.item[r.item]

@@ -117,8 +117,8 @@ function M.place_on_surface(player, surface_name)
     local pos = surface.find_non_colliding_position('character', origin, 128, 1) or origin
     player.teleport(pos, surface)
     -- 玩家落地后，引擎会自动在其周围生成区块；这里只异步排队 + chart（chart 只揭示已生成的区块）。
-    surface.request_to_generate_chunks(pos, 8)   -- 8 区块 ≈ 256 格（异步，不强制）
-    player.force.chart(surface, {{pos.x - 256, pos.y - 256}, {pos.x + 256, pos.y + 256}})
+    surface.request_to_generate_chunks(pos, 4)   -- 4 区块 ≈ 128 格（异步，不强制；缩小以减少区块生成、压低存档体积）
+    player.force.chart(surface, {{pos.x - 128, pos.y - 128}, {pos.x + 128, pos.y + 128}})
 end
 
 -- 玩家的【默认复活星球】：前往某星球时由命令记入 storage.respawn_surface[玩家名]。
@@ -208,6 +208,13 @@ script.on_event(defines.events.on_player_joined_game, function(event)
     storage.charge[player.name] = storage.charge[player.name] or game.tick
     -- 名册变了，刷新所有人 HUD（自然包含自己）
     gui.players_gui()
+
+    -- 星星提醒：达 star_unlock_level 级 且 待领 ≥ 20 小时（接近满充）→ 上线时提示领取，免得溢出浪费。
+    local star_lv = respawn_gifts.coin_reward(passives.get_stat(player.index, 'online_minutes'))
+    if star_lv >= (storage.star_unlock_level or 0) then
+        local pend = math.min(game.tick - storage.charge[player.name], (storage.charge_max_hours or 30) * constants.hour_to_tick)
+        if pend >= 20 * constants.hour_to_tick then player.print({'wn.star-remind'}) end
+    end
 
     local welcome
     if player.online_time > 0 then
