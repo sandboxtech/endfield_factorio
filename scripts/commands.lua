@@ -321,6 +321,7 @@ add_command('kickout', {'wn.kickout-help'}, member_kick_cmd)
 -- 弹出【统计】窗口（HUD 独立按钮）：列出所有在线玩家（名字 + 等级 + 职业），点某人看其详细统计。
 function M.show_stats(player)
     if not player then return end
+    if #game.connected_players <= 1 then return M.show_stats_of(player, player) end   -- 只有自己在线：跳过列表，直接看自己的面板
     local buttons = {}
     for _, p in pairs(game.connected_players) do
         local lv = respawn_gifts.coin_reward(passives.get_stat(p.index, 'online_minutes'))
@@ -340,8 +341,9 @@ function M.show_stats_of(player, target)
     sink.lines[#sink.lines + 1] = {'wn.stats-help'}
     sink.lines[#sink.lines + 1] = ''
     players.print_status(target, sink)
-    gui.show_popup(player, {'wn.stats-of-header', target.name}, sink.lines,
-        {{name = 'wn_btn_stats', caption = {'wn.panel-back'}}})
+    -- 多人时给【返回】回玩家列表；只有自己在线（无列表可返回）则不加，靠标题栏关闭。
+    local btns = (#game.connected_players > 1) and {{name = 'wn_btn_stats', caption = {'wn.panel-back'}}} or {}
+    gui.show_popup(player, {'wn.stats-of-header', target.name}, sink.lines, btns)
 end
 
 -- 弹出【星星】窗口（HUD 独立按钮）：星星余额（所有等级都显示）+ 充能进度条 + 领取按钮（仅达 star_unlock_level）。

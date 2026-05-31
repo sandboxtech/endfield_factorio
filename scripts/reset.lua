@@ -167,6 +167,7 @@ function M.reset()
     -- 科技进度全部清零，不再保留无限科技 level
     force.reset()
     force.friendly_fire = false   -- 禁止友军伤害：玩家的武器/爆炸不再伤到自家(同 force)建筑与队友
+    force.maximum_following_robots_count = 50   -- 战斗无人机跟随上限提到 50（force.reset 会打回默认，故每次跃迁后重设）
 
     -- 每次跃迁后自动解锁所有星球：无需研究 planet-discovery 科技即可前往。
     -- 必须放在 force.reset() 之后，reset 会清空科技/解锁状态，先解锁会被冲掉。

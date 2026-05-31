@@ -206,7 +206,7 @@ local DEFAULT_CLASSES = {
     {},   -- 分组换行：装备 ↔ 农牧
 
     -- ── 农牧组（鱼/虫卵/种子/腐败物，Gleba 生态，主练草瓶 agricultural）──
-    {key = 'bugkeeper', name = '养虫人', full = 1000, starter = {{item = 'pentapod-egg', count = 1}}, rewards = {
+    {key = 'bugkeeper', name = '虫师', full = 1000, starter = {{item = 'pentapod-egg', count = 1}}, rewards = {
         {pack = 'agricultural-science-pack', item = 'raw-fish', groups = 10}}},
     {key = 'fisher', name = '渔夫', full = 1000, starter = {
         {item = 'raw-fish', groups = 2}, {item = 'spoilage', groups = 2}, {item = 'inserter', groups = 1}}, rewards = {
