@@ -347,10 +347,31 @@ local DEFAULT_CLASSES = {
         {pack = 'military-science-pack', item = 'uranium-rounds-magazine',  groups = 10},  -- 灰：铀弹
         {pack = 'military-science-pack', item = 'shotgun-shell',            groups = 5},   -- 灰：霰弹
     }},
+
+    {key = 'shotgunner', name = '散弹枪手', full = 1000, starter = {
+        {item = 'shotgun', count = 1},
+        {item = 'shotgun-shell', groups = 1},
+    }, rewards = {
+        {pack = 'military-science-pack', item = 'shotgun',                groups = 1},   -- 灰：霰弹枪
+        {pack = 'military-science-pack', item = 'combat-shotgun',         groups = 1},   -- 灰：战斗霰弹枪
+        {pack = 'military-science-pack', item = 'shotgun-shell',          groups = 10},  -- 灰：霰弹
+        {pack = 'military-science-pack', item = 'piercing-shotgun-shell', groups = 10},  -- 灰：穿甲霰弹
+    }},
+    {key = 'bomber', name = '掷弹兵', full = 1000, starter = {
+        {item = 'grenade', groups = 2},
+    }, rewards = {
+        {pack = 'military-science-pack', item = 'grenade',         groups = 10},  -- 灰：手雷
+        {pack = 'utility-science-pack',  item = 'cluster-grenade', groups = 10},  -- 黄：集束手雷
+        --
+        {pack = 'military-science-pack', item = 'defender-capsule',  groups = 3},   -- 灰：防御者机器人胶囊
+        {pack = 'military-science-pack', item = 'poison-capsule',    groups = 3},   -- 灰：毒气胶囊
+        {pack = 'chemical-science-pack', item = 'slowdown-capsule',  groups = 3},   -- 蓝：减速胶囊
+        {pack = 'utility-science-pack',  item = 'destroyer-capsule', groups = 3},   -- 黄：毁灭者机器人胶囊
+    }},
     {key = 'tanker', name = '坦克手', full = 1000, starter = {
         {item = 'tank', count = 1},
         {item = 'cannon-shell', groups = 1},
-    }, rewards = {
+    }, unlock = {{pack = 'military-science-pack', level = 100}}, rewards = {
         {pack = 'logistic-science-pack', item = 'car',        groups = 1},   -- 绿：汽车
         {pack = 'military-science-pack', item = 'tank',       groups = 1},   -- 灰：坦克
         {pack = 'utility-science-pack',  item = 'spidertron', groups = 1},   -- 黄：蜘蛛车
@@ -362,7 +383,7 @@ local DEFAULT_CLASSES = {
     {key = 'rocketeer', name = '火箭筒兵', full = 1000, starter = {
         {item = 'rocket-launcher', count = 1},
         {item = 'rocket', groups = 1},
-    }, rewards = {
+    }, unlock = {{pack = 'chemical-science-pack', level = 100}}, rewards = {
         {pack = 'military-science-pack', item = 'rocket',               groups = 10},  -- 灰：火箭弹
         {pack = 'chemical-science-pack', item = 'explosive-rocket',     groups = 10},  -- 蓝：爆破火箭
         {pack = 'utility-science-pack',  item = 'atomic-bomb',          groups = 2},   -- 黄：核弹
@@ -373,10 +394,17 @@ local DEFAULT_CLASSES = {
     {key = 'artillerist', name = '炮兵', full = 1000, starter = {
         {item = 'artillery-turret', count = 1},
         {item = 'artillery-shell', count = 5},
-    }, rewards = {
+    }, unlock = {{pack = 'metallurgic-science-pack', level = 100}}, rewards = {
         {pack = 'military-science-pack', item = 'artillery-shell',  groups = 30},  -- 灰：炮弹(stack1,30组=30发)
         {pack = 'military-science-pack', item = 'artillery-turret', groups = 1},   -- 灰：固定炮台
         {pack = 'utility-science-pack',  item = 'artillery-wagon',  groups = 1},   -- 黄：火炮车厢(移动炮)
+    }},
+    {key = 'teslatrooper', name = '杨永信', full = 1000, starter = {
+        {item = 'teslagun', count = 1},
+        {item = 'tesla-ammo', groups = 1},
+    }, unlock = {{pack = 'electromagnetic-science-pack', level = 100}}, rewards = {
+        {pack = 'electromagnetic-science-pack', item = 'tesla-ammo',   groups = 10},
+        {pack = 'electromagnetic-science-pack', item = 'tesla-turret', groups = 2},
     }},
     {key = 'railgunner', name = '磁轨炮兵', full = 1000, starter = {
         {item = 'railgun', count = 1},
@@ -385,55 +413,58 @@ local DEFAULT_CLASSES = {
         {pack = 'cryogenic-science-pack', item = 'railgun-ammo',   groups = 10},   -- stack10：1组=10发
         {pack = 'cryogenic-science-pack', item = 'railgun-turret', groups = 2},
     }},
-    {key = 'teslatrooper', name = '特斯拉枪手', full = 1000, starter = {
-        {item = 'teslagun', count = 1},
-        {item = 'tesla-ammo', groups = 1},
-    }, unlock = {{pack = 'electromagnetic-science-pack', level = 100}}, rewards = {
-        {pack = 'electromagnetic-science-pack', item = 'tesla-ammo',   groups = 10},
-        {pack = 'electromagnetic-science-pack', item = 'tesla-turret', groups = 2},
-    }},
-    {key = 'bomber', name = '投弹手', full = 1000, starter = {
-        {item = 'grenade', groups = 2},
+
+    {key = 'thorman', name = '雷神', full = 1000, starter = {
+        {item = 'land-mine', groups = 1},
     }, rewards = {
-        {pack = 'military-science-pack', item = 'grenade',         groups = 10},  -- 灰：手雷
-        {pack = 'utility-science-pack',  item = 'cluster-grenade', groups = 10},  -- 黄：集束手雷
-        --
-        {pack = 'military-science-pack', item = 'defender-capsule',  groups = 3},   -- 灰：防御者机器人胶囊
-        {pack = 'military-science-pack', item = 'poison-capsule',    groups = 3},   -- 灰：毒气胶囊
-        {pack = 'chemical-science-pack', item = 'slowdown-capsule',  groups = 3},   -- 蓝：减速胶囊
-        {pack = 'utility-science-pack',  item = 'destroyer-capsule', groups = 3},   -- 黄：毁灭者机器人胶囊
+        {pack = 'military-science-pack', item = 'land-mine', groups = 20},   -- 灰：地雷(海量布雷)
+    }},
+    {key = 'spiderman', name = '蜘蛛侠', full = 1000, starter = {
+        {item = 'spidertron', count = 1},
+    }, rewards = {
+        {pack = 'utility-science-pack', item = 'spidertron', groups = 2},   -- 黄：蜘蛛机甲
     }},
 
     {section = '装备护甲'},
     -- 分组换行：战斗 ↔ 装备护甲
     -- ── 装备护甲组（护甲网格组件 + 终极机甲；按各组件解锁科技配瓶）──
-    {key = 'toolman', name = '工具人', full = 1000, starter = {
+    -- 角色网格分工：每个职业专精一类护甲网格组件。
+    {key = 'tankman', name = '坦克', full = 1000, starter = {   -- 全是盾
+        {item = 'energy-shield-equipment', count = 1},
+    }, rewards = {
+        {pack = 'military-science-pack', item = 'energy-shield-equipment',     groups = 5},   -- 灰：能量盾
+        {pack = 'utility-science-pack',  item = 'energy-shield-mk2-equipment', groups = 5},   -- 黄：能量盾 mk2
+        {pack = 'military-science-pack', item = 'discharge-defense-equipment', groups = 3},   -- 灰：放电防御
+    }},
+    {key = 'healer', name = '奶妈', full = 1000, starter = {   -- 全是发电装置
+        {item = 'solar-panel-equipment', count = 1},
+    }, rewards = {
+        {pack = 'logistic-science-pack',  item = 'solar-panel-equipment',     groups = 10},  -- 绿：太阳能板
+        {pack = 'chemical-science-pack',  item = 'fission-reactor-equipment', groups = 3},   -- 蓝：裂变反应堆
+        {pack = 'cryogenic-science-pack', item = 'fusion-reactor-equipment',  groups = 3},   -- 靛：聚变反应堆
+    }},
+    {key = 'laserman', name = '输出', full = 1000, starter = {   -- 全是激光
+        {item = 'personal-laser-defense-equipment', count = 1},
+    }, rewards = {
+        {pack = 'military-science-pack', item = 'personal-laser-defense-equipment', groups = 10},  -- 灰：个人激光防御
+    }},
+    {key = 'helper', name = '辅助', full = 1000, starter = {   -- 全是机器人
+        {item = 'personal-roboport-equipment', count = 1},
+    }, rewards = {
+        {pack = 'logistic-science-pack', item = 'construction-robot',            groups = 10},  -- 绿：建造机器人
+        {pack = 'chemical-science-pack', item = 'personal-roboport-equipment',     groups = 5},   -- 蓝：个人机器人网格
+        {pack = 'utility-science-pack',  item = 'personal-roboport-mk2-equipment', groups = 5},   -- 黄：网格 mk2
+    }},
+    {key = 'runner', name = '跑步运动员', full = 1000, starter = {   -- 全是外骨骼
+        {item = 'exoskeleton-equipment', count = 1},
+    }, rewards = {
+        {pack = 'chemical-science-pack', item = 'exoskeleton-equipment', groups = 10},   -- 蓝：外骨骼(移动加速)
+    }},
+    {key = 'porter', name = '举重运动员', full = 1000, starter = {   -- 全是工具腰带
         {item = 'toolbelt-equipment', count = 1},
     }, rewards = {
-        {pack = 'logistic-science-pack', item = 'toolbelt-equipment',          groups = 5},
-        {pack = 'chemical-science-pack', item = 'personal-roboport-equipment', groups = 3},
+        {pack = 'logistic-science-pack', item = 'toolbelt-equipment', groups = 10},   -- 绿：工具腰带(扩快捷栏)
     }},
-    {key = 'outfitter', name = '服装设计师', full = 1000, starter = {
-        {item = 'solar-panel-equipment', count = 2},
-        {item = 'battery-equipment', count = 2},
-        {item = 'night-vision-equipment', count = 1},
-    }, rewards = {
-        {pack = 'logistic-science-pack', item = 'solar-panel-equipment',      groups = 3},
-        {pack = 'logistic-science-pack', item = 'battery-equipment',          groups = 3},
-        {pack = 'logistic-science-pack', item = 'night-vision-equipment',     groups = 2},
-        {pack = 'chemical-science-pack', item = 'personal-roboport-equipment', groups = 3},
-        {pack = 'chemical-science-pack', item = 'exoskeleton-equipment',      groups = 3},
-        {pack = 'military-science-pack', item = 'energy-shield-equipment',    groups = 3},
-        {pack = 'utility-science-pack',  item = 'personal-roboport-mk2-equipment', groups = 3},
-    }},
-    -- 黄瓶：二级个人机器人网格
-    {key = 'transformer', name = '变形金刚', full = 1000, starter = {
-        {item = 'mech-armor', count = 1},
-    }, unlock = {{pack = 'electromagnetic-science-pack', level = 1000}}, rewards = {
-        {pack = 'cryogenic-science-pack',       item = 'fusion-reactor-equipment', groups = 5},   -- 聚变模块（靛瓶驱动）
-        {pack = 'electromagnetic-science-pack', item = 'exoskeleton-equipment',    groups = 5},
-    }},
-    -- 外骨骼模块（粉瓶驱动）
 
     {section = '农牧'},
     -- 分组换行：装备护甲 ↔ 农牧
@@ -441,18 +472,15 @@ local DEFAULT_CLASSES = {
     {key = 'bugkeeper', name = '虫师', full = 1000, starter = {
         {item = 'pentapod-egg', count = 1},
     }, rewards = {
-        {pack = 'agricultural-science-pack', item = 'pentapod-egg', groups = 3},
-        {pack = 'agricultural-science-pack', item = 'raw-fish',     groups = 8},
-        {pack = 'agricultural-science-pack', item = 'spoilage',     groups = 8},
+        {pack = 'agricultural-science-pack', item = 'raw-fish',     groups = 10},
+        {pack = 'agricultural-science-pack', item = 'spoilage',     groups = 20},
     }},
     {key = 'fisher', name = '渔夫', full = 1000, starter = {
-        {item = 'raw-fish', groups = 2},
-        {item = 'spoilage', groups = 2},
-        {item = 'inserter', groups = 1},
+        {item = 'inserter', count = 1},
+        {item = 'biter-egg', groups = 1},
     }, rewards = {
         {pack = 'agricultural-science-pack', item = 'raw-fish',  groups = 10},
-        {pack = 'agricultural-science-pack', item = 'spoilage',  groups = 8},
-        {pack = 'automation-science-pack',   item = 'inserter',  groups = 5},
+        {pack = 'agricultural-science-pack', item = 'spoilage',  groups = 20},
     }},
     {key = 'farmer', name = '农夫', full = 1000, starter = {
         {item = 'agricultural-tower', count = 5},
@@ -460,10 +488,10 @@ local DEFAULT_CLASSES = {
         {item = 'jellynut-seed', groups = 2},
         {item = 'tree-seed', groups = 2},
     }, rewards = {
-        {pack = 'agricultural-science-pack', item = 'yumako-seed',       groups = 8},
-        {pack = 'agricultural-science-pack', item = 'jellynut-seed',     groups = 8},
-        {pack = 'agricultural-science-pack', item = 'tree-seed',         groups = 5},
-        {pack = 'agricultural-science-pack', item = 'agricultural-tower', groups = 5},
+        {pack = 'agricultural-science-pack', item = 'yumako-seed',       groups = 10},
+        {pack = 'agricultural-science-pack', item = 'jellynut-seed',     groups = 10},
+        {pack = 'agricultural-science-pack', item = 'tree-seed',         groups = 10},
+        {pack = 'agricultural-science-pack', item = 'agricultural-tower', groups = 10},
     }},
 
     {section = '星球专精'},
