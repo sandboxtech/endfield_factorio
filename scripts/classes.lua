@@ -24,7 +24,7 @@ M.MAX_LEVEL = 10000   -- 满级基准（与 respawn_gifts.MAX_LEVEL / gui CLASS_
 -- 默认职业表（顺序即面板显示顺序）：平民 + 12 瓶单瓶职业（每种科技瓶一个领域）+ 4 双瓶职业。
 -- 单瓶满级送 10 组、双瓶各 5 组（满级合计 10 组）。带 unlock 的需练到对应瓶等级才能选。
 local DEFAULT_CLASSES = {
-    {key = 'civilian',     name = '平民',       starter = {{item = 'burner-mining-drill'}}},
+    {key = 'civilian',     name = '平民',       starter = {{item = 'burner-mining-drill'}, {item = 'transport-belt'}}},
 
     -- ── 12 瓶单瓶职业（每种科技瓶一个领域）──
     {key = 'miner',        name = '矿工',       starter = {{item = 'electric-mining-drill'}}, rewards = {
