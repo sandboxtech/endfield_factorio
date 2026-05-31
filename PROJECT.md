@@ -53,7 +53,7 @@
 - **tile 替换**：每世界 1~N 条规则 `源家族 → 目标 tile + mask`。
   - 源 `PLANET_SRC[星球]`：只取该星实际存在的 tile 子家族（否则空转）。
   - 目标白名单 `TILE_CLASS` 四类：`water`(常规水) / `ground`(自然地表) / `exotic`(岩浆·油海·氨海·虚空·太空) / `artificial`(混凝土系+9 色套色+铺路/landfill/地基)。`valid_pools` 按 `prototypes.tile` 过滤拼错名。
-  - mask：`all`(整片，仅安全自然：水→可泵水、地→任意地) / `noise`(平滑成片，**exotic 仅此可选**) / `tree`/`rock`/`ore`(跟随原生树/石/矿分布，**artificial 仅 ore 可选**)。规则数与覆盖面非线性偏小。
+  - mask：`all`(整片，仅安全自然：水→可泵水、地→任意地) / `noise`(平滑成片，**exotic 仅此可选**) / `tree`/`rock`/`ore`(跟随原生树/石/矿分布，**artificial 可 noise(成片人造地表)/ore**)。规则数与覆盖面非线性偏小。
   - 约束：整片替换不让星球缺资源；exotic/artificial 只部分替换（原 tile 仍保留）。exotic 出现率全星统一（`tile_mask_all` × `tile_to_exotic`），母星不额外加成。
 - **遭遇优先链** `map_features.place_encounter`（原"危险世界 `danger_theme`、零星 `feat_danger`/`feat_wrecks`、独立 `feat_perpetual`、`feat_material/equipment/treasure/outpost`"已全部并入）：每地块**至多一个遭遇**，按稀有度依次试、命中即停——永续箱→木箱→铁箱→钢箱→空据点(纯敌人)。非空据点放 **1~16 个同类箱**（`floor(1+15·random^6 × (0.5+riches))`，富庶世界更多）。每个遭遇都经**统一 `place_guards(danger × (0.5+世界danger))`** 放敌人（仅 danger 不同：永续/空据点高、普通箱低；出生点 96 格内只放箱不放敌、越远+越危险世界越猛）+ 非线性飞船残骸。电炮首次出现才惰性建 **legendary substation** 子电网（功率 10~100MW）。地砖：空据点不铺、普通箱用 `enemy_floor`、永续用第二种 `enemy_floor2`。**复制虫**改为全局常数 `storage.replicant_chance`（见 world_fx）。原版 enemy-base 仍自然出虫。
 - **事件世界** `event_world[星球]`：每星球每轮 **10%**(`balance.event.base 0.1 × prob_event`) 成为事件世界，命中则从下列类型**按权重抽一个**存入（**至多一种**；权重 `balance.event.weights`：drones=0.3、tech=0.3，余默认1 → 无人机/科技世界更罕见）。触发见 `tick.run_world_events`：每分钟先掷全局 `event_chance`(默认0.5) 决定**全服**是否发生，命中则随机挑一个"身处事件世界星球的在线玩家"，触发其星球的事件**一次**。类型：

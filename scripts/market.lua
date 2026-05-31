@@ -3,35 +3,38 @@
 -- 每轮跃迁后由 surface.lua 的 on_surface_cleared（每个 PLANET_GEN 星球、clear 结算后）放置；不可摧毁/挖取。
 local M = {}
 
--- 出售清单：{物品, 数量, 金币价}。金币来自在线（开局 √在线分钟 + 每分钟 +1）。
+-- 出售清单：{物品, 数量, 金币价}。金币只来自每轮开局 floor(√在线分钟)（不再每分钟发），数量很小，
+-- 故整体定价压得很低，让玩家开局就买得起一套基础装备；但【分级装备】高级档每单位属性的单价仍递增
+-- （越高越亏），低级件性价比始终更优 → 鼓励多买低级、把高级件当"省格子"的奢侈选项。
 M.offers = {
-    -- 【分级装备】按梯度定价：高级档每点属性更贵（性价比明显更低），换取同/更省装甲格。
-    --   电池每档都占 2 格：mk1 20MJ / mk2 100MJ / mk3 250MJ；每 MJ 单价 6.7→3.3→2.1，越高越亏但越省格。
-    {'battery-equipment',                1,   3},   -- 20MJ  · 2 格
-    {'battery-mk2-equipment',            1,  50},   -- 100MJ · 2 格
-    {'battery-mk3-equipment',            1, 300},   -- 250MJ · 2 格
+    -- 电池(储电)：mk1 20MJ / mk2 100MJ / mk3 250MJ，各占 2 格。每 MJ 单价 0.05→0.08→0.12 递增 → 多买低级更省钱。
+    {'battery-equipment',                1,   1},   -- 20MJ  · 2 格
+    {'battery-mk2-equipment',            1,   8},   -- 100MJ · 2 格
+    {'battery-mk3-equipment',            1,  30},   -- 250MJ · 2 格
 
-    {'energy-shield-equipment',          1,  5},   -- 50 护盾  · 4 格
-    {'energy-shield-mk2-equipment',      1,  100},   -- 150 护盾 · 4 格
-    {'personal-roboport-equipment',      1,  10},   -- 35MJ 缓冲 · 4 格
-    {'personal-roboport-mk2-equipment',  1,  100},   -- 更快更多机器人 · 4 格
+    -- 护盾：50 / 150 点，每点单价 0.04→0.06 递增。
+    {'energy-shield-equipment',          1,   2},   -- 50 护盾  · 4 格
+    {'energy-shield-mk2-equipment',      1,   9},   -- 150 护盾 · 4 格
+    -- 个人机器人端口：mk2 更快、容纳更多机器人。
+    {'personal-roboport-equipment',      1,   3},   -- 35MJ 缓冲 · 4 格
+    {'personal-roboport-mk2-equipment',  1,  15},
 
-    -- 护甲格子（装零件用）
-    {'modular-armor',                    1, 5},
-    {'power-armor',                      1, 50},   
-    {'power-armor-mk2',                  1, 500},
-    {'mech-armor',                       1, 2000},
+    -- 护甲格子（装零件用）：格子越多越贵，单格单价递增。
+    {'modular-armor',                    1,   2},
+    {'power-armor',                      1,  15},
+    {'power-armor-mk2',                  1,  80},
+    {'mech-armor',                       1, 300},
 
-    -- 【单级装备】无分级，价格自行配置
-    {'night-vision-equipment',           1,   1},   -- 夜视仪：暗世界/永夜看路用，便宜
-    {'exoskeleton-equipment',            1,  30},
-    {'personal-laser-defense-equipment', 1,  50},
-    {'toolbelt-equipment',               1,  100},
+    -- 【单级装备】无分级。
+    {'night-vision-equipment',           1,   1},   -- 夜视仪：暗世界/永夜看路用，最便宜
+    {'exoskeleton-equipment',            1,   5},
+    {'personal-laser-defense-equipment', 1,   8},
+    {'toolbelt-equipment',               1,  12},
 
-    -- 电源：按功率定价，功率越高每瓦越贵（高级件性价比更低）。功率假设 100 / 750 / 2500。
-    {'solar-panel-equipment',            1,   3},   -- 100
-    {'fission-reactor-equipment',        1,  50},   -- 750
-    {'fusion-reactor-equipment',         1, 300},   -- 2500
+    -- 电源：功率约 100 / 750 / 2500，每单位功率单价 0.01→0.013→0.016 递增。
+    {'solar-panel-equipment',            1,   1},
+    {'fission-reactor-equipment',        1,  10},
+    {'fusion-reactor-equipment',         1,  40},
 }
 
 local function stock(ent)

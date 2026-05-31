@@ -316,6 +316,16 @@ local function roll_treasure_quality()
     return 'legendary'
 end
 
+-- 永续箱供应物品的品质（极小概率高品质惊喜）：uncommon 1% / rare 0.01% / epic 0.0001% / legendary 0.000001%。
+local function roll_perpetual_quality()
+    local r = math.random()
+    if r < 0.00000001 then return 'legendary' end   -- 1e-8 = 0.000001%
+    if r < 0.000001   then return 'epic' end          -- 1e-6 = 0.0001%
+    if r < 0.0001     then return 'rare' end           -- 1e-4 = 0.01%
+    if r < 0.01       then return 'uncommon' end        -- 1e-2 = 1%
+    return 'normal'
+end
+
 -- 物品名有效性校验：LOOT 表是手动穷举的，某些名字会随 DLC/版本失效
 -- （如 Space Age 删了 'satellite'），运行时 insert 不存在的物品会报 "unknown item name" 崩档。
 -- 此处统一拦截：无效则跳过，并把名字报告给所有【在线管理员】（同名只报一次，避免刷屏）。
@@ -384,10 +394,19 @@ local function spawn_perpetual_chest(surface, pos)
     end
     if not item then chest.destroy(); return false end
     local ss = prototypes.item[item].stack_size
-    chest.infinity_container_filters = {{index = 1, name = item, count = ss, mode = 'exactly'}}
+    chest.infinity_container_filters = {{index = 1, name = item, count = ss, mode = 'exactly', quality = roll_perpetual_quality()}}
     chest.operable = false        -- 不可打开/重配
     chest.minable_flag = false    -- 不可拆走
     chest.destructible = false    -- 不可摧毁（否则 fulgora 闪电/火炮会把它劈烂）
+    -- 周围 8 格各 80% 放一堵【无敌敌方石墙】：玩家贴不到箱子放机械臂/传送带，掏货效率大降（墙拆不掉，只能从随机留出的缝隙接）。
+    for dx = -1, 1 do
+        for dy = -1, 1 do
+            if not (dx == 0 and dy == 0) and math.random() < 0.8 then
+                local w = surface.create_entity{name = 'stone-wall', force = 'enemy', position = {cx + dx, cy + dy}}
+                if w then w.destructible = false end
+            end
+        end
+    end
     return true
 end
 

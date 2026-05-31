@@ -117,7 +117,7 @@ end
 -- 目标池【白名单穷举】各星自然 tile（排除法挡不住套色生成的彩色混凝土等人造 tile，故改穷举）。
 -- valid_pools 会按 prototypes.tile 过滤掉拼错/不存在的，所以这里宁可多列。人造 tile 一律不在列。
 -- void/space 与 artificial(人造) 不在此白名单，它们是【受 mask 限制】的特殊目标池，由 valid_pools 另建：
---   voidspace(empty-space/out-of-map) 仅 noise mask 可选；artificial(混凝土系等) 仅 ore mask 可选。
+--   voidspace(empty-space/out-of-map) 仅 noise mask 可选；artificial(混凝土系等) noise(成片人造地表) 或 ore(跟随矿脉) mask 可选。
 local TILE_CLASS = {
     water  = {  -- 常规水(可整片替换的安全自然水：仍可泵/可作 all 目标)
         'water', 'deepwater', 'water-green', 'deepwater-green', 'water-shallow', 'water-mud', 'gleba-deep-lake',
@@ -243,11 +243,15 @@ local function rand_tile(class)
 end
 
 -- 部分替换(非 all)时选目标，按 mask 限制特殊池：
---   noise → 一定概率取 exotic(岩浆/油海/氨海/虚空/太空)；ore → 一定概率取 artificial(人造铺装)；
---   其余走常规自然(水/地)。tree/rock 只会落到自然。
+--   noise(成片) → 一定概率取 exotic(岩浆/油海/氨海/虚空/太空)，否则再以一定概率取 artificial(人造铺装)；
+--   ore → 一定概率取 artificial；其余走常规自然(水/地)。tree/rock 只会落到自然。
 local function pick_target(src, mask)
-    if mask == 'noise' and math.random() < constants.balance.tile_to_exotic then return rand_tile('exotic') end
-    if mask == 'ore' and math.random() < constants.balance.tile_to_artificial then return rand_tile('artificial') end
+    if mask == 'noise' then
+        if math.random() < constants.balance.tile_to_exotic then return rand_tile('exotic') end
+        if math.random() < constants.balance.tile_to_artificial then return rand_tile('artificial') end
+    elseif mask == 'ore' and math.random() < constants.balance.tile_to_artificial then
+        return rand_tile('artificial')
+    end
     return rand_tile(pick_natural_class(src.class))
 end
 
@@ -729,6 +733,7 @@ script.on_event(defines.events.on_chunk_generated, events.safe('chunk_generated'
                     end
                     if ok then tiles[#tiles + 1] = {name = rule.to, position = p} end
                 end
+                -- set_tiles 会把被盖住的原地形自动存为 hidden_tile：玩家拆掉人造铺装后露出该格原本的地形。
                 if #tiles > 0 then surface.set_tiles(tiles) end
             end
         end
