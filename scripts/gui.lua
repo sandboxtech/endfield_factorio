@@ -43,9 +43,9 @@ function M.player_gui(player)
     -- HUD 按钮【放最前】：位置固定，不会被后面变长的世界标签挤动。点击由 tick.on_gui_click 路由。
     --   玩法&指令（弹窗）  |间隔|  角色面板 / 跃迁(投同意✓) / 停留(投反对✗)。
     for _, b in ipairs({
-        -- 信息组：玩法（最左）+ 功能菜单。玩法按钮 tooltip【就是其正文】，与点开的窗口完全同一段 guide-gameplay。
+        -- 信息组：玩法（最左）+ 功能菜单。玩法按钮 tooltip【就是其正文】，与点开的窗口完全同一段 description。
         -- 每个按钮的 tooltip = 标题 + 它打开窗口顶部的同一段简介（共用 *-help，两处一致）。
-        {name = 'wn_btn_gameplay', sprite = 'virtual-signal/signal-info',  tip = {'wn.guide-gameplay', storage.warp_initial_minutes or 10, storage.platform_lifetime or 10}},
+        {name = 'wn_btn_gameplay', sprite = 'virtual-signal/signal-info',  tip = {'description', storage.warp_initial_minutes or 10, storage.platform_lifetime or 10}},
         {name = 'wn_btn_actions',  sprite = 'item/blueprint-book',  tip = {'', '[font=default-bold]功能菜单[/font]\n', {'wn.actions-help'}}},
         {spacer = true},
         -- 个人组：科技瓶经验 / 统计 / 职业 / 星星。
@@ -86,7 +86,7 @@ function M.player_gui(player)
         type = 'button',
         name = 'warp_countdown',
         caption = M.countdown_caption(),
-        tooltip = {'wn.guide-gameplay', storage.warp_initial_minutes or 10, storage.platform_lifetime or 10},
+        tooltip = {'description', storage.warp_initial_minutes or 10, storage.platform_lifetime or 10},
         style = 'transparent_button',   -- 内置全透明 button 样式：外观如 label，但可点击（label 不触发 on_gui_click）
     }
     cd.style.font = 'heading-1'
@@ -172,16 +172,16 @@ function M.show_popup(player, title, lines, buttons, buttons_at_bottom, bottom_b
     return frame
 end
 
--- 弹出【简介】：与玩法窗口、倒计时标签悬停【共用同一段 guide-gameplay】（含场景背景 + 核心玩法）。
+-- 弹出【简介】：与玩法窗口、倒计时标签悬停【共用同一段 description】（含场景背景 + 核心玩法）。
 function M.show_intro(player)
     M.show_popup(player, {'wn.intro-title'},
-        {{'wn.guide-gameplay', storage.warp_initial_minutes or 10, storage.platform_lifetime or 10}})
+        {{'description', storage.warp_initial_minutes or 10, storage.platform_lifetime or 10}})
 end
 
 -- 弹出【游戏玩法】（HUD 第一个按钮）：纯玩法说明文字。功能按钮在 show_actions（第二个按钮）。
 function M.show_tutorial(player)
     M.show_popup(player, {'wn.tutorial-title'}, {
-        {'wn.guide-gameplay', storage.warp_initial_minutes or 10, storage.platform_lifetime or 10},
+        {'description', storage.warp_initial_minutes or 10, storage.platform_lifetime or 10},
     })
 end
 

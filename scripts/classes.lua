@@ -45,7 +45,7 @@ local DEFAULT_CLASSES = {
         {pack = 'automation-science-pack', item = 'stone',      groups = 2}}},
     {key = 'miner', name = '矿工', full = 100, starter = {
         {item = 'electric-mining-drill', count = 50},
-        {item = 'stone', groups = 3}, {item = 'iron-plate', groups = 3}, {item = 'coal', groups = 3}}, rewards = {
+        {item = 'stone', groups = 3}, {item = 'coal', groups = 3}}, rewards = {   -- 矿工只送矿/钻头，不送铁板
         {pack = 'automation-science-pack',  item = 'electric-mining-drill', groups = 10},
         {pack = 'metallurgic-science-pack', item = 'big-mining-drill',      groups = 10},
         {pack = 'automation-science-pack',  item = 'iron-ore',   groups = 10},
@@ -68,7 +68,7 @@ local DEFAULT_CLASSES = {
         {pack = 'automation-science-pack', item = 'copper-plate',    groups = 5}}},
     {key = 'circuiter', name = '电路装配工', full = 100, starter = {
         {item = 'assembling-machine-1', count = 50},
-        {item = 'iron-plate', groups = 4}, {item = 'copper-plate', groups = 4}, {item = 'copper-cable', groups = 3}}, rewards = {
+        {item = 'iron-plate', groups = 4}, {item = 'copper-cable', groups = 3}}, rewards = {   -- 电路工不送铜板
         {pack = 'automation-science-pack',      item = 'assembling-machine-1', groups = 1},
         {pack = 'automation-science-pack',      item = 'copper-cable',       groups = 8},
         {pack = 'automation-science-pack',      item = 'electronic-circuit', groups = 4},
@@ -81,13 +81,13 @@ local DEFAULT_CLASSES = {
     -- ── 能源化工组（电力/蒸汽/太阳能/化工/石油/管道/核能/回收）──
     {key = 'electrician', name = '烧煤工', full = 100, starter = {
         {item = 'coal', groups = 5},
-        {item = 'small-electric-pole', groups = 1}, {item = 'iron-plate', groups = 2}}, rewards = {
+        {item = 'small-electric-pole', groups = 1}}, rewards = {   -- 烧煤工只送煤/电力设备，不送铁板
         {pack = 'production-science-pack', item = 'small-electric-pole', groups = 5},
         {pack = 'automation-science-pack', item = 'boiler',             groups = 10},
         {pack = 'production-science-pack', item = 'steam-engine',       groups = 10}}},
     {key = 'greentech', name = '环保人士', full = 100, starter = {
         {item = 'medium-electric-pole', count = 50},
-        {item = 'solar-panel', count = 25}, {item = 'iron-plate', groups = 2}}, rewards = {
+        {item = 'solar-panel', count = 25}}, rewards = {   -- 环保只送太阳能/电力，不送铁板
         {pack = 'automation-science-pack', item = 'medium-electric-pole', groups = 2},
         {pack = 'logistic-science-pack',   item = 'solar-panel',          groups = 10},
         {pack = 'chemical-science-pack',   item = 'efficiency-module',     groups = 2},
@@ -162,8 +162,8 @@ local DEFAULT_CLASSES = {
     -- ── 战斗组（弹药/手雷/核弹；练灰瓶 military，部分另练蓝瓶 chemical）──
     {key = 'guard', name = '守卫', full = 1000, starter = {
         {item = 'gun-turret', count = 1}, {item = 'firearm-magazine', groups = 1}}, rewards = {
-        {pack = 'military-science-pack', item = 'gun-turret',               groups = 5},
-        {pack = 'military-science-pack', item = 'laser-turret',             groups = 3},
+        {pack = 'military-science-pack', item = 'gun-turret',               groups = 1},   -- stack50：1组=50座
+        {pack = 'military-science-pack', item = 'laser-turret',             groups = 1},
         {pack = 'military-science-pack', item = 'firearm-magazine',         groups = 10},
         {pack = 'military-science-pack', item = 'piercing-rounds-magazine', groups = 10}}},
     {key = 'gunner', name = '机枪手', full = 1000, starter = {
@@ -179,23 +179,23 @@ local DEFAULT_CLASSES = {
     {key = 'rocketeer', name = '火箭筒兵', full = 1000, starter = {   -- 核弹并入：火箭→爆破火箭→火箭炮塔→核弹(黄瓶驱动)
         {item = 'rocket-launcher', count = 1}, {item = 'rocket', groups = 1}}, rewards = {
         {pack = 'military-science-pack', item = 'rocket',           groups = 10},
-        {pack = 'military-science-pack', item = 'rocket-turret',    groups = 3},
+        {pack = 'military-science-pack', item = 'rocket-turret',    groups = 2},   -- stack10：少送炮塔
         {pack = 'chemical-science-pack', item = 'explosive-rocket', groups = 10},
         {pack = 'utility-science-pack',  item = 'atomic-bomb',      groups = 2}}},
     {key = 'artillerist', name = '炮兵', full = 1000, starter = {
         {item = 'artillery-turret', count = 1}, {item = 'artillery-shell', count = 5}}, rewards = {
-        {pack = 'military-science-pack', item = 'artillery-shell',  groups = 10},
-        {pack = 'military-science-pack', item = 'artillery-turret', groups = 3}}},
+        {pack = 'military-science-pack', item = 'artillery-shell',  groups = 30},   -- stack1：30组=30发
+        {pack = 'military-science-pack', item = 'artillery-turret', groups = 1}}},  -- stack10：1组=10座
     {key = 'railgunner', name = '磁轨炮兵', full = 1000, starter = {   -- 火山高级武器，需橙瓶解锁
         {item = 'railgun', count = 1}, {item = 'railgun-ammo', groups = 1}},
-        unlock = {{pack = 'metallurgic-science-pack', level = 100}}, rewards = {  -- 橙(火山)
-        {pack = 'metallurgic-science-pack', item = 'railgun-ammo',   groups = 10},
-        {pack = 'metallurgic-science-pack', item = 'railgun-turret', groups = 5}}},
+        unlock = {{pack = 'cryogenic-science-pack', level = 100}}, rewards = {  -- 靛(Aquilo)：railgun 真实门槛瓶(科技几乎需全套瓶,最高靛)
+        {pack = 'cryogenic-science-pack', item = 'railgun-ammo',   groups = 10},   -- stack10：1组=10发
+        {pack = 'cryogenic-science-pack', item = 'railgun-turret', groups = 2}}},
     {key = 'teslatrooper', name = '特斯拉枪手', full = 1000, starter = {   -- 电磁高级武器，需粉瓶解锁
         {item = 'teslagun', count = 1}, {item = 'tesla-ammo', groups = 1}},
         unlock = {{pack = 'electromagnetic-science-pack', level = 100}}, rewards = {  -- 粉(电磁)
         {pack = 'electromagnetic-science-pack', item = 'tesla-ammo',   groups = 10},
-        {pack = 'electromagnetic-science-pack', item = 'tesla-turret', groups = 5}}},
+        {pack = 'electromagnetic-science-pack', item = 'tesla-turret', groups = 2}}},   -- stack10：少送炮塔
     {key = 'bomber', name = '投弹手', full = 1000, starter = {{item = 'grenade', groups = 2}}, rewards = {
         {pack = 'logistic-science-pack', item = 'grenade',         groups = 10},
         {pack = 'utility-science-pack',  item = 'cluster-grenade', groups = 10}}},
@@ -276,8 +276,7 @@ local DEFAULT_CLASSES = {
         {pack = 'cryogenic-science-pack', item = 'fusion-reactor',    groups = 5},
         {pack = 'cryogenic-science-pack', item = 'fusion-power-cell', groups = 8},
         {pack = 'cryogenic-science-pack', item = 'lithium-plate',     groups = 8},
-        {pack = 'cryogenic-science-pack', item = 'lithium',           groups = 8},
-        {pack = 'cryogenic-science-pack', item = 'fluoroketone',      groups = 5}}},
+        {pack = 'cryogenic-science-pack', item = 'lithium',           groups = 8}}},
     {key = 'astronomer', name = '天文学家', full = 1000, starter = {
         {item = 'lab', count = 1}},
         unlock = {{pack = 'promethium-science-pack', level = 100}}, rewards = {  -- 黑(promethium) 终极科研
