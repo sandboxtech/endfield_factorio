@@ -110,10 +110,8 @@ local DEFAULT_CLASSES = {
         {pack = 'metallurgic-science-pack', item = 'big-mining-drill', groups = 20},
     }},
 
-    {key = 'smelter', name = '冶炼工人', full = FULL_LOW, starter = {
+    {key = 'smelter', name = '冶金工人', full = FULL_LOW, starter = {
         {item = 'stone-furnace', groups = 4},
-        -- {item = 'steel-furnace', groups = 1},
-        -- {item = 'electric-furnace', groups = 1},
     }, unlock = {{pack = 'automation-science-pack', level = 10}}, rewards = {
         {pack = 'automation-science-pack', item = 'stone-furnace',       groups = 2},
         {pack = 'logistic-science-pack', item = 'steel-furnace',       groups = 2},
@@ -311,20 +309,20 @@ local DEFAULT_CLASSES = {
         {pack = 'utility-science-pack',  item = 'buffer-chest',           groups = 5},
     }},
 
-    {key = 'recyclerman', name = '回收工人', full = FULL_MAX, starter = {
+    {key = 'recyclerman', name = '回收工人', full = FULL_LOW, starter = {
         {item = 'recycler', count = 1},
     }, unlock = {{pack = 'electromagnetic-science-pack', level = 10}}, rewards = {
-        {pack = 'electromagnetic-science-pack', item = 'scrap',                 groups = 50},
+        {pack = 'electromagnetic-science-pack', item = 'scrap',                 groups = 30},
     }},
-    {key = 'electromagneticman', name = '电子工人', full = FULL_MAX, starter = {
-        {item = 'recycler', count = 1},
+    {key = 'electromagneticman', name = '电子工人', full = FULL_LOW, starter = {
+        {item = 'electromagnetic-plant', count = 1},
     }, unlock = {{pack = 'electromagnetic-science-pack', level = 10}}, rewards = {
-        {pack = 'electromagnetic-science-pack', item = 'scrap',                 groups = 50},
+        {pack = 'electromagnetic-science-pack', item = 'copper-cable',                 groups = 30},
     }},
-    {key = 'foundryman', name = '冶炼工人', full = FULL_MAX, starter = {
+    {key = 'foundryman', name = '冶炼工人', full = FULL_LOW, starter = {
         {item = 'foundry', count = 1},
     }, unlock = {{pack = 'metallurgic-science-pack', level = 10}}, rewards = {
-        {pack = 'metallurgic-science-pack', item = 'scrap',                 groups = 50},
+        {pack = 'metallurgic-science-pack', item = 'calcite',                 groups = 30},
     }},
 
     {key = 'roboticist', name = '机械师', full = FULL_MAX, starter = {
@@ -354,7 +352,7 @@ local DEFAULT_CLASSES = {
         {pack = 'chemical-science-pack',        item = 'flamethrower-turret', groups = 1},   -- 蓝：喷火炮塔
         {pack = 'military-science-pack',        item = 'laser-turret',        groups = 1},   -- 灰：激光炮塔
         --
-        {pack = 'military-science-pack', item = 'stone-wall',       groups = 50},   -- 灰：石墙
+        {pack = 'military-science-pack', item = 'stone-wall',       groups = 30},   -- 灰：石墙
         {pack = 'military-science-pack', item = 'gate',             groups = 1},   -- 灰：闸门
         {pack = 'military-science-pack', item = 'radar',            groups = 1},   -- 灰：雷达
         {pack = 'military-science-pack', item = 'firearm-magazine', groups = 5},   -- 灰：弹匣(供机枪塔)
