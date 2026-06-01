@@ -200,17 +200,25 @@ function M.show_actions(player)
         buttons[#buttons + 1] = {label = true, caption = {'wn.actions-travel-group'}}
         local open, tc = storage.travel_open or {}, storage.travel_chance or {}
         for _, p in ipairs(constants.PLANETS) do
+            local met, pack, cur, req = classes.planet_gate(player, p)   -- 星球瓶门槛
+            local tip
+            if not met then tip = {'wn.planet-need-pack', '[img=item/' .. pack .. ']', req, cur}   -- 瓶不够：显示需求
+            elseif open[p] then tip = {'wn.act-travel-tip'}
+            else tip = {'wn.travel-closed', math.floor((tc[p] or 0.5) * 100)} end
             buttons[#buttons + 1] = {name = 'wn_act_travel_' .. p, caption = {'wn.act-travel', p}, tags = {wn_travel = p},
-                enabled = open[p] or false,
-                tooltip = open[p] and {'wn.act-travel-tip'} or {'wn.travel-closed', math.floor((tc[p] or 0.5) * 100)}}
+                enabled = (open[p] or false) and met,   -- 需本轮开放【且】瓶达标
+                tooltip = tip}
         end
     end
     -- 【出生星球】组：设定下次跃迁复活 + 领起手装备的星球。不传送、全星球可选、当前选中标 ✓。
     buttons[#buttons + 1] = {label = true, caption = {'wn.actions-home-group'}}
     local home = (storage.respawn_surface or {})[player.name] or 'nauvis'
     for _, p in ipairs(constants.PLANETS) do
+        local met, pack, cur, req = classes.planet_gate(player, p)   -- 出生星球同样要瓶门槛
         buttons[#buttons + 1] = {name = 'wn_act_home_' .. p,
-            caption = {p == home and 'wn.act-home-cur' or 'wn.act-home', p}, tags = {wn_home = p}, tooltip = {'wn.act-home-tip'}}
+            caption = {p == home and 'wn.act-home-cur' or 'wn.act-home', p}, tags = {wn_home = p},
+            enabled = met,
+            tooltip = met and {'wn.act-home-tip'} or {'wn.planet-need-pack', '[img=item/' .. pack .. ']', req, cur}}
     end
     -- 顶部放与按钮 tooltip 同一段简介（buttons_at_bottom=true → 说明在上、操作按钮在下）。
     M.show_popup(player, {'wn.actions-title'}, {{'wn.actions-help'}, ''}, buttons, true)
@@ -237,7 +245,10 @@ function M.show_classes(player)
         local name_loc = classes.text_loc('wn.class-name-' .. def.key, (storage.class_names or {})[def.key], def.name or def.key)
         -- tooltip：白送(starter)每物品一行"+N [img]"；奖励(rewards)每条一行"每 a 级 [瓶] b 个 [物品]"。两者都换行。
         -- 按钮图标 starter_img 取第一件白送物品；a:b 为 满级:满级总个数 的最简比(gcd 约分)。
-        local starter_img = (def.starter and def.starter[1]) and ('[img=item/' .. def.starter[1].item .. ']') or ''
+        -- 按钮图标物品：优先第一件白送(starter)，starter 为空则退用第一项奖励(rewards)物品。
+        local icon_item = (def.starter and def.starter[1] and def.starter[1].item)
+                       or (def.rewards and def.rewards[1] and def.rewards[1].item)
+        local starter_img = icon_item and ('[img=item/' .. icon_item .. ']') or ''
         local tip = {''}
         for _, s in ipairs(def.starter or {}) do
             local proto = prototypes.item[s.item]
@@ -259,6 +270,10 @@ function M.show_classes(player)
                 '[img=item/' .. r.item .. ']',       -- 物品图标
                 current,                             -- __5__ yyy：当前等级能拿到的数量(动态)
                 total}                               -- __6__ xxx：满级最多(不变)
+        end
+        -- 开局专属科技：有 def.tech 才显示一行（[technology=] 自动渲染科技图标 + 本地化名）。见 reset 的 classes.active_techs。
+        if def.tech then
+            tip[#tip + 1] = {'wn.class-tip-tech', '[technology=' .. def.tech .. ']'}
         end
         -- 解锁条件（需全部满足）：附在 tooltip 末尾，显示 需求瓶/等级 + 当前等级。
         for _, u in ipairs(def.unlock or {}) do

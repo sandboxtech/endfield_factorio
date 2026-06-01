@@ -70,7 +70,7 @@ print(f'已生成 set_classes.txt：{n_class} 职业 + {n_sep} 分隔')
 # 同步职业名到 zh-CN locale（中文为准，从 classes.lua 的 {key=,name=} 提取，写入标记区块）。
 # en 的 class-name-* 由人工维护（gen 不碰）；缺失的职业名游戏内回退 def.name。
 ZH = os.path.join(ROOT, 'locale', 'zh-CN', 'locale.cfg')
-pairs = re.findall(r"\{key = '([a-z_]+)', name = '([^']+)'", '\n'.join(no_comment))   # 用去注释版 → 被注释掉的职业不污染 locale
+pairs = re.findall(r"\{key = '([a-z_]+)',[^\n]*?name = '([^']+)'", '\n'.join(no_comment))   # 用去注释版→注释职业不污染；[^\n]*? 容忍 key 与 name 间夹 tech/full 等字段
 body = '\n'.join(f'class-name-{k}={n}' for k, n in pairs)
 B = '# >>> 职业名 class-name-<key>（gen_set_classes.py 自动从 classes.lua 同步，勿手改）>>>'
 E = '# <<< 职业名 <<<'

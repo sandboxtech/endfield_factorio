@@ -212,6 +212,8 @@ end
 function M.travel(player, planet)
     if not player then return end
     if not storage.travel_enabled then return end   -- 总开关关闭时禁用（即便按钮意外存在也不生效）
+    local gmet, _, gcur, greq = classes.planet_gate(player, planet)   -- 星球瓶门槛（服务端校验，防绕过灰按钮）
+    if not gmet then player.print({'wn.planet-locked-msg', planet, greq, gcur}); return end
     if not (storage.travel_open and storage.travel_open[planet]) then
         player.print({'wn.travel-fail-closed', planet, math.floor(((storage.travel_chance or {})[planet] or 0.5) * 100)})
         return
@@ -395,6 +397,8 @@ end
 -- 纯个人设置——不传送、不广播、不占冷却；任何星球可选（不受前往 30% 限制）。点完刷新教程弹窗让 ✓ 跟着动。
 function M.set_home_planet(player, planet)
     if not player then return end
+    local gmet, _, gcur, greq = classes.planet_gate(player, planet)   -- 出生星球同样需瓶门槛（服务端校验）
+    if not gmet then player.print({'wn.planet-locked-msg', planet, greq, gcur}); return end
     storage.respawn_surface = storage.respawn_surface or {}
     storage.respawn_surface[player.name] = planet
     player.print({'wn.home-set', planet})

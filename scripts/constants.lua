@@ -28,6 +28,14 @@ local M = {
     -- 星球列表（多处共用：reset 清表/进化度、gui 前往/出生、travel 开放概率）。改这一处即全改，避免各处漂移。
     PLANETS = {'nauvis', 'vulcanus', 'gleba', 'fulgora', 'aquilo'},   -- 母星 + 4 外星（标准顺序）
     OFF_PLANETS = {'vulcanus', 'gleba', 'fulgora', 'aquilo'},         -- 仅外星（travel 开放概率、本轮可达判定用）
+    -- 星球门槛：前往该星球 / 设其为出生星球，需对应科技瓶达 PLANET_REQ_LEVEL 级（否则按钮置灰）。母星(nauvis)无门槛。
+    PLANET_PACK = {
+        vulcanus = 'metallurgic-science-pack',      -- 火山 → 金属瓶
+        gleba    = 'agricultural-science-pack',     -- 草星 → 农业瓶
+        fulgora  = 'electromagnetic-science-pack',  -- 电浆星 → 电磁瓶
+        aquilo   = 'cryogenic-science-pack',        -- 极地 → 低温瓶
+    },
+    PLANET_REQ_LEVEL = 10,            -- 星球门槛等级：对应科技瓶需达此级
 
     -- 跃迁计时相关的可调值【不在这里】，它们放进 storage（见 ensure_defaults），以便 /c 热改、持久、同步：
     --   storage.warp_initial_minutes / warp_extend_default_minutes / warp_extend_minutes[瓶] / warp_vote_target_minutes
