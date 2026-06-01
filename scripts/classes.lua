@@ -476,7 +476,7 @@ local DEFAULT_CLASSES = {
     }, rewards = {
         {pack = 'chemical-science-pack', item = 'exoskeleton-equipment', groups = 10},   -- 蓝：外骨骼(移动加速)
     }},
-    {key = 'porter', name = '举重运动员', full = FULL_MID, starter = {   -- 全是工具腰带
+    {key = 'porter', name = '吃货', full = FULL_MID, starter = {   -- 全是工具腰带
         {item = 'toolbelt-equipment', count = 10},
     }, rewards = {
         {pack = 'logistic-science-pack', item = 'toolbelt-equipment', groups = 10},   -- 绿：工具腰带(扩快捷栏)
@@ -501,8 +501,8 @@ local DEFAULT_CLASSES = {
         {pack = 'agricultural-science-pack', item = 'spoilage',     groups = 20},
     }},
     {key = 'fisher', name = '渔夫', full = FULL_MID, starter = {
-        {item = 'inserter', count = 1},
-        {item = 'biter-egg', groups = 1},
+        {item = 'long-handed-inserter', count = 1},
+        {item = 'biter-egg', count = 1},
     }, rewards = {
         {pack = 'agricultural-science-pack', item = 'raw-fish',  groups = 10},
         {pack = 'agricultural-science-pack', item = 'spoilage',  groups = 20},
