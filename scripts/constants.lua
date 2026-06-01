@@ -136,7 +136,8 @@ function M.ensure_defaults()
         star_unlock_level = 20,           -- 显示【星星按钮及其窗口】所需的人物等级(=floor√在线分钟)；20 级≈在线 6.7 小时(400 分钟)，低于此不显示星星按钮
         vote_unlock_level = 10,           -- 显示【提前跃迁/停留投票】两个按钮所需的人物等级(=floor√在线分钟)；10 级=在线 100 分钟
         class_cd_minutes = 0.5,           -- 切换职业的冷却（分钟）：纯防刷消息，切换本就要下次跃迁才生效
-        grant_trigger_techs = true,       -- 开局是否赠送所有【触发科技】（捕获虫巢/扔物入太空那类）。关：/c storage.grant_trigger_techs=false
+        grant_trigger_techs = false,      -- 开局是否赠送所有【触发科技】（捕获虫巢/扔物入太空那类）。默认关；开：/c storage.grant_trigger_techs=true
+        unlock_all_planets = true,        -- 开局是否自动解锁所有星球【传送点】（可前往，但不点亮 planet-discovery 发现科技）。关：/c storage.unlock_all_planets=false
         -- 敌方据点 / 网络限制 / 雷暴（map_features.lua / roboport_limit.lua / tick.lua 读取）
         enemy_invincible_chance = 1,      -- 敌方 substation/避雷针 无敌概率（1=全无敌，0=全可摧毁）
         enemy_freq_spread = 4,            -- 敌人巢穴 frequency 浮动幅度：对数三角分布，值域 [1/n, n]（默认 4=1/4~4），峰在 1。越大世界间虫【频率】差异越极端
@@ -172,6 +173,11 @@ function M.ensure_defaults()
     for _, p in ipairs(M.OFF_PLANETS) do
         if storage.travel_chance[p] == nil then storage.travel_chance[p] = 1.0 end
     end
+    -- 开局额外【解锁的科技/配方】白名单（数组，默认空）：reset 每轮据此标记科技已研究 / 启用配方。
+    -- 缺失才补空表 → 保留 /c 的填充。热改示例：/c storage.unlock_techs = {'logistics-2', 'steel-processing'}
+    --                                          /c storage.unlock_recipes = {'rail', 'pistol'}
+    storage.unlock_techs = storage.unlock_techs or {}
+    storage.unlock_recipes = storage.unlock_recipes or {}
     -- 必需表（累积数据 / 每星球状态 / 运行时缓存），缺失则建空表。
     -- 这是所有 storage 表的【唯一出生地】，各模块不再各自 `storage.x = storage.x or {}`，统一在此补齐。
     for _, key in ipairs({'width_of', 'height_of', 'shape_of', 'exp', 'player_stats', 'platform_age',

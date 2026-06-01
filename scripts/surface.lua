@@ -137,6 +137,7 @@ local TILE_CLASS = {
         'stone-path', 'landfill', 'foundation', 'space-platform-foundation',
         'blue-refined-concrete', 'orange-refined-concrete', 'yellow-refined-concrete', 'pink-refined-concrete',
         'purple-refined-concrete', 'black-refined-concrete', 'brown-refined-concrete', 'cyan-refined-concrete', 'acid-refined-concrete',
+        'artificial-yumako-soil', 'overgrowth-yumako-soil', 'artificial-jellynut-soil', 'overgrowth-jellynut-soil',  -- 草星人造/过度生长土(铺装性质，非自然地表)
     },
     ground = {                                      -- 可走地表(各星)
         -- 母星
@@ -150,8 +151,6 @@ local TILE_CLASS = {
         'volcanic-pumice-stones', 'volcanic-smooth-stone', 'volcanic-smooth-stone-warm', 'volcanic-soil-dark', 'volcanic-soil-light',
         -- 雷星
         'fulgoran-dunes', 'fulgoran-sand', 'fulgoran-rock', 'fulgoran-paving', 'fulgoran-walls', 'fulgoran-conduit', 'fulgoran-machinery',
-        -- 草星
-        'artificial-yumako-soil', 'overgrowth-yumako-soil', 'artificial-jellynut-soil', 'overgrowth-jellynut-soil',
         'natural-yumako-soil', 'natural-jellynut-soil',
         'lowland-olive-blubber', 'lowland-olive-blubber-2', 'lowland-olive-blubber-3', 'lowland-brown-blubber',
         'lowland-pale-green', 'lowland-cream-cauliflower', 'lowland-cream-cauliflower-2', 'lowland-dead-skin', 'lowland-dead-skin-2',

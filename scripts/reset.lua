@@ -170,15 +170,12 @@ function M.reset()
     force.maximum_following_robot_count = 50   -- 战斗无人机跟随上限提到 50（force.reset 会打回默认，故每次跃迁后重设）
     force.character_inventory_slots_bonus = 50   -- 每个玩家固定 +50 背包格（同上，force.reset 会清，故每轮重设；取代旧的按礼包格数动态扩）
 
-    -- 每次跃迁后自动解锁所有星球：无需研究 planet-discovery 科技即可前往。
-    -- 必须放在 force.reset() 之后，reset 会清空科技/解锁状态，先解锁会被冲掉。
-    for name in pairs(game.planets) do
-        force.unlock_space_location(name)
-    end
-    -- 同时把四个星球的【发现科技】直接标记为已研究（科技树里显示已发现）。
-    for _, planet in ipairs(constants.OFF_PLANETS) do
-        local tech = force.technologies['planet-discovery-' .. planet]
-        if tech then tech.researched = true end
+    -- 每次跃迁后自动解锁所有星球【传送点】：无需研究 planet-discovery 即可前往，但【不】点亮发现科技（科技树里仍显示未发现）。
+    -- 受开关 storage.unlock_all_planets 控制（默认 true，可 /c 关）。必须放在 force.reset() 之后，reset 会清空解锁状态，先解锁会被冲掉。
+    if storage.unlock_all_planets then
+        for name in pairs(game.planets) do
+            force.unlock_space_location(name)
+        end
     end
     -- 开局赠送所有【触发科技】：这类科技靠特定动作触发(捕获虫巢/扔物入太空…)而非投瓶，
     -- 直接标记已研究，省去玩家逐个触发的繁琐。research_trigger 非 nil 即触发科技。
@@ -189,6 +186,16 @@ function M.reset()
                 tech.researched = true
             end
         end
+    end
+    -- 开局额外解锁的【科技】白名单（storage.unlock_techs，默认空）：列出的科技直接标记已研究。
+    for _, name in ipairs(storage.unlock_techs or {}) do
+        local tech = force.technologies[name]
+        if tech then tech.researched = true end
+    end
+    -- 开局额外解锁的【配方】白名单（storage.unlock_recipes，默认空）：列出的配方直接启用，无需对应科技。
+    for _, name in ipairs(storage.unlock_recipes or {}) do
+        local recipe = force.recipes[name]
+        if recipe then recipe.enabled = true end
     end
 
     -- （科技世界已并入事件世界：tech 现作为事件类型之一，由 surface.lua 的事件世界 roll 按星球抽中、
