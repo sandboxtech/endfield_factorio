@@ -137,7 +137,8 @@ function M.show_popup(player, title, lines, buttons, buttons_at_bottom, bottom_b
             style = 'frame_action_button', tooltip = {'gui.close'}}
     -- 内容：滚动区。按钮可放在文本之前（默认）或之后（buttons_at_bottom）。
     local pane = frame.add{type = 'scroll-pane', direction = 'vertical'}
-    pane.style.maximal_height = 460
+    -- 高度上限随屏幕自适应：屏幕逻辑高度(物理/缩放) 减标题栏+边距，下限保底 460。长内容(职业面板)更高，短内容仍自适应。
+    pane.style.maximal_height = math.max(460, math.floor(player.display_resolution.height / player.display_scale) - 200)
     pane.style.minimal_width = 380
     local function add_buttons(list, cols)
         if not list then return end

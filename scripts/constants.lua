@@ -146,6 +146,7 @@ function M.ensure_defaults()
         class_cd_minutes = 0.5,           -- 切换职业的冷却（分钟）：纯防刷消息，切换本就要下次跃迁才生效
         grant_trigger_techs = false,      -- 开局是否赠送所有【触发科技】（捕获虫巢/扔物入太空那类）。默认关；开：/c storage.grant_trigger_techs=true
         unlock_all_planets = true,        -- 开局是否自动解锁所有星球【传送点】（可前往，但不点亮 planet-discovery 发现科技）。关：/c storage.unlock_all_planets=false
+        class_tech_stack = true,         -- 多个职业指向同一【无限科技】时：false=固定研究第一级(level=2,不累加)；true=每个职业各 +1 级(累加叠高)
         -- 敌方据点 / 网络限制 / 雷暴（map_features.lua / roboport_limit.lua / tick.lua 读取）
         enemy_invincible_chance = 1,      -- 敌方 substation/避雷针 无敌概率（1=全无敌，0=全可摧毁）
         enemy_freq_spread = 4,            -- 敌人巢穴 frequency 浮动幅度：对数三角分布，值域 [1/n, n]（默认 4=1/4~4），峰在 1。越大世界间虫【频率】差异越极端
