@@ -286,8 +286,8 @@ local DEFAULT_CLASSES = {
         {pack = 'automation-science-pack',    item = 'inserter',         groups = 10},
         {pack = 'automation-science-pack',    item = 'long-handed-inserter',         groups = 10},
         {pack = 'automation-science-pack',  item = 'fast-inserter', groups = 10},
-        {pack = 'logistic-science-pack',  item = 'fast-inserter', groups = 10},
-        {pack = 'agricultural-science-pack', item = 'bulk-inserter',   groups = 10},
+        {pack = 'logistic-science-pack', item = 'bulk-inserter',   groups = 10},
+        {pack = 'agricultural-science-pack', item = 'stack-inserter',   groups = 10},
     }},
 
     {key = 'loaderman', name = '装卸工人', full = FULL_MAX, starter = {
