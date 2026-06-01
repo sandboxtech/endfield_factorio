@@ -249,13 +249,16 @@ function M.show_classes(player)
             local proto = prototypes.item[r.item]
             local total = r.count or (((proto and proto.stack_size) or 1) * (r.groups or 1))   -- 满级最多给多少个(M)：有 count 按个数(与 respawn_gifts 发放口径一致)，否则 堆叠×groups
             local full = def.full or CLASS_MAX_LEVEL                              -- 满级线
+            local lv = math.min(classes.pack_level(player, r.pack), full)        -- 玩家该瓶当前等级(封顶 full)
+            local current = math.floor(total * lv / full)                        -- 当前能拿到的数量(yyy，与 respawn_gifts 发放公式一致)
             local g = util.gcd(full, total)                                       -- 约分 满级线:满级总数 → 每 P 级得 Q 个
             tip[#tip + 1] = {'wn.class-tip-reward',
                 '[img=item/' .. r.pack .. ']',       -- 瓶图标(等级来源)
                 math.floor(full / g),                -- P：每多少级得一批
                 math.floor(total / g),               -- Q：每批给多少个
                 '[img=item/' .. r.item .. ']',       -- 物品图标
-                total}                               -- M：满级最多(不变)
+                current,                             -- __5__ yyy：当前等级能拿到的数量(动态)
+                total}                               -- __6__ xxx：满级最多(不变)
         end
         -- 解锁条件（需全部满足）：附在 tooltip 末尾，显示 需求瓶/等级 + 当前等级。
         for _, u in ipairs(def.unlock or {}) do

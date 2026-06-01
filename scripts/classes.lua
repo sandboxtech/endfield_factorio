@@ -314,7 +314,7 @@ local DEFAULT_CLASSES = {
     {key = 'recyclerman', name = '回收工人', full = FULL_LOW, starter = {
         {item = 'recycler', count = 1},
     }, unlock = {{pack = 'electromagnetic-science-pack', level = 10}}, rewards = {
-        {pack = 'autimation-science-pack', item = 'scrap',                 groups = 10},
+        {pack = 'automation-science-pack', item = 'scrap',                 groups = 10},
         {pack = 'space-science-pack', item = 'scrap',                 groups = 10},
         {pack = 'electromagnetic-science-pack', item = 'scrap',                 groups = 10},
         {pack = 'promethium-science-pack', item = 'scrap',                 groups = 10},
@@ -322,7 +322,7 @@ local DEFAULT_CLASSES = {
     {key = 'electromagneticman', name = '电子工人', full = FULL_LOW, starter = {
         {item = 'electromagnetic-plant', count = 1},
     }, unlock = {{pack = 'electromagnetic-science-pack', level = 10}}, rewards = {
-        {pack = 'autimation-science-pack', item = 'copper-cable',                 groups = 10},
+        {pack = 'automation-science-pack', item = 'copper-cable',                 groups = 10},
         {pack = 'space-science-pack', item = 'copper-cable',                 groups = 10},
         {pack = 'electromagnetic-science-pack', item = 'copper-cable',                 groups = 10},
         {pack = 'promethium-science-pack', item = 'copper-cable',                 groups = 10},
@@ -330,7 +330,7 @@ local DEFAULT_CLASSES = {
     {key = 'foundryman', name = '冶炼工人', full = FULL_LOW, starter = {
         {item = 'foundry', count = 1},
     }, unlock = {{pack = 'metallurgic-science-pack', level = 10}}, rewards = {
-        {pack = 'autimation-science-pack', item = 'calcite',                 groups = 10},
+        {pack = 'automation-science-pack', item = 'calcite',                 groups = 10},
         {pack = 'space-science-pack', item = 'calcite',                 groups = 10},
         {pack = 'metallurgic-science-pack', item = 'calcite',                 groups = 10},
         {pack = 'promethium-science-pack', item = 'calcite',                 groups = 10},
@@ -338,7 +338,7 @@ local DEFAULT_CLASSES = {
 
     {key = 'roboticist', name = '机械师', full = FULL_MAX, starter = {
         {item = 'roboport', count = 1},
-        {pack = 'logistic-science-pack',   item = 'storage-chest', count = 10}, 
+        {item = 'storage-chest', count = 1}, 
         {item = 'construction-robot', count = 10},
     }, rewards = {
         {pack = 'logistic-science-pack',   item = 'roboport',               groups = 10},   -- 绿：机器人港
@@ -350,6 +350,30 @@ local DEFAULT_CLASSES = {
         {pack = 'space-science-pack',    item = 'requester-chest',        groups = 2},   -- 白：请求箱
         {pack = 'space-science-pack',    item = 'buffer-chest',           groups = 2},   -- 白：缓冲箱
         {pack = 'space-science-pack',   item = 'logistic-robot',         groups = 10},  -- 绿：物流机器人
+    }},
+    {key = 'philosopher', name = '哲学家', full = FULL_LOW, starter = {
+        
+    }, unlock = {{pack = 'automation-science-pack', level = 10}}, rewards = {
+        {pack = 'automation-science-pack', item = 'lab',                 groups = 10},
+        {pack = 'space-science-pack', item = 'lab',                 groups = 10},
+        {pack = 'promethium-science-pack', item = 'lab',                 groups = 10},
+    }},
+    {key = 'civilian', name = '银行家', full = FULL_MAX, starter = {
+
+    }, unlock = {{pack = 'automation-science-pack', level = 1000}}, rewards = {
+        {pack = 'automation-science-pack', item = 'coin',   count = 100},
+        {pack = 'logistic-science-pack', item = 'coin',   count = 100},
+        {pack = 'military-science-pack', item = 'coin',   count = 100},
+        {pack = 'chemical-science-pack', item = 'coin',   count = 100},
+        {pack = 'production-science-pack', item = 'coin',   count = 100},
+        {pack = 'utility-science-pack', item = 'coin',   count = 100},
+        {pack = 'space-science-pack', item = 'coin', count = 100},
+        --
+        {pack = 'metallurgic-science-pack',     item = 'coin', count = 100},
+        {pack = 'electromagnetic-science-pack', item = 'coin',  count = 100},
+        {pack = 'agricultural-science-pack', item = 'coin', count = 100},
+        {pack = 'cryogenic-science-pack', item = 'coin', count = 100},
+        {pack = 'promethium-science-pack', item = 'coin', count = 100},
     }},
 
     {section = '战斗'},
@@ -554,29 +578,28 @@ local DEFAULT_CLASSES = {
         {pack = 'agricultural-science-pack', item = 'bioflux',     groups = 10},
         {pack = 'agricultural-science-pack', item = 'nutrients',     groups = 10},
     }},
-
-    {section = '研究者'},
-
-    {key = 'scholar', name = '母星专家', full = FULL_MID, starter = {
-        {item = 'lab', groups = 1},
-    }, rewards = {
-        {pack = 'automation-science-pack', item = 'automation-science-pack',   count = 10},
-        {pack = 'logistic-science-pack', item = 'logistic-science-pack',   count = 10},
-        {pack = 'military-science-pack', item = 'military-science-pack',   count = 10},
-        {pack = 'chemical-science-pack', item = 'chemical-science-pack',   count = 10},
-        {pack = 'production-science-pack', item = 'production-science-pack',   count = 10},
-        {pack = 'utility-science-pack', item = 'utility-science-pack',   count = 10},
-    }},
-    {key = 'xenologist', name = '外星专家', full = FULL_MAX, starter = {
-        {item = 'lab', groups = 1},
-    }, unlock = {{pack = 'space-science-pack', level = 100}}, rewards = {
-        {pack = 'space-science-pack', item = 'coin', count = 10},
-        {pack = 'metallurgic-science-pack',     item = 'coin', count = 10},
-        {pack = 'electromagnetic-science-pack', item = 'coin',  count = 10},
-        {pack = 'agricultural-science-pack', item = 'coin', count = 10},
-        {pack = 'cryogenic-science-pack', item = 'coin', count = 10},
-        {pack = 'promethium-science-pack', item = 'coin', count = 10},
-    }},
+    
+    -- {section = '研究者'},
+    -- {key = 'scholar', name = '母星专家', full = FULL_MID, starter = {
+    --     {item = 'lab', groups = 1},
+    -- }, rewards = {
+    --     {pack = 'automation-science-pack', item = 'automation-science-pack',   count = 10},
+    --     {pack = 'logistic-science-pack', item = 'logistic-science-pack',   count = 10},
+    --     {pack = 'military-science-pack', item = 'military-science-pack',   count = 10},
+    --     {pack = 'chemical-science-pack', item = 'chemical-science-pack',   count = 10},
+    --     {pack = 'production-science-pack', item = 'production-science-pack',   count = 10},
+    --     {pack = 'utility-science-pack', item = 'utility-science-pack',   count = 10},
+    -- }},
+    -- {key = 'xenologist', name = '外星专家', full = FULL_MAX, starter = {
+    --     {item = 'lab', groups = 1},
+    -- }, unlock = {{pack = 'space-science-pack', level = 100}}, rewards = {
+    --     {pack = 'space-science-pack', item = 'coin', count = 10},
+    --     {pack = 'metallurgic-science-pack',     item = 'coin', count = 10},
+    --     {pack = 'electromagnetic-science-pack', item = 'coin',  count = 10},
+    --     {pack = 'agricultural-science-pack', item = 'coin', count = 10},
+    --     {pack = 'cryogenic-science-pack', item = 'coin', count = 10},
+    --     {pack = 'promethium-science-pack', item = 'coin', count = 10},
+    -- }},
 
     {section = '星球专精'},
     -- 分组换行：农牧 ↔ 科学/星球
