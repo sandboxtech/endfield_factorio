@@ -421,7 +421,7 @@ local function spawn_perpetual_chest(surface, pos)
     -- 周围 8 格各 50% 放一堵【无敌敌方石墙】：玩家贴不到箱子放机械臂/传送带，掏货效率下降（墙拆不掉，只能从随机留出的缝隙接）。
     for dx = -1, 1 do
         for dy = -1, 1 do
-            if not (dx == 0 and dy == 0) and math.random() < 0.5 then
+            if not (dx == 0 and dy == 0) and math.random() < (storage.invincibility_rate or 0.5) then
                 local w = surface.create_entity{name = 'stone-wall', force = 'enemy', position = {cx + dx, cy + dy}}
                 if w then w.destructible = false end
             end
@@ -548,7 +548,7 @@ local function place_reward_chest(surface, pos, kind)
     local chest_name = (kind == 'equipment' and 'iron-chest') or (kind == 'treasure' and 'wooden-chest') or 'steel-chest'
     local p = surface.find_non_colliding_position(chest_name, pos, 4, 1)
     if not p then return end
-    local chest = surface.create_entity{name = chest_name, force = 'enemy', position = p}
+    local chest = surface.create_entity{name = chest_name, force = 'neutral', position = p}
     if not chest then return end
     chest.destructible = false   -- 不可摧毁（闪电/战斗误炸不掉内容）
     chest.operable = false       -- 不可打开 GUI → 玩家只能用机械臂抓取内容
@@ -597,6 +597,7 @@ local function build_power_core(surface, center)
     if ip then
         eei = surface.create_entity{name = 'electric-energy-interface', force = 'enemy', position = ip}
         if eei then
+            if math.random() < (storage.enemy_invincible_chance or 1) then eei.destructible = false end   -- 概率无敌(电力接口,同 substation/避雷针，/c storage.enemy_invincible_chance 调)
             eei.electric_buffer_size = 1   -- 占位(buffer 必须 >0)，下面 place_guards 按电炮累加覆盖
             eei.power_production = 0        -- 发电=各电炮最大功率之和，place_guards 累加
             eei.energy = 0                  -- 初始电量=各电炮 12h 待机量，place_guards 充满
@@ -688,9 +689,7 @@ local function place_encounter(surface, lt)
         if math.random() <= encounter_chance(surface, e.kind) then   -- 命中此遭遇（用全局 RNG，不再坐标哈希 → 随运行状态/人数/时间变，每局每次不可预测）
             -- 奖励：非空据点放【1~16 个同类箱】，数量非线性 floor(1+15·random^6)，再乘本轮 riches 倍率（富庶世界更多）。
             if e.kind ~= 'empty' then
-                -- 箱数随在线人数开方增长（×√人数）：人越多箱越多，但开方避免线性爆炸。
-                local pmul = math.sqrt(math.max(1, #game.connected_players))
-                for _ = 1, math.floor((1 + 15 * math.random() ^ 6 * riches_mul) * pmul) do place_reward_chest(surface, center, e.kind) end
+                for _ = 1, math.floor((1 + 8 * math.random() ^ 6 * riches_mul)) do place_reward_chest(surface, center, e.kind) end
             end
             -- 敌人：出生点 96 格内不放（保护新手）；地砖按类型选——空据点不铺、永续用第二种、普通箱用本星地砖。
             if not near_spawn then

@@ -149,14 +149,14 @@ function M.show_popup(player, title, lines, buttons, buttons_at_bottom, bottom_b
                 l.style.font = 'default-bold'
                 l.style.top_margin = 6
             elseif b.newrow then
-                -- 空职业占位：加一条分隔线 + 开新 table，后面的按钮另起一组（明显分隔，不会和上一组贴在一起）。
-                if cols and cols > 1 then pane.add{type = 'line'} end
+                -- 空职业/分隔占位：加一条分隔线 + 开新 table，后面按钮另起一组。单列也画线（如在线玩家列表"查看自己"与其他人之间）。
+                pane.add{type = 'line'}
                 box = (cols and cols > 1) and pane.add{type = 'table', column_count = cols} or pane
             else
                 -- enabled=false → 按钮置灰且不触发 on_gui_click（如本轮关闭的星球）。tooltip 说明为何不可点。
                 local btn = box.add{type = 'button', name = b.name, caption = b.caption, tags = b.tags,
                         enabled = b.enabled, tooltip = b.tooltip}
-                if cols and cols > 1 then btn.style.minimal_width = 150 end   -- 网格按钮统一最小宽，列对齐
+                if cols and cols > 1 then btn.style.width = 220 end   -- 网格按钮统一【固定】宽(非最小宽)：英文长短不一也强制对齐、加宽防截断
             end
         end
     end
@@ -221,11 +221,15 @@ end
 function M.show_classes(player)
     if not player then return end
     local cur = classes.selected_key(player)
+    -- 分区标题中文 → locale key 映射（英文环境走 wn.class-section-*，中文 fallback def.section）。
+    local SECTION_KEY = {['基础生产'] = 'basic', ['能源 · 物流'] = 'energy', ['战斗'] = 'combat',
+                         ['装备护甲'] = 'gear', ['农牧'] = 'farm', ['星球专精'] = 'planet'}
     local buttons = {}
     for _, def in ipairs(classes.all()) do
         if not def.key or def.key == '' then
             if def.section then
-                buttons[#buttons + 1] = {label = true, caption = def.section}   -- 分区标题（粗体单行，{section='组名'} 占位携带）
+                local skey = SECTION_KEY[def.section] or def.section
+                buttons[#buttons + 1] = {label = true, caption = classes.text_loc('wn.class-section-' .. skey, nil, def.section)}   -- 分区标题：locale 优先(英文友好)，fallback def.section 中文
             end
             buttons[#buttons + 1] = {newrow = true}   -- 空职业（无 key 的 {}/{section=} 占位）= UI 换行/分组分隔
         else

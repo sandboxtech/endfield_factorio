@@ -322,11 +322,15 @@ add_command('kickout', {'wn.kickout-help'}, member_kick_cmd)
 function M.show_stats(player)
     if not player then return end
     if #game.connected_players <= 1 then return M.show_stats_of(player, player) end   -- 只有自己在线：跳过列表，直接看自己的面板
-    local buttons = {}
+    local buttons = {
+        {name = 'wn_stats_view_self', caption = {'wn.stats-view-self'}, tags = {wn_stats_view = player.name}},  -- 最上方：查看自己（name 固定唯一，避免与列表里自己那项重名崩溃；路由靠 tags）
+        {newrow = true},   -- 分隔线：自己 / 其他在线玩家
+    }
     for _, p in pairs(game.connected_players) do
         local lv = respawn_gifts.coin_reward(passives.get_stat(p.index, 'online_minutes'))
         local def = classes.def_of(p)
-        local cname = def and (def.name or {'wn.class-name-' .. def.key}) or ''
+        -- 职业名三层兜底(同职业窗口)：locale 词条 → storage.class_names 热改 → def.name 中文默认。
+        local cname = def and classes.text_loc('wn.class-name-' .. def.key, (storage.class_names or {})[def.key], def.name or def.key) or ''
         local stars = math.floor(((storage.star or {})[p.name] or 0) / constants.min_to_tick)
         buttons[#buttons + 1] = {name = 'wn_stats_view_' .. p.index,   -- 名称 职业 等级 星星
             caption = {'wn.stats-entry', p.name, cname, lv, stars}, tags = {wn_stats_view = p.name}}
