@@ -52,10 +52,11 @@ end
 -- 影响难度/节奏的要素（敌人巢穴）：frequency/size 用对数三角分布（值域 [1/spread, spread]，峰在 1）
 -- 拉大世界间虫量差异（有的几乎无虫、有的虫海）；richness 仍 mostly_normal 只小幅浮动。
 local function balance_mgs(mgs, name)
-    local sp = storage.enemy_autoplace_spread or 4   -- 浮动倍率：frequency/size 值域 [1/sp, sp]
+    local fsp = storage.enemy_freq_spread or 4   -- frequency 浮动幅度：值域 [1/fsp, fsp]
+    local ssp = storage.enemy_size_spread or 4   -- size 浮动幅度：值域 [1/ssp, ssp]
     mgs.autoplace_controls[name].richness = util.mostly_normal()
-    mgs.autoplace_controls[name].frequency = util.log_tri(sp)
-    mgs.autoplace_controls[name].size = util.log_tri(sp)
+    mgs.autoplace_controls[name].frequency = util.log_tri(fsp) * (storage.enemy_freq_mul or 1)
+    mgs.autoplace_controls[name].size = util.log_tri(ssp) * (storage.enemy_size_mul or 1)
 end
 
 -- 树/石/植被等纯地貌：本轮密度由整局气质 mood∈[0,1] 连续决定；个体规模走"多半小、偶尔大"曲线

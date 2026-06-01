@@ -75,6 +75,13 @@ function M.ensure_defaults()
         end
         storage.science_exp = nil
     end
+    -- enemy_autoplace_spread 拆成 freq/size 各自幅度：把旧统一键(含管理员 /c 改过的值)搬到两个新键，再删旧键。
+    -- 必须在【下方补默认】之前做 → 迁移值优先于新默认 4。幂等：旧键删掉后不再触发，老存档加载即自愈。
+    if storage.enemy_autoplace_spread ~= nil then
+        storage.enemy_freq_spread = storage.enemy_freq_spread or storage.enemy_autoplace_spread
+        storage.enemy_size_spread = storage.enemy_size_spread or storage.enemy_autoplace_spread
+        storage.enemy_autoplace_spread = nil
+    end
 
     -- 标量默认（用 nil 判定，布尔 false/0 也能被正确保留）
     local d = {
@@ -95,7 +102,7 @@ function M.ensure_defaults()
         prob_fluid_remap = 1,             -- 流体资源互换世界（0=关）
         prob_event = 1,                   -- 事件世界出现概率乘数
         replicant_chance = 0.5,           -- 复制虫：玩家建筑被虫破坏时，按此概率原地冒新虫（全局，world_fx 开关另控）
-        enemy_dmg_scale = 2,              -- 敌人武器伤害随危险度的缩放：加成 = knobs.danger × 此值（0=原版、2=最高危世界约+200%）
+        enemy_dmg_max = 12,               -- 敌人武器伤害上限倍率：每种伤害类型各自独立随机加成 [0, 此值]，线性递减分布（12=最高+1200%，越高越罕见）
         -- 战利品密度：全局乘数 × 各类乘数（相乘共同影响）。默认全 1，可 /c 单独热改：2 更多、0.5 更少、0 不刷。
         -- 遭遇出现率乘数：全局 × 各类（默认全 1，相乘）。基础频率见 map_features.ENCOUNTER_BASE；实际率还乘每世界 random² 密度。
         loot_density           = 0.5,        -- 全局总乘数（五类一起生效）
@@ -127,7 +134,10 @@ function M.ensure_defaults()
         grant_trigger_techs = true,       -- 开局是否赠送所有【触发科技】（捕获虫巢/扔物入太空那类）。关：/c storage.grant_trigger_techs=false
         -- 敌方据点 / 网络限制 / 雷暴（map_features.lua / roboport_limit.lua / tick.lua 读取）
         enemy_invincible_chance = 1,      -- 敌方 substation/避雷针 无敌概率（1=全无敌，0=全可摧毁）
-        enemy_autoplace_spread = 4,       -- 敌人巢穴 frequency/size 浮动倍率：对数三角分布，值域 [1/n, n]（默认 4=1/4~4），峰在 1。越大世界间虫量差异越极端
+        enemy_freq_spread = 4,            -- 敌人巢穴 frequency 浮动幅度：对数三角分布，值域 [1/n, n]（默认 4=1/4~4），峰在 1。越大世界间虫【频率】差异越极端
+        enemy_size_spread = 4,            -- 敌人巢穴 size 浮动幅度：同上（独立掷），控制世界间团块【大小】离散度
+        enemy_freq_mul = 1,               -- 敌人巢穴 frequency 全局倍率：在 spread 浮动结果上再乘（>1 普遍更密、<1 更稀；与 spread 叠乘，值域变 [mul/n, mul×n]）
+        enemy_size_mul = 1,               -- 敌人巢穴 size 全局倍率：在 spread 浮动结果上再乘（>1 团更大、<1 更小）
 
         enemy_standby_hours = 0.5,        -- 敌方电网初始电量 = 各电炮最大功率持续的小时数(默认 0.5h=30 分钟，容量 buffer 为其 2 倍)；发电功率 = 各电炮待机功率(drain)之和
         roboport_limit = 10000,           -- 单个机器人网络最多 roboport 数，超出则摧毁刚放的并退还

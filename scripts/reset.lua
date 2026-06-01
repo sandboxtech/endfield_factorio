@@ -226,13 +226,23 @@ function M.reset()
 
     -- 污染/敌人/腐败等【影响玩法节奏】的全局参数：大概率正常值，小概率小幅偏离（util.mostly_normal）。
     -- 不再大幅随机，极端的污染/虫子/腐败速度会毁掉一局的可玩性。（difficulty 默认值见 constants.ensure_defaults）
+    -- 本世界【全局敌人进化度】随机滚定：evo∈[0,1]，分布【线性递减】(evo=0 处概率密度最高、线性降到 evo=1 处为 0，PDF ∝ (1-x)，逆变换 x = 1-√r)。
+    -- evolution 在 2.0 是 per-surface 标量，先 reset_evolution 清累积贡献，再逐星球表面写同一值 → 全局一致(影响虫种/攻击波规模/复制虫选种)。
     game.forces.enemy.reset_evolution()
+    local evo = 1 - math.sqrt(math.random())
+    for _, surface_name in pairs({'nauvis', 'vulcanus', 'gleba', 'fulgora', 'aquilo'}) do
+        local s = game.surfaces[surface_name]
+        if s then game.forces.enemy.set_evolution_factor(evo, s) end
+    end
 
-    -- 本世界【敌人武器伤害】随危险度 knobs().danger 缩放（danger 多半低 → 多数世界小幅加成，偶尔高危世界重伤）。
-    -- 加法修正 = danger × enemy_dmg_scale（0=原版伤害、1=+100%）。对敌方常见弹种(机枪/激光/喷火塔+虫/沙虫)生效。
-    local dmg = map_features.knobs().danger * (storage.enemy_dmg_scale or 2)
+    -- 本世界【敌人武器伤害】：每种伤害类型【各自独立】随机加成，范围 +0% ~ +(enemy_dmg_max×100)%。
+    -- 分布【线性递减】：+0% 概率最高、越高越罕见（PDF ∝ (max-x)，逆变换采样 x = max×(1-√r)）。对敌方常见弹种(机枪/激光/喷火塔+虫/沙虫)生效。
+    local dmg_max = storage.enemy_dmg_max or 12
     for _, cat in ipairs({'bullet', 'laser', 'flamethrower', 'melee', 'biological', 'rocket', 'electric', 'tesla', 'capsule', 'grenade'}) do
-        if prototypes.ammo_category[cat] then game.forces.enemy.set_ammo_damage_modifier(cat, dmg) end
+        if prototypes.ammo_category[cat] then
+            local dmg = dmg_max * (1 - math.sqrt(math.random()))
+            game.forces.enemy.set_ammo_damage_modifier(cat, dmg)
+        end
     end
 
     -- 本世界"玩家消灭虫巢获随机科技"的概率
