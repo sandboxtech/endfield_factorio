@@ -372,8 +372,9 @@ script.on_event(defines.events.on_surface_cleared, events.safe('surface_cleared'
     local r = storage.radius_standard * util.random_exp(2)
     r = math.max(storage.radius_min, math.min(storage.radius_max, r))
     r = math.ceil(r)
-    -- 椭圆离心 ecc：(rand−rand)×0.35 三角分布，多半≈0(圆)、偶尔明显(椭圆)；rw,rh 都随 r 缩放 → 正相关(偏圆)。
-    local ecc = (math.random() - math.random()) * 0.35
+    -- 椭圆离心 ecc：(rand−rand)×离心系数 三角分布，多半≈0(圆)、偶尔明显(椭圆)；rw,rh 都随 r 缩放 → 正相关(偏圆)。
+    -- 系数越小越圆(默认 0.2，原 0.35)，可 /c storage.planet_eccentricity 调，0=全圆。
+    local ecc = (math.random() - math.random()) * (storage.planet_eccentricity or 0.2)
     local rw = math.ceil(r * (1 + ecc))
     local rh = math.ceil(r * (1 - ecc))
     -- 边缘粗糙度 rough(归一化，边界半径 = 1 + rough×噪声)：random^6 × 0.6 → 大概率≈0(光滑)、小概率小、极小概率大(海湾/锯齿)。

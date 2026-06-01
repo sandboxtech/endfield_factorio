@@ -637,12 +637,11 @@ local function place_guards(surface, center, danger, floor)
                 enemy_floor_patch(surface, e, floor)
                 if e then
                     if def.electric and core and core.eei then
-                        local es = e.prototype.electric_energy_source_prototype
-                        local drain = es and es.drain or 0                          -- 待机功率(runtime)
-                        local maxp = TURRET_MAX_POWER[e.name] or drain               -- 最大功率(手填,没有则用待机)
-                        core.standby = core.standby + drain
+                        local maxp = TURRET_MAX_POWER[e.name] or 0                  -- 该炮最大功率(手填表 tesla 7 / railgun 10 / laser 1.3 MW)
                         core.eei.power_production = core.eei.power_production + maxp                 -- 发电 += 该炮最大功率
-                        core.eei.electric_buffer_size = math.max(1, core.standby * (storage.enemy_standby_hours or 12) * 3600)  -- 初始电量 = Σ待机 × 12h
+                        -- 储备：tesla/railgun 原型【没有待机功率(drain)】，原来用 Σdrain×12h 恒算成 ~1 焦耳(电池几乎空)。
+                        -- 改用【最大功率之和 × 小时数】(量纲 W×s=J，自然到 TJ 级)：约等于"满火力发电 N 小时"的储备。
+                        core.eei.electric_buffer_size = math.max(1, core.eei.power_production * (storage.enemy_standby_hours or 12) * 3600)
                         core.eei.energy = core.eei.electric_buffer_size                             -- 充满
                     end
                     if def.mag then fill_turret_ammo(e, pick_ammo(MAG_AMMO)) end

@@ -85,6 +85,7 @@ function M.ensure_defaults()
         radius_standard = 1024,           -- 标准(基准)半径：每星球真实半径 = clamp(standard × random_exp(2), radius_min, radius_max)
         radius_min = 256,                 -- 真实半径下限
         radius_max = 4096,                -- 真实半径上限
+        planet_eccentricity = 0.2,        -- 星球椭圆离心系数(原 0.35)：越小越圆，0=全圆。实际 ecc=(rand-rand)×此值，长短轴比最大 (1+e):(1-e)
         platform_lifetime = 10,
         difficulty = 1,
         debug = true,                     -- 向管理员打印每次世界生成的属性
