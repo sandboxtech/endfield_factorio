@@ -196,13 +196,13 @@ function M.travel(player, planet)
     if not player then return end
     if not storage.travel_enabled then return end   -- 总开关关闭时禁用（即便按钮意外存在也不生效）
     if not (storage.travel_open and storage.travel_open[planet]) then
-        player.print('本轮无法前往 ' .. planet .. '（开放概率 ' .. math.floor(((storage.travel_chance or {})[planet] or 0.5) * 100) .. '%）')
+        player.print({'wn.travel-fail-closed', planet, math.floor(((storage.travel_chance or {})[planet] or 0.5) * 100)})
         return
     end
-    if not player.character then player.print('你现在没有角色，无法前往星球'); return end
-    if not game.surfaces[planet] then player.print('星球 ' .. planet .. ' 还没生成'); return end
+    if not player.character then player.print({'wn.travel-no-char'}); return end
+    if not game.surfaces[planet] then player.print({'wn.travel-not-generated', planet}); return end
     if not travel_inventories_empty(player) then
-        player.print('前往星球前，请先清空：鼠标、背包、物流(回收)、弹药 这四个区')
+        player.print({'wn.travel-clear-first'})
         return
     end
     if on_cooldown(player, 'travel_cd', 'wn.cd-travel') then return end   -- 前往星球独立冷却；校验全过后才查，被拒不占冷却

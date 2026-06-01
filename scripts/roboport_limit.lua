@@ -30,7 +30,7 @@ local function check(e)
     local now = game.tick
     if not storage.roboport_warn_tick or now - storage.roboport_warn_tick >= WARN_COOLDOWN then
         storage.roboport_warn_tick = now
-        game.print('[color=red][机器人网络][/color] 单个机器人网络的 roboport 已超过上限 ' .. limit .. ' 个，新放置的已被摧毁并退还。')
+        game.print({'wn.roboport-limit', limit})
     end
 end
 
