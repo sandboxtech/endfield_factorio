@@ -214,9 +214,9 @@ function M.reset()
                 admin_warn('职业 ' .. u.key .. ' 配置的科技不存在：' .. t)
             elseif not tech.researched then
                 local proto = tech.prototype
-                -- 无限/多级科技：researched 永为 false 且设 true 不加级 → 用 level+1 研究【第一级】；普通单级科技用 researched。
+                -- 无限/多级科技：直接把 level 设成 2(=研究到第一级)。设值非 +1 → 多个职业指向同一科技也只到第一级，不累加。普通单级用 researched。
                 if proto.level and proto.max_level and proto.level < proto.max_level then
-                    tech.level = tech.level + 1
+                    tech.level = 2
                 else
                     tech.researched = true
                 end
