@@ -199,14 +199,20 @@ function M.reset()
         if recipe then recipe.enabled = true end
     end
     -- 职业【专属科技】：若存在选了某职业的玩家（含离线），解锁该职业配置的 tech（每职业 0~1 个，见 classes.lua 的 tech 字段）。
-    for _, name in ipairs(classes.active_techs()) do
-        local tech = force.technologies[name]
-        if tech then tech.researched = true end
-    end
-    -- 职业【专属配方】：若存在选了某职业的玩家，解锁该职业 recipes 列表里的配方(force 级 enabled)。
-    for _, name in ipairs(classes.active_recipes()) do
-        local recipe = force.recipes[name]
-        if recipe then recipe.enabled = true end
+    -- 职业【专属解锁】：按职业逐个应用 techs(标记已研究)/recipes(force 级 enabled)，并【全服广播】哪个职业解锁了什么。
+    for _, u in ipairs(classes.active_class_unlocks()) do
+        local techimgs, recipeimgs = {}, {}
+        for _, t in ipairs(u.techs) do
+            local tech = force.technologies[t]
+            if tech then tech.researched = true; techimgs[#techimgs + 1] = '[technology=' .. t .. ']' end
+        end
+        for _, rc in ipairs(u.recipes) do
+            local recipe = force.recipes[rc]
+            if recipe then recipe.enabled = true; recipeimgs[#recipeimgs + 1] = '[recipe=' .. rc .. ']' end
+        end
+        local namel = classes.text_loc('wn.class-name-' .. u.key, (storage.class_names or {})[u.key], u.name)
+        if #techimgs > 0 then game.print({'wn.class-tech-bcast', namel, table.concat(techimgs, ' ')}) end
+        if #recipeimgs > 0 then game.print({'wn.class-recipe-bcast', namel, table.concat(recipeimgs, ' ')}) end
     end
 
     -- （科技世界已并入事件世界：tech 现作为事件类型之一，由 surface.lua 的事件世界 roll 按星球抽中、
