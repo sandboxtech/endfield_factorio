@@ -284,7 +284,15 @@ local DEFAULT_CLASSES = {
         {pack = 'agricultural-science-pack', item = 'bulk-inserter',   groups = 10},
     }},
 
-    {key = 'warehouser', name = '仓库管理员', full = 1000, starter = {
+    {key = 'loaderman', name = '装卸工人', full = 10000, starter = {
+        {item = 'loader', count = 10},
+    }, rewards = {
+        {pack = 'logistic-science-pack',    item = 'loader',         groups = 1},   -- 绿：装卸机
+        {pack = 'logistic-science-pack',    item = 'fast-loader',    groups = 1},   -- 绿：快速装卸机
+        {pack = 'production-science-pack',  item = 'express-loader', groups = 1},   -- 紫：极速装卸机
+        {pack = 'metallurgic-science-pack', item = 'turbo-loader',   groups = 1},   -- 橙：涡轮装卸机(火山)
+    }},
+    {key = 'warehouser', name = '仓库管理员', full = 10000, starter = {
         {item = 'wooden-chest', groups = 1},
         {item = 'iron-chest', groups = 1},
         {item = 'steel-chest', groups = 1},

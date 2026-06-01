@@ -275,10 +275,12 @@ end
 -- 奖励发放，宝箱再给等于重复 → 移除。不放科技瓶(瓶子走科技瓶经验体系，不作宝箱奖励)。
 -- (mech-armor/power-armor-mk2/spidertron/tank 已归 equipment，beacon 归 production)
 local TREASURE_POOL = {
-    'rocket-fuel', 'processing-unit','low-density-structure', 'rocket-part',
+    -- 'rocket-fuel', 'processing-unit','low-density-structure', 'rocket-part',
     'productivity-module-2', 'speed-module-2', 'efficiency-module-2', 'quality-module-2',  -- 顶级插件
     'productivity-module-3', 'speed-module-3', 'efficiency-module-3', 'quality-module-3',  -- 顶级插件
     'rocket-silo',
+    'spidertron', 'mech-armor', 'power-armor-mk2',                                         -- 顶级载具/护甲
+    'recycler', 'roboport', 'electromagnetic-plant', 'foundry', 'cryogenic-plant',         -- 顶级机器/机器人平台
 }
 
 -- 按给定【类权重表】选类、类内等概率选物品。weights[cat] 为 0/nil 即跳过该类。
@@ -326,11 +328,11 @@ end
 -- 宝箱(木箱)专用品质（高品质惊喜，与"宝"匹配）。常见优先。
 local function roll_treasure_quality()
     local r = math.random()
-    if r >= 0.3 then return 'normal' end
-    if r >= 0.09 then return 'uncommon' end
-    if r >= 0.0027 then return 'rare' end
-    if r >= 0.00081 then return 'epic' end
-    return 'legendary'
+    if r >= 0.55 then return 'normal'   end   -- 45% normal
+    if r >= 0.30 then return 'uncommon' end   -- 25%
+    if r >= 0.12 then return 'rare'     end   -- 18%
+    if r >= 0.04 then return 'epic'     end   -- 8%
+    return 'legendary'                        -- 4%
 end
 
 -- 永续箱供应物品的品质（极小概率高品质惊喜）：uncommon 1% / rare 0.01% / epic 0.0001% / legendary 0.000001%。
@@ -569,22 +571,25 @@ local function nonlinear_count(max, power)
     return math.floor(math.random() ^ (power or 3) * (max + 1))
 end
 
--- 电网核心：substation + 满电 EEI（给电炮供电）。返回 substation 位置或 nil（放不下）。
+-- 电网核心：substation + 满电 EEI（给电炮供电）。返回 {sp=substation位置, eei=接口} 或 nil（放不下）。
+-- 设计：超大缓冲(1 TJ)开局爆满，主要靠【存量】供电；发电功率很低，由 place_guards 按用电建筑数累加(每个 6MW)。
+-- 效果：电炮开局有海量电随便打，但发电跟不上，打久了靠缓冲撑、长期被慢慢耗尽。
 local function build_power_core(surface, center)
     local sp = surface.find_non_colliding_position('substation', center, 5, 1)
     if not sp then return nil end
     -- legendary 品质 substation：供电范围更大 → 环上 6~11 格的电炮都能覆盖到、不会没电。
     if not surface.create_entity{name = 'substation', force = 'enemy', position = sp, quality = 'legendary'} then return nil end
     local ip = surface.find_non_colliding_position('electric-energy-interface', sp, 4, 1)
+    local eei
     if ip then
-        local eei = surface.create_entity{name = 'electric-energy-interface', force = 'enemy', position = ip}
+        eei = surface.create_entity{name = 'electric-energy-interface', force = 'enemy', position = ip}
         if eei then
-            eei.electric_buffer_size = 1e9                         -- 1 GJ 缓冲
-            eei.power_production = math.random(10, 100) * 6e4 -- 够电炮用、不过大）
-            eei.energy = 1e9                                 -- 开局满能量
+            eei.electric_buffer_size = 1e12   -- 1 TJ 缓冲（开局爆满，主要靠存量供电）
+            eei.power_production = 0           -- 发电由 place_guards 按用电建筑数累加（每个 +6MW）
+            eei.energy = 1e12                  -- 开局满能量（1 TJ）
         end
     end
-    return sp
+    return {sp = sp, eei = eei}
 end
 
 -- 【统一放敌人逻辑】(所有遭遇共用，只是 danger 不同)：在 center 周围按 danger 放守卫塔 + 飞船残骸。
@@ -605,7 +610,7 @@ local function place_guards(surface, center, danger, floor)
                 if not core_tried then core, core_tried = build_power_core(surface, center), true end
                 if not core then break end                 -- 无电网 → 本类电炮全跳过
             end
-            local anchor = (def.electric and core) or center
+            local anchor = (def.electric and core and core.sp) or center
             local name = def.name or def.variants[math.random(#def.variants)]   -- variants(沙虫)随机取一档
             local ang, r = math.random() * 2 * math.pi, 6 + math.random() * 5
             local gp = {x = anchor.x + math.cos(ang) * r, y = anchor.y + math.sin(ang) * r}
@@ -614,6 +619,7 @@ local function place_guards(surface, center, danger, floor)
                 local e = surface.create_entity{name = name, force = 'enemy', position = gsp, direction = math.random(0, 3) * 4, quality = roll_quality(0.7)}
                 enemy_floor_patch(surface, e, floor)
                 if e then
+                    if def.electric and core and core.eei then core.eei.power_production = core.eei.power_production + 6e6 end   -- 每个用电建筑给电网 +6MW 发电
                     if def.mag then fill_turret_ammo(e, pick_ammo(MAG_AMMO)) end
                     if def.ammo then fill_turret_ammo(e, def.ammo) end
                     if def.rocket then fill_turret_ammo(e, pick_ammo(OUTPOST_ROCKET)) end
