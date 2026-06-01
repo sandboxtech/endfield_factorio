@@ -250,6 +250,13 @@ function M.show_classes(player)
                        or (def.rewards and def.rewards[1] and def.rewards[1].item)
         local starter_img = icon_item and ('[img=item/' .. icon_item .. ']') or ''
         local tip = {''}
+        -- 开局解锁的【科技/配方】放最上面(免费物品之前)。techs 用 [technology=]、recipes 用 [recipe=] 自动渲染图标+本地化名。
+        local techlist = {}
+        for _, t in ipairs(def.techs or {}) do techlist[#techlist + 1] = '[technology=' .. t .. ']' end
+        if #techlist > 0 then tip[#tip + 1] = {'wn.class-tip-tech', table.concat(techlist, ' ')} end
+        local recipelist = {}
+        for _, rc in ipairs(def.recipes or {}) do recipelist[#recipelist + 1] = '[recipe=' .. rc .. ']' end
+        if #recipelist > 0 then tip[#tip + 1] = {'wn.class-tip-recipe', table.concat(recipelist, ' ')} end
         for _, s in ipairs(def.starter or {}) do
             local proto = prototypes.item[s.item]
             -- 白送总个数 = count 个，或 groups 组 × 堆叠（默认 1 组）。每条一行，只显示算好的总数。
@@ -270,17 +277,6 @@ function M.show_classes(player)
                 '[img=item/' .. r.item .. ']',       -- 物品图标
                 current,                             -- __5__ yyy：当前等级能拿到的数量(动态)
                 total}                               -- __6__ xxx：满级最多(不变)
-        end
-        -- 开局专属科技：有 def.tech 才显示一行（[technology=] 自动渲染科技图标 + 本地化名）。见 reset 的 classes.active_techs。
-        local techlist = {}
-        for _, t in ipairs(def.techs or {}) do techlist[#techlist + 1] = '[technology=' .. t .. ']' end
-        if #techlist > 0 then
-            tip[#tip + 1] = {'wn.class-tip-tech', table.concat(techlist, ' ')}   -- 一行列出全部专属科技图标
-        end
-        local recipelist = {}
-        for _, r in ipairs(def.recipes or {}) do recipelist[#recipelist + 1] = '[recipe=' .. r .. ']' end
-        if #recipelist > 0 then
-            tip[#tip + 1] = {'wn.class-tip-recipe', table.concat(recipelist, ' ')}   -- 一行列出全部开局配方图标
         end
         -- 解锁条件（需全部满足）：附在 tooltip 末尾，显示 需求瓶/等级 + 当前等级。
         for _, u in ipairs(def.unlock or {}) do
