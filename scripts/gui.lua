@@ -272,8 +272,15 @@ function M.show_classes(player)
                 total}                               -- __6__ xxx：满级最多(不变)
         end
         -- 开局专属科技：有 def.tech 才显示一行（[technology=] 自动渲染科技图标 + 本地化名）。见 reset 的 classes.active_techs。
-        if def.tech then
-            tip[#tip + 1] = {'wn.class-tip-tech', '[technology=' .. def.tech .. ']'}
+        local techlist = {}
+        for _, t in ipairs(def.techs or {}) do techlist[#techlist + 1] = '[technology=' .. t .. ']' end
+        if #techlist > 0 then
+            tip[#tip + 1] = {'wn.class-tip-tech', table.concat(techlist, ' ')}   -- 一行列出全部专属科技图标
+        end
+        local recipelist = {}
+        for _, r in ipairs(def.recipes or {}) do recipelist[#recipelist + 1] = '[recipe=' .. r .. ']' end
+        if #recipelist > 0 then
+            tip[#tip + 1] = {'wn.class-tip-recipe', table.concat(recipelist, ' ')}   -- 一行列出全部开局配方图标
         end
         -- 解锁条件（需全部满足）：附在 tooltip 末尾，显示 需求瓶/等级 + 当前等级。
         for _, u in ipairs(def.unlock or {}) do

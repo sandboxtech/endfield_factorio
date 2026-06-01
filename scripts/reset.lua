@@ -203,6 +203,11 @@ function M.reset()
         local tech = force.technologies[name]
         if tech then tech.researched = true end
     end
+    -- 职业【专属配方】：若存在选了某职业的玩家，解锁该职业 recipes 列表里的配方(force 级 enabled)。
+    for _, name in ipairs(classes.active_recipes()) do
+        local recipe = force.recipes[name]
+        if recipe then recipe.enabled = true end
+    end
 
     -- （科技世界已并入事件世界：tech 现作为事件类型之一，由 surface.lua 的事件世界 roll 按星球抽中、
     --   tick.lua 的 run_world_events 按事件机制每分钟触发，不再这里单独全局 roll。）
