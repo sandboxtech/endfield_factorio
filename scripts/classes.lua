@@ -68,7 +68,7 @@ local DEFAULT_CLASSES = {
         {pack = 'military-science-pack',        item = 'coal',         groups = 5},   -- 灰：煤
         {pack = 'chemical-science-pack',        item = 'stone',  groups = 5},   -- 蓝：铀矿(需硫酸,蓝瓶时代)
         {pack = 'production-science-pack',      item = 'iron-ore',        groups = 1},   -- 紫：石头
-        {pack = 'utility-science-pack',      item = 'copper',        groups = 1},   -- 紫：石头
+        {pack = 'utility-science-pack',      item = 'copper-ore',        groups = 1},   -- 紫：石头
         {pack = 'space-science-pack', item = 'uranium-ore', groups = 1},
         --
         {pack = 'metallurgic-science-pack',     item = 'tungsten-ore', groups = 1},   -- 橙：钨矿(火山)

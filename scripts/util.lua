@@ -33,6 +33,12 @@ function M.random_exp(x)
     return 2 ^ ((math.random() - math.random()) * x)
 end
 
+-- 对数三角分布：值域 [1/n, n]，几何对称、峰在 1（指数 (rand−rand) 是三角分布，n^0=1）。
+-- n 越大浮动越大（n=4 → 1/4~4）。等价 random_exp(log2(n))，但用倍率界 n 表达更直观。
+function M.log_tri(n)
+    return n ^ (math.random() - math.random())
+end
+
 
 -- 按敌人进化度挑一种虫（空降/复制虫等共用）。
 function M.evo_biter(evo)

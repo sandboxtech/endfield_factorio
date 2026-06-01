@@ -49,11 +49,13 @@ local function random_water_mgs(mgs, name, value)
     ac.richness  = util.random_exp(value) + 0.25
 end
 
--- 影响难度/节奏的要素（敌人巢穴）：大概率正常、小概率小幅偏离，避免随机出"虫海"或"无虫"。
+-- 影响难度/节奏的要素（敌人巢穴）：frequency/size 用对数三角分布（值域 [1/spread, spread]，峰在 1）
+-- 拉大世界间虫量差异（有的几乎无虫、有的虫海）；richness 仍 mostly_normal 只小幅浮动。
 local function balance_mgs(mgs, name)
+    local sp = storage.enemy_autoplace_spread or 4   -- 浮动倍率：frequency/size 值域 [1/sp, sp]
     mgs.autoplace_controls[name].richness = util.mostly_normal()
-    mgs.autoplace_controls[name].frequency = util.mostly_normal()
-    mgs.autoplace_controls[name].size = util.mostly_normal()
+    mgs.autoplace_controls[name].frequency = util.log_tri(sp)
+    mgs.autoplace_controls[name].size = util.log_tri(sp)
 end
 
 -- 树/石/植被等纯地貌：本轮密度由整局气质 mood∈[0,1] 连续决定；个体规模走"多半小、偶尔大"曲线
@@ -473,7 +475,7 @@ script.on_event(defines.events.on_surface_cleared, events.safe('surface_cleared'
         local weights = constants.balance.event.weights or {}
         local pool, total = {}, 0
         for _, et in ipairs({'raid', 'meteor', 'supply', 'coinfall', 'drones', 'barrage', 'tech', 'thunder'}) do
-            if storage.event_types[et] ~= false then   -- nil/true 启用，仅显式 false 排除
+            if (storage.event_types or {})[et] ~= false then   -- nil/true 启用，仅显式 false 排除（整表 =nil 也安全，不崩）
                 local w = weights[et] or 1
                 pool[#pool + 1] = {et = et, w = w}
                 total = total + w

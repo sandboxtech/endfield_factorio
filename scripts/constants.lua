@@ -127,7 +127,9 @@ function M.ensure_defaults()
         grant_trigger_techs = true,       -- 开局是否赠送所有【触发科技】（捕获虫巢/扔物入太空那类）。关：/c storage.grant_trigger_techs=false
         -- 敌方据点 / 网络限制 / 雷暴（map_features.lua / roboport_limit.lua / tick.lua 读取）
         enemy_invincible_chance = 1,      -- 敌方 substation/避雷针 无敌概率（1=全无敌，0=全可摧毁）
-        enemy_standby_hours = 12,         -- 敌方电网初始电量 = 各电炮待机功率(drain) × 此小时数
+        enemy_autoplace_spread = 4,       -- 敌人巢穴 frequency/size 浮动倍率：对数三角分布，值域 [1/n, n]（默认 4=1/4~4），峰在 1。越大世界间虫量差异越极端
+
+        enemy_standby_hours = 0.5,        -- 敌方电网初始电量 = 各电炮最大功率持续的小时数(默认 0.5h=30 分钟，容量 buffer 为其 2 倍)；发电功率 = 各电炮待机功率(drain)之和
         roboport_limit = 10000,           -- 单个机器人网络最多 roboport 数，超出则摧毁刚放的并退还
         thunder_chance = 1 / 36000,       -- 雷暴星球每玩家每 tick 被闪电直击概率（期望约 10 分钟一次）
     }

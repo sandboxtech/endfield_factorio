@@ -390,7 +390,7 @@ function M.set_class(player, key)
     local def = classes.def_for_key(key)
     if not (player and def) then return end
     if not classes.unlocked(player, def) then   -- 兜底：按钮置灰已拦截，命令/异常仍校验
-        player.print({'wn.class-locked-msg', (def.name or {'wn.class-name-' .. key})})
+        player.print({'wn.class-locked-msg', classes.text_loc('wn.class-name-' .. key, (storage.class_names or {})[key], def.name or key)})
         return
     end
     storage.class_cd = storage.class_cd or {}
@@ -402,7 +402,7 @@ function M.set_class(player, key)
     end
     classes.set(player, key)
     storage.class_cd[player.name] = game.tick
-    game.print({'wn.class-changed', player.name, (def.name or {'wn.class-name-' .. key})})   -- 全服公告切换
+    game.print({'wn.class-changed', player.name, classes.text_loc('wn.class-name-' .. key, (storage.class_names or {})[key], def.name or key)})   -- 全服公告切换
     gui.show_classes(player)   -- 重开职业弹窗 → 当前职业按钮标 ✓
 end
 

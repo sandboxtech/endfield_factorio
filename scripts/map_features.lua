@@ -581,7 +581,7 @@ local TURRET_MAX_POWER = {
     ['railgun-turret'] = 10e6,    -- 磁轨炮 10 MW
 }
 
--- 电网核心：substation + EEI（给电炮供电）。返回 {sp=substation位置, eei=接口, standby=累计待机功率} 或 nil。
+-- 电网核心：substation + EEI（给电炮供电）。返回 {sp=substation位置, eei=接口, maxpower=Σ最大功率(W), drain=Σ待机功率(W)} 或 nil。
 -- 设计（由 place_guards 边放电炮边累加，见那里）：
 --   · 发电功率 power_production = Σ 各电炮【最大功率】(TURRET_MAX_POWER) → 所有炮同时全开火也够电。
 --   · 缓冲容量/初始电量 = Σ 各电炮【待机功率 drain】× STANDBY_HOURS 小时 → 纯待机正好这么久耗完。
@@ -603,7 +603,7 @@ local function build_power_core(surface, center)
             eei.energy = 0                  -- 初始电量=各电炮 12h 待机量，place_guards 充满
         end
     end
-    return {sp = sp, eei = eei, standby = 0}
+    return {sp = sp, eei = eei, maxpower = 0, drain = 0}
 end
 
 -- 【统一放敌人逻辑】(所有遭遇共用，只是 danger 不同)：在 center 周围按 danger 放守卫塔 + 飞船残骸。
@@ -637,12 +637,16 @@ local function place_guards(surface, center, danger, floor)
                 enemy_floor_patch(surface, e, floor)
                 if e then
                     if def.electric and core and core.eei then
-                        local maxp = TURRET_MAX_POWER[e.name] or 0                  -- 该炮最大功率(手填表 tesla 7 / railgun 10 / laser 1.3 MW)
-                        core.eei.power_production = core.eei.power_production + maxp                 -- 发电 += 该炮最大功率
-                        -- 储备：tesla/railgun 原型【没有待机功率(drain)】，原来用 Σdrain×12h 恒算成 ~1 焦耳(电池几乎空)。
-                        -- 改用【最大功率之和 × 小时数】(量纲 W×s=J，自然到 TJ 级)：约等于"满火力发电 N 小时"的储备。
-                        core.eei.electric_buffer_size = math.max(1, core.eei.power_production * (storage.enemy_standby_hours or 12) * 3600)
-                        core.eei.energy = core.eei.electric_buffer_size                             -- 充满
+                        local es = e.prototype.electric_energy_source_prototype
+                        local maxp = TURRET_MAX_POWER[e.name] or 0                  -- 该炮最大功率(W，手填表 tesla 7 / railgun 10 / laser 1.3 MW)
+                        core.maxpower = core.maxpower + maxp                         -- Σ最大功率(W)
+                        core.drain = core.drain + (es and es.drain or 0)            -- Σ待机功率(W)，多数电炮(tesla/railgun)为 0
+                        -- 发电功率 = 仅【待机功率】(Σdrain)：buffer 打空后只够待机，玩家可逐渐耗光敌方电力。runtime 单位是 J/tick 故 /60。
+                        core.eei.power_production = core.drain / 60
+                        -- 初始电量 = 最大功率持续 N 小时(Σmaxp × N×3600 秒，J=W×s；默认 0.5h=30 分钟)；容量(buffer) = 初始电量的 2 倍。
+                        local init = core.maxpower * (storage.enemy_standby_hours or 0.5) * 3600
+                        core.eei.electric_buffer_size = math.max(1, init * 2)
+                        core.eei.energy = init
                     end
                     if def.mag then fill_turret_ammo(e, pick_ammo(MAG_AMMO)) end
                     if def.ammo then fill_turret_ammo(e, def.ammo) end
