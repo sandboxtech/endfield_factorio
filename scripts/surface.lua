@@ -370,27 +370,40 @@ script.on_event(defines.events.on_surface_cleared, events.safe('surface_cleared'
         surface.daytime = 0.56   -- 永夜
     end
 
-    -- 刷新星球【形状】：基准半径 r(clamp 到 [min,max]) → 椭圆 rw/rh(正相关、多半近圆) + 噪声粗糙边缘。
+    -- 刷新星球【形状】：基准半径 r → 旋转椭圆（长轴 a、短轴 b、旋转角 angle）+ 噪声粗糙边缘 + 偏心中心。
     local r = storage.radius_standard * util.random_exp(2)
     r = math.max(storage.radius_min, math.min(storage.radius_max, r))
     r = math.ceil(r)
-    -- 椭圆离心 ecc：(rand−rand)×离心系数 三角分布，多半≈0(圆)、偶尔明显(椭圆)；rw,rh 都随 r 缩放 → 正相关(偏圆)。
-    -- 系数越小越圆(默认 0.2，原 0.35)，可 /c storage.planet_eccentricity 调，0=全圆。
-    local ecc = (math.random() - math.random()) * (storage.planet_eccentricity or 0.2)
-    local rw = math.ceil(r * (1 + ecc))
-    local rh = math.ceil(r * (1 - ecc))
-    -- 边缘粗糙度 rough(归一化，边界半径 = 1 + rough×噪声)：random^6 × 0.6 → 大概率≈0(光滑)、小概率小、极小概率大(海湾/锯齿)。
-    local rough = math.random() ^ 6 * 0.6
-    -- 老存档兜底：ensure_defaults 没补到也不崩（索引 nil 表会先崩，光靠下游 `or` 救不了 → 必须在写入点保证表存在）。
+    -- 离心率 ecc ∈ [0, spread]，大部分时候很小（random^3 强烈偏 0 → 多半近圆，偶尔才明显椭圆）。
+    -- spread = storage.planet_eccentricity（默认 0.2），可 /c 调，0=恒圆。
+    local ecc = (storage.planet_eccentricity or 0.2) * math.random() ^ 3
+    local a = math.ceil(r * (1 + ecc))   -- 长轴半轴
+    local b = math.ceil(r * (1 - ecc))   -- 短轴半轴
+    -- 主轴可任意旋转（0~π 覆盖所有朝向，π~2π 对称重复）。
+    local angle = math.random() * math.pi
+    -- 边缘粗糙度 rough(归一化，边界半径 = 1 + rough×噪声)：下限 0.1 → 大多数世界【明显】有起伏(不再近完美椭圆)，多在 0.1~0.45。
+    local rough = 0.1 + math.random() ^ 2 * 0.35
+    -- 碎度 jag ∈ [0,1] 连续(random^2.5 → 大概率小=平滑、小概率接近 1=很碎，之间平滑过渡)：控制叠加的高频海岸细节占比。
+    local jag = math.random() ^ 2.5
+    -- 出生点(地图原点 0,0)不在椭圆正中心：取落在【0.5×椭圆】内的偏移 d，椭圆中心 C = 原点 − d。
+    -- 半径 t 线性 [0,0.5] → 点密度自然偏中心(大概率靠中心、小概率到内椭圆边缘)；spawn 归一化距离 ≤0.5 必是陆地、不会出生在虚空。
+    local t = 0.5 * math.random()
+    local phi = math.random() * 2 * math.pi
+    local su, sv = t * a * math.cos(phi), t * b * math.sin(phi)   -- 主轴系偏移
+    local ca, sa = math.cos(angle), math.sin(angle)
+    local cx = -(su * ca - sv * sa)      -- 椭圆中心地图坐标（spawn 在原点 → C = −d）
+    local cy = -(su * sa + sv * ca)
+    -- 老存档兜底：ensure_defaults 没补到也不崩（索引 nil 表会先崩，必须在写入点保证表存在）。
     storage.width_of, storage.height_of, storage.shape_of =
         storage.width_of or {}, storage.height_of or {}, storage.shape_of or {}
-    storage.width_of[surface.name] = rw                                              -- 椭圆 X 半轴（替代原 radius_of）
-    storage.height_of[surface.name] = rh                                             -- 椭圆 Y 半轴
-    storage.shape_of[surface.name] = {rough = rough, seed = math.random(1, 1000000)} -- 边缘噪声参数
-
-    -- mapgen 区域按【最大外凸】(1+rough) 留足，保证粗糙边缘外凸的半岛也能正常生成。
-    mgs.width = math.ceil(rw * (1 + rough)) * 2 + 32
-    mgs.height = math.ceil(rh * (1 + rough)) * 2 + 32
+    storage.width_of[surface.name] = a                                               -- 长轴半轴
+    storage.height_of[surface.name] = b                                              -- 短轴半轴
+    storage.shape_of[surface.name] = {rough = rough, seed = math.random(1, 1000000), jag = jag, -- 边缘噪声/碎度
+                                      angle = angle, cx = cx, cy = cy}               -- 旋转角 + 偏心中心
+    -- mapgen 区域要罩住【偏心 + 旋转 + 粗糙】后的整椭圆：最远延伸 ≈ a×(1.5+rough)（|偏移|≤0.5a）。
+    local reach = math.ceil(a * (1.5 + rough))
+    mgs.width = reach * 2 + 64
+    mgs.height = reach * 2 + 64
     mgs.starting_area = 1 + 2 * util.random_exp(2)
 
     -- 本轮整局气质（繁茂/岩石/危险/富庶/异物），与 map_features 共用同一套确定性旋钮 → 全局气质一致。
@@ -620,26 +633,32 @@ script.on_event(defines.events.on_chunk_generated, events.safe('chunk_generated'
     -- 老存档兜底：width_of/height_of/shape_of 可能尚未由 ensure_defaults 补齐（旧档继承会 nil）。
     -- 索引 nil 表会先崩→被 events.safe 的 pcall 吞掉→handler 中途夭折、后续 math.random 消耗不一致→desync。
     -- 故此处对【表】本身取兜底（`(t or {})[k]`），而非只对取值结果 `or`。
-    local rw = (storage.width_of or {})[surface.name] or storage.radius_standard or 2048
-    local rh = (storage.height_of or {})[surface.name] or rw
+    local a = (storage.width_of or {})[surface.name] or storage.radius_standard or 2048   -- 长轴半轴
+    local b = (storage.height_of or {})[surface.name] or a                                -- 短轴半轴
     local sh = (storage.shape_of or {})[surface.name]
     local rough = (sh and sh.rough) or 0
     local seed = (sh and sh.seed) or 0
-    local cx, cy = 0.5, 0.5
+    local angle = (sh and sh.angle) or 0
+    local cx = (sh and sh.cx) or 0
+    local cy = (sh and sh.cy) or 0
+    local jag = (sh and sh.jag) or 0   -- 碎度 [0,1]：叠加的高频海岸细节占比（连续插值）
+    local ca, sa = math.cos(angle), math.sin(angle)   -- 把世界点旋转 −angle 回主轴系：u=dx*ca+dy*sa, v=−dx*sa+dy*ca
+    local amax, bmin = math.max(a, b), math.min(a, b)  -- 外接圆 / 内切圆半径
     local inner, outer = 1 - rough, 1 + rough
 
-    -- 先按 chunk 整体判定（含 ±1 边缘重叠）：算最近/最远角的归一化椭圆距离。
-    local lx, hx = left_top.x - 1 - cx, left_top.x + 32 - cx
-    local ly, hy = left_top.y - 1 - cy, left_top.y + 32 - cy
-    local nxmax, nymax = math.max(math.abs(lx), math.abs(hx)) / rw, math.max(math.abs(ly), math.abs(hy)) / rh
-    local nxmin = ((lx <= 0 and hx >= 0) and 0 or math.min(math.abs(lx), math.abs(hx))) / rw
-    local nymin = ((ly <= 0 and hy >= 0) and 0 or math.min(math.abs(ly), math.abs(hy))) / rh
-    local far, near = nxmax * nxmax + nymax * nymax, nxmin * nxmin + nymin * nymin
+    -- chunk 级【圆近似】快速判定（旋转椭圆的内切/外接圆，保守）：到偏心中心 (cx,cy) 的欧氏距离。
+    local lx, hx = left_top.x - 1, left_top.x + 32
+    local ly, hy = left_top.y - 1, left_top.y + 32
+    local fx = math.max(math.abs(lx - cx), math.abs(hx - cx))
+    local fy = math.max(math.abs(ly - cy), math.abs(hy - cy))
+    local nx = (lx <= cx and hx >= cx) and 0 or math.min(math.abs(lx - cx), math.abs(hx - cx))
+    local ny = (ly <= cy and hy >= cy) and 0 or math.min(math.abs(ly - cy), math.abs(hy - cy))
+    local far, near = fx * fx + fy * fy, nx * nx + ny * ny
 
-    if far <= inner * inner then
-        -- 整块在内：不铺虚空（跳过）
-    elseif near >= outer * outer then
-        -- 整块在外：整块铺虚空，然后【跳过所有细节】，map_features/市场/tile替换 对纯虚空块都是无用功。染地已在最前画过。
+    if far <= (bmin * inner) ^ 2 then
+        -- 整块在内切圆内 → 必在椭圆内，跳过
+    elseif near >= (amax * outer) ^ 2 then
+        -- 整块在外接圆外 → 必在椭圆外，整块铺虚空 + 跳过所有细节（map_features/市场/tile替换 对纯虚空块无用；染地已在最前画过）。
         local tiles = {}
         for x = -1, 32 do
             for y = -1, 32 do
@@ -649,15 +668,24 @@ script.on_event(defines.events.on_chunk_generated, events.safe('chunk_generated'
         surface.set_tiles(tiles)
         return
     else
-        -- 跨边界：逐格判定（rough>0 时加噪声扰动边缘 → 平滑海湾/半岛）。用 smooth 倍频（低频大团块）避免边缘密集锯齿。
+        -- 跨边界：逐格判定，把点旋转回主轴系再算归一化椭圆距离 + 噪声扰动边缘（smooth 倍频，平滑海湾/半岛）。
         local tiles = {}
         for x = -1, 32 do
             for y = -1, 32 do
                 local px, py = left_top.x + x, left_top.y + y
-                local dx, dy = (px - cx) / rw, (py - cy) / rh
+                local ddx, ddy = px - cx, py - cy
+                local u, v = ddx * ca + ddy * sa, -ddx * sa + ddy * ca   -- 旋转 −angle 回主轴系
+                local nu, nv = u / a, v / b
                 local edge = 1
-                if rough > 0 then edge = 1 + rough * noise.fractal(noise.octaves.smooth, px, py, seed) end
-                if dx * dx + dy * dy > edge * edge then
+                if rough > 0.01 then
+                    -- 平滑大起伏(base) + 碎度×高频细节(detail)，jag 连续插值：jag=0 纯平滑 ↔ jag=1 最碎；除以(1+jag)归一化保振幅。
+                    local mix = noise.fractal(noise.octaves.smooth, px, py, seed)
+                    if jag > 0.02 then
+                        mix = (mix + jag * noise.fractal(noise.octaves.fine, px, py, seed + 777)) / (1 + jag)
+                    end
+                    edge = 1 + rough * mix
+                end
+                if nu * nu + nv * nv > edge * edge then
                     tiles[#tiles + 1] = {name = 'empty-space', position = {x = px, y = py}}
                 end
             end
@@ -714,13 +742,14 @@ script.on_event(defines.events.on_chunk_generated, events.safe('chunk_generated'
                         end
                         if not fluid_res then
                             local ex, ey = math.floor(e.position.x), math.floor(e.position.y)
+                            -- 数值 key：ex*100000+ey（|坐标|≤地图半径 4096 < 5万 → 唯一，省字符串拼接/分配）
                             for dx = -R, R do
-                                for dy = -R, R do mark[(ex + dx) .. ':' .. (ey + dy)] = true end
+                                for dy = -R, R do mark[(ex + dx) * 100000 + (ey + dy)] = true end
                             end
                             -- R+1 处随机点几个 → 软化方块硬边、增加不规则感（不再是大矩形）
                             for _ = 1, math.random(2, 5) do
                                 local dx, dy = math.random(-(R + 1), R + 1), math.random(-(R + 1), R + 1)
-                                mark[(ex + dx) .. ':' .. (ey + dy)] = true
+                                mark[(ex + dx) * 100000 + (ey + dy)] = true
                             end
                         end
                     end
@@ -733,7 +762,7 @@ script.on_event(defines.events.on_chunk_generated, events.safe('chunk_generated'
                     elseif rule.mask == 'noise' then
                         ok = noise.fractal(noise.octaves.smooth, p.x, p.y, rule.seed) > rule.threshold
                     else
-                        ok = mark[math.floor(p.x) .. ':' .. math.floor(p.y)] or false
+                        ok = mark[math.floor(p.x) * 100000 + math.floor(p.y)] or false
                     end
                     if ok then tiles[#tiles + 1] = {name = rule.to, position = p} end
                 end

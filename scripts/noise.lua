@@ -72,9 +72,9 @@ M.d2 = d2
 -- 倍频模板（modifier=频率，越小团块越大；weight=权重）。
 M.octaves = {
     -- 废料：主频偏高(团块中等) + 强细节(打碎巨块、带孔洞)，避免一整片巨型矿
-    scrap = {
+    scrap = {  -- 废料：4→3 倍频（去掉最高频细节层，省采样；巨块影响小）
         {modifier = 0.012, weight = 1}, {modifier = 0.035, weight = 0.5},
-        {modifier = 0.09, weight = 0.3}, {modifier = 0.2, weight = 0.12},
+        {modifier = 0.09, weight = 0.3},
     },
     blob = {  -- 通用中团块（石阵/树林/虫区）
         {modifier = 0.01, weight = 1}, {modifier = 0.04, weight = 0.4}, {modifier = 0.1, weight = 0.15},
