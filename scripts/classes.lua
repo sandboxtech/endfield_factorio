@@ -203,7 +203,7 @@ local DEFAULT_CLASSES = {
         {pack = 'agricultural-science-pack', item = 'heat-exchanger',  groups = 10},   -- 紫：热交换器
         {pack = 'cryogenic-science-pack',  item = 'heating-tower',   groups = 10},   -- 靛：供热塔(寒星)
     }},
-    {key = 'greentech', techs = {'solar-energy', 蓄电器}, name = '光电工人', full = FULL_MID, starter = {
+    {key = 'greentech', techs = {'solar-energy', 'electric-energy-accumulators'}, name = '光电工人', full = FULL_MID, starter = {
         {item = 'solar-panel', groups = 1},
         {item = 'accumulator', groups = 1},
     }, unlock = {{pack = 'logistic-science-pack', level = 10}}, rewards = {
@@ -644,7 +644,7 @@ local DEFAULT_CLASSES = {
     }, unlock = {{pack = 'promethium-science-pack', level = 500}}, rewards = {
         {pack = 'promethium-science-pack', item = 'biolab',            groups = 20},
     }},
-    {key = 'astronaut', techs = {'rocket-silo'}, name = '火箭专家', full = FULL_MAX, starter = {
+    {key = 'launcher', techs = {'rocket-silo'}, name = '发射专家', full = FULL_MAX, starter = {
     }, unlock = {{pack = 'space-science-pack', level = 1000}}, rewards = {
         {pack = 'space-science-pack',   item = 'rocket-part',                    groups = 10},
         {pack = 'metallurgic-science-pack',   item = 'low-density-structure',                    groups = 10},
