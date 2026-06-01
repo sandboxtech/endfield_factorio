@@ -46,12 +46,12 @@ function M.player_gui(player)
         -- 信息组：玩法（最左）+ 功能菜单。玩法按钮 tooltip【就是其正文】，与点开的窗口完全同一段 description。
         -- 每个按钮的 tooltip = 标题 + 它打开窗口顶部的同一段简介（共用 *-help，两处一致）。
         {name = 'wn_btn_gameplay', sprite = 'virtual-signal/signal-info',  tip = {'description', storage.warp_initial_minutes or 10, storage.platform_lifetime or 10}},
-        {name = 'wn_btn_actions',  sprite = 'item/blueprint-book',  tip = {'', '[font=default-bold]功能菜单[/font]\n', {'wn.actions-help'}}},
+        {name = 'wn_btn_actions',  sprite = 'item/blueprint-book',  tip = {'', {'wn.btn-actions-title'}, '\n', {'wn.actions-help'}}},
         {spacer = true},
         -- 个人组：科技瓶经验 / 统计 / 职业 / 星星。
-        {name = 'wn_btn_stats',    sprite = 'entity/character',                 tip = {'', '[font=default-bold]在线玩家[/font]\n', {'wn.stats-btn-tip'}}},
-        {name = 'wn_btn_class',    sprite = 'virtual-signal/signal-mining',     tip = {'', '[font=default-bold]职业[/font]\n', {'wn.class-help'}}},
-        {name = 'wn_btn_star',     sprite = 'virtual-signal/signal-star',       tip = {'', '[font=default-bold]星星[/font]\n', {'wn.star-help'}}, min_level = storage.star_unlock_level or 0},
+        {name = 'wn_btn_stats',    sprite = 'entity/character',                 tip = {'', {'wn.btn-stats-title'}, '\n', {'wn.stats-btn-tip'}}},
+        {name = 'wn_btn_class',    sprite = 'virtual-signal/signal-mining',     tip = {'', {'wn.btn-class-title'}, '\n', {'wn.class-help'}}},
+        {name = 'wn_btn_star',     sprite = 'virtual-signal/signal-star',       tip = {'', {'wn.btn-star-title'}, '\n', {'wn.star-help'}}, min_level = storage.star_unlock_level or 0},
         {spacer = true},
         -- 跃迁规则组：跃迁投票 / 停留投票（放一起，都是对"是否提前跃迁"投票）。
         {name = 'wn_btn_warp',     sprite = 'virtual-signal/signal-trash-bin',  tip = {'wn.btn-warp-tip'},  min_level = storage.vote_unlock_level or 10},

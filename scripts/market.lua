@@ -55,14 +55,12 @@ local ROW = 10   -- 市场货架每行格数：每组补空占位到此倍数实
 
 local function stock(ent)
     local n = 0   -- 已上架格数（含空占位）
-    local function fill_row()   -- 补占位到整行：give-item 金币 + 天价(可购买 0 次 → 灰按钮，纯占位)
-        -- 占位用 give-item 'coin'（图标中性、不需注册 sprite），而非 nothing（默认红叉图标）。
-        -- 天价 price 让可购买=0、按钮变灰；无价会被算成可买 uint32 上限(~4.2G)。
-        -- 注：runtime 不能用文件路径当 modifier.icon（sprite 只在 data 阶段注册，运行时给文件路径会崩 Invalid sprite）。
+    local function fill_row()   -- 补占位到整行：price 与 offer 都用 base 内置的空物品 'no-item'（专为占位设计）。
+        -- no-item 玩家既给不出也拿不到 → 天然是个买不了的空格子，比天价 coin/nothing 红叉都干净，不崩不刷 4.2G。
         while n % ROW ~= 0 do
             ent.add_market_item{
-                price = {{name = 'coin', count = 2000000000}},
-                offer = {type = 'give-item', item = 'coin', count = 1},
+                price = {{name = 'no-item', count = 1}},
+                offer = {type = 'give-item', item = 'no-item', count = 1},
             }
             n = n + 1
         end
