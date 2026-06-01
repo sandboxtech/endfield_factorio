@@ -567,7 +567,7 @@ local DEFAULT_CLASSES = {
         {pack = 'production-science-pack', item = 'production-science-pack',   count = 10},
         {pack = 'utility-science-pack', item = 'utility-science-pack',   count = 10},
     }},
-    {key = 'scholar', name = '外星专家', full = FULL_MAX, starter = {
+    {key = 'xenologist', name = '外星专家', full = FULL_MAX, starter = {
         {item = 'lab', groups = 1},
     }, unlock = {{pack = 'space-science-pack', level = 100}}, rewards = {
         {pack = 'space-science-pack', item = 'coin', count = 10},
