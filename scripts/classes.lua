@@ -203,7 +203,7 @@ local DEFAULT_CLASSES = {
         {pack = 'agricultural-science-pack', item = 'heat-exchanger',  groups = 10},   -- 紫：热交换器
         {pack = 'cryogenic-science-pack',  item = 'heating-tower',   groups = 10},   -- 靛：供热塔(寒星)
     }},
-    {key = 'greentech', techs = {'solar-energy'}, name = '光电工人', full = FULL_MID, starter = {
+    {key = 'greentech', techs = {'solar-energy', 蓄电器}, name = '光电工人', full = FULL_MID, starter = {
         {item = 'solar-panel', groups = 1},
         {item = 'accumulator', groups = 1},
     }, unlock = {{pack = 'logistic-science-pack', level = 10}}, rewards = {
@@ -337,6 +337,16 @@ local DEFAULT_CLASSES = {
         {pack = 'space-science-pack',    item = 'requester-chest',        groups = 2},   -- 白：请求箱
         {pack = 'space-science-pack',    item = 'buffer-chest',           groups = 2},   -- 白：缓冲箱
         {pack = 'space-science-pack',   item = 'logistic-robot',         groups = 10},  -- 绿：物流机器人
+    }},
+
+    {key = '补全', techs = {'advanced-asteroid-processing'}, name = '船长', full = FULL_MAX, starter = {
+        {item = 'space-platform-starter-pack', count = 1},
+    }, unlock = {{pack = 'space-science-pack', level = 1000}}, rewards = {
+        {pack = 'production-science-pack', item = 'space-platform-foundation',   groups = 5},
+        {pack = 'space-science-pack',   item = 'cargo-bay',                   groups = 5},
+        {pack = 'space-science-pack',   item = 'thruster',                    groups = 5},
+        {pack = 'space-science-pack',   item = 'asteroid-collector',          groups = 5},
+        {pack = 'space-science-pack',   item = 'crusher',                     groups = 5},
     }},
 
     {key = '补全', techs = {'advanced-asteroid-processing'}, name = '船长', full = FULL_MAX, starter = {
@@ -603,29 +613,6 @@ local DEFAULT_CLASSES = {
         {pack = 'agricultural-science-pack', item = 'bioflux',     groups = 40},
     }},
 
-    {section = '星球开荒'},
-
-    {key = 'vulcanusfan', techs = {'planet-discovery-vulcanus' 流体处理 太空平台推进器}, 配方={冰融化 润滑油} name = '火星爱好者', full = FULL_LOW, starter = {
-        少量 太阳能板 中型电线杆 炼油厂 化工厂 抽油机
-    }, unlock = {{pack = 'space-science-pack', level = 1000}}, rewards = {
-
-    }},
-    {key = 'fulgorafan', techs = {'planet-discovery-fulgora'}, name = '雷星爱好者', full = FULL_LOW, starter = {
-        少量 蓄电池 中型电线杆
-    }, unlock = {{pack = 'space-science-pack', level = 1000}}, rewards = {
-
-    }},
-    {key = 'glebafan', techs = {'planet-discovery-gleba'}, name = '草星爱好者', full = FULL_LOW, starter = {
-
-    }, unlock = {{pack = 'space-science-pack', level = 1000}}, rewards = {
-
-    }},
-    {key = 'aquilofan', techs = {'planet-discovery-aquilo'}, name = '冰星爱好者', full = FULL_MID, starter = {
-
-    }, unlock = {{pack = 'space-science-pack', level = 1000}}, rewards = {
-
-    }},
-
     {section = '星球专精'},
     -- 分组换行：农牧 ↔ 科学/星球
     -- ── 星球专精组（各星球招牌机器/材料 + 太空平台；满级线 1000，需对应高级瓶 100 级解锁）──
@@ -652,18 +639,17 @@ local DEFAULT_CLASSES = {
     }, unlock = {{pack = 'cryogenic-science-pack', level = 500}}, rewards = {
         {pack = 'cryogenic-science-pack', item = 'cryogenic-plant',   groups = 20},
     }},
-    {key = 'astronomer', techs = {实验室增产1}, name = '天文专家', full = FULL_MAX, starter = {
+    {key = 'astronomer', techs = {'research-productivity'}, name = '天文专家', full = FULL_MAX, starter = {
 
     }, unlock = {{pack = 'promethium-science-pack', level = 500}}, rewards = {
         {pack = 'promethium-science-pack', item = 'biolab',            groups = 20},
     }},
     {key = 'astronaut', techs = {'rocket-silo'}, name = '火箭专家', full = FULL_MAX, starter = {
-        {item = 'rocket-silo', count = 1},
-        {item = 'space-platform-starter-pack', count = 1},
     }, unlock = {{pack = 'space-science-pack', level = 1000}}, rewards = {
-        {pack = 'space-science-pack', item = 'space-platform-foundation',   groups = 10},
-        {pack = 'space-science-pack',   item = 'cargo-bay',                   groups = 10},
-        {pack = 'space-science-pack',   item = 'thruster',                    groups = 10},
+        {pack = 'space-science-pack',   item = 'rocket-part',                    groups = 10},
+        {pack = 'metallurgic-science-pack',   item = 'low-density-structure',                    groups = 10},
+        {pack = 'electromagnetic-science-pack',   item = 'processing-unit',                    groups = 10},
+        {pack = 'agricultural-science-pack',   item = 'rocket-fuel',                    groups = 10},
     }},
 
 }
