@@ -99,7 +99,7 @@ local DEFAULT_CLASSES = {
         {pack = 'metallurgic-science-pack', item = 'big-mining-drill', groups = 20},
     }},
 
-    {key = 'smelter', techs = {'steel-processing'}, name = '冶金工人', full = FULL_LOW, starter = {
+    {key = 'smelter', techs = {'advanced-material-processing', 'advanced-material-processing-2'}, name = '煅烧工人', full = FULL_LOW, starter = {
         {item = 'stone-furnace', groups = 4},
     }, unlock = {{pack = 'automation-science-pack', level = 10}}, rewards = {
         {pack = 'automation-science-pack', item = 'stone-furnace',       groups = 2},
@@ -128,6 +128,31 @@ local DEFAULT_CLASSES = {
         {pack = 'production-science-pack', item = 'electric-engine-unit',   groups = 1},
         {pack = 'utility-science-pack', item = 'flying-robot-frame',   groups = 1},
         {pack = 'cryogenic-science-pack', item = 'processing-unit', groups = 1},
+    }},
+
+    {key = 'foundryman', techs = {'foundry'}, name = '冶金工人', full = FULL_LOW, starter = {
+        {item = 'foundry', count = 1},
+    }, unlock = {{pack = 'metallurgic-science-pack', level = 10}}, rewards = {
+        {pack = 'automation-science-pack', item = 'calcite',                 groups = 10},
+        {pack = 'space-science-pack', item = 'calcite',                 groups = 10},
+        {pack = 'metallurgic-science-pack', item = 'calcite',                 groups = 10},
+        {pack = 'promethium-science-pack', item = 'calcite',                 groups = 10},
+    }},
+    {key = 'electromagneticman', techs = {'electromagnetic-plant'}, name = '电子工人', full = FULL_LOW, starter = {
+        {item = 'electromagnetic-plant', count = 1},
+    }, unlock = {{pack = 'electromagnetic-science-pack', level = 10}}, rewards = {
+        {pack = 'automation-science-pack', item = 'copper-cable',                 groups = 10},
+        {pack = 'space-science-pack', item = 'copper-cable',                 groups = 10},
+        {pack = 'electromagnetic-science-pack', item = 'copper-cable',                 groups = 10},
+        {pack = 'promethium-science-pack', item = 'copper-cable',                 groups = 10},
+    }},
+    {key = 'recyclerman', techs = {'recycling'}, name = '回收工人', full = FULL_LOW, starter = {
+        {item = 'recycler', count = 1},
+    }, unlock = {{pack = 'electromagnetic-science-pack', level = 10}}, rewards = {
+        {pack = 'automation-science-pack', item = 'scrap',                 groups = 10},
+        {pack = 'space-science-pack', item = 'scrap',                 groups = 10},
+        {pack = 'electromagnetic-science-pack', item = 'scrap',                 groups = 10},
+        {pack = 'promethium-science-pack', item = 'scrap',                 groups = 10},
     }},
 
     {key = 'oilman', techs = {'oil-gathering', 'oil-processing'}, name = '石化工人', full = FULL_LOW, starter = {
@@ -192,7 +217,7 @@ local DEFAULT_CLASSES = {
     {section = '能源 · 物流'},
     -- 分组换行：基础生产 ↔ 能源化工
     -- ── 能源化工组（电力/蒸汽/太阳能/化工/石油/管道/核能/回收）──
-    {key = 'electrician', techs = {'steam-power'}, name = '火电工人', full = FULL_LOW, starter = {
+    {key = 'electrician', techs = {'steam-power'}, name = '蒸汽工人', full = FULL_LOW, starter = {
         {item = 'boiler', groups = 1},
         {item = 'steam-engine', groups = 1},
     }, rewards = {
@@ -262,6 +287,27 @@ local DEFAULT_CLASSES = {
         {pack = 'metallurgic-science-pack',    item = 'turbo-splitter',         groups = 5},
         {pack = 'metallurgic-science-pack',    item = 'turbo-underground-belt',         groups = 5},
     }},
+
+    {key = 'loaderman', techs = {'logistics-3'}, name = '装卸工人', full = FULL_LOW, starter = {
+        {item = 'loader', count = 10},
+    }, rewards = {
+        {pack = 'logistic-science-pack',    item = 'loader',         groups = 1},   -- 绿：装卸机
+        {pack = 'logistic-science-pack',    item = 'fast-loader',    groups = 1},   -- 绿：快速装卸机
+        {pack = 'production-science-pack',  item = 'express-loader', groups = 1},   -- 紫：极速装卸机
+        {pack = 'metallurgic-science-pack', item = 'turbo-loader',   groups = 1},   -- 橙：涡轮装卸机(火山)
+    }},
+    {key = 'warehouser', techs = {'logistic-system'}, name = '仓库管理员', full = FULL_MID, starter = {
+        {item = 'wooden-chest', groups = 1},
+        {item = 'iron-chest', groups = 1},
+        {item = 'steel-chest', groups = 1},
+        {item = 'storage-chest', groups = 1},
+    }, rewards = {
+        {pack = 'logistic-science-pack', item = 'steel-chest',            groups = 10},
+        {pack = 'logistic-science-pack', item = 'storage-chest',          groups = 10},
+        {pack = 'logistic-science-pack', item = 'passive-provider-chest', groups = 10},
+        {pack = 'utility-science-pack',  item = 'requester-chest',        groups = 5},
+        {pack = 'utility-science-pack',  item = 'buffer-chest',           groups = 5},
+    }},
     {key = 'inserter', techs = {'fast-inserter', 'bulk-inserter'}, name = '斜教', full = FULL_MAX, starter = {
         {item = 'burner-inserter', groups = 1},
         {item = 'inserter', groups = 1},
@@ -275,52 +321,6 @@ local DEFAULT_CLASSES = {
         {pack = 'automation-science-pack',  item = 'fast-inserter', groups = 10},
         {pack = 'logistic-science-pack', item = 'bulk-inserter',   groups = 10},
         {pack = 'agricultural-science-pack', item = 'stack-inserter',   groups = 10},
-    }},
-
-    {key = 'loaderman', techs = {'logistics-3'}, name = '装卸工人', full = FULL_MAX, starter = {
-        {item = 'loader', count = 10},
-    }, rewards = {
-        {pack = 'logistic-science-pack',    item = 'loader',         groups = 1},   -- 绿：装卸机
-        {pack = 'logistic-science-pack',    item = 'fast-loader',    groups = 1},   -- 绿：快速装卸机
-        {pack = 'production-science-pack',  item = 'express-loader', groups = 1},   -- 紫：极速装卸机
-        {pack = 'metallurgic-science-pack', item = 'turbo-loader',   groups = 1},   -- 橙：涡轮装卸机(火山)
-    }},
-    {key = 'warehouser', techs = {'logistic-system'}, name = '仓库管理员', full = FULL_LOW, starter = {
-        {item = 'wooden-chest', groups = 1},
-        {item = 'iron-chest', groups = 1},
-        {item = 'steel-chest', groups = 1},
-        {item = 'storage-chest', groups = 1},
-    }, rewards = {
-        {pack = 'logistic-science-pack', item = 'steel-chest',            groups = 10},
-        {pack = 'logistic-science-pack', item = 'storage-chest',          groups = 10},
-        {pack = 'logistic-science-pack', item = 'passive-provider-chest', groups = 10},
-        {pack = 'utility-science-pack',  item = 'requester-chest',        groups = 5},
-        {pack = 'utility-science-pack',  item = 'buffer-chest',           groups = 5},
-    }},
-
-    {key = 'recyclerman', techs = {'recycling'}, name = '回收工人', full = FULL_LOW, starter = {
-        {item = 'recycler', count = 1},
-    }, unlock = {{pack = 'electromagnetic-science-pack', level = 10}}, rewards = {
-        {pack = 'automation-science-pack', item = 'scrap',                 groups = 10},
-        {pack = 'space-science-pack', item = 'scrap',                 groups = 10},
-        {pack = 'electromagnetic-science-pack', item = 'scrap',                 groups = 10},
-        {pack = 'promethium-science-pack', item = 'scrap',                 groups = 10},
-    }},
-    {key = 'electromagneticman', techs = {'advanced-circuit', 'processing-unit'}, name = '电子工人', full = FULL_LOW, starter = {
-        {item = 'electromagnetic-plant', count = 1},
-    }, unlock = {{pack = 'electromagnetic-science-pack', level = 10}}, rewards = {
-        {pack = 'automation-science-pack', item = 'copper-cable',                 groups = 10},
-        {pack = 'space-science-pack', item = 'copper-cable',                 groups = 10},
-        {pack = 'electromagnetic-science-pack', item = 'copper-cable',                 groups = 10},
-        {pack = 'promethium-science-pack', item = 'copper-cable',                 groups = 10},
-    }},
-    {key = 'foundryman', techs = {'advanced-material-processing', 'advanced-material-processing-2'}, name = '冶炼工人', full = FULL_LOW, starter = {
-        {item = 'foundry', count = 1},
-    }, unlock = {{pack = 'metallurgic-science-pack', level = 10}}, rewards = {
-        {pack = 'automation-science-pack', item = 'calcite',                 groups = 10},
-        {pack = 'space-science-pack', item = 'calcite',                 groups = 10},
-        {pack = 'metallurgic-science-pack', item = 'calcite',                 groups = 10},
-        {pack = 'promethium-science-pack', item = 'calcite',                 groups = 10},
     }},
 
     {key = 'roboticist', techs = {'robotics', 'construction-robotics', 'logistic-robotics'}, name = '机械师', full = FULL_MAX, starter = {
@@ -339,7 +339,15 @@ local DEFAULT_CLASSES = {
         {pack = 'space-science-pack',   item = 'logistic-robot',         groups = 10},  -- 绿：物流机器人
     }},
 
-    {key = '补全', techs = {'advanced-asteroid-processing'}, name = '船长', full = FULL_MAX, starter = {
+    {key = 'launcher', techs = {'rocket-silo'}, name = '发射专家', full = FULL_MAX, starter = {
+        {item = 'rocket-part', count = 1},
+    }, unlock = {{pack = 'space-science-pack', level = 1000}}, rewards = {
+        {pack = 'metallurgic-science-pack',   item = 'low-density-structure',                    groups = 10},
+        {pack = 'electromagnetic-science-pack',   item = 'processing-unit',                    groups = 10},
+        {pack = 'agricultural-science-pack',   item = 'rocket-fuel',                    groups = 10},
+    }},
+
+    {key = 'captain', techs = {'advanced-asteroid-processing'}, name = '船长', full = FULL_MAX, starter = {
         {item = 'space-platform-starter-pack', count = 1},
     }, unlock = {{pack = 'space-science-pack', level = 1000}}, rewards = {
         {pack = 'production-science-pack', item = 'space-platform-foundation',   groups = 5},
@@ -348,17 +356,6 @@ local DEFAULT_CLASSES = {
         {pack = 'space-science-pack',   item = 'asteroid-collector',          groups = 5},
         {pack = 'space-science-pack',   item = 'crusher',                     groups = 5},
     }},
-
-    {key = '补全', techs = {'advanced-asteroid-processing'}, name = '船长', full = FULL_MAX, starter = {
-        {item = 'space-platform-starter-pack', count = 1},
-    }, unlock = {{pack = 'space-science-pack', level = 1000}}, rewards = {
-        {pack = 'production-science-pack', item = 'space-platform-foundation',   groups = 5},
-        {pack = 'space-science-pack',   item = 'cargo-bay',                   groups = 5},
-        {pack = 'space-science-pack',   item = 'thruster',                    groups = 5},
-        {pack = 'space-science-pack',   item = 'asteroid-collector',          groups = 5},
-        {pack = 'space-science-pack',   item = 'crusher',                     groups = 5},
-    }},
-
     {key = 'philosopher', techs = {'research-speed-1', 'research-productivity'}, name = '哲学家', full = FULL_LOW, starter = {
         
     }, unlock = {{pack = 'automation-science-pack', level = 10}}, rewards = {
@@ -547,7 +544,6 @@ local DEFAULT_CLASSES = {
     -- 分组换行：装备护甲 ↔ 农牧
     -- ── 农牧组（鱼/虫卵/种子/腐败物，Gleba 生态，主练草瓶 agricultural）──
     {key = 'hunter', techs = {'captivity'}, name = '猎手', full = FULL_MID, starter = {
-        {item = 'pentapod-egg', count = 1},
         {item = 'biter-egg', count = 1},
         {item = 'rocket-launcher', count = 1},
     }, unlock = {{pack = 'agricultural-science-pack', level = 100}}, rewards = {
@@ -565,16 +561,17 @@ local DEFAULT_CLASSES = {
     }},
 
     {key = 'fisher', techs = {'fish-breeding'}, name = '渔夫', full = FULL_LOW, starter = {
+        {item = 'raw-fish', groups = 1},
         {item = 'biochamber', count = 1},
     }, unlock = {{pack = 'agricultural-science-pack', level = 100}}, rewards = {
         {pack = 'space-science-pack', item = 'raw-fish',  groups = 10},
         {pack = 'agricultural-science-pack', item = 'raw-fish',  groups = 10},
         {pack = 'promethium-science-pack', item = 'raw-fish',  groups = 10},
     }},
-    {key = 'farmer', techs = {'agriculture'}, name = '农民', full = FULL_MAX, starter = {
-        {item = 'agricultural-tower', count = 1},
+    {key = 'farmer', techs = {'agriculture', 'jellynut', 'yumako'}, name = '农民', full = FULL_MAX, starter = {
         {item = 'yumako-seed', groups = 2},
         {item = 'jellynut-seed', groups = 2},
+        {item = 'agricultural-tower', count = 1},
     }, unlock = {{pack = 'agricultural-science-pack', level = 100}}, rewards = {
         {pack = 'agricultural-science-pack', item = 'artificial-yumako-soil',     groups = 10},
         {pack = 'agricultural-science-pack', item = 'overgrowth-yumako-soil',         groups = 10},
@@ -582,32 +579,26 @@ local DEFAULT_CLASSES = {
         {pack = 'agricultural-science-pack', item = 'overgrowth-jellynut-soil', groups = 10},
     }},
     {key = 'forester', techs = {'tree-seeding'}, name = '护林员', full = FULL_MAX, starter = {
-        {item = 'agricultural-tower', count = 1},
+        {item = 'wood', groups = 2},
         {item = 'tree-seed', groups = 2},
+        {item = 'agricultural-tower', count = 1},
     }, unlock = {{pack = 'agricultural-science-pack', level = 100}}, rewards = {
         {pack = 'automation-science-pack', item = 'wood',       groups = 10},
         {pack = 'space-science-pack', item = 'landfill',       groups = 10},
         {pack = 'agricultural-science-pack', item = 'landfill',       groups = 10},
         {pack = 'promethium-science-pack', item = 'landfill',       groups = 10},
     }},
-    {key = 'chef', techs = {'bioflux-processing', 'jellynut', 'yumako'}, name = '厨师', full = FULL_MID, starter = {
+    {key = 'chef', techs = {'bioflux', 'bioflux-processing', 'jellynut', 'yumako'}, name = '厨师', full = FULL_MID, starter = {
         {item = 'biochamber', groups = 1},
-    }, rewards = {
-        {pack = 'agricultural-science-pack', item = 'yumako',  groups = 20},
+    }, unlock = {{pack = 'agricultural-science-pack', level = 100}}, rewards = {
+        {pack = 'agricultural-science-pack', item = 'yumako',  groups = 10},
         {pack = 'agricultural-science-pack', item = 'yumako-mash',     groups = 10},
-        {pack = 'agricultural-science-pack', item = 'jellynut',  groups = 20},
+        {pack = 'agricultural-science-pack', item = 'jellynut',  groups = 10},
         {pack = 'agricultural-science-pack', item = 'jelly',     groups = 10},
     }},
-    {key = 'pharmacist', techs = {'bacteria-cultivation', 'asteroid-productivity'}, name = '培养员', full = FULL_MID, starter = {
+    {key = 'pharmacist', techs = {'bacteria-cultivation'}, name = '培养员', full = FULL_MID, starter = {
         {item = 'biochamber', groups = 1},
-    }, rewards = {
-        {pack = 'agricultural-science-pack', item = 'iron-bacteria',  groups = 2},
-        {pack = 'agricultural-science-pack', item = 'copper-bacteria',  groups = 2},
-        {pack = 'agricultural-science-pack', item = 'bioflux',     groups = 40},
-    }},
-    {key = '补全', techs = {'bacteria-cultivation', 'asteroid-productivity'}, name = '塑料', full = FULL_MID, starter = {
-        {item = 'biochamber', groups = 1},
-    }, rewards = {
+    }, unlock = {{pack = 'agricultural-science-pack', level = 100}}, rewards = {
         {pack = 'agricultural-science-pack', item = 'iron-bacteria',  groups = 2},
         {pack = 'agricultural-science-pack', item = 'copper-bacteria',  groups = 2},
         {pack = 'agricultural-science-pack', item = 'bioflux',     groups = 40},
@@ -639,17 +630,10 @@ local DEFAULT_CLASSES = {
     }, unlock = {{pack = 'cryogenic-science-pack', level = 500}}, rewards = {
         {pack = 'cryogenic-science-pack', item = 'cryogenic-plant',   groups = 20},
     }},
-    {key = 'astronomer', techs = {'research-productivity'}, name = '天文专家', full = FULL_MAX, starter = {
+    {key = 'astronomer', techs = {'biolab'}, name = '天文专家', full = FULL_MAX, starter = {
 
     }, unlock = {{pack = 'promethium-science-pack', level = 500}}, rewards = {
         {pack = 'promethium-science-pack', item = 'biolab',            groups = 20},
-    }},
-    {key = 'launcher', techs = {'rocket-silo'}, name = '发射专家', full = FULL_MAX, starter = {
-    }, unlock = {{pack = 'space-science-pack', level = 1000}}, rewards = {
-        {pack = 'space-science-pack',   item = 'rocket-part',                    groups = 10},
-        {pack = 'metallurgic-science-pack',   item = 'low-density-structure',                    groups = 10},
-        {pack = 'electromagnetic-science-pack',   item = 'processing-unit',                    groups = 10},
-        {pack = 'agricultural-science-pack',   item = 'rocket-fuel',                    groups = 10},
     }},
 
 }
