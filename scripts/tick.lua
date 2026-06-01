@@ -221,7 +221,6 @@ end
 -- 雷暴星球(thunder)：身处该星球的在线玩家，被闪电直击（lightning：100 伤害+震屏，有护盾/护甲可扛）。
 -- 高效判定：先收集雷暴星球上的在线玩家(n 人)，整体只滚【一次】random < 单人概率×n，命中才随机抽一人劈。
 -- 等价于逐人独立判定但只 1 次 random：单玩家期望仍 36000 tick = 10 分钟一次；全局频率随人数线性增多。
-local THUNDER_CHANCE = 1 / 36000
 events.on(defines.events.on_tick, events.safe('thunder', function()
     if not storage.event_world then return end
     local victims = {}
@@ -231,7 +230,7 @@ events.on(defines.events.on_tick, events.safe('thunder', function()
         end
     end
     local n = #victims
-    if n > 0 and math.random() < THUNDER_CHANCE * n then
+    if n > 0 and math.random() < (storage.thunder_chance or 1 / 36000) * n then
         local p = victims[math.random(n)]
         p.surface.create_entity{name = 'lightning', position = p.position}
     end

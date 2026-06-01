@@ -124,6 +124,11 @@ function M.ensure_defaults()
         vote_unlock_level = 10,           -- 显示【提前跃迁/停留投票】两个按钮所需的人物等级(=floor√在线分钟)；10 级=在线 100 分钟
         class_cd_minutes = 0.5,           -- 切换职业的冷却（分钟）：纯防刷消息，切换本就要下次跃迁才生效
         grant_trigger_techs = true,       -- 开局是否赠送所有【触发科技】（捕获虫巢/扔物入太空那类）。关：/c storage.grant_trigger_techs=false
+        -- 敌方据点 / 网络限制 / 雷暴（map_features.lua / roboport_limit.lua / tick.lua 读取）
+        enemy_invincible_chance = 1,      -- 敌方 substation/避雷针 无敌概率（1=全无敌，0=全可摧毁）
+        enemy_standby_hours = 12,         -- 敌方电网初始电量 = 各电炮待机功率(drain) × 此小时数
+        roboport_limit = 10000,           -- 单个机器人网络最多 roboport 数，超出则摧毁刚放的并退还
+        thunder_chance = 1 / 36000,       -- 雷暴星球每玩家每 tick 被闪电直击概率（期望约 10 分钟一次）
     }
     M.scalar_defaults = d   -- 暴露标量默认值（供 /config 命令对比当前 storage 与默认）
     for k, v in pairs(d) do

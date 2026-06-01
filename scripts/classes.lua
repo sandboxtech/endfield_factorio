@@ -337,7 +337,7 @@ local DEFAULT_CLASSES = {
     {section = '战斗'},
     -- 分组换行：物流 ↔ 战斗
     -- ── 战斗组（弹药/手雷/核弹；练灰瓶 military，部分另练蓝瓶 chemical）──
-    {key = 'guard', name = '守卫', full = FULL_MID, starter = {
+    {key = 'guard', name = '保安', full = FULL_MID, starter = {
         {item = 'gun-turret', groups = 1},
         {item = 'stone-wall', groups = 1},
     }, rewards = {
@@ -351,7 +351,7 @@ local DEFAULT_CLASSES = {
         {pack = 'military-science-pack', item = 'radar',            groups = 1},   -- 灰：雷达
         {pack = 'military-science-pack', item = 'firearm-magazine', groups = 5},   -- 灰：弹匣(供机枪塔)
     }},
-    {key = 'gunner', name = '机枪手', full = FULL_MID, starter = {
+    {key = 'gunner', name = '田明建', full = FULL_MID, starter = {
         {item = 'submachine-gun', groups = 1},
         {item = 'firearm-magazine', groups = 5},
     }, rewards = {
@@ -364,7 +364,7 @@ local DEFAULT_CLASSES = {
         {pack = 'military-science-pack', item = 'shotgun-shell',            groups = 5},   -- 灰：霰弹
     }},
 
-    {key = 'shotgunner', name = '散弹枪手', full = FULL_MID, starter = {
+    {key = 'shotgunner', name = '山上彻也', full = FULL_MID, starter = {
         {item = 'shotgun', count = 1},
         {item = 'shotgun-shell', groups = 5},
     }, rewards = {
@@ -373,7 +373,7 @@ local DEFAULT_CLASSES = {
         {pack = 'military-science-pack', item = 'shotgun-shell',          groups = 10},  -- 灰：霰弹
         {pack = 'military-science-pack', item = 'piercing-shotgun-shell', groups = 10},  -- 灰：穿甲霰弹
     }},
-    {key = 'bomber', name = '掷弹兵', full = FULL_MID, starter = {
+    {key = 'bomber', name = '拆迁队', full = FULL_MID, starter = {
         {item = 'grenade', groups = 1},
     }, rewards = {
         {pack = 'military-science-pack', item = 'grenade',         groups = 10},  -- 灰：手雷
@@ -384,7 +384,7 @@ local DEFAULT_CLASSES = {
         {pack = 'chemical-science-pack', item = 'slowdown-capsule',  groups = 3},   -- 蓝：减速胶囊
         {pack = 'utility-science-pack',  item = 'destroyer-capsule', groups = 3},   -- 黄：毁灭者机器人胶囊
     }},
-    {key = 'tanker', name = '坦克手', full = FULL_MAX, starter = {
+    {key = 'tanker', name = '大运司机', full = FULL_MAX, starter = {
         {item = 'tank', count = 1},
         {item = 'cannon-shell', count = 20},
     }, unlock = {{pack = 'military-science-pack', level = 100}}, rewards = {
@@ -396,7 +396,7 @@ local DEFAULT_CLASSES = {
         {pack = 'military-science-pack', item = 'explosive-cannon-shell', groups = 10},  -- 灰：爆破炮弹
         {pack = 'military-science-pack', item = 'uranium-cannon-shell',   groups = 10},  -- 灰：铀炮弹
     }},
-    {key = 'rocketeer', name = '火箭筒兵', full = FULL_MAX, starter = {
+    {key = 'rocketeer', name = '胖子发射器', full = FULL_MAX, starter = {
         {item = 'rocket-launcher', count = 1},
         {item = 'rocket', count = 100},
     }, unlock = {{pack = 'chemical-science-pack', level = 100}}, rewards = {
@@ -407,7 +407,7 @@ local DEFAULT_CLASSES = {
         {pack = 'military-science-pack', item = 'rocket-turret',        groups = 2},   -- 灰：火箭炮塔
         {pack = 'space-science-pack',    item = 'capture-robot-rocket', groups = 2},   -- 白：捕获火箭(抓虫繁殖)
     }},
-    {key = 'artillerist', name = '炮兵', full = FULL_MAX, starter = {
+    {key = 'artillerist', name = '李云龙', full = FULL_MAX, starter = {
         {item = 'artillery-turret', count = 1},
         {item = 'artillery-shell', count = 10},
     }, unlock = {{pack = 'metallurgic-science-pack', level = 100}}, rewards = {
@@ -415,14 +415,14 @@ local DEFAULT_CLASSES = {
         {pack = 'metallurgic-science-pack',  item = 'artillery-wagon',  groups = 1},   -- 黄：火炮车厢(移动炮)
         {pack = 'metallurgic-science-pack', item = 'artillery-turret', groups = 1},   -- 灰：固定炮台
     }},
-    {key = 'teslatrooper', name = '电击枪', full = FULL_MAX, starter = {
+    {key = 'teslatrooper', name = '杨永信', full = FULL_MAX, starter = {
         {item = 'teslagun', count = 1},
         {item = 'tesla-ammo', count = 20},
     }, unlock = {{pack = 'electromagnetic-science-pack', level = 100}}, rewards = {
         {pack = 'electromagnetic-science-pack', item = 'tesla-ammo',   groups = 10},
         {pack = 'electromagnetic-science-pack', item = 'tesla-turret', groups = 2},
     }},
-    {key = 'railgunner', name = '炮姐', full = FULL_MID, starter = {
+    {key = 'railgunner', name = '御坂美琴', full = FULL_MID, starter = {
         {item = 'railgun', count = 1},
         {item = 'railgun-ammo', count = 5},
     }, unlock = {{pack = 'cryogenic-science-pack', level = 100}}, rewards = {
@@ -445,7 +445,7 @@ local DEFAULT_CLASSES = {
     -- 分组换行：战斗 ↔ 装备护甲
     -- ── 装备护甲组（护甲网格组件 + 终极机甲；按各组件解锁科技配瓶）──
     -- 角色网格分工：每个职业专精一类护甲网格组件。
-    {key = 'tankman', name = '坦克', full = FULL_MID, starter = {   -- 全是盾
+    {key = 'tankman', name = '肉盾', full = FULL_MID, starter = {   -- 全是盾
         {item = 'energy-shield-equipment', count = 20},
     }, rewards = {
         {pack = 'military-science-pack', item = 'energy-shield-equipment',     groups = 5},   -- 灰：能量盾
@@ -471,7 +471,7 @@ local DEFAULT_CLASSES = {
         {pack = 'chemical-science-pack', item = 'personal-roboport-equipment',     groups = 5},   -- 蓝：个人机器人网格
         {pack = 'utility-science-pack',  item = 'personal-roboport-mk2-equipment', groups = 5},   -- 黄：网格 mk2
     }},
-    {key = 'runner', name = '跑步运动员', full = FULL_MID, starter = {   -- 全是外骨骼
+    {key = 'runner', name = '快递员', full = FULL_MID, starter = {   -- 全是外骨骼
         {item = 'exoskeleton-equipment', count = 3},
     }, rewards = {
         {pack = 'chemical-science-pack', item = 'exoskeleton-equipment', groups = 10},   -- 蓝：外骨骼(移动加速)
