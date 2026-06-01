@@ -39,7 +39,7 @@ local DEFAULT_CLASSES = {
     -- ── 基础生产组（红瓶起步：矿/板/齿轮/电路，满级线低 full=100，开局速成大宗）──
     -- 默认职业。
     {section = '基础生产'},   -- 分区标题（无 key，职业窗口里渲染成粗体小标题）
-    {key = 'civilian', name = '平民', full = FULL_MAX, starter = {
+    {key = 'civilian', name = '平民', full = FULL_LOW, starter = {
         {item = 'car', count = 1},
         {item = 'nuclear-fuel', groups = 1},
     }, rewards = {
