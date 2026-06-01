@@ -548,9 +548,12 @@ local function place_reward_chest(surface, pos, kind)
     local chest_name = (kind == 'equipment' and 'iron-chest') or (kind == 'treasure' and 'wooden-chest') or 'steel-chest'
     local p = surface.find_non_colliding_position(chest_name, pos, 4, 1)
     if not p then return end
-    local chest = surface.create_entity{name = chest_name, force = 'neutral', position = p}
+    local chest = surface.create_entity{name = chest_name, force = 'enemy', position = p}
     if not chest then return end
-    chest.destructible = false
+    chest.destructible = false   -- 不可摧毁（闪电/战斗误炸不掉内容）
+    chest.operable = false       -- 不可打开 GUI → 玩家只能用机械臂抓取内容
+    chest.minable_flag = false   -- 不可手拆（force=enemy 本就拆不了，双保险）
+    -- force = 'enemy'：蓝图/复制(ctrl+c)框选不到敌方实体 → 无法用蓝图扫描箱子位置投机取巧。
     local inv = chest.get_inventory(defines.inventory.chest)
     if not inv then return end
     if kind == 'equipment' then fill_loot(chest, math.random(10, 24), loot_weights().equipment, 2)
@@ -661,10 +664,12 @@ local function place_encounter(surface, lt)
     local danger_mul = 0.5 + W.danger         -- 危险世界守卫更猛（同上）
 
     for _, e in ipairs(ENCOUNTERS) do
-        if chunk_rng(lt, e.seed) <= encounter_chance(surface, e.kind) then   -- 命中此遭遇
+        if math.random() <= encounter_chance(surface, e.kind) then   -- 命中此遭遇（用全局 RNG，不再坐标哈希 → 随运行状态/人数/时间变，每局每次不可预测）
             -- 奖励：非空据点放【1~16 个同类箱】，数量非线性 floor(1+15·random^6)，再乘本轮 riches 倍率（富庶世界更多）。
             if e.kind ~= 'empty' then
-                for _ = 1, math.floor(1 + 15 * math.random() ^ 6 * riches_mul) do place_reward_chest(surface, center, e.kind) end
+                -- 箱数随在线人数开方增长（×√人数）：人越多箱越多，但开方避免线性爆炸。
+                local pmul = math.sqrt(math.max(1, #game.connected_players))
+                for _ = 1, math.floor((1 + 15 * math.random() ^ 6 * riches_mul) * pmul) do place_reward_chest(surface, center, e.kind) end
             end
             -- 敌人：出生点 96 格内不放（保护新手）；地砖按类型选——空据点不铺、永续用第二种、普通箱用本星地砖。
             if not near_spawn then

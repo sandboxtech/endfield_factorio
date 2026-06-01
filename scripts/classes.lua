@@ -7,7 +7,7 @@
 --
 -- 字段：
 --   name     职业显示名（中文字符串，直接显示、绕过 locale）。
---   full     职业级满级线（可选，默认 MAX_LEVEL=10000）：该职业每种相关瓶练到 full 级，即拿满所有 rewards 的
+--   full     职业级满级线（可选，默认 MAX_LEVEL=100000=最大等级10万）：该职业每种相关瓶练到 full 级，即拿满所有 rewards 的
 --            groups 组——这就是这个职业的“完美追求”目标等级。full 三档：基础速成 100 / 进阶 1000 / 终极 10000(默认)；
 --            full 越大越难满、满级回报越丰厚。价值高低主要靠物品档次体现(廉价职业=低 full，稀有/终极职业=高 full)。
 --   starter  无条件初始物品列表：每条 {item=物品, count=个数 或 groups=组数}；count 个 > groups 组 > 默认 1 组。
@@ -18,19 +18,25 @@
 --
 -- 【容量约束】每个职业「满级资源含量」（starter 固定组 + 各 rewards 满级 groups 之和）控制在 50 组以内。
 --
+local constants = require('scripts.constants')
 local passives = require('scripts.passives')
 
 local M = {}
 
 M.DEFAULT = 'civilian'
-M.MAX_LEVEL = 10000   -- 满级基准（与 respawn_gifts.MAX_LEVEL / gui CLASS_MAX_LEVEL 一致）；未配 full 的职业兜底用它
+M.MAX_LEVEL = constants.MAX_LEVEL   -- 满级基准=最大等级（单一来源 constants.MAX_LEVEL）；未配 full 的职业兜底用它
+
+-- 职业满级线 full 三档常量（DEFAULT_CLASSES 引用；gen_set_classes.py 生成 set_classes 时会自动替换成数字）。
+local FULL_LOW = 1000         -- 基础速成档
+local FULL_MID = 10000        -- 进阶档
+local FULL_MAX = 100000       -- 终极档（= MAX_LEVEL，练到满级正好拿满）
 
 -- 默认职业表（顺序即面板显示顺序），分组：基础生产 / 能源化工 / 物流 / 战斗 / 装备护甲 / 农牧 / 星球专精，空职业 {} 分隔。
 local DEFAULT_CLASSES = {
     -- ── 基础生产组（红瓶起步：矿/板/齿轮/电路，满级线低 full=100，开局速成大宗）──
     -- 默认职业。
     {section = '基础生产'},   -- 分区标题（无 key，职业窗口里渲染成粗体小标题）
-    {key = 'civilian', name = '平民', full = 10000, starter = {
+    {key = 'civilian', name = '平民', full = FULL_MAX, starter = {
         {item = 'car', count = 1},
         {item = 'nuclear-fuel', groups = 1},
     }, rewards = {
@@ -51,7 +57,7 @@ local DEFAULT_CLASSES = {
         -- {pack = 'promethium-science-pack', item = 'coin', count = 100},
     }},
     -- 矿物
-    {key = 'oreman', name = '矿物学家', full = 100, starter = {
+    {key = 'oreman', name = '矿物学家', full = FULL_LOW, starter = {
         {item = 'iron-ore', groups = 5},
         {item = 'copper-ore', groups = 5},
         {item = 'stone', groups = 5},
@@ -75,7 +81,7 @@ local DEFAULT_CLASSES = {
         {pack = 'promethium-science-pack', item = 'promethium-asteroid-chunk', groups = 1},
     }},
     -- 材料
-    {key = 'material', name = '材料学家', full = 100, starter = {
+    {key = 'material', name = '材料学家', full = FULL_LOW, starter = {
         {item = 'iron-plate', groups = 5},
         {item = 'copper-plate', groups = 5},
     }, unlock = {{pack = 'automation-science-pack', level = 10}}, rewards = {
@@ -95,7 +101,7 @@ local DEFAULT_CLASSES = {
         {pack = 'promethium-science-pack', item = 'uranium-235', groups = 1},
     }},
 
-    {key = 'miner', name = '采矿工人', full = 100, starter = {
+    {key = 'miner', name = '采矿工人', full = FULL_LOW, starter = {
         {item = 'burner-mining-drill', groups = 2},
         -- {item = 'electric-mining-drill', groups = 1},
         -- {item = 'big-mining-drill', groups = 1},
@@ -104,7 +110,7 @@ local DEFAULT_CLASSES = {
         {pack = 'metallurgic-science-pack', item = 'big-mining-drill', groups = 20},
     }},
 
-    {key = 'smelter', name = '冶炼工人', full = 1000, starter = {
+    {key = 'smelter', name = '冶炼工人', full = FULL_MID, starter = {
         {item = 'stone-furnace', groups = 4},
         -- {item = 'steel-furnace', groups = 1},
         -- {item = 'electric-furnace', groups = 1},
@@ -119,7 +125,7 @@ local DEFAULT_CLASSES = {
         {pack = 'space-science-pack', item = 'carbon', groups = 2},
     }},
 
-    {key = 'artisan', name = '装配工人', full = 1000, starter = {
+    {key = 'artisan', name = '装配工人', full = FULL_MID, starter = {
         {item = 'assembling-machine-1', groups = 1},
         -- {item = 'assembling-machine-2', groups = 1},
         -- {item = 'assembling-machine-3', groups = 1},
@@ -137,7 +143,7 @@ local DEFAULT_CLASSES = {
         {pack = 'cryogenic-science-pack', item = 'processing-unit', groups = 1},
     }},
 
-    {key = 'oilman', name = '石化工人', full = 1000, starter = {
+    {key = 'oilman', name = '石化工人', full = FULL_MID, starter = {
         {item = 'pumpjack', groups = 1},
         {item = 'oil-refinery', groups = 1},
         {item = 'chemical-plant', groups = 1},
@@ -149,7 +155,7 @@ local DEFAULT_CLASSES = {
         {pack = 'cryogenic-science-pack',   item = 'cryogenic-plant', groups = 10},   -- 蓝：化工厂
     }},
 
-    {key = 'moduler', name = '插件工人', full = 10000, starter = {
+    {key = 'moduler', name = '插件工人', full = FULL_MAX, starter = {
         {item = 'beacon', count=10},
         {item = 'speed-module', count=10},
         {item = 'efficiency-module', count=10},
@@ -166,28 +172,28 @@ local DEFAULT_CLASSES = {
         {pack = 'cryogenic-science-pack', item = 'productivity-module', groups = 5},
     }},
 
-    {key = 'qualityman', name = '品质大师', full = 10000, starter = {
+    {key = 'qualityman', name = '品质大师', full = FULL_MAX, starter = {
         {item = 'quality-module', groups = 1},
     }, unlock = {{pack = 'electromagnetic-science-pack', level = 10}}, rewards = {
         {pack = 'chemical-science-pack',        item = 'quality-module',     groups = 10},   -- 蓝：1级
         {pack = 'space-science-pack',           item = 'quality-module-2',   groups = 10},   -- 白：2级
         {pack = 'electromagnetic-science-pack', item = 'quality-module-3',   groups = 10},   -- 粉：3级(电浆星)
     }},
-    {key = 'speedman', name = '速度大师', full = 10000, starter = {
+    {key = 'speedman', name = '速度大师', full = FULL_MAX, starter = {
         {item = 'speed-module', groups = 1},
     }, unlock = {{pack = 'metallurgic-science-pack', level = 10}}, rewards = {
         {pack = 'chemical-science-pack',    item = 'speed-module',     groups = 10},   -- 蓝：1级
         {pack = 'space-science-pack',       item = 'speed-module-2',   groups = 10},   -- 白：2级
         {pack = 'metallurgic-science-pack', item = 'speed-module-3',   groups = 10},   -- 橙：3级(火山)
     }},
-    {key = 'efficiencyman', name = '节能大师', full = 10000, starter = {
+    {key = 'efficiencyman', name = '节能大师', full = FULL_MAX, starter = {
         {item = 'efficiency-module', groups = 1},
     }, unlock = {{pack = 'agricultural-science-pack', level = 10}}, rewards = {
         {pack = 'chemical-science-pack',     item = 'efficiency-module',     groups = 10},   -- 蓝：1级
         {pack = 'space-science-pack',        item = 'efficiency-module-2',   groups = 10},   -- 白：2级
         {pack = 'agricultural-science-pack', item = 'efficiency-module-3',   groups = 10},   -- 草：3级(Gleba)
     }},
-    {key = 'productivityman', name = '产能大师', full = 10000, starter = {
+    {key = 'productivityman', name = '产能大师', full = FULL_MAX, starter = {
         {item = 'productivity-module', groups = 1},
     }, unlock = {{pack = 'cryogenic-science-pack', level = 10}}, rewards = {
         {pack = 'chemical-science-pack',  item = 'productivity-module',     groups = 10},   -- 蓝：1级
@@ -199,7 +205,7 @@ local DEFAULT_CLASSES = {
     {section = '能源 · 物流'},
     -- 分组换行：基础生产 ↔ 能源化工
     -- ── 能源化工组（电力/蒸汽/太阳能/化工/石油/管道/核能/回收）──
-    {key = 'electrician', name = '火电工人', full = 100, starter = {
+    {key = 'electrician', name = '火电工人', full = FULL_LOW, starter = {
         {item = 'boiler', groups = 1},
         {item = 'steam-engine', groups = 1},
     }, rewards = {
@@ -210,7 +216,7 @@ local DEFAULT_CLASSES = {
         {pack = 'agricultural-science-pack', item = 'heat-exchanger',  groups = 10},   -- 紫：热交换器
         {pack = 'cryogenic-science-pack',  item = 'heating-tower',   groups = 10},   -- 靛：供热塔(寒星)
     }},
-    {key = 'greentech', name = '光电工人', full = 1000, starter = {
+    {key = 'greentech', name = '光电工人', full = FULL_MID, starter = {
         {item = 'solar-panel', groups = 1},
         {item = 'accumulator', groups = 1},
     }, unlock = {{pack = 'logistic-science-pack', level = 10}}, rewards = {
@@ -220,7 +226,7 @@ local DEFAULT_CLASSES = {
         {pack = 'electromagnetic-science-pack', item = 'lightning-rod', groups = 2},   -- 粉：避雷针(电浆星雷电)
         {pack = 'electromagnetic-science-pack', item = 'lightning-collector', groups = 2},   -- 粉：避雷针(电浆星雷电)
     }},
-    {key = 'nuclearman', name = '核能工人', full = 10000, starter = {
+    {key = 'nuclearman', name = '核能工人', full = FULL_MAX, starter = {
         {item = 'centrifuge', groups = 1},
     }, unlock = {{pack = 'chemical-science-pack', level = 100}}, rewards = {
         {pack = 'chemical-science-pack',   item = 'centrifuge',        groups = 5},   -- 蓝：离心机
@@ -232,7 +238,7 @@ local DEFAULT_CLASSES = {
         {pack = 'cryogenic-science-pack',   item = 'fusion-power-cell',        groups = 5},   -- 蓝：离心机
     }},
 
-    {key = 'plumber', name = '管道工人', full = 100, starter = {
+    {key = 'plumber', name = '管道工人', full = FULL_LOW, starter = {
         {item = 'pipe',  groups = 1},
         {item = 'pipe-to-ground',  groups = 1},
         {item = 'offshore-pump',  groups = 1},
@@ -243,7 +249,7 @@ local DEFAULT_CLASSES = {
         {pack = 'logistic-science-pack',   item = 'pump',           groups = 5},
         {pack = 'logistic-science-pack',   item = 'storage-tank',   groups = 5},
     }},
-    {key = 'gridman', name = '电网工人', full = 1000, starter = {
+    {key = 'gridman', name = '电网工人', full = FULL_MID, starter = {
         {item = 'small-electric-pole', groups = 1},
         {item = 'power-switch', groups = 1},
     }, rewards = {
@@ -252,7 +258,7 @@ local DEFAULT_CLASSES = {
         {pack = 'cryogenic-science-pack',   item = 'big-electric-pole',    groups = 10},   -- 绿：大电杆
         {pack = 'promethium-science-pack', item = 'substation',           groups = 10},   -- 紫：变电站
     }},
-    {key = 'belter', name = '运输工人', full = 10000, starter = {
+    {key = 'belter', name = '运输工人', full = FULL_MAX, starter = {
         {item = 'transport-belt', groups = 1},
         {item = 'splitter', groups = 1},
         {item = 'underground-belt', groups = 1},
@@ -269,7 +275,7 @@ local DEFAULT_CLASSES = {
         {pack = 'metallurgic-science-pack',    item = 'turbo-splitter',         groups = 5},
         {pack = 'metallurgic-science-pack',    item = 'turbo-underground-belt',         groups = 5},
     }},
-    {key = 'inserter', name = '斜教', full = 10000, starter = {
+    {key = 'inserter', name = '斜教', full = FULL_MAX, starter = {
         {item = 'burner-inserter', groups = 1},
         {item = 'inserter', groups = 1},
         {item = 'long-handed-inserter', groups = 1},
@@ -284,7 +290,7 @@ local DEFAULT_CLASSES = {
         {pack = 'agricultural-science-pack', item = 'bulk-inserter',   groups = 10},
     }},
 
-    {key = 'loaderman', name = '装卸工人', full = 10000, starter = {
+    {key = 'loaderman', name = '装卸工人', full = FULL_MAX, starter = {
         {item = 'loader', count = 10},
     }, rewards = {
         {pack = 'logistic-science-pack',    item = 'loader',         groups = 1},   -- 绿：装卸机
@@ -292,7 +298,7 @@ local DEFAULT_CLASSES = {
         {pack = 'production-science-pack',  item = 'express-loader', groups = 1},   -- 紫：极速装卸机
         {pack = 'metallurgic-science-pack', item = 'turbo-loader',   groups = 1},   -- 橙：涡轮装卸机(火山)
     }},
-    {key = 'warehouser', name = '仓库管理员', full = 10000, starter = {
+    {key = 'warehouser', name = '仓库管理员', full = FULL_MAX, starter = {
         {item = 'wooden-chest', groups = 1},
         {item = 'iron-chest', groups = 1},
         {item = 'steel-chest', groups = 1},
@@ -305,14 +311,14 @@ local DEFAULT_CLASSES = {
         {pack = 'utility-science-pack',  item = 'buffer-chest',           groups = 5},
     }},
 
-    {key = 'recyclerman', name = '回收工人', full = 10000, starter = {
+    {key = 'recyclerman', name = '回收工人', full = FULL_MAX, starter = {
         {item = 'recycler', count = 1},
     }, unlock = {{pack = 'electromagnetic-science-pack', level = 10}}, rewards = {
         {pack = 'electromagnetic-science-pack',      item = 'recycler',              groups = 10},
         {pack = 'electromagnetic-science-pack', item = 'scrap',                 groups = 30},
     }},
 
-    {key = 'roboticist', name = '机械师', full = 10000, starter = {
+    {key = 'roboticist', name = '机械师', full = FULL_MAX, starter = {
         {item = 'roboport', count = 1},
         {pack = 'logistic-science-pack',   item = 'storage-chest', count = 10}, 
         {item = 'construction-robot', count = 10},
@@ -331,7 +337,7 @@ local DEFAULT_CLASSES = {
     {section = '战斗'},
     -- 分组换行：物流 ↔ 战斗
     -- ── 战斗组（弹药/手雷/核弹；练灰瓶 military，部分另练蓝瓶 chemical）──
-    {key = 'guard', name = '守卫', full = 1000, starter = {
+    {key = 'guard', name = '守卫', full = FULL_MID, starter = {
         {item = 'gun-turret', groups = 1},
         {item = 'stone-wall', groups = 1},
     }, rewards = {
@@ -345,7 +351,7 @@ local DEFAULT_CLASSES = {
         {pack = 'military-science-pack', item = 'radar',            groups = 1},   -- 灰：雷达
         {pack = 'military-science-pack', item = 'firearm-magazine', groups = 5},   -- 灰：弹匣(供机枪塔)
     }},
-    {key = 'gunner', name = '机枪手', full = 1000, starter = {
+    {key = 'gunner', name = '机枪手', full = FULL_MID, starter = {
         {item = 'submachine-gun', groups = 1},
         {item = 'firearm-magazine', groups = 5},
     }, rewards = {
@@ -358,7 +364,7 @@ local DEFAULT_CLASSES = {
         {pack = 'military-science-pack', item = 'shotgun-shell',            groups = 5},   -- 灰：霰弹
     }},
 
-    {key = 'shotgunner', name = '散弹枪手', full = 1000, starter = {
+    {key = 'shotgunner', name = '散弹枪手', full = FULL_MID, starter = {
         {item = 'shotgun', count = 1},
         {item = 'shotgun-shell', groups = 5},
     }, rewards = {
@@ -367,7 +373,7 @@ local DEFAULT_CLASSES = {
         {pack = 'military-science-pack', item = 'shotgun-shell',          groups = 10},  -- 灰：霰弹
         {pack = 'military-science-pack', item = 'piercing-shotgun-shell', groups = 10},  -- 灰：穿甲霰弹
     }},
-    {key = 'bomber', name = '掷弹兵', full = 1000, starter = {
+    {key = 'bomber', name = '掷弹兵', full = FULL_MID, starter = {
         {item = 'grenade', groups = 1},
     }, rewards = {
         {pack = 'military-science-pack', item = 'grenade',         groups = 10},  -- 灰：手雷
@@ -378,7 +384,7 @@ local DEFAULT_CLASSES = {
         {pack = 'chemical-science-pack', item = 'slowdown-capsule',  groups = 3},   -- 蓝：减速胶囊
         {pack = 'utility-science-pack',  item = 'destroyer-capsule', groups = 3},   -- 黄：毁灭者机器人胶囊
     }},
-    {key = 'tanker', name = '坦克手', full = 10000, starter = {
+    {key = 'tanker', name = '坦克手', full = FULL_MAX, starter = {
         {item = 'tank', count = 1},
         {item = 'cannon-shell', count = 20},
     }, unlock = {{pack = 'military-science-pack', level = 100}}, rewards = {
@@ -390,7 +396,7 @@ local DEFAULT_CLASSES = {
         {pack = 'military-science-pack', item = 'explosive-cannon-shell', groups = 10},  -- 灰：爆破炮弹
         {pack = 'military-science-pack', item = 'uranium-cannon-shell',   groups = 10},  -- 灰：铀炮弹
     }},
-    {key = 'rocketeer', name = '火箭筒兵', full = 10000, starter = {
+    {key = 'rocketeer', name = '火箭筒兵', full = FULL_MAX, starter = {
         {item = 'rocket-launcher', count = 1},
         {item = 'rocket', count = 100},
     }, unlock = {{pack = 'chemical-science-pack', level = 100}}, rewards = {
@@ -401,7 +407,7 @@ local DEFAULT_CLASSES = {
         {pack = 'military-science-pack', item = 'rocket-turret',        groups = 2},   -- 灰：火箭炮塔
         {pack = 'space-science-pack',    item = 'capture-robot-rocket', groups = 2},   -- 白：捕获火箭(抓虫繁殖)
     }},
-    {key = 'artillerist', name = '炮兵', full = 10000, starter = {
+    {key = 'artillerist', name = '炮兵', full = FULL_MAX, starter = {
         {item = 'artillery-turret', count = 1},
         {item = 'artillery-shell', count = 10},
     }, unlock = {{pack = 'metallurgic-science-pack', level = 100}}, rewards = {
@@ -409,14 +415,14 @@ local DEFAULT_CLASSES = {
         {pack = 'metallurgic-science-pack',  item = 'artillery-wagon',  groups = 1},   -- 黄：火炮车厢(移动炮)
         {pack = 'metallurgic-science-pack', item = 'artillery-turret', groups = 1},   -- 灰：固定炮台
     }},
-    {key = 'teslatrooper', name = '杨永信', full = 10000, starter = {
+    {key = 'teslatrooper', name = '杨永信', full = FULL_MAX, starter = {
         {item = 'teslagun', count = 1},
         {item = 'tesla-ammo', count = 20},
     }, unlock = {{pack = 'electromagnetic-science-pack', level = 100}}, rewards = {
         {pack = 'electromagnetic-science-pack', item = 'tesla-ammo',   groups = 10},
         {pack = 'electromagnetic-science-pack', item = 'tesla-turret', groups = 2},
     }},
-    {key = 'railgunner', name = '磁轨炮兵', full = 1000, starter = {
+    {key = 'railgunner', name = '磁轨炮兵', full = FULL_MID, starter = {
         {item = 'railgun', count = 1},
         {item = 'railgun-ammo', count = 5},
     }, unlock = {{pack = 'cryogenic-science-pack', level = 100}}, rewards = {
@@ -424,12 +430,12 @@ local DEFAULT_CLASSES = {
         {pack = 'cryogenic-science-pack', item = 'railgun-turret', groups = 2},
     }},
 
-    {key = 'thorman', name = '雷神', full = 1000, starter = {
+    {key = 'thorman', name = '雷神', full = FULL_MID, starter = {
         {item = 'land-mine', count = 199},
     }, unlock = {{pack = 'military-science-pack', level = 100}}, rewards = {
         {pack = 'military-science-pack', item = 'land-mine', groups = 20},   -- 灰：地雷(海量布雷)
     }},
-    {key = 'spiderman', name = '蜘蛛侠', full = 1000, starter = {
+    {key = 'spiderman', name = '蜘蛛侠', full = FULL_MID, starter = {
         {item = 'spidertron', count = 1},
     }, unlock = {{pack = 'utility-science-pack', level = 100}}, rewards = {
         {pack = 'utility-science-pack', item = 'spidertron', groups = 2},   -- 黄：蜘蛛机甲
@@ -439,43 +445,43 @@ local DEFAULT_CLASSES = {
     -- 分组换行：战斗 ↔ 装备护甲
     -- ── 装备护甲组（护甲网格组件 + 终极机甲；按各组件解锁科技配瓶）──
     -- 角色网格分工：每个职业专精一类护甲网格组件。
-    {key = 'tankman', name = '坦克', full = 1000, starter = {   -- 全是盾
+    {key = 'tankman', name = '坦克', full = FULL_MID, starter = {   -- 全是盾
         {item = 'energy-shield-equipment', count = 20},
     }, rewards = {
         {pack = 'military-science-pack', item = 'energy-shield-equipment',     groups = 5},   -- 灰：能量盾
         {pack = 'utility-science-pack',  item = 'energy-shield-mk2-equipment', groups = 5},   -- 黄：能量盾 mk2
         {pack = 'military-science-pack', item = 'discharge-defense-equipment', groups = 3},   -- 灰：放电防御
     }},
-    {key = 'healer', name = '奶妈', full = 1000, starter = {   -- 全是发电装置
+    {key = 'healer', name = '奶妈', full = FULL_MID, starter = {   -- 全是发电装置
         {item = 'solar-panel-equipment', count = 20},
     }, rewards = {
         {pack = 'logistic-science-pack',  item = 'solar-panel-equipment',     groups = 10},  -- 绿：太阳能板
         {pack = 'chemical-science-pack',  item = 'fission-reactor-equipment', groups = 3},   -- 蓝：裂变反应堆
         {pack = 'cryogenic-science-pack', item = 'fusion-reactor-equipment',  groups = 3},   -- 靛：聚变反应堆
     }},
-    {key = 'laserman', name = '输出', full = 1000, starter = {   -- 全是激光
+    {key = 'laserman', name = '输出', full = FULL_MID, starter = {   -- 全是激光
         {item = 'personal-laser-defense-equipment', count = 3},
     }, rewards = {
         {pack = 'military-science-pack', item = 'personal-laser-defense-equipment', groups = 10},  -- 灰：个人激光防御
     }},
-    {key = 'helper', name = '辅助', full = 1000, starter = {   -- 全是机器人
+    {key = 'helper', name = '辅助', full = FULL_MID, starter = {   -- 全是机器人
         {item = 'personal-roboport-equipment', count = 5},
     }, rewards = {
         {pack = 'logistic-science-pack', item = 'construction-robot',            groups = 10},  -- 绿：建造机器人
         {pack = 'chemical-science-pack', item = 'personal-roboport-equipment',     groups = 5},   -- 蓝：个人机器人网格
         {pack = 'utility-science-pack',  item = 'personal-roboport-mk2-equipment', groups = 5},   -- 黄：网格 mk2
     }},
-    {key = 'runner', name = '跑步运动员', full = 1000, starter = {   -- 全是外骨骼
+    {key = 'runner', name = '跑步运动员', full = FULL_MID, starter = {   -- 全是外骨骼
         {item = 'exoskeleton-equipment', count = 3},
     }, rewards = {
         {pack = 'chemical-science-pack', item = 'exoskeleton-equipment', groups = 10},   -- 蓝：外骨骼(移动加速)
     }},
-    {key = 'porter', name = '举重运动员', full = 1000, starter = {   -- 全是工具腰带
+    {key = 'porter', name = '举重运动员', full = FULL_MID, starter = {   -- 全是工具腰带
         {item = 'toolbelt-equipment', count = 10},
     }, rewards = {
         {pack = 'logistic-science-pack', item = 'toolbelt-equipment', groups = 10},   -- 绿：工具腰带(扩快捷栏)
     }},
-    {key = 'transformer', name = '变形金刚', full = 10000, starter = {   -- 终极机甲：粉瓶 1000 级解锁
+    {key = 'transformer', name = '变形金刚', full = FULL_MAX, starter = {   -- 终极机甲：粉瓶 1000 级解锁
         {item = 'mech-armor', count = 1},
     }, unlock = {{pack = 'electromagnetic-science-pack', level = 1000}}, rewards = {
         {pack = 'electromagnetic-science-pack', item = 'mech-armor',                      groups = 1},   -- 粉：机甲护甲(终极)
@@ -488,20 +494,20 @@ local DEFAULT_CLASSES = {
     {section = '农牧'},
     -- 分组换行：装备护甲 ↔ 农牧
     -- ── 农牧组（鱼/虫卵/种子/腐败物，Gleba 生态，主练草瓶 agricultural）──
-    {key = 'bugkeeper', name = '虫师', full = 1000, starter = {
+    {key = 'bugkeeper', name = '虫师', full = FULL_MID, starter = {
         {item = 'pentapod-egg', count = 1},
     }, rewards = {
         {pack = 'agricultural-science-pack', item = 'raw-fish',     groups = 10},
         {pack = 'agricultural-science-pack', item = 'spoilage',     groups = 20},
     }},
-    {key = 'fisher', name = '渔夫', full = 1000, starter = {
+    {key = 'fisher', name = '渔夫', full = FULL_MID, starter = {
         {item = 'inserter', count = 1},
         {item = 'biter-egg', groups = 1},
     }, rewards = {
         {pack = 'agricultural-science-pack', item = 'raw-fish',  groups = 10},
         {pack = 'agricultural-science-pack', item = 'spoilage',  groups = 20},
     }},
-    {key = 'farmer', name = '农夫', full = 1000, starter = {
+    {key = 'farmer', name = '农夫', full = FULL_MID, starter = {
         {item = 'agricultural-tower', count = 5},
         {item = 'yumako-seed', groups = 2},
         {item = 'jellynut-seed', groups = 2},
@@ -516,7 +522,7 @@ local DEFAULT_CLASSES = {
     {section = '星球专精'},
     -- 分组换行：农牧 ↔ 科学/星球
     -- ── 星球专精组（各星球招牌机器/材料 + 太空平台；满级线 1000，需对应高级瓶 100 级解锁）──
-    {key = 'metallurgist', name = '冶金学家', full = 1000, starter = {
+    {key = 'metallurgist', name = '冶金学家', full = FULL_MID, starter = {
         {item = 'foundry', count = 1},
         {item = 'calcite', groups = 2},
         {item = 'coal', groups = 2},
@@ -528,7 +534,7 @@ local DEFAULT_CLASSES = {
         {pack = 'metallurgic-science-pack', item = 'tungsten-ore',     groups = 8},
         {pack = 'metallurgic-science-pack', item = 'calcite',          groups = 5},
     }},
-    {key = 'electromancer', name = '电磁专家', full = 1000, starter = {
+    {key = 'electromancer', name = '电磁专家', full = FULL_MID, starter = {
         {item = 'electromagnetic-plant', count = 1},
         {item = 'scrap', groups = 3},
     }, unlock = {{pack = 'electromagnetic-science-pack', level = 100}}, rewards = {
@@ -539,7 +545,7 @@ local DEFAULT_CLASSES = {
         {pack = 'electromagnetic-science-pack', item = 'holmium-ore',    groups = 8},
         {pack = 'electromagnetic-science-pack', item = 'superconductor', groups = 5},
     }},
-    {key = 'biologist', name = '生物专家', full = 1000, starter = {
+    {key = 'biologist', name = '生物专家', full = FULL_MID, starter = {
         {item = 'agricultural-tower', count = 1},
         {item = 'yumako-seed', groups = 2},
         {item = 'jellynut-seed', groups = 2},
@@ -551,7 +557,7 @@ local DEFAULT_CLASSES = {
         {pack = 'agricultural-science-pack', item = 'carbon',            groups = 8},
         {pack = 'agricultural-science-pack', item = 'spoilage',          groups = 5},
     }},
-    {key = 'physicist', name = '物理学家', full = 1000, starter = {
+    {key = 'physicist', name = '物理学家', full = FULL_MID, starter = {
         {item = 'cryogenic-plant', count = 1},
         {item = 'solid-fuel', groups = 2},
         {item = 'ice', groups = 2},
@@ -562,14 +568,14 @@ local DEFAULT_CLASSES = {
         {pack = 'cryogenic-science-pack', item = 'lithium-plate',     groups = 8},
         {pack = 'cryogenic-science-pack', item = 'lithium',           groups = 8},
     }},
-    {key = 'astronomer', name = '天文学家', full = 1000, starter = {
+    {key = 'astronomer', name = '天文学家', full = FULL_MID, starter = {
         {item = 'lab', count = 1},
     }, unlock = {{pack = 'promethium-science-pack', level = 100}}, rewards = {
         {pack = 'promethium-science-pack', item = 'biolab',            groups = 8},
         {pack = 'promethium-science-pack', item = 'quantum-processor', groups = 12},
     }},
     -- 宇航专家（白瓶/黄瓶）：星际发射 + 平台搭建 + 飞船采集全套（原飞船驾驶员的组件已并入）。
-    {key = 'astronaut', name = '宇航专家', full = 1000, starter = {
+    {key = 'astronaut', name = '宇航专家', full = FULL_MID, starter = {
         {item = 'rocket-silo', count = 1},
         {item = 'asteroid-collector', count = 2},
         {item = 'thruster', count = 2},
@@ -621,9 +627,9 @@ function M.def_of(player)
     return M.def_for_key(M.selected_key(player)) or M.def_for_key(M.DEFAULT)
 end
 
--- 玩家某瓶当前等级（= floor√经验）。
+-- 玩家某瓶当前等级（= floor√经验，封顶 MAX_LEVEL=10万，与 respawn_gifts.pack_level 一致）。
 function M.pack_level(player, pack)
-    return math.floor(math.sqrt(passives.exp_total_for_pack(player.index, pack)))
+    return math.min(M.MAX_LEVEL, math.floor(math.sqrt(passives.exp_total_for_pack(player.index, pack))))
 end
 
 -- 该职业对该玩家是否已解锁（unlock 列表里每条都需满足；无 unlock = 人人可选）。

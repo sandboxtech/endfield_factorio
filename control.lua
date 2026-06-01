@@ -13,6 +13,7 @@ require('scripts.tick')
 require('scripts.world_fx')
 require('scripts.warp_fx')
 require('scripts.chat')
+require('scripts.roboport_limit')
 
 local constants = require('scripts.constants')
 local classes = require('scripts.classes')

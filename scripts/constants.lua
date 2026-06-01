@@ -3,6 +3,7 @@
 local M = {
     hour_to_tick = 216000,
     min_to_tick = 3600,
+    MAX_LEVEL = 100000,   -- 最大等级 = 瓶等级封顶 = 职业 full 上限（单一来源；classes/gui/respawn_gifts 都引用它，改这一处即全改）
 
     not_admin_text = {'wn.permission-denied'},
 

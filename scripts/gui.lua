@@ -5,7 +5,7 @@ local classes = require('scripts.classes')
 
 local M = {}
 
-local CLASS_MAX_LEVEL = 10000   -- 职业后者满级基准（与 respawn_gifts.MAX_LEVEL 一致）
+local CLASS_MAX_LEVEL = constants.MAX_LEVEL   -- 职业满级基准=最大等级（单一来源 constants.MAX_LEVEL）
 
 -- 玩家人物等级 = floor(√在线分钟)（与 respawn_gifts.coin_reward 同公式）。用于按等级显隐 HUD 元素。
 local function player_level(player)

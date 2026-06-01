@@ -7,12 +7,13 @@
 --      背包格数加成已改为 force 级固定 +50（见 reset.lua，随机器人跟随上限一起每轮重设），不再按礼包格数 per-player 动态扩。
 local passives = require('scripts.passives')
 local classes = require('scripts.classes')
+local constants = require('scripts.constants')
 
 local M = {}
 
 -- 等级 = floor(√经验)，封顶 10000（经验本身无上限；升下一级需 (lv+1)² 经验）。
 -- 经验 = 累计瓶数×品质系数（每个瓶 1 点）；满级(10000 级)需该瓶累计 1×10^8 经验。
-M.MAX_LEVEL = 10000
+M.MAX_LEVEL = constants.MAX_LEVEL
 
 local function stack_size(item_name)
     local proto = prototypes.item[item_name]

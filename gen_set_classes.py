@@ -25,6 +25,11 @@ while j < len(src):
     j += 1
 block = src[i + 1:j]   # 不含最外层花括号的内容
 
+# 1.5) 把 full 档常量名替换成数字：DEFAULT_CLASSES 里 full 写的是 FULL_LOW/MID/MAX（Lua 局部变量），
+#      但 set_classes.txt 要喂给控制台 /sc，那里没有这些变量 → 必须先换成纯数字。
+for _name, _val in re.findall(r'local (FULL_\w+)\s*=\s*(\d+)', src):
+    block = re.sub(r'\b' + _name + r'\b', _val, block)
+
 # 2) 逐行去掉 lua 行注释（-- 到行尾；数据里没有字符串包含 --，安全），再删全部空白。
 no_comment = []
 for ln in block.split('\n'):
