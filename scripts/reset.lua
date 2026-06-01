@@ -14,6 +14,12 @@ local M = {}
 
 -- ── 飞船命数前缀（剩余跃迁次数的可视化）─────────────────────────────────────
 local HEART = '[img=virtual-signal/signal-heart]'
+-- 向所有在线管理员打印红色告警（如职业配置了不存在的科技/配方名 → 提示去 classes.lua 修正）。
+local function admin_warn(text)
+    for _, p in pairs(game.connected_players) do
+        if p.admin then p.print('[color=red]' .. text .. '[/color]') end
+    end
+end
 -- 数字 → parameter 物品图标串（逐位，用 img= 形式）：4 → [img=item/parameter-4]；10 → [img=item/parameter-1][img=item/parameter-0]。
 -- 最多两位（parameter 图标只有 0~9）；>99 一律按 99 显示。
 local function life_prefix(n)
@@ -204,11 +210,13 @@ function M.reset()
         local techimgs, recipeimgs = {}, {}
         for _, t in ipairs(u.techs) do
             local tech = force.technologies[t]
-            if tech then tech.researched = true; techimgs[#techimgs + 1] = '[technology=' .. t .. ']' end
+            if tech then tech.researched = true; techimgs[#techimgs + 1] = '[technology=' .. t .. ']'
+            else admin_warn('职业 ' .. u.key .. ' 配置的科技不存在：' .. t) end
         end
         for _, rc in ipairs(u.recipes) do
             local recipe = force.recipes[rc]
-            if recipe then recipe.enabled = true; recipeimgs[#recipeimgs + 1] = '[recipe=' .. rc .. ']' end
+            if recipe then recipe.enabled = true; recipeimgs[#recipeimgs + 1] = '[recipe=' .. rc .. ']'
+            else admin_warn('职业 ' .. u.key .. ' 配置的配方不存在：' .. rc) end
         end
         local namel = classes.text_loc('wn.class-name-' .. u.key, (storage.class_names or {})[u.key], u.name)
         if #techimgs > 0 then game.print({'wn.class-tech-bcast', namel, table.concat(techimgs, ' ')}) end

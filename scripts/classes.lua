@@ -159,28 +159,28 @@ local DEFAULT_CLASSES = {
         {pack = 'cryogenic-science-pack', item = 'productivity-module', groups = 5},
     }},
 
-    {key = 'qualityman', techs = {'quality-module'}, name = '品质大师', full = FULL_MID, starter = {
+    {key = 'qualityman', techs = {'quality-module' 史诗品质}, name = '品质大师', full = FULL_MID, starter = {
         {item = 'quality-module', groups = 1},
     }, unlock = {{pack = 'electromagnetic-science-pack', level = 10}}, rewards = {
         {pack = 'chemical-science-pack',        item = 'quality-module',     groups = 10},   -- 蓝：1级
         {pack = 'space-science-pack',           item = 'quality-module-2',   groups = 10},   -- 白：2级
         {pack = 'electromagnetic-science-pack', item = 'quality-module-3',   groups = 10},   -- 粉：3级(电浆星)
     }},
-    {key = 'speedman', techs = {'speed-module'}, name = '速度大师', full = FULL_MID, starter = {
+    {key = 'speedman', techs = {'speed-module' 轻质框架增产1}, name = '速度大师', full = FULL_MID, starter = {
         {item = 'speed-module', groups = 1},
     }, unlock = {{pack = 'metallurgic-science-pack', level = 10}}, rewards = {
         {pack = 'chemical-science-pack',    item = 'speed-module',     groups = 10},   -- 蓝：1级
         {pack = 'space-science-pack',       item = 'speed-module-2',   groups = 10},   -- 白：2级
         {pack = 'metallurgic-science-pack', item = 'speed-module-3',   groups = 10},   -- 橙：3级(火山)
     }},
-    {key = 'efficiencyman', techs = {'efficiency-module'}, name = '节能大师', full = FULL_MID, starter = {
+    {key = 'efficiencyman', techs = {'efficiency-module' 火箭燃料增产1}, name = '节能大师', full = FULL_MID, starter = {
         {item = 'efficiency-module', groups = 1},
     }, unlock = {{pack = 'agricultural-science-pack', level = 10}}, rewards = {
         {pack = 'chemical-science-pack',     item = 'efficiency-module',     groups = 10},   -- 蓝：1级
         {pack = 'space-science-pack',        item = 'efficiency-module-2',   groups = 10},   -- 白：2级
         {pack = 'agricultural-science-pack', item = 'efficiency-module-3',   groups = 10},   -- 草：3级(Gleba)
     }},
-    {key = 'productivityman', techs = {'productivity-module'}, name = '产能大师', full = FULL_MID, starter = {
+    {key = 'productivityman', techs = {'productivity-module' 处理器增产1}, name = '产能大师', full = FULL_MID, starter = {
         {item = 'productivity-module', groups = 1},
     }, unlock = {{pack = 'cryogenic-science-pack', level = 10}}, rewards = {
         {pack = 'chemical-science-pack',  item = 'productivity-module',     groups = 10},   -- 蓝：1级
@@ -525,46 +525,105 @@ local DEFAULT_CLASSES = {
     {section = '农牧'},
     -- 分组换行：装备护甲 ↔ 农牧
     -- ── 农牧组（鱼/虫卵/种子/腐败物，Gleba 生态，主练草瓶 agricultural）──
-    {key = 'bugkeeper', techs = {'captivity'}, name = '牧民', full = FULL_LOW, starter = {
+    {key = 'TODO', techs = {'captivity'}, name = '猎手', full = FULL_MID, starter = {
         {item = 'pentapod-egg', count = 1},
         {item = 'biter-egg', count = 1},
+        {item = 'rocket-launcher', count = 1},
     }, unlock = {{pack = 'agricultural-science-pack', level = 100}}, rewards = {
-        {pack = 'agricultural-science-pack', item = 'nutrients',     groups = 20},
-        {pack = 'agricultural-science-pack', item = 'spoilage',     groups = 20},
+        {pack = 'agricultural-science-pack', item = 'capture-robot-rocket',     groups = 10},
+        {pack = 'space-science-pack', item = 'bioflux',     groups = 30},
+        {pack = 'agricultural-science-pack', item = 'bioflux',     groups = 30},
+        {pack = 'promethium-science-pack', item = 'bioflux',     groups = 30},
     }},
-    {key = 'fisher', techs = {'fish-breeding'}, name = '渔民', full = FULL_LOW, starter = {
-        {item = 'tree-seed', groups = 1},
+    {key = 'TODO', techs = {'captivity'}, name = '牧民', full = FULL_MID, starter = {
+        {item = 'pentapod-egg', count = 1},
+        {item = '生物室', count = 1},
     }, unlock = {{pack = 'agricultural-science-pack', level = 100}}, rewards = {
-        {pack = 'agricultural-science-pack', item = 'raw-fish',  groups = 20},
-        {pack = 'agricultural-science-pack', item = 'tree-seed',  groups = 20},
+        {pack = 'agricultural-science-pack', item = 'bioflux',     groups = 10},
+        {pack = 'agricultural-science-pack', item = 'capture-robot-rocket',     groups = 10},
     }},
-    {key = 'farmer', techs = {'agriculture', 'tree-seeding'}, name = '农民', full = FULL_MAX, starter = {
-        {item = 'agricultural-tower', groups = 1},
+
+    {key = 'fisher', techs = {'fish-breeding'}, name = '渔夫', full = FULL_LOW, starter = {
+        {item = '生物室', count = 1},
+    }, unlock = {{pack = 'agricultural-science-pack', level = 100}}, rewards = {
+        {pack = 'space-science-pack', item = 'raw-fish',  groups = 10},
+        {pack = 'agricultural-science-pack', item = 'raw-fish',  groups = 10},
+        {pack = 'promethium-science-pack', item = 'raw-fish',  groups = 10},
+    }},
+    {key = 'farmer', techs = {'tree-seeding'}, name = '农民', full = FULL_MAX, starter = {
+        {item = 'agricultural-tower', count = 1},
         {item = 'yumako-seed', groups = 2},
         {item = 'jellynut-seed', groups = 2},
     }, unlock = {{pack = 'agricultural-science-pack', level = 100}}, rewards = {
-        {pack = 'agricultural-science-pack', item = 'landfill',       groups = 5},
-        {pack = 'agricultural-science-pack', item = 'artificial-yumako-soil',     groups = 5},
-        {pack = 'agricultural-science-pack', item = 'overgrowth-yumako-soil',         groups = 5},
-        {pack = 'agricultural-science-pack', item = 'artificial-jellynut-soil', groups = 5},
-        {pack = 'agricultural-science-pack', item = 'overgrowth-jellynut-soil', groups = 5},
+        {pack = 'agricultural-science-pack', item = 'artificial-yumako-soil',     groups = 10},
+        {pack = 'agricultural-science-pack', item = 'overgrowth-yumako-soil',         groups = 10},
+        {pack = 'agricultural-science-pack', item = 'artificial-jellynut-soil', groups = 10},
+        {pack = 'agricultural-science-pack', item = 'overgrowth-jellynut-soil', groups = 10},
     }},
-    {key = 'chef', techs = {'bioflux-processing'}, name = '厨师', full = FULL_MID, starter = {
+    {key = 'farmer', techs = {'tree-seeding'}, name = '护林员', full = FULL_MAX, starter = {
+        {item = 'agricultural-tower', count = 1},
+        {item = 'tree-seed', groups = 2},
+    }, unlock = {{pack = 'agricultural-science-pack', level = 100}}, rewards = {
+        {pack = 'automation-science-pack', item = 'wood',       groups = 10},
+        {pack = 'space-science-pack', item = 'landfill',       groups = 10},
+        {pack = 'agricultural-science-pack', item = 'landfill',       groups = 10},
+        {pack = 'promethium-science-pack', item = 'landfill',       groups = 10},
+    }},
+    {key = 'chef', techs = {'bioflux-processing' 果冻果 玉玛果 塑料增产计划1}, name = '厨师', full = FULL_MID, starter = {
         {item = 'biochamber', groups = 1},
     }, rewards = {
-        {pack = 'agricultural-science-pack', item = 'yumako',  groups = 10},
+        {pack = 'agricultural-science-pack', item = 'yumako',  groups = 20},
         {pack = 'agricultural-science-pack', item = 'yumako-mash',     groups = 10},
-        {pack = 'agricultural-science-pack', item = 'jellynut',  groups = 10},
+        {pack = 'agricultural-science-pack', item = 'jellynut',  groups = 20},
         {pack = 'agricultural-science-pack', item = 'jelly',     groups = 10},
     }},
-    {key = 'pharmacist', techs = {'bacteria-cultivation'}, name = '药师', full = FULL_MID, starter = {
+    {key = 'pharmacist', techs = {'bacteria-cultivation' 星岩增产计划1}, name = '培养员', full = FULL_MID, starter = {
         {item = 'biochamber', groups = 1},
     }, rewards = {
         {pack = 'agricultural-science-pack', item = 'iron-bacteria',  groups = 2},
         {pack = 'agricultural-science-pack', item = 'copper-bacteria',  groups = 2},
         {pack = 'agricultural-science-pack', item = 'bioflux',     groups = 40},
     }},
-    
+
+    {section = '星球开荒'},
+
+    {key = '火星爱好者', techs = {发现祝融星}, name = '火星爱好者', full = FULL_LOW, starter = {
+        {item = 'rocket-silo', count = 1},
+        {item = 'space-platform-starter-pack', count = 1},
+    }, unlock = {{pack = 'space-science-pack', level = 1000}}, rewards = {
+
+    }},
+    {key = '雷星爱好者', techs = {发现雷神星}, name = '雷星爱好者', full = FULL_LOW, starter = {
+        {item = 'rocket-silo', count = 1},
+        {item = 'space-platform-starter-pack', count = 1},
+    }, unlock = {{pack = 'space-science-pack', level = 1000}}, rewards = {
+
+    }},
+    {key = '草星爱好者', techs = {发现句芒星}, name = '草星爱好者', full = FULL_LOW, starter = {
+        {item = 'rocket-silo', count = 1},
+        {item = 'space-platform-starter-pack', count = 1},
+    }, unlock = {{pack = 'space-science-pack', level = 1000}}, rewards = {
+
+    }},
+    {key = '冰星爱好者', techs = {发现句芒星}, name = '草星爱好者', full = FULL_LOW, starter = {
+        {item = 'rocket-silo', count = 1},
+        {item = 'space-platform-starter-pack', count = 1},
+    }, unlock = {{pack = 'space-science-pack', level = 1000}}, rewards = {
+
+    }},
+    {key = '边缘爱好者', techs = {火箭组件增产1}, name = '草星爱好者', full = FULL_LOW, starter = {
+        {item = 'rocket-silo', count = 1},
+        {item = 'space-platform-starter-pack', count = 1},
+    }, unlock = {{pack = 'space-science-pack', level = 1000}}, rewards = {
+
+    }},
+    {key = '冰星爱好者', techs = {科研增产1}, name = '草星爱好者', full = FULL_LOW, starter = {
+        {item = 'rocket-silo', count = 1},
+        {item = 'space-platform-starter-pack', count = 1},
+    }, unlock = {{pack = 'space-science-pack', level = 1000}}, rewards = {
+
+    }},
+
     {section = '星球专精'},
     -- 分组换行：农牧 ↔ 科学/星球
     -- ── 星球专精组（各星球招牌机器/材料 + 太空平台；满级线 1000，需对应高级瓶 100 级解锁）──
@@ -596,6 +655,18 @@ local DEFAULT_CLASSES = {
     }, unlock = {{pack = 'promethium-science-pack', level = 500}}, rewards = {
         {pack = 'promethium-science-pack', item = 'biolab',            groups = 20},
     }},
+    -- 宇航专家（白瓶/黄瓶）：星际发射 + 平台搭建 + 飞船采集全套（原飞船驾驶员的组件已并入）。
+    {key = 'astronaut', techs = {'rocket-silo'}, name = '宇航专家', full = FULL_MAX, starter = {
+        {item = 'rocket-silo', count = 1},
+        {item = 'space-platform-starter-pack', count = 1},
+    }, unlock = {{pack = 'space-science-pack', level = 1000}}, rewards = { --
+        {pack = 'utility-science-pack', item = 'space-platform-foundation',   groups = 5},
+        {pack = 'space-science-pack',   item = 'cargo-bay',                   groups = 5},
+        {pack = 'space-science-pack',   item = 'thruster',                    groups = 5},
+        {pack = 'space-science-pack',   item = 'asteroid-collector',          groups = 5},
+        {pack = 'space-science-pack',   item = 'crusher',                     groups = 5},
+    }},
+
     -- 宇航专家（白瓶/黄瓶）：星际发射 + 平台搭建 + 飞船采集全套（原飞船驾驶员的组件已并入）。
     {key = 'astronaut', techs = {'rocket-silo'}, name = '宇航专家', full = FULL_MAX, starter = {
         {item = 'rocket-silo', count = 1},
