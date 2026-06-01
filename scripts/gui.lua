@@ -199,7 +199,7 @@ function M.show_actions(player)
     if storage.travel_enabled then
         buttons[#buttons + 1] = {label = true, caption = {'wn.actions-travel-group'}}
         local open, tc = storage.travel_open or {}, storage.travel_chance or {}
-        for _, p in ipairs({'nauvis', 'vulcanus', 'gleba', 'fulgora', 'aquilo'}) do
+        for _, p in ipairs(constants.PLANETS) do
             buttons[#buttons + 1] = {name = 'wn_act_travel_' .. p, caption = {'wn.act-travel', p}, tags = {wn_travel = p},
                 enabled = open[p] or false,
                 tooltip = open[p] and {'wn.act-travel-tip'} or {'wn.travel-closed', math.floor((tc[p] or 0.5) * 100)}}
@@ -208,7 +208,7 @@ function M.show_actions(player)
     -- 【出生星球】组：设定下次跃迁复活 + 领起手装备的星球。不传送、全星球可选、当前选中标 ✓。
     buttons[#buttons + 1] = {label = true, caption = {'wn.actions-home-group'}}
     local home = (storage.respawn_surface or {})[player.name] or 'nauvis'
-    for _, p in ipairs({'nauvis', 'vulcanus', 'gleba', 'fulgora', 'aquilo'}) do
+    for _, p in ipairs(constants.PLANETS) do
         buttons[#buttons + 1] = {name = 'wn_act_home_' .. p,
             caption = {p == home and 'wn.act-home-cur' or 'wn.act-home', p}, tags = {wn_home = p}, tooltip = {'wn.act-home-tip'}}
     end

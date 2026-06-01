@@ -156,7 +156,7 @@ function M.reset()
     end
 
     -- 清空星球（会触发 surface.lua 的 on_surface_cleared 重新生成）
-    for _, surface_name in pairs({'nauvis', 'vulcanus', 'gleba', 'fulgora', 'aquilo'}) do
+    for _, surface_name in ipairs(constants.PLANETS) do
         if game.surfaces[surface_name] ~= nil then
             game.surfaces[surface_name].clear(true)
         end
@@ -176,7 +176,7 @@ function M.reset()
         force.unlock_space_location(name)
     end
     -- 同时把四个星球的【发现科技】直接标记为已研究（科技树里显示已发现）。
-    for _, planet in ipairs({'vulcanus', 'gleba', 'fulgora', 'aquilo'}) do
+    for _, planet in ipairs(constants.OFF_PLANETS) do
         local tech = force.technologies['planet-discovery-' .. planet]
         if tech then tech.researched = true end
     end
@@ -204,7 +204,7 @@ function M.reset()
     -- 仅 travel_enabled 总开关开启时这套才生效（见 commands.travel / gui 按钮）。
     storage.travel_open = {nauvis = true}
     local tc = storage.travel_chance or {}
-    for _, planet in ipairs({'vulcanus', 'gleba', 'fulgora', 'aquilo'}) do
+    for _, planet in ipairs(constants.OFF_PLANETS) do
         storage.travel_open[planet] = math.random() < (tc[planet] or 0.5)
     end
     storage.chat_bubble = {} -- 清空聊天气泡引用（角色已死、气泡已随之销毁，避免残留无效引用）
@@ -226,11 +226,11 @@ function M.reset()
 
     -- 污染/敌人/腐败等【影响玩法节奏】的全局参数：大概率正常值，小概率小幅偏离（util.mostly_normal）。
     -- 不再大幅随机，极端的污染/虫子/腐败速度会毁掉一局的可玩性。（difficulty 默认值见 constants.ensure_defaults）
-    -- 本世界【全局敌人进化度】随机滚定：evo∈[0,1]，分布【线性递减】(evo=0 处概率密度最高、线性降到 evo=1 处为 0，PDF ∝ (1-x)，逆变换 x = 1-√r)。
+    -- 本世界【全局敌人进化度】随机滚定：evo = min(1, enemy_evo_max×(1-√r))，分布【线性递减】(evo=0 处概率密度最高、线性降到上限处为 0)。
     -- evolution 在 2.0 是 per-surface 标量，先 reset_evolution 清累积贡献，再逐星球表面写同一值 → 全局一致(影响虫种/攻击波规模/复制虫选种)。
     game.forces.enemy.reset_evolution()
-    local evo = 1 - math.sqrt(math.random())
-    for _, surface_name in pairs({'nauvis', 'vulcanus', 'gleba', 'fulgora', 'aquilo'}) do
+    local evo = math.min(1, (storage.enemy_evo_max or 1) * (1 - math.sqrt(math.random())))
+    for _, surface_name in ipairs(constants.PLANETS) do
         local s = game.surfaces[surface_name]
         if s then game.forces.enemy.set_evolution_factor(evo, s) end
     end
