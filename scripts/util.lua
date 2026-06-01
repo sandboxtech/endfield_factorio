@@ -39,6 +39,13 @@ function M.log_tri(n)
     return n ^ (math.random() - math.random())
 end
 
+-- 最大公约数：把 满级线:满级总数 约成最简比（→ "每 P 级得 Q 个"）。
+function M.gcd(a, b)
+    a, b = math.floor(math.abs(a)), math.floor(math.abs(b))
+    while b ~= 0 do a, b = b, a % b end
+    return a == 0 and 1 or a
+end
+
 
 -- 按敌人进化度挑一种虫（空降/复制虫等共用）。
 function M.evo_biter(evo)
