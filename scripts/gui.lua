@@ -247,7 +247,7 @@ function M.show_classes(player)
         end
         for _, r in ipairs(def.rewards or {}) do
             local proto = prototypes.item[r.item]
-            local total = ((proto and proto.stack_size) or 1) * (r.groups or 1)   -- 满级最多给多少个(M)
+            local total = r.count or (((proto and proto.stack_size) or 1) * (r.groups or 1))   -- 满级最多给多少个(M)：有 count 按个数(与 respawn_gifts 发放口径一致)，否则 堆叠×groups
             local full = def.full or CLASS_MAX_LEVEL                              -- 满级线
             local g = util.gcd(full, total)                                       -- 约分 满级线:满级总数 → 每 P 级得 Q 个
             tip[#tip + 1] = {'wn.class-tip-reward',
