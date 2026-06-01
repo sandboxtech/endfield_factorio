@@ -40,21 +40,21 @@ local DEFAULT_CLASSES = {
         {item = 'car', count = 1},
         {item = 'nuclear-fuel', groups = 1},
     }, rewards = {
-        {pack = 'automation-science-pack', item = 'nuclear-fuel',   groups = 50},
+        -- {pack = 'automation-science-pack', item = 'nuclear-fuel',   groups = 50},
 
-        -- {pack = 'automation-science-pack', item = 'coin',   count = 100},
-        -- {pack = 'logistic-science-pack', item = 'coin',   count = 100},
-        -- {pack = 'military-science-pack', item = 'coin',   count = 100},
-        -- {pack = 'chemical-science-pack', item = 'coin',   count = 100},
-        -- {pack = 'production-science-pack', item = 'coin',   count = 100},
-        -- {pack = 'utility-science-pack', item = 'coin',   count = 100},
-        -- {pack = 'space-science-pack', item = 'coin', count = 100},
-        -- --
-        -- {pack = 'metallurgic-science-pack',     item = 'coin', count = 100},
-        -- {pack = 'electromagnetic-science-pack', item = 'coin',  count = 100},
-        -- {pack = 'agricultural-science-pack', item = 'coin', count = 100},
-        -- {pack = 'cryogenic-science-pack', item = 'coin', count = 100},
-        -- {pack = 'promethium-science-pack', item = 'coin', count = 100},
+        {pack = 'automation-science-pack', item = 'coin',   count = 100},
+        {pack = 'logistic-science-pack', item = 'coin',   count = 100},
+        {pack = 'military-science-pack', item = 'coin',   count = 100},
+        {pack = 'chemical-science-pack', item = 'coin',   count = 100},
+        {pack = 'production-science-pack', item = 'coin',   count = 100},
+        {pack = 'utility-science-pack', item = 'coin',   count = 100},
+        {pack = 'space-science-pack', item = 'coin', count = 100},
+        --
+        {pack = 'metallurgic-science-pack',     item = 'coin', count = 100},
+        {pack = 'electromagnetic-science-pack', item = 'coin',  count = 100},
+        {pack = 'agricultural-science-pack', item = 'coin', count = 100},
+        {pack = 'cryogenic-science-pack', item = 'coin', count = 100},
+        {pack = 'promethium-science-pack', item = 'coin', count = 100},
     }},
     -- 矿物
     {key = 'oreman', name = '矿物学家', full = FULL_LOW, starter = {
