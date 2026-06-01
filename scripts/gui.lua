@@ -229,7 +229,8 @@ function M.show_classes(player)
             end
             buttons[#buttons + 1] = {newrow = true}   -- 空职业（无 key 的 {}/{section=} 占位）= UI 换行/分组分隔
         else
-        local name_loc = def.name or {'wn.class-name-' .. def.key}   -- 职业定义可内嵌 name 字符串（绕过 locale）
+        -- 职业名三层兜底：locale 词条 wn.class-name-<key>(英文友好) → 动态表 storage.class_names[key](/c 热改) → def.name(中文默认)。
+        local name_loc = classes.text_loc('wn.class-name-' .. def.key, (storage.class_names or {})[def.key], def.name or def.key)
         -- tooltip：白送(starter)每物品一行"+N [img]"；奖励(rewards)每条一行"每 a 级 [瓶] b 个 [物品]"。两者都换行。
         -- 按钮图标 starter_img 取第一件白送物品；a:b 为 满级:满级总个数 的最简比(gcd 约分)。
         local starter_img = (def.starter and def.starter[1]) and ('[img=item/' .. def.starter[1].item .. ']') or ''

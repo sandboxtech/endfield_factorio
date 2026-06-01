@@ -66,3 +66,18 @@ if '--check' in sys.argv:
 
 open(OUT, 'w', encoding='utf-8').write(out)
 print(f'已生成 set_classes.txt：{n_class} 职业 + {n_sep} 分隔')
+
+# 同步职业名到 zh-CN locale（中文为准，从 classes.lua 的 {key=,name=} 提取，写入标记区块）。
+# en 的 class-name-* 由人工维护（gen 不碰）；缺失的职业名游戏内回退 def.name。
+ZH = os.path.join(ROOT, 'locale', 'zh-CN', 'locale.cfg')
+pairs = re.findall(r"\{key = '([a-z_]+)', name = '([^']+)'", src)
+body = '\n'.join(f'class-name-{k}={n}' for k, n in pairs)
+B = '# >>> 职业名 class-name-<key>（gen_set_classes.py 自动从 classes.lua 同步，勿手改）>>>'
+E = '# <<< 职业名 <<<'
+cfg = open(ZH, encoding='utf-8').read()
+if B in cfg and E in cfg:
+    cfg = re.sub(re.escape(B) + r'.*?' + re.escape(E), B + '\n' + body + '\n' + E, cfg, flags=re.S)
+    open(ZH, 'w', encoding='utf-8').write(cfg)
+    print(f'已同步 zh-CN 职业名：{len(pairs)} 条')
+else:
+    print('警告：zh-CN locale.cfg 缺少职业名标记区块，跳过同步')

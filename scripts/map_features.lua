@@ -574,25 +574,36 @@ local function nonlinear_count(max, power)
     return math.floor(math.random() ^ (power or 3) * (max + 1))
 end
 
--- 电网核心：substation + 满电 EEI（给电炮供电）。返回 {sp=substation位置, eei=接口} 或 nil（放不下）。
--- 设计：超大缓冲(1 TJ)开局爆满，主要靠【存量】供电；发电功率很低，由 place_guards 按用电建筑数累加(每个 6MW)。
--- 效果：电炮开局有海量电随便打，但发电跟不上，打久了靠缓冲撑、长期被慢慢耗尽。
+-- 各电炮【启动时最大功率】(W)：手填(runtime 取不到开火功率)；表里没有的电炮回退用其待机功率 drain。
+local TURRET_MAX_POWER = {
+    ['laser-turret']   = 1.3e6,   -- 激光 1.3 MW
+    ['tesla-turret']   = 7e6,     -- 特斯拉 7 MW
+    ['railgun-turret'] = 10e6,    -- 磁轨炮 10 MW
+}
+local STANDBY_HOURS = 12   -- 初始电量 = 所有电炮 待机功率(drain) × 此小时数（正好待机这么久耗完）
+
+-- 电网核心：substation + EEI（给电炮供电）。返回 {sp=substation位置, eei=接口, standby=累计待机功率} 或 nil。
+-- 设计（由 place_guards 边放电炮边累加，见那里）：
+--   · 发电功率 power_production = Σ 各电炮【最大功率】(TURRET_MAX_POWER) → 所有炮同时全开火也够电。
+--   · 缓冲容量/初始电量 = Σ 各电炮【待机功率 drain】× STANDBY_HOURS 小时 → 纯待机正好这么久耗完。
 local function build_power_core(surface, center)
     local sp = surface.find_non_colliding_position('substation', center, 5, 1)
     if not sp then return nil end
     -- legendary 品质 substation：供电范围更大 → 环上 6~11 格的电炮都能覆盖到、不会没电。
-    if not surface.create_entity{name = 'substation', force = 'enemy', position = sp, quality = 'legendary'} then return nil end
+    local sub = surface.create_entity{name = 'substation', force = 'enemy', position = sp, quality = 'legendary'}
+    if not sub then return nil end
+    if math.random() < (storage.enemy_invincible_chance or 0.5) then sub.destructible = false end   -- 概率无敌(电网核心,/c storage.enemy_invincible_chance 调)
     local ip = surface.find_non_colliding_position('electric-energy-interface', sp, 4, 1)
     local eei
     if ip then
         eei = surface.create_entity{name = 'electric-energy-interface', force = 'enemy', position = ip}
         if eei then
-            eei.electric_buffer_size = 1e12   -- 1 TJ 缓冲（开局爆满，主要靠存量供电）
-            eei.power_production = 0           -- 发电由 place_guards 按用电建筑数累加（每个 +6MW）
-            eei.energy = 1e12                  -- 开局满能量（1 TJ）
+            eei.electric_buffer_size = 1   -- 占位(buffer 必须 >0)，下面 place_guards 按电炮累加覆盖
+            eei.power_production = 0        -- 发电=各电炮最大功率之和，place_guards 累加
+            eei.energy = 0                  -- 初始电量=各电炮 12h 待机量，place_guards 充满
         end
     end
-    return {sp = sp, eei = eei}
+    return {sp = sp, eei = eei, standby = 0}
 end
 
 -- 【统一放敌人逻辑】(所有遭遇共用，只是 danger 不同)：在 center 周围按 danger 放守卫塔 + 飞船残骸。
@@ -603,7 +614,10 @@ local function place_guards(surface, center, danger, floor)
     -- 把闪电引到自己身上，保护周围敌方守卫塔/电网核心不被劈烂（永续箱已 destructible=false，本就免疫）。
     if surface.name == 'fulgora' then
         local lp = surface.find_non_colliding_position('lightning-collector', center, 6, 1)
-        if lp then surface.create_entity{name = 'lightning-collector', force = 'enemy', position = lp} end
+        if lp then
+            local lc = surface.create_entity{name = 'lightning-collector', force = 'enemy', position = lp}
+            if lc and math.random() < (storage.enemy_invincible_chance or 0.5) then lc.destructible = false end   -- 概率无敌(避雷针)
+        end
     end
     local tmax = math.max(1, math.floor(1 + danger * 7 + 0.5))
     local core, core_tried = nil, false
@@ -622,7 +636,15 @@ local function place_guards(surface, center, danger, floor)
                 local e = surface.create_entity{name = name, force = 'enemy', position = gsp, direction = math.random(0, 3) * 4, quality = roll_quality(0.7)}
                 enemy_floor_patch(surface, e, floor)
                 if e then
-                    if def.electric and core and core.eei then core.eei.power_production = core.eei.power_production + 6e6 end   -- 每个用电建筑给电网 +6MW 发电
+                    if def.electric and core and core.eei then
+                        local es = e.prototype.electric_energy_source_prototype
+                        local drain = es and es.drain or 0                          -- 待机功率(runtime)
+                        local maxp = TURRET_MAX_POWER[e.name] or drain               -- 最大功率(手填,没有则用待机)
+                        core.standby = core.standby + drain
+                        core.eei.power_production = core.eei.power_production + maxp                 -- 发电 += 该炮最大功率
+                        core.eei.electric_buffer_size = math.max(1, core.standby * STANDBY_HOURS * 3600)  -- 初始电量 = Σ待机 × 12h
+                        core.eei.energy = core.eei.electric_buffer_size                             -- 充满
+                    end
                     if def.mag then fill_turret_ammo(e, pick_ammo(MAG_AMMO)) end
                     if def.ammo then fill_turret_ammo(e, def.ammo) end
                     if def.rocket then fill_turret_ammo(e, pick_ammo(OUTPOST_ROCKET)) end

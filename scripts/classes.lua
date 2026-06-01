@@ -415,14 +415,14 @@ local DEFAULT_CLASSES = {
         {pack = 'metallurgic-science-pack',  item = 'artillery-wagon',  groups = 1},   -- 黄：火炮车厢(移动炮)
         {pack = 'metallurgic-science-pack', item = 'artillery-turret', groups = 1},   -- 灰：固定炮台
     }},
-    {key = 'teslatrooper', name = '杨永信', full = FULL_MAX, starter = {
+    {key = 'teslatrooper', name = '电击枪', full = FULL_MAX, starter = {
         {item = 'teslagun', count = 1},
         {item = 'tesla-ammo', count = 20},
     }, unlock = {{pack = 'electromagnetic-science-pack', level = 100}}, rewards = {
         {pack = 'electromagnetic-science-pack', item = 'tesla-ammo',   groups = 10},
         {pack = 'electromagnetic-science-pack', item = 'tesla-turret', groups = 2},
     }},
-    {key = 'railgunner', name = '磁轨炮兵', full = FULL_MID, starter = {
+    {key = 'railgunner', name = '炮姐', full = FULL_MID, starter = {
         {item = 'railgun', count = 1},
         {item = 'railgun-ammo', count = 5},
     }, unlock = {{pack = 'cryogenic-science-pack', level = 100}}, rewards = {
@@ -649,6 +649,13 @@ function M.set(player, key)
     storage.player_class = storage.player_class or {}
     storage.player_class[player.name] = key
     return true
+end
+
+-- 显示文本三层兜底（i18n + 动态 + 默认）：利用 localised-string 的 '?' fallback 依次尝试，第一个能解析的生效。
+--   ① locale_key 词条（有翻译则按玩家语言显示，英文友好）；② 失败则 dyn（动态表值，/c 可热改，nil 则跳过）；
+--   ③ 再失败用 default（纯字符串恒成功，保底）。例：name = text_loc('wn.class-name-civilian', storage.class_names.civilian, '平民')。
+function M.text_loc(locale_key, dyn, default)
+    return {'?', {locale_key}, dyn or default or ''}
 end
 
 return M

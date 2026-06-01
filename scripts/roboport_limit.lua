@@ -12,7 +12,7 @@ local function check(e)
     local ent = e.entity
     if not (ent and ent.valid and ent.type == 'roboport') then return end   -- 高频事件，先按类型早退
     local net = ent.logistic_network
-    local limit = storage.roboport_limit or 1000
+    local limit = storage.roboport_limit or 10000
     -- net.cells = 该网络全部 roboport 单元；#cells 即网络内 roboport 数量。
     if not (net and #net.cells > limit) then return end
 
