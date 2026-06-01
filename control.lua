@@ -15,22 +15,17 @@ require('scripts.warp_fx')
 require('scripts.chat')
 require('scripts.roboport_limit')
 
-local constants = require('scripts.constants')
-local classes = require('scripts.classes')
-local map_features = require('scripts.map_features')
+local commands = require('scripts.commands')
 local reset = require('scripts.reset')
 
--- 第一次运行场景时触发：执行第 1 轮跃迁（默认值由 reset 内部的 ensure_defaults 补齐）。
+-- 第一次运行场景时触发：先 ensure_all 补齐默认/职业表/战利品权重，再执行第 1 轮跃迁（reset 内部还会再跑 ensure_defaults，幂等）。
 script.on_init(function()
     game.speed = 1
-    classes.ensure()            -- 默认职业表写入 storage.classes（之后可 /c 动态改）
-    map_features.ensure_loot()  -- 默认战利品权重写入 storage.loot_weights（之后可 /c 动态改）
+    commands.ensure_all()
     reset.reset()
 end)
 
--- 场景脚本/版本变化后加载老存档时触发：补齐新增的默认字段，保证迁移平稳。
+-- 场景脚本/版本变化后加载老存档时触发：单点 ensure_all 补齐全部新增默认字段 + 迁移，保证迁移平稳。
 script.on_configuration_changed(function()
-    constants.ensure_defaults()
-    classes.ensure()            -- 老存档补 storage.classes（缺失才补，保留 /c 已改的）
-    map_features.ensure_loot()  -- 老存档补 storage.loot_weights
+    commands.ensure_all()
 end)

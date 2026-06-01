@@ -8,6 +8,7 @@ local science_exp = require('scripts.science_exp')
 local passives = require('scripts.passives')
 local respawn_gifts = require('scripts.respawn_gifts')
 local classes = require('scripts.classes')
+local map_features = require('scripts.map_features')
 local util = require('scripts.util')
 
 local M = {}   -- 导出给 HUD 按钮复用（gui 点击经 tick 路由到这里）
@@ -103,12 +104,28 @@ end
 
 -- （/exp_clear 已移除：清空所有人瓶子经验改用控制台 /c storage.exp = {}。）
 
--- 参数 diff（合并了原 /ensuredefaults + /config）：先跑一次 constants.ensure_defaults（补默认/必需表 + 清废弃键/修类型，
+-- 全部迁移/默认补齐的【单一入口】：标量与必需表(constants.ensure_defaults) + 职业表(classes.ensure) + 战利品权重(map_features.ensure_loot)。
+-- on_init / on_configuration_changed / /config 红按钮 / /ensureall 命令统一走它 → 三个 ensure 不再各处散调、不会漏跑。三者各自幂等。
+function M.ensure_all()
+    constants.ensure_defaults()
+    classes.ensure()
+    map_features.ensure_loot()
+end
+
+-- 手动跑全部 ensure（控制台或管理员）：补齐新增默认、迁移老存档、修类型。控制台调用(player_index 为 nil)视作管理员。
+add_command('ensureall', '补齐全部默认/迁移：标量+必需表+职业表+战利品权重', function(command)
+    local player = command.player_index and game.get_player(command.player_index)
+    if player and not player.admin then player.print(constants.not_admin_text); return end
+    M.ensure_all()
+    ;(player or game).print('ensure_all 已执行：默认值/必需表/职业表/战利品权重均已补齐。')
+end)
+
+-- 参数 diff（合并了原 /ensuredefaults + /config）：先跑一次 M.ensure_all（补默认/必需表/职业表/战利品权重 + 清废弃键/修类型，
 -- 迁移），再弹窗对比【当前 storage】与【默认值】、改过的高亮。仅标量常量(constants.scalar_defaults)；
 -- 表型(travel_chance/event_types…)不在此列。只弹给本人、不公告。
 function M.admin_diff(player)
     if not (player and player.admin) then return end
-    constants.ensure_defaults()
+    M.ensure_all()
     local defs = constants.scalar_defaults or {}
     local keys = {}
     for k in pairs(defs) do keys[#keys + 1] = k end
@@ -123,7 +140,7 @@ function M.admin_diff(player)
             lines[#lines + 1] = '[color=acid]' .. k .. ' = ' .. tostring(cur) .. '[/color]（默认 ' .. tostring(def) .. '）'
         end
     end
-    table.insert(lines, 1, '已跑 ensure_defaults；已改 [color=acid]' .. changed .. '[/color] 项（高亮），共 ' .. #keys .. ' 项：')
+    table.insert(lines, 1, '已跑 ensure_all；已改 [color=acid]' .. changed .. '[/color] 项（高亮），共 ' .. #keys .. ' 项：')
     gui.show_popup(player, '参数：当前值 vs 默认值', lines)
 end
 
