@@ -312,17 +312,26 @@ local DEFAULT_CLASSES = {
     {key = 'recyclerman', name = '回收工人', full = FULL_LOW, starter = {
         {item = 'recycler', count = 1},
     }, unlock = {{pack = 'electromagnetic-science-pack', level = 10}}, rewards = {
-        {pack = 'electromagnetic-science-pack', item = 'scrap',                 groups = 30},
+        {pack = 'autimation-science-pack', item = 'scrap',                 groups = 10},
+        {pack = 'space-science-pack', item = 'scrap',                 groups = 10},
+        {pack = 'electromagnetic-science-pack', item = 'scrap',                 groups = 10},
+        {pack = 'promethium-science-pack', item = 'scrap',                 groups = 10},
     }},
     {key = 'electromagneticman', name = '电子工人', full = FULL_LOW, starter = {
         {item = 'electromagnetic-plant', count = 1},
     }, unlock = {{pack = 'electromagnetic-science-pack', level = 10}}, rewards = {
-        {pack = 'electromagnetic-science-pack', item = 'copper-cable',                 groups = 30},
+        {pack = 'autimation-science-pack', item = 'copper-cable',                 groups = 10},
+        {pack = 'space-science-pack', item = 'copper-cable',                 groups = 10},
+        {pack = 'electromagnetic-science-pack', item = 'copper-cable',                 groups = 10},
+        {pack = 'promethium-science-pack', item = 'copper-cable',                 groups = 10},
     }},
     {key = 'foundryman', name = '冶炼工人', full = FULL_LOW, starter = {
         {item = 'foundry', count = 1},
     }, unlock = {{pack = 'metallurgic-science-pack', level = 10}}, rewards = {
-        {pack = 'metallurgic-science-pack', item = 'calcite',                 groups = 30},
+        {pack = 'autimation-science-pack', item = 'calcite',                 groups = 10},
+        {pack = 'space-science-pack', item = 'calcite',                 groups = 10},
+        {pack = 'metallurgic-science-pack', item = 'calcite',                 groups = 10},
+        {pack = 'promethium-science-pack', item = 'calcite',                 groups = 10},
     }},
 
     {key = 'roboticist', name = '机械师', full = FULL_MAX, starter = {
