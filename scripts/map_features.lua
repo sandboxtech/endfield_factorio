@@ -236,13 +236,13 @@ local DEFAULT_LOOT_WEIGHTS = {
     -- 钢箱 = 材料箱：基础材料/原料 + 大概率普通科技瓶。普通品质、常见、装得多。
     material = {
         raw = 35, material = 80, logistics = 15,  circuit = 1,  power = 2,
-        production = 0,  module = 3,  military = 2,  equipment = 1,  science = 1,
+        production = 0,  module = 3,  military = 2,  equipment = 1,  science = 0,
         gleba = 1,  space = 1,
     },
     -- 铁箱 = 设备箱：实用设备/机器为主，含载具/太空件，少量科技瓶。普通品质、中等数量。
     equipment = {
         raw = 1,  material = 5,  logistics = 35,  circuit = 8,  power = 14,
-        production = 30,  module = 15,  military = 12,  equipment = 10,  science = 10,
+        production = 30,  module = 15,  military = 12,  equipment = 10,  science = 0,
         gleba = 4,  space = 15,
     },
     -- 永续(无底)箱：基础材料/矿物为主。注意 science>0 = 无限科技瓶(很强，慎调)。
@@ -526,25 +526,12 @@ local function fill_material_chest(inv)
     end
 end
 
--- 木箱 = 宝箱：稀有。1~2 种高价值物品，每件【几个】(count = ss×random^4，极偏低)
-local TREASURE_BOTTLE_CHANCE = 0.5   -- 木箱额外掉【科技瓶】的概率
-
--- 给一个木箱填宝：1~2 种高价值物品 + 概率额外一种科技瓶。
+-- 木箱 = 宝箱：稀有。1~2 种高价值物品，每件【几个】(count = ss×random^4，极偏低)。只发精选池 TREASURE_POOL，不掉科技瓶。
 local function fill_treasure_chest(inv)
     for _ = 1, math.random(1, 2) do
         local name = TREASURE_POOL[math.random(#TREASURE_POOL)]
         if item_ok(name) then
             inv.insert{name = name, count = loot_count(name, 4), quality = roll_treasure_quality()}
-        end
-    end
-    -- 可能额外给某种科技瓶：1~5 组(满堆叠)，组数走 random^2(偏低，多为 1~2 组)，随机(宝箱)品质。
-    if math.random() < TREASURE_BOTTLE_CHANCE then
-        local pack = constants.science_packs[math.random(#constants.science_packs)]
-        if item_ok(pack) then
-            local proto = prototypes.item[pack]
-            local ss = (proto and proto.stack_size) or 200
-            local groups = 1 + math.floor(math.random() ^ 2 * 3)   -- 1~3 组（random^2 偏低）
-            inv.insert{name = pack, count = groups * ss, quality = roll_treasure_quality()}
         end
     end
 end
