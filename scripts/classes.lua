@@ -14,6 +14,8 @@
 --   rewards  经验奖励列表：每条 {pack=瓶, item=物品, groups=满配额组数}；按该瓶等级线性发，
 --            个数 = floor(堆叠 × groups × min(瓶等级, full) / full)。pack 按物品在科技树的解锁层级配。
 --   unlock   解锁条件(可选)：每条 {pack=瓶, level=级}，需全满足；无则人人可选。
+--   tech     职业【专属科技】(可选，0~1 个)：每局开始时，只要存在选了该职业的玩家(含离线，看 storage.player_class)，
+--            就把这个科技直接标记已研究(reset 调 M.active_techs)。值是科技内部名，如 tech = 'logistics'。不配则不解锁。
 --   {}       空表 = 占位，在职业窗口里作【换行/分组】分隔（无 key，选不到）。
 --
 -- 【容量约束】每个职业「满级资源含量」（starter 固定组 + 各 rewards 满级 groups 之和）控制在 50 组以内。
@@ -57,7 +59,7 @@ local DEFAULT_CLASSES = {
         -- {pack = 'promethium-science-pack', item = 'coin', count = 100},
     }},
     -- 矿物
-    {key = 'oreman', name = '矿物学家', full = FULL_LOW, starter = {
+    {key = 'oreman', name = '矿物专家', full = FULL_LOW, starter = {
         {item = 'iron-ore', groups = 5},
         {item = 'copper-ore', groups = 5},
         {item = 'stone', groups = 5},
@@ -81,7 +83,7 @@ local DEFAULT_CLASSES = {
         {pack = 'promethium-science-pack', item = 'promethium-asteroid-chunk', groups = 1},
     }},
     -- 材料
-    {key = 'material', name = '材料学家', full = FULL_LOW, starter = {
+    {key = 'material', name = '材料专家', full = FULL_LOW, starter = {
         {item = 'iron-plate', groups = 5},
         {item = 'copper-plate', groups = 5},
     }, unlock = {{pack = 'automation-science-pack', level = 10}}, rewards = {
@@ -515,14 +517,13 @@ local DEFAULT_CLASSES = {
     {key = 'bugkeeper', name = '牧民', full = FULL_LOW, starter = {
         {item = 'pentapod-egg', count = 1},
         {item = 'biter-egg', count = 1},
-    }, rewards = {
+    }, unlock = {{pack = 'agricultural-science-pack', level = 100}}, rewards = {
         {pack = 'agricultural-science-pack', item = 'nutrients',     groups = 20},
         {pack = 'agricultural-science-pack', item = 'spoilage',     groups = 20},
     }},
     {key = 'fisher', name = '渔民', full = FULL_LOW, starter = {
-        {item = 'fish', groups = 1},
         {item = 'tree-seed', groups = 1},
-    }, rewards = {
+    }, unlock = {{pack = 'agricultural-science-pack', level = 100}}, rewards = {
         {pack = 'agricultural-science-pack', item = 'raw-fish',  groups = 20},
         {pack = 'agricultural-science-pack', item = 'tree-seed',  groups = 20},
     }},
@@ -554,22 +555,33 @@ local DEFAULT_CLASSES = {
         {pack = 'agricultural-science-pack', item = 'nutrients',     groups = 10},
     }},
 
-    {section = '星球专精'},
+    {section = '研究者'},
 
-    {key = 'scholar', name = '学者', full = FULL_LOW, starter = {
+    {key = 'scholar', name = '母星专家', full = FULL_MID, starter = {
         {item = 'lab', groups = 1},
     }, rewards = {
-        {pack = 'agricultural-science-pack', item = 'agricultural-science-pack',  count = 1},
-        {pack = 'agricultural-science-pack', item = 'agricultural-science-pack',  count = 1},
-        {pack = 'agricultural-science-pack', item = 'agricultural-science-pack',  count = 1},
-        {pack = 'agricultural-science-pack', item = 'agricultural-science-pack',  count = 1},
-        {pack = 'agricultural-science-pack', item = 'agricultural-science-pack',  count = 1},
+        {pack = 'automation-science-pack', item = 'automation-science-pack',   count = 10},
+        {pack = 'logistic-science-pack', item = 'logistic-science-pack',   count = 10},
+        {pack = 'military-science-pack', item = 'military-science-pack',   count = 10},
+        {pack = 'chemical-science-pack', item = 'chemical-science-pack',   count = 10},
+        {pack = 'production-science-pack', item = 'production-science-pack',   count = 10},
+        {pack = 'utility-science-pack', item = 'utility-science-pack',   count = 10},
+    }},
+    {key = 'scholar', name = '外星专家', full = FULL_MAX, starter = {
+        {item = 'lab', groups = 1},
+    }, unlock = {{pack = 'space-science-pack', level = 100}}, rewards = {
+        {pack = 'space-science-pack', item = 'coin', count = 10},
+        {pack = 'metallurgic-science-pack',     item = 'coin', count = 10},
+        {pack = 'electromagnetic-science-pack', item = 'coin',  count = 10},
+        {pack = 'agricultural-science-pack', item = 'coin', count = 10},
+        {pack = 'cryogenic-science-pack', item = 'coin', count = 10},
+        {pack = 'promethium-science-pack', item = 'coin', count = 10},
     }},
 
     {section = '星球专精'},
     -- 分组换行：农牧 ↔ 科学/星球
     -- ── 星球专精组（各星球招牌机器/材料 + 太空平台；满级线 1000，需对应高级瓶 100 级解锁）──
-    {key = 'metallurgist', name = '冶金学家', full = FULL_MAX, starter = {
+    {key = 'metallurgist', name = '冶金专家', full = FULL_MAX, starter = {
 
     }, unlock = {{pack = 'metallurgic-science-pack', level = 100}}, rewards = {
         {pack = 'metallurgic-science-pack', item = 'foundry',         groups = 10},
@@ -587,12 +599,12 @@ local DEFAULT_CLASSES = {
         {pack = 'agricultural-science-pack', item = 'biochamber',         groups = 10},
         {pack = 'agricultural-science-pack', item = 'agricultural-tower', groups = 10},
     }},
-    {key = 'physicist', name = '物理学家', full = FULL_MAX, starter = {
+    {key = 'physicist', name = '物理专家', full = FULL_MAX, starter = {
 
     }, unlock = {{pack = 'cryogenic-science-pack', level = 100}}, rewards = {
         {pack = 'cryogenic-science-pack', item = 'cryogenic-plant',   groups = 20},
     }},
-    {key = 'astronomer', name = '天文学家', full = FULL_MAX, starter = {
+    {key = 'astronomer', name = '天文专家', full = FULL_MAX, starter = {
 
     }, unlock = {{pack = 'promethium-science-pack', level = 100}}, rewards = {
         {pack = 'promethium-science-pack', item = 'biolab',            groups = 20},
@@ -640,6 +652,21 @@ end
 -- 玩家当前选择的职业 key（未选 → 默认平民）。
 function M.selected_key(player)
     return player and ((storage.player_class or {})[player.name] or M.DEFAULT)
+end
+
+-- 职业【专属科技】：每个职业可选配 0~1 个 tech 字段。返回当前【有玩家选用】的职业所配的科技名列表（去重）。
+-- 谁选了职业看 storage.player_class（持久，含离线）；reset 用它在开局解锁这些科技 → "队里有该职业，全队解锁其科技"。
+function M.active_techs()
+    local active = {}
+    for _, key in pairs(storage.player_class or {}) do active[key] = true end
+    local seen, techs = {}, {}
+    for _, def in ipairs(M.all()) do
+        if def.key and def.tech and active[def.key] and not seen[def.tech] then
+            seen[def.tech] = true
+            techs[#techs + 1] = def.tech
+        end
+    end
+    return techs
 end
 
 -- 玩家当前职业定义（一定返回一个，兜底平民）。

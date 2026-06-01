@@ -8,6 +8,7 @@ local science_exp = require('scripts.science_exp')
 local respawn_gifts = require('scripts.respawn_gifts')
 local player_stats = require('scripts.player_stats')
 local map_features = require('scripts.map_features')   -- 本轮危险度 knobs().danger（敌人伤害缩放用）
+local classes = require('scripts.classes')             -- 职业专属科技（M.active_techs）
 
 local M = {}
 
@@ -196,6 +197,11 @@ function M.reset()
     for _, name in ipairs(storage.unlock_recipes or {}) do
         local recipe = force.recipes[name]
         if recipe then recipe.enabled = true end
+    end
+    -- 职业【专属科技】：若存在选了某职业的玩家（含离线），解锁该职业配置的 tech（每职业 0~1 个，见 classes.lua 的 tech 字段）。
+    for _, name in ipairs(classes.active_techs()) do
+        local tech = force.technologies[name]
+        if tech then tech.researched = true end
     end
 
     -- （科技世界已并入事件世界：tech 现作为事件类型之一，由 surface.lua 的事件世界 roll 按星球抽中、
