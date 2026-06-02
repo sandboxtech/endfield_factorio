@@ -4,7 +4,6 @@
 -- 科技瓶经验由 science_exp 累积，不驱动这些技能。
 -- 本模块独占 on_player_crafted_item / on_player_mined_entity / on_player_changed_position
 -- （player_stats 不再注册这些，避免双重注册互相覆盖）。
-local constants = require('scripts.constants')
 local player_stats = require('scripts.player_stats')
 local science_exp = require('scripts.science_exp')
 local events = require('scripts.events')

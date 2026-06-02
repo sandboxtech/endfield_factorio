@@ -14,9 +14,9 @@
 --   rewards  经验奖励列表：每条 {pack=瓶, item=物品, groups=满配额组数}；按该瓶等级线性发，
 --            个数 = floor(堆叠 × groups × min(瓶等级, full) / full)。pack 按物品在科技树的解锁层级配。
 --   unlock   解锁条件(可选)：每条 {pack=瓶, level=级}，需全满足；无则人人可选。
---   techs    职业【专属科技】(可选，数组)：只要存在选了该职业的玩家(含离线)，开局把这些科技标记已研究(reset 调 M.active_techs)。
+--   techs    职业【专属科技】(可选，数组)：只要存在选了该职业的玩家(含离线)，开局把这些科技标记已研究(reset 调 M.active_class_unlocks)。
 --            如 techs = {'logistics', 'automation-2'}。
---   recipes  职业【专属配方】(可选，数组)：同上，但开局解锁配方(force 级 enabled，无需对应科技。reset 调 M.active_recipes)。如 recipes = {'rail', 'pistol'}。
+--   recipes  职业【专属配方】(可选，数组)：同上，但开局解锁配方(force 级 enabled，无需对应科技。reset 调 M.active_class_unlocks)。如 recipes = {'rail', 'pistol'}。
 --   {}       空表 = 占位，在职业窗口里作【换行/分组】分隔（无 key，选不到）。
 --
 -- 【容量约束】每个职业「满级资源含量」（starter 固定组 + 各 rewards 满级 groups 之和）控制在 50 组以内。
@@ -270,7 +270,7 @@ local DEFAULT_CLASSES = {
         {pack = 'cryogenic-science-pack',   item = 'big-electric-pole',    groups = 10},   -- 绿：大电杆
         {pack = 'promethium-science-pack', item = 'substation',           groups = 10},   -- 紫：变电站
     }},
-    {key = 'belter', techs = {'logistics', 'logistics-2'}, name = '运输工人', full = FULL_MAX, starter = {
+    {key = 'belter', techs = {'logistics', 'logistics-2'}, name = '运输工人', full = FULL_MID, starter = {
         {item = 'transport-belt', groups = 1},
         {item = 'splitter', groups = 1},
         {item = 'underground-belt', groups = 1},
@@ -288,13 +288,13 @@ local DEFAULT_CLASSES = {
         {pack = 'metallurgic-science-pack',    item = 'turbo-underground-belt',         groups = 5},
     }},
 
-    {key = 'loaderman', techs = {'logistics-3'}, name = '装卸工人', full = FULL_LOW, starter = {
-        {item = 'loader', count = 10},
-    }, rewards = {
-        {pack = 'logistic-science-pack',    item = 'loader',         groups = 1},   -- 绿：装卸机
-        {pack = 'logistic-science-pack',    item = 'fast-loader',    groups = 1},   -- 绿：快速装卸机
-        {pack = 'production-science-pack',  item = 'express-loader', groups = 1},   -- 紫：极速装卸机
-        {pack = 'metallurgic-science-pack', item = 'turbo-loader',   groups = 1},   -- 橙：涡轮装卸机(火山)
+    {key = 'loaderman', techs = {'logistics-3'}, name = '装卸工人', full = FULL_MID, starter = {
+        {item = 'loader', count = 1},
+    }, unlock = {{pack = 'logistic-science-pack', level = 10}}, rewards = {
+        {pack = 'logistic-science-pack',    item = 'loader',         groups = 10},   -- 绿：装卸机
+        {pack = 'logistic-science-pack',    item = 'fast-loader',    groups = 10},   -- 绿：快速装卸机
+        {pack = 'production-science-pack',  item = 'express-loader', groups = 10},   -- 紫：极速装卸机
+        {pack = 'metallurgic-science-pack', item = 'turbo-loader',   groups = 10},   -- 橙：涡轮装卸机(火山)
     }},
     {key = 'warehouser', techs = {'logistic-system'}, name = '仓库管理员', full = FULL_MID, starter = {
         {item = 'wooden-chest', groups = 1},
@@ -350,12 +350,19 @@ local DEFAULT_CLASSES = {
     {key = 'captain', techs = {'advanced-asteroid-processing'}, name = '船长', full = FULL_MAX, starter = {
         {item = 'space-platform-starter-pack', count = 1},
     }, unlock = {{pack = 'space-science-pack', level = 1000}}, rewards = {
+        {pack = 'production-science-pack', item = 'space-platform-foundation',   groups = 20},
+        {pack = 'space-science-pack',   item = 'cargo-bay',                   groups = 10},
+        {pack = 'space-science-pack',   item = 'thruster',                    groups = 10},
+    }},
+
+    {key = 'asteroidminer', techs = {'thruster'}, name = '小行星带矿工', full = FULL_MAX, starter = {
+        {item = 'space-platform-starter-pack', count = 1},
+    }, unlock = {{pack = 'space-science-pack', level = 1000}}, rewards = {
         {pack = 'production-science-pack', item = 'space-platform-foundation',   groups = 5},
-        {pack = 'space-science-pack',   item = 'cargo-bay',                   groups = 5},
-        {pack = 'space-science-pack',   item = 'thruster',                    groups = 5},
         {pack = 'space-science-pack',   item = 'asteroid-collector',          groups = 5},
         {pack = 'space-science-pack',   item = 'crusher',                     groups = 5},
     }},
+
     {key = 'philosopher', techs = {'research-speed-1', 'biolab'}, name = '哲学家', full = FULL_LOW, starter = {
         
     }, unlock = {{pack = 'automation-science-pack', level = 10}}, rewards = {
@@ -478,7 +485,8 @@ local DEFAULT_CLASSES = {
         {pack = 'electromagnetic-science-pack', item = 'tesla-turret', groups = 10},
     }},
     {key = 'railgunner', techs = {'railgun'}, name = '御坂美琴', full = FULL_MAX, starter = {
-        -- {item = 'railgun-ammo', count = 5},
+        {item = 'railgun', count = 1},
+        {item = 'railgun-ammo', count = 1},
     }, unlock = {{pack = 'cryogenic-science-pack', level = 1000}}, rewards = {
         {pack = 'cryogenic-science-pack', item = 'railgun', groups = 1},
         -- {pack = 'cryogenic-science-pack', item = 'railgun-ammo',   groups = 20},   -- stack10：1组=10发

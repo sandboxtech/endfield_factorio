@@ -12,7 +12,6 @@ local function player_level(player)
     local st = storage.player_stats and storage.player_stats[player.name]
     return math.floor(math.sqrt((st and st.online_minutes) or 0))
 end
-local function gcd(a, b) while b ~= 0 do a, b = b, a % b end return a end
 
 -- 距下次跃迁剩余（整数小时, 整数分钟）；与 tick.lua 告警同一公式。
 function M.warp_hm()

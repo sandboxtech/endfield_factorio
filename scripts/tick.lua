@@ -4,7 +4,6 @@
 local constants = require('scripts.constants')
 local player_stats = require('scripts.player_stats')
 local map_features = require('scripts.map_features')
-local util = require('scripts.util')
 local gui = require('scripts.gui')
 local events = require('scripts.events')
 local commands = require('scripts.commands')   -- HUD 按钮点击路由到其导出的 show_panel / cast_warp_vote

@@ -7,7 +7,6 @@
 --   · 通用风味：worm 虫群(force='enemy',仅母星)、随机木/铁/钢战利品箱(force='player',加权+品质)。
 -- 由 surface.lua 的 on_chunk_generated 对各真实星球圆内区块调用 M.generate。
 local noise = require('scripts.noise')
-local constants = require('scripts.constants')
 
 local M = {}
 

@@ -7,8 +7,7 @@ local passives = require('scripts.passives')
 local science_exp = require('scripts.science_exp')
 local respawn_gifts = require('scripts.respawn_gifts')
 local player_stats = require('scripts.player_stats')
-local map_features = require('scripts.map_features')   -- 本轮危险度 knobs().danger（敌人伤害缩放用）
-local classes = require('scripts.classes')             -- 职业专属科技（M.active_techs）
+local classes = require('scripts.classes')             -- 职业专属解锁（M.active_class_unlocks）
 
 local M = {}
 

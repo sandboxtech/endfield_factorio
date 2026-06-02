@@ -9,7 +9,7 @@ local player_stats = require('scripts.player_stats')
 local M = {}
 
 -- 复活等待时间改由 storage 配置（可 /c storage.respawn_ticks / enemy_respawn_ticks 热改、持久、同步）；
--- 默认值见 constants.ensure_defaults（respawn_ticks=180=3 秒，enemy_respawn_ticks=1800=30 秒）。
+-- 默认值见 constants.ensure_defaults（respawn_ticks=600=10 秒，enemy_respawn_ticks=1800=30 秒）。
 
 -- 把 target 的统计数据打印给 viewer：4 项技能 + 在线时长 + 各瓶累计经验。
 -- 文字进度条：BAR_N 个 █，按比例 frac∈[0,1] 前段染 acid(已得)、后段染深灰(待补)。
@@ -139,10 +139,10 @@ end
 script.on_event(defines.events.on_player_died, function(event)
     local player = game.get_player(event.player_index)
     local cause = event.cause
-    -- 被【敌方】打死 → 30 秒复活惩罚；脚本死亡(跃迁清场/离场/自杀, cause 为 nil)与环境死亡 → 默认 3 秒。
+    -- 被【敌方】打死 → 30 秒复活惩罚；脚本死亡(跃迁清场/离场/自杀, cause 为 nil)与环境死亡 → 默认 10 秒。
     local by_enemy = cause and cause.valid and cause.force and cause.force.name == 'enemy'
     if player then
-        player.ticks_to_respawn = by_enemy and (storage.enemy_respawn_ticks or 1800) or (storage.respawn_ticks or 180)
+        player.ticks_to_respawn = by_enemy and (storage.enemy_respawn_ticks or 1800) or (storage.respawn_ticks or 600)
     end
     if cause then player_stats.bump(event.player_index, 'death_count') end
 end)
