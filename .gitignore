@@ -3,3 +3,6 @@ set_classes.txt
 
 # gen_item_values.py 扫 Factorio 数据的派生缓存，不跟踪（可随时 --rebuild 重建）
 .value_cache.json
+
+# gen_scenario.py 打包出的干净场景副本，不跟踪
+endfield_factorio/
