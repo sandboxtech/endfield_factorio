@@ -9,6 +9,7 @@ local passives = require('scripts.passives')
 local respawn_gifts = require('scripts.respawn_gifts')
 local classes = require('scripts.classes')
 local map_features = require('scripts.map_features')
+local market = require('scripts.market')
 local util = require('scripts.util')
 
 local M = {}   -- 导出给 HUD 按钮复用（gui 点击经 tick 路由到这里）
@@ -110,6 +111,7 @@ function M.ensure_all()
     constants.ensure_defaults()
     classes.ensure()
     map_features.ensure_loot()
+    market.ensure_prices()
 end
 
 -- 手动跑全部 ensure（控制台或管理员）：补齐新增默认、迁移老存档、修类型。控制台调用(player_index 为 nil)视作管理员。

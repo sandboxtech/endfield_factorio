@@ -8,48 +8,63 @@ local M = {}
 -- （越高越亏），低级件性价比始终更优 → 鼓励多买低级、把高级件当"省格子"的奢侈选项。
 -- 商品按【组】排列，组间用 'sep' 标记分隔。市场货架每行 10 格，stock() 在每个 'sep' 处
 -- 补足 type='nothing' 的空占位到 10 的倍数 → 下一组从新的一行开始（同职业窗口的 {} 换行思路）。
+-- 定价原则：整体偏贵（金币是稀缺货币），且【越高级性价比越低】——每升一档价格陡升(远超战力提升)，
+-- 逼玩家权衡"多买低级 vs 攒大钱上顶级"。顶级锚点 mech-armor=1000。
 M.offers = {
-    -- 护甲格子（装零件用）：格子越多越贵，单格单价递增。
-    {'modular-armor',                    1,   2},
-    {'power-armor',                      1,  15},
-    {'power-armor-mk2',                  1,  80},
-    {'mech-armor',                       1, 300},
+    -- 护甲格子（装零件用）：格子越多越贵，单格单价【陡升】。
+    {'modular-armor',                    1,    5},
+    {'power-armor',                      1,   50},
+    {'power-armor-mk2',                  1,  250},
+    {'mech-armor',                       1, 1000},   -- 顶级锚点
     'sep',
 
     -- 【单级装备】无分级。
-    {'night-vision-equipment',           1,   1},   -- 夜视仪：暗世界/永夜看路用，最便宜
-    {'exoskeleton-equipment',            1,   5},
-    {'personal-laser-defense-equipment', 1,   8},
-    {'toolbelt-equipment',               1,  12},
+    {'night-vision-equipment',           1,    2},   -- 夜视仪：暗世界/永夜看路用，最便宜
+    {'exoskeleton-equipment',            1,   25},
+    {'personal-laser-defense-equipment', 1,   40},
+    {'toolbelt-equipment',               1,   50},
     'sep',
 
-    -- 电源：功率约 100 / 750 / 2500，每单位功率单价 0.01→0.013→0.016 递增。
-    {'solar-panel-equipment',            1,   1},
-    {'fission-reactor-equipment',        1,  10},
-    {'fusion-reactor-equipment',         1,  40},
+    -- 电源（发电）：太阳能 / 裂变 / 聚变，越高级单位功率越贵。
+    {'solar-panel-equipment',            1,    5},
+    {'fission-reactor-equipment',        1,   60},
+    {'fusion-reactor-equipment',         1,  300},
     'sep',
 
-    -- 电池(储电)：mk1 20MJ / mk2 100MJ / mk3 250MJ，各占 2 格。每 MJ 单价 0.05→0.08→0.12 递增 → 多买低级更省钱。
-    {'battery-equipment',                1,   1},   -- 20MJ  · 2 格
-    {'battery-mk2-equipment',            1,   8},   -- 100MJ · 2 格
-    {'battery-mk3-equipment',            1,  30},   -- 250MJ · 2 格
+    -- 电池(储电)：mk1 / mk2 / mk3，越高级每 MJ 越贵 → 多买低级更划算。
+    {'battery-equipment',                1,    5},   -- 20MJ  · 2 格
+    {'battery-mk2-equipment',            1,   40},   -- 100MJ · 2 格
+    {'battery-mk3-equipment',            1,  250},   -- 250MJ · 2 格
     'sep',
 
-    -- 护盾：50 / 150 点，每点单价 0.04→0.06 递增。
-    {'energy-shield-equipment',          1,   2},   -- 50 护盾  · 4 格
-    {'energy-shield-mk2-equipment',      1,   9},   -- 150 护盾 · 4 格
-    -- 个人机器人端口：mk2 更快、容纳更多机器人。
-    {'personal-roboport-equipment',      1,   3},   -- 35MJ 缓冲 · 4 格
-    {'personal-roboport-mk2-equipment',  1,  15},
+    -- 护盾：50 / 150 点，越高级每点越贵。
+    {'energy-shield-equipment',          1,   10},   -- 50 护盾  · 4 格
+    {'energy-shield-mk2-equipment',      1,   70},   -- 150 护盾 · 4 格
+    -- 个人机器人端口：mk2 更快、容纳更多机器人，溢价更高。
+    {'personal-roboport-equipment',      1,   15},   -- 35MJ 缓冲 · 4 格
+    {'personal-roboport-mk2-equipment',  1,  120},
     'sep',
 
-    -- 矿石补给：1 金币换 50 矿石（1 组），开局/缺料时应急补给。
-    {'iron-ore',                        50,   1},
-    {'copper-ore',                      50,   1},
-    {'stone',                           50,   1},
-    {'coal',                            50,   1},
-    {'wood',                            50,   1},
+    -- 矿石补给：2 金币换 50 矿石（1 组），开局/缺料时应急补给（性价比已下调）。
+    {'iron-ore',                        50,    2},
+    {'copper-ore',                      50,    2},
+    {'stone',                           50,    2},
+    {'coal',                            50,    2},
+    {'wood',                            50,    2},
 }
+
+-- 价格存进 storage.market_prices（item → 金币价），可运行时热改：
+--   /c storage.market_prices['mech-armor'] = 2000      改单价
+--   /c storage.market_prices = nil; remote... 或 reset 重新播种恢复默认
+-- M.offers 的第 3 列只是【默认价种子】；缺失才补 → 保留管理员热改。由 commands.ensure_all 调用。
+function M.ensure_prices()
+    storage.market_prices = storage.market_prices or {}
+    for _, o in ipairs(M.offers) do
+        if type(o) == 'table' and storage.market_prices[o[1]] == nil then
+            storage.market_prices[o[1]] = o[3]
+        end
+    end
+end
 
 local ROW = 10   -- 市场货架每行格数：每组补空占位到此倍数实现换行
 
@@ -65,13 +80,14 @@ local function stock(ent)
             n = n + 1
         end
     end
+    local prices = storage.market_prices or {}
     for _, o in ipairs(M.offers) do
         if o == 'sep' then
             fill_row()   -- 分组换行：补满当前行
         else
             ent.add_market_item{
-                price = {{name = 'coin', count = o[3]}},                 -- 金币价（normal）
-                offer = {type = 'give-item', item = o[1], count = o[2]}, -- 产出 normal 装备
+                price = {{name = 'coin', count = prices[o[1]] or o[3]}},  -- 金币价：优先 storage 热改值，缺失退默认 o[3]
+                offer = {type = 'give-item', item = o[1], count = o[2]},  -- 产出 normal 装备
             }
             n = n + 1
         end
