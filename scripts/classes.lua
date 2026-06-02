@@ -58,7 +58,7 @@ local DEFAULT_CLASSES = {
     {key = 'philosopher', techs = {'biolab'}, name = '哲学家', full = FULL_MAX, starter = {
         
     }, rewards = {
-        {pack = 'automation-science-pack', item = 'automation-science-pack',   groups = 2},
+        {pack = 'automation-science-pack', item = 'automation-science-pack',   count=100},
     }},
 
     {key = 'artist', techs = {'circuit-network'}, name = '艺术家', full = FULL_LOW, starter = {
@@ -247,8 +247,8 @@ local DEFAULT_CLASSES = {
         {pack = 'logistic-science-pack',   item = 'pumpjack',       groups = 10},   -- 绿：抽油机
         {pack = 'chemical-science-pack',   item = 'oil-refinery',   groups = 10},   -- 蓝：炼油厂
         {pack = 'space-science-pack',   item = 'chemical-plant', groups = 10},   -- 蓝：化工厂
-        {pack = 'agricultural-science-pack',   item = 'biochamber', groups = 10},   -- 蓝：化工厂
-        {pack = 'cryogenic-science-pack',   item = 'cryogenic-plant', groups = 10},   -- 蓝：化工厂
+        {pack = 'agricultural-science-pack',   item = 'biochamber', groups = 2},   -- 蓝：化工厂
+        {pack = 'cryogenic-science-pack',   item = 'cryogenic-plant', groups = 2},   -- 蓝：化工厂
     }},
 
     {key = 'moduler', techs = {'modules'}, name = '插件工人', full = FULL_MID, starter = {
@@ -392,7 +392,7 @@ local DEFAULT_CLASSES = {
         {pack = 'utility-science-pack',  item = 'requester-chest',        groups = 5},
         {pack = 'utility-science-pack',  item = 'buffer-chest',           groups = 5},
     }},
-    {key = 'inserter', techs = {'fast-inserter', 'bulk-inserter'}, name = '斜教', full = FULL_MAX, starter = {
+    {key = 'inserter', techs = {'fast-inserter', 'bulk-inserter'}, name = '斜教', full = FULL_MID, starter = {
         {item = 'burner-inserter', groups = 1},
         {item = 'inserter', groups = 1},
         {item = 'long-handed-inserter', groups = 1},
@@ -400,25 +400,23 @@ local DEFAULT_CLASSES = {
         -- {item = 'stack-inserter', groups = 1},
         -- {item = 'bulk-inserter', groups = 1},
     }, rewards = {
-        {pack = 'automation-science-pack',    item = 'inserter',         groups = 10},
-        {pack = 'automation-science-pack',    item = 'long-handed-inserter',         groups = 10},
-        {pack = 'automation-science-pack',  item = 'fast-inserter', groups = 10},
-        {pack = 'logistic-science-pack', item = 'bulk-inserter',   groups = 10},
-        {pack = 'agricultural-science-pack', item = 'stack-inserter',   groups = 10},
+        {pack = 'automation-science-pack',    item = 'inserter',         groups = 8},
+        {pack = 'automation-science-pack',    item = 'long-handed-inserter',         groups = 8},
+        {pack = 'automation-science-pack',  item = 'fast-inserter', groups = 8},
+        {pack = 'logistic-science-pack', item = 'bulk-inserter',   groups = 8},
+        {pack = 'agricultural-science-pack', item = 'stack-inserter',   groups = 8},
     }},
 
-    {key = 'traindriver', techs = {'railway', 'automated-rail-transportation'}, name = '火车司机', full = FULL_MID, starter = {
-        {item = 'locomotive', count = 1},
-        {item = 'cargo-wagon', count = 1},
+    {key = 'traindriver', techs = {'railway', 'automated-rail-transportation'}, name = '火车司机', full = FULL_LOW, starter = {
+        {item = 'locomotive', group = 1},
+        {item = 'cargo-wagon', group = 1},
+        {item = 'fluid-wagon', group = 1},
         {item = 'rail', groups = 1},
     }, unlock = {{pack = 'logistic-science-pack', level = 10}}, rewards = {
-        {pack = 'logistic-science-pack',   item = 'rail',              groups = 10},   -- 绿：铁轨
-        {pack = 'logistic-science-pack',   item = 'train-stop',        groups = 2},    -- 绿：火车站
-        {pack = 'logistic-science-pack',   item = 'rail-signal',       groups = 2},    -- 绿：铁路信号
-        {pack = 'logistic-science-pack',   item = 'rail-chain-signal', groups = 2},    -- 绿：链式信号
-        {pack = 'production-science-pack',  item = 'locomotive',        groups = 2},    -- 紫：火车头
-        {pack = 'production-science-pack',  item = 'cargo-wagon',       groups = 5},    -- 紫：货车厢
-        {pack = 'chemical-science-pack',    item = 'fluid-wagon',       groups = 5},    -- 蓝：液罐车厢
+        {pack = 'logistic-science-pack',   item = 'rail',              groups = 20},   -- 绿：铁轨
+        {pack = 'logistic-science-pack',   item = 'train-stop',        groups = 1},    -- 绿：火车站
+        {pack = 'logistic-science-pack',   item = 'rail-signal',       groups = 1},    -- 绿：铁路信号
+        {pack = 'logistic-science-pack',   item = 'rail-chain-signal', groups = 1},    -- 绿：链式信号
     }},
 
     {key = 'roboticist', techs = {'robotics', 'construction-robotics', 'logistic-robotics'}, name = '机械师', full = FULL_MAX, starter = {
@@ -467,31 +465,24 @@ local DEFAULT_CLASSES = {
     {section = '战斗'},
     -- 分组换行：物流 ↔ 战斗
     -- ── 战斗组（弹药/手雷/核弹；练灰瓶 military，部分另练蓝瓶 chemical）──
-    {key = 'guard', techs = {'gun-turret'}, name = '保安', full = FULL_LOW, starter = {
-        {item = 'gun-turret', groups = 1},
-        {item = 'stone-wall', groups = 1},
+    {key = 'guard', techs = {'gun-turret', 'stone-wall'}, name = '保安', full = FULL_MID, starter = {
+        {item = 'stone-wall', groups = 10},
     }, rewards = {
-        {pack = 'military-science-pack',        item = 'gun-turret',          groups = 1},   -- 灰：机枪炮塔
-        {pack = 'chemical-science-pack',        item = 'flamethrower-turret', groups = 1},   -- 蓝：喷火炮塔
-        {pack = 'military-science-pack',        item = 'laser-turret',        groups = 1},   -- 灰：激光炮塔
-        --
-        {pack = 'military-science-pack', item = 'stone-wall',       groups = 30},   -- 灰：石墙
-        {pack = 'military-science-pack', item = 'gate',             groups = 1},   -- 灰：闸门
-        {pack = 'military-science-pack', item = 'radar',            groups = 1},   -- 灰：雷达
-        {pack = 'military-science-pack', item = 'firearm-magazine', groups = 5},   -- 灰：弹匣(供机枪塔)
-        {pack = 'military-science-pack', item = 'piercing-rounds-magazine', groups = 5},   -- 灰：弹匣(供机枪塔)
-        {pack = 'military-science-pack', item = 'uranium-rounds-magazine', groups = 5},   -- 灰：弹匣(供机枪塔)
+        {pack = 'automation-science-pack', item = 'stone-wall',       groups = 20},   -- 灰：石墙
+        {pack = 'automation-science-pack', item = 'radar',            groups = 1},   -- 灰：雷达
+        {pack = 'logistic-science-pack', item = 'gate',             groups = 1},   -- 灰：闸门
+
+        {pack = 'automation-science-pack',        item = 'gun-turret',          groups = 5},   -- 灰：机枪炮塔
+        {pack = 'military-science-pack',        item = 'flamethrower-turret', groups = 1},   -- 蓝：喷火炮塔
+        {pack = 'chemical-science-pack',        item = 'laser-turret',        groups = 1},   -- 灰：激光炮塔
     }},
-    {key = 'gunner', techs = {'military'}, name = '田明建', full = FULL_LOW, starter = {
+    {key = 'gunner', techs = {'military'}, name = '田明建', full = FULL_MID, starter = {
         {item = 'submachine-gun', groups = 1},
         {item = 'firearm-magazine', groups = 5},
     }, rewards = {
-        {pack = 'military-science-pack', item = 'submachine-gun', groups = 1},   -- 灰：冲锋枪
-        {pack = 'military-science-pack', item = 'shotgun',        groups = 1},   -- 灰：霰弹枪
-        --
-        {pack = 'military-science-pack', item = 'firearm-magazine',         groups = 10},  -- 灰：普通弹匣
+        {pack = 'automation-science-pack', item = 'firearm-magazine',         groups = 10},  -- 灰：普通弹匣
         {pack = 'military-science-pack', item = 'piercing-rounds-magazine', groups = 10},  -- 灰：穿甲弹
-        {pack = 'military-science-pack', item = 'uranium-rounds-magazine',  groups = 10},  -- 灰：铀弹
+        {pack = 'utility-science-pack', item = 'uranium-rounds-magazine',  groups = 10},  -- 灰：铀弹
     }},
 
     {key = 'shotgunner', techs = {'military'}, name = '山上彻也', full = FULL_LOW, starter = {
@@ -635,9 +626,9 @@ local DEFAULT_CLASSES = {
         {item = 'rocket-launcher', count = 1},
     }, unlock = {{pack = 'agricultural-science-pack', level = 100}}, rewards = {
         {pack = 'agricultural-science-pack', item = 'capture-robot-rocket',     groups = 10},
-        {pack = 'space-science-pack', item = 'bioflux',     groups = 30},
-        {pack = 'agricultural-science-pack', item = 'bioflux',     groups = 30},
-        {pack = 'promethium-science-pack', item = 'bioflux',     groups = 30},
+        {pack = 'space-science-pack', item = 'bioflux',     groups = 10},
+        {pack = 'agricultural-science-pack', item = 'bioflux',     groups = 10},
+        {pack = 'promethium-science-pack', item = 'bioflux',     groups = 10},
     }},
     {key = 'herder', techs = {'captivity'}, name = '牧民', full = FULL_MID, starter = {
         {item = 'pentapod-egg', count = 1},
