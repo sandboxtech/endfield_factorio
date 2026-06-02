@@ -391,7 +391,7 @@ local DEFAULT_CLASSES = {
         {pack = 'utility-science-pack',  item = 'requester-chest',        groups = 5},
         {pack = 'utility-science-pack',  item = 'buffer-chest',           groups = 5},
     }},
-    {key = 'inserter', techs = {'fast-inserter', 'bulk-inserter'}, name = '斜教', full = FULL_MID, starter = {
+    {key = 'inserter', techs = {'fast-inserter', 'bulk-inserter'}, name = '插爪工', full = FULL_MID, starter = {
         {item = 'burner-inserter', groups = 1},
         {item = 'inserter', groups = 1},
         {item = 'long-handed-inserter', groups = 1},
@@ -491,7 +491,7 @@ local DEFAULT_CLASSES = {
         {pack = 'military-science-pack', item = 'shotgun-shell',          groups = 10},  -- 灰：霰弹
         {pack = 'utility-science-pack', item = 'piercing-shotgun-shell', groups = 10},  -- 灰：穿甲霰弹
     }},
-    {key = 'bomber', techs = {'explosives'}, name = '拆迁队', full = FULL_MID, starter = {
+    {key = 'bomber', techs = {'explosives'}, name = '掷弹兵', full = FULL_MID, starter = {
         {item = 'grenade', groups = 1},
     }, rewards = {
         {pack = 'military-science-pack', item = 'grenade',         groups = 5},  -- 灰：手雷
@@ -505,13 +505,13 @@ local DEFAULT_CLASSES = {
         {pack = 'utility-science-pack',  item = 'destroyer-capsule', groups = 1},
     }},
 
-    {key = 'thorman', techs = {'land-mine'}, name = '雷神', full = FULL_MID, starter = {
+    {key = 'minelayer', techs = {'land-mine'}, name = '布雷兵', full = FULL_MID, starter = {
         {item = 'land-mine', count = 200},
     }, unlock = {{pack = 'military-science-pack', level = 100}}, rewards = {
         {pack = 'military-science-pack', item = 'land-mine', groups = 40},   -- 灰：地雷(海量布雷)
     }},
 
-    {key = 'tanker', techs = {'tank'}, name = '大运司机', full = FULL_MID, starter = {
+    {key = 'tanker', techs = {'tank'}, name = '坦克兵', full = FULL_MID, starter = {
         {item = 'tank', count = 1},
     }, unlock = {{pack = 'military-science-pack', level = 100}}, rewards = {
         {pack = 'military-science-pack', item = 'tank',       groups = 1},   -- 灰：坦克
@@ -520,7 +520,7 @@ local DEFAULT_CLASSES = {
         {pack = 'chemical-science-pack', item = 'explosive-cannon-shell', groups = 10},  -- 灰：爆破炮弹
         {pack = 'utility-science-pack', item = 'uranium-cannon-shell',   groups = 10},  -- 灰：铀炮弹
     }},
-    {key = 'rocketeer', techs = {'rocketry'}, name = '胖子发射器', full = FULL_MAX, starter = {
+    {key = 'rocketeer', techs = {'rocketry'}, name = '火箭兵', full = FULL_MAX, starter = {
         {item = 'rocket-launcher', count = 1},
         {item = 'rocket', count = 100},
     }, unlock = {{pack = 'chemical-science-pack', level = 100}}, rewards = {
@@ -556,13 +556,13 @@ local DEFAULT_CLASSES = {
         {pack = 'cryogenic-science-pack', item = 'railgun-turret', groups = 2},
     }},
 
-    {key = 'spiderman', techs = {'spidertron'}, name = '蜘蛛侠', full = FULL_MAX, starter = {
+    {key = 'spidertron', techs = {'spidertron'}, name = '蜘蛛机甲', full = FULL_MAX, starter = {
         {item = 'spidertron', count = 1},
     }, unlock = {{pack = 'utility-science-pack', level = 1000}}, rewards = {
 
     }},
 
-    {key = 'transformer', techs = {'mech-armor'}, name = '变形金刚', full = FULL_MAX, starter = {   -- 终极机甲：粉瓶 1000 级解锁
+    {key = 'mecharmor', techs = {'mech-armor'}, name = '机甲兵', full = FULL_MAX, starter = {   -- 终极机甲：粉瓶 1000 级解锁
         {item = 'mech-armor', count = 1},
     }, unlock = {{pack = 'electromagnetic-science-pack', level = 1000}}, rewards = {
 
@@ -572,13 +572,13 @@ local DEFAULT_CLASSES = {
     -- 分组换行：战斗 ↔ 装备护甲
     -- ── 装备护甲组（护甲网格组件 + 终极机甲；按各组件解锁科技配瓶）──
     -- 角色网格分工：每个职业专精一类护甲网格组件。
-    {key = 'tankman', techs = {'energy-shield-equipment'}, name = '肉盾', full = FULL_MID, starter = {   -- 全是盾
+    {key = 'shielder', techs = {'energy-shield-equipment'}, name = '护盾兵', full = FULL_MID, starter = {   -- 全是盾
         {item = 'energy-shield-equipment', count = 20},
     }, rewards = {
         {pack = 'military-science-pack', item = 'energy-shield-equipment',     groups = 5},   -- 灰：能量盾
         {pack = 'utility-science-pack',  item = 'energy-shield-mk2-equipment', groups = 5},   -- 黄：能量盾 mk2
     }},
-    {key = 'healer', techs = {'solar-panel-equipment'}, name = '奶妈', full = FULL_MID, starter = {   -- 发电+储能装置
+    {key = 'powergear', techs = {'solar-panel-equipment'}, name = '供能兵', full = FULL_MID, starter = {   -- 发电+储能装置
         -- {item = 'fusion-reactor-equipment', count = 1},
         {item = 'fission-reactor-equipment', count = 1},
         {item = 'battery-mk3-equipment', count = 1},
@@ -590,24 +590,24 @@ local DEFAULT_CLASSES = {
         {pack = 'military-science-pack',  item = 'battery-equipment',         groups = 1},   -- 灰：电池(储能)
         {pack = 'utility-science-pack',   item = 'battery-mk2-equipment',     groups = 1},   -- 黄：电池 mk2
     }},
-    {key = 'laserman', techs = {'personal-laser-defense-equipment'}, name = '输出', full = FULL_MID, starter = {   -- 全是激光
+    {key = 'laserdefense', techs = {'personal-laser-defense-equipment'}, name = '激光兵', full = FULL_MID, starter = {   -- 全是激光
         {item = 'personal-laser-defense-equipment', count = 3},
     }, rewards = {
         {pack = 'military-science-pack', item = 'personal-laser-defense-equipment', groups = 2},  -- 灰：个人激光防御
     }},
-    {key = 'helper', techs = {'personal-roboport-equipment'}, name = '辅助', full = FULL_MID, starter = {   -- 全是机器人
+    {key = 'roboportgear', techs = {'personal-roboport-equipment'}, name = '机器人兵', full = FULL_MID, starter = {   -- 全是机器人
         {item = 'personal-roboport-equipment', count = 5},
     }, rewards = {
         {pack = 'logistic-science-pack', item = 'construction-robot',            groups = 10},  -- 绿：建造机器人
         {pack = 'chemical-science-pack', item = 'personal-roboport-equipment',     groups = 5},   -- 蓝：个人机器人网格
         {pack = 'utility-science-pack',  item = 'personal-roboport-mk2-equipment', count = 20},   -- 黄：网格 mk2
     }},
-    {key = 'runner', techs = {'exoskeleton-equipment'}, name = '快递员', full = FULL_MID, starter = {   -- 全是外骨骼
+    {key = 'exoskeleton', techs = {'exoskeleton-equipment'}, name = '疾行兵', full = FULL_MID, starter = {   -- 全是外骨骼
         {item = 'exoskeleton-equipment', count = 3},
     }, rewards = {
         {pack = 'chemical-science-pack', item = 'exoskeleton-equipment', groups = 5},   -- 蓝：外骨骼(移动加速)
     }},
-    {key = 'porter', techs = {'toolbelt-equipment'}, name = '吃货', full = FULL_MID, starter = {   -- 全是工具腰带
+    {key = 'toolbelt', techs = {'toolbelt-equipment'}, name = '工具兵', full = FULL_MID, starter = {   -- 全是工具腰带
         {item = 'toolbelt-equipment', count = 10},
     }, rewards = {
         {pack = 'logistic-science-pack', item = 'toolbelt-equipment', groups = 5},   -- 绿：工具腰带(扩快捷栏)
