@@ -49,12 +49,25 @@ local DEFAULT_CLASSES = {
         {pack = 'promethium-science-pack', item = 'nuclear-fuel',   groups = 10},
     }},
 
-    {key = 'philosopher', techs = {'research-speed-1', 'biolab'}, name = '哲学家', full = FULL_LOW, starter = {
+    {key = 'philosopher', techs = {'research-speed-1'}, name = '哲学家', full = FULL_LOW, starter = {
         
     }, unlock = {{pack = 'automation-science-pack', level = 10}}, rewards = {
         {pack = 'automation-science-pack', item = 'lab',                 groups = 10},
         {pack = 'space-science-pack', item = 'lab',                 groups = 10},
         {pack = 'promethium-science-pack', item = 'lab',                 groups = 10},
+    }},
+    {key = 'TODO', techs = {'biolab'}, name = '改革家', full = FULL_LOW, starter = {
+        {item = 'lab', groups = 1},
+    }, unlock = {{pack = 'automation-science-pack', level = 10}}, rewards = {
+        
+    }},
+
+    {key = 'TODO', techs = {'research-speed-1', 'biolab'}, name = '土木工人', full = FULL_LOW, starter = {
+        {item = 'cliff-explosives', groups = 1},
+    }, unlock = {{pack = 'automation-science-pack', level = 10}}, rewards = {
+        {pack = 'automation-science-pack', item = 'stone-brick',                 groups = 10},
+        {pack = 'space-science-pack', item = 'concrete',                 groups = 10},
+        {pack = 'promethium-science-pack', item = 'foundation',                 groups = 10},
     }},
 
     {key = 'banker', name = '银行家', full = FULL_MAX, starter = {
