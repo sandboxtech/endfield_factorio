@@ -199,8 +199,9 @@ function M.ensure_defaults()
     -- 缺失才补空表 → 保留 /c 的填充。热改示例：/c storage.unlock_techs = {'logistics-2', 'steel-processing'}
     --                                          /c storage.unlock_recipes = {'rail', 'pistol'}
     storage.unlock_techs = storage.unlock_techs or {
-        
         'oil-processing', 'uranium-processing', 'biter-egg-handling',
+        'planet-discovery-vulcanus', 'planet-discovery-gleba',
+        'planet-discovery-fulgora', 'planet-discovery-aquilo',
     }
     storage.unlock_recipes = storage.unlock_recipes or {'iron-stick', 'steel-plate', 'ice-melting',
         'solar-panel', 'accumulator',

@@ -205,6 +205,12 @@ script.on_event(defines.events.on_player_died, function(event)
             player.ticks_to_respawn = base   -- 环境死 / 自杀 / 离场：默认时间
         end
         -- 尸体一律留在【死亡原地】，任何死法都不搬运；要取回背包货物需自行回倒地处。
+        -- 镜头瞬移到出生点：死后玩家无 character，teleport 移动的是观察镜头（不影响尸体），
+        -- 视角立刻从野外死亡处拉回【当前星球出生点中心】，不用盯着倒地处等复活。
+        local surface = player.surface
+        if surface and surface.valid then
+            player.teleport(player.force.get_spawn_position(surface), surface)
+        end
     end
     if cause then player_stats.bump(event.player_index, 'death_count') end
 end)

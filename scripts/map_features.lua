@@ -486,7 +486,6 @@ local OUTPOST_GUARDS = {
     {name = 'gun-turret', mag = true},                    -- 机枪：per 个随机弹种、加满
     {name = 'rocket-turret', rocket = true},              -- 火箭炮：ammo-turret，随机普通/爆破火箭，极小概率核弹(少量)
     {name = 'railgun-turret', electric = true, ammo = 'railgun-ammo'},   -- 磁轨炮：ammo-turret 但【耗电】，需子电网供电 + 塞磁轨弹（缺一不开火）
-    {variants = {'small-worm-turret', 'medium-worm-turret', 'big-worm-turret'}},  -- 沙虫：随机一档，无需弹/电
     {name = 'land-mine'},                                 -- 地雷：无需弹
     {name = 'artillery-turret', ammo = 'artillery-shell'},-- 重炮：炮弹
 }
@@ -647,7 +646,7 @@ end
 -- 【统一放敌人逻辑】(所有遭遇共用，只是 danger 不同)：在 center 周围按 danger 放守卫塔 + 飞船残骸。
 --   danger(0~1+)：越大守卫越多越猛、残骸越多。每种炮塔各自【非线性】数量(大概率0、极小概率很多)，放在半径6~11 环上。
 --   电炮(electric)首次要放时才【惰性】建电网核心；建不出则本类电炮跳过。残骸 force=neutral、不铺人造地板。
-local function place_guards(surface, center, danger, floor)
+local function place_guards(surface, center, danger, floor, no_electric)
     -- Fulgora：据点中心放一座避雷针(enemy force)。range_elongation=25 覆盖范围远超 6~11 格守卫环，
     -- 把闪电引到自己身上，保护周围敌方守卫塔/电网核心不被劈烂（永续箱已 destructible=false，本就免疫）。
     if surface.name == 'fulgora' then
@@ -661,6 +660,7 @@ local function place_guards(surface, center, danger, floor)
     local core, core_tried = nil, false
     local guards = {}   -- 收集【可击杀的守卫】(炮塔/沙虫，排除地雷/电网核心)：供据点"清空解锁"判定（见 place_encounter）
     for _, def in ipairs(OUTPOST_GUARDS) do
+        if not (no_electric and def.electric) then   -- 空据点：跳过电炮，连带不建 substation/EEI
         for _ = 1, nonlinear_count(tmax, 3) do
             if def.electric and not core then
                 if not core_tried then core, core_tried = build_power_core(surface, center), true end
@@ -690,6 +690,7 @@ local function place_guards(surface, center, danger, floor)
                 end
             end
         end
+        end   -- 闭合 no_electric 跳过判断（空据点不放电炮）
     end
     for _ = 1, nonlinear_count(math.floor(danger * 6), 3) do   -- 残骸随 danger
         local name = WRECKS[math.random(#WRECKS)]
@@ -794,7 +795,7 @@ local function place_encounter(surface, lt)
                 local floor
                 if e.kind == 'perpetual' then floor = (storage.enemy_floor2 or {})[surface.name]
                 elseif e.kind ~= 'empty' then floor = (storage.enemy_floor or {})[surface.name] end
-                guards, core = place_guards(surface, center, e.danger * (0.4 + 0.6 * frac) * danger_mul, floor)   -- ×本轮 danger 倍率
+                guards, core = place_guards(surface, center, e.danger * (0.4 + 0.6 * frac) * danger_mul, floor, e.kind == 'empty')   -- ×本轮 danger 倍率；空据点不放电炮
                 guards = guards or {}
             end
             -- 登记据点【只要有守卫就登记，含空据点】：守卫全灭 → 摧毁电网核心(EEI+变电站)；箱子据点还解锁箱/公告/删标记。
