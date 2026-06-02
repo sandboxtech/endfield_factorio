@@ -223,7 +223,8 @@ function M.reset()
                 -- 无限/多级科技：开关 storage.class_tech_stack 控制多职业指向同一科技的行为。普通单级用 researched。
                 if proto.level and proto.max_level and proto.level < proto.max_level then
                     if storage.class_tech_stack then
-                        tech.level = tech.level + 1   -- 累加：每个指向该科技的职业各 +1 级
+                        -- 累加：每个【选该职业的玩家】各 +1 级（u.count=人数，含离线）。封顶 max_level。
+                        tech.level = math.min(proto.max_level, tech.level + u.count)
                     else
                         tech.level = 2                -- 固定第一级(level=2=研究到 level 1)，多职业也不累加
                     end

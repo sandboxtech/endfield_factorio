@@ -766,13 +766,15 @@ end
 --   每项 {key=, name=, techs={...}, recipes={...}}。谁选了职业看 storage.player_class（持久，含离线）。
 -- reset 据此开局解锁科技/配方【并按职业广播】"什么职业解锁了什么" → 故按职业分组、不在此处去重。
 function M.active_class_unlocks()
-    local active = {}
-    for _, key in pairs(storage.player_class or {}) do active[key] = true end
+    -- 按职业 key 统计【选了该职业的玩家人数】(player_class 按玩家名存，含离线)。
+    local count = {}
+    for _, key in pairs(storage.player_class or {}) do count[key] = (count[key] or 0) + 1 end
     local out = {}
     for _, def in ipairs(M.all()) do
         local has = (def.techs and #def.techs > 0) or (def.recipes and #def.recipes > 0)
-        if def.key and active[def.key] and has then
-            out[#out + 1] = {key = def.key, name = def.name, techs = def.techs or {}, recipes = def.recipes or {}}
+        if def.key and count[def.key] and has then
+            -- count = 选该职业的人数；无限科技按人数叠加等级（见 reset.lua），普通科技/配方仍只需解锁一次。
+            out[#out + 1] = {key = def.key, name = def.name, count = count[def.key], techs = def.techs or {}, recipes = def.recipes or {}}
         end
     end
     return out
