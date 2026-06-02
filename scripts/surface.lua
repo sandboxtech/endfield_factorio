@@ -678,10 +678,11 @@ script.on_event(defines.events.on_chunk_generated, events.safe('chunk_generated'
                 local nu, nv = u / a, v / b
                 local edge = 1
                 if rough > 0.01 then
-                    -- 平滑大起伏(base) + 碎度×高频细节(detail)，jag 连续插值：jag=0 纯平滑 ↔ jag=1 最碎；除以(1+jag)归一化保振幅。
-                    local mix = noise.fractal(noise.octaves.smooth, px, py, seed)
+                    -- 海岸边缘用【低频主导】的 coast（大尺度平滑起伏），jag 细节走 coast_detail（比 fine 低频，碎而不锯齿）。
+                    -- jag 连续插值：jag=0 纯平滑 ↔ jag=1 最碎；除以(1+jag)归一化保振幅。
+                    local mix = noise.fractal(noise.octaves.coast, px, py, seed)
                     if jag > 0.02 then
-                        mix = (mix + jag * noise.fractal(noise.octaves.fine, px, py, seed + 777)) / (1 + jag)
+                        mix = (mix + jag * noise.fractal(noise.octaves.coast_detail, px, py, seed + 777)) / (1 + jag)
                     end
                     edge = 1 + rough * mix
                 end

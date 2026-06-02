@@ -178,6 +178,14 @@ function M.reset()
 
     -- 科技进度全部清零，不再保留无限科技 level
     force.reset()
+    -- 清空生产/流体/击杀/建造统计（force.reset 只清科技+modifier、不含统计；2.0 起统计按表面分开）：
+    -- 每个新世界的生产图表从 0 开始，不累积上一轮。遍历全部表面（含太空平台）。
+    for _, surface in pairs(game.surfaces) do
+        force.get_item_production_statistics(surface).clear()
+        force.get_fluid_production_statistics(surface).clear()
+        force.get_kill_count_statistics(surface).clear()
+        force.get_entity_build_count_statistics(surface).clear()
+    end
     force.friendly_fire = false   -- 禁止友军伤害：玩家的武器/爆炸不再伤到自家(同 force)建筑与队友
     force.maximum_following_robot_count = 50   -- 战斗无人机跟随上限提到 50（force.reset 会打回默认，故每次跃迁后重设）
     force.character_inventory_slots_bonus = 50   -- 每个玩家固定 +50 背包格（同上，force.reset 会清，故每轮重设；取代旧的按礼包格数动态扩）

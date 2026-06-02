@@ -85,6 +85,13 @@ M.octaves = {
     fine = {  -- 细密（装饰物/密度）
         {modifier = 0.05, weight = 1}, {modifier = 0.15, weight = 0.3},
     },
+    -- 星球【海岸边缘】专用：低频主导 → 大尺度平滑起伏（海湾/半岛），不要细碎锯齿。
+    coast = {  -- 主轮廓：周期 ~250 格大起伏 + 弱次级。低频层权重压倒中频，故边界平滑。
+        {modifier = 0.004, weight = 1}, {modifier = 0.012, weight = 0.22},
+    },
+    coast_detail = {  -- jag 混入的海岸细节：比 fine 低频得多（周期 ~33/14 格 vs fine 的 ~20/7），碎而不锯齿。
+        {modifier = 0.03, weight = 1}, {modifier = 0.07, weight = 0.3},
+    },
 }
 
 -- 分形噪声：多层 simplex 叠加，返回约 [-1,1]。

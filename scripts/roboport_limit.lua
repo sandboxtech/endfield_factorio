@@ -1,6 +1,6 @@
 -- 限制机器人网络规模：roboport 放置时，若它所在的 logistic 网络已【超过上限】个 roboport，
 -- 就摧毁刚放的这一个并退还（玩家手放退背包、机器人建则原地洒落），防止超大机器人网络拖慢服务器。
--- 上限存 storage.roboport_limit（默认 1000，可 /c 随时调）。超限会全服广播，但 1 分钟内只播一次防刷屏。
+-- 上限存 storage.roboport_limit（默认 10000，可 /c 随时调）。超限会全服广播，但 1 分钟内只播一次防刷屏。
 local events = require('scripts.events')
 
 local M = {}
