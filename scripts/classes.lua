@@ -462,23 +462,45 @@ local DEFAULT_CLASSES = {
     }},
 
     -- 宇航·四星开拓者：起始科技 = 各星球发现科技；starter/rewards/recipes 待填。
-    {key = 'vulcanus', techs = {'planet-discovery-vulcanus'}, recipes = {}, name = '火山开拓者', full = FULL_MAX, starter = {
+    {key = 'vulcanus', techs = {'planet-discovery-vulcanus', 'calcite-processing', 'tungsten-carbide', 'tungsten-steel', 'big-mining-drill', 'metallurgic-science-pack'}, recipes = {}, name = '火山开拓者', full = FULL_MAX, starter = {
         {item = 'pumpjack', groups = 1},
         {item = 'oil-refinery', groups = 1},
         {item = 'chemical-plant', groups = 1},
     }, rewards = {
     }},
 
-    {key = 'fulgora', techs = {'planet-discovery-fulgora'}, recipes = {}, name = '废土开拓者', full = FULL_MAX, starter = {
-    }, rewards = {
+    {key = 'fulgora', techs = {
+        'planet-discovery-fulgora', 
+        'holmium-processing', 
+        'electromagnetic-plant', 
+        'electromagnetic-science-pack'}, recipes = {}, name = '废土开拓者', full = FULL_MAX, starter = {
+    }, unlock = {{pack = 'electromagnetic-science-pack', level = 100}}, rewards = {
     }},
 
-    {key = 'gleba', techs = {'planet-discovery-gleba'}, recipes = {}, name = '雨林开拓者', full = FULL_MAX, starter = {
-    }, rewards = {
+    {key = 'gleba', techs = {
+        'planet-discovery-gleba', 
+        'heating-tower', 
+        'agriculture', 
+        'yumako', 
+        'jellynut', 
+        'bioflux', 
+        'bioflux-processing', 
+        'bacteria-cultivation', 
+        'artificial-soil', 
+        'biochamber', 
+        'agricultural-science-pack', 
+    'biter-egg-handling'}, recipes = {}, name = '雨林开拓者', full = FULL_MAX, starter = {
+    }, unlock = {{pack = 'agricultural-science-pack', level = 100}}, rewards = {
     }},
 
-    {key = 'aquilo', techs = {'planet-discovery-aquilo'}, recipes = {}, name = '冰原开拓者', full = FULL_MAX, starter = {
-    }, rewards = {
+    {key = 'aquilo', techs = {
+        'planet-discovery-aquilo', 
+        'heating-tower', 
+        'lithium-processing', 
+        'cryogenic-plant', 
+        'cryogenic-science-pack'
+    }, recipes = {}, name = '冰原开拓者', full = FULL_MAX, starter = {
+    }, unlock = {{pack = 'military-science-pack', level = 100}}, rewards = {
     }},
 
 
