@@ -133,8 +133,9 @@ local DEFAULT_CLASSES = {
         -- {pack = 'chemical-science-pack',        item = 'stone',  groups = 1},   -- 蓝：铀矿(需硫酸,蓝瓶时代)
         -- {pack = 'production-science-pack',      item = 'iron-ore',        groups = 1},   -- 紫：石头
         -- {pack = 'utility-science-pack',      item = 'copper-ore',        groups = 1},   -- 紫：石头
-        {pack = 'space-science-pack', item = 'uranium-ore', groups = 1},
         --
+        {pack = 'space-science-pack', item = 'uranium-ore', groups = 4},
+
         {pack = 'metallurgic-science-pack',     item = 'tungsten-ore', groups = 4},   -- 橙：钨矿(火山)
         {pack = 'metallurgic-science-pack',     item = 'calcite',      groups = 4},   -- 橙：方解石(火山)
         {pack = 'electromagnetic-science-pack', item = 'holmium-ore',  groups = 4},   -- 粉：钬矿(电浆星)
@@ -454,7 +455,7 @@ local DEFAULT_CLASSES = {
     }},
 
     {key = 'asteroidminer', techs = {'advanced-asteroid-processing'}, name = '小行星带矿工', full = FULL_MAX, starter = {
-        -- {item = 'space-platform-starter-pack', count = 1},
+        {item = 'space-platform-starter-pack', count = 1},
     }, unlock = {{pack = 'space-science-pack', level = 100}}, rewards = {
         {pack = 'space-science-pack',   item = 'asteroid-collector',          groups = 5},
         {pack = 'space-science-pack',   item = 'crusher',                     groups = 5},
@@ -462,6 +463,9 @@ local DEFAULT_CLASSES = {
 
     -- 宇航·四星开拓者：起始科技 = 各星球发现科技；starter/rewards/recipes 待填。
     {key = 'vulcanus', techs = {'planet-discovery-vulcanus'}, recipes = {}, name = '火山开拓者', full = FULL_MAX, starter = {
+        {item = 'pumpjack', groups = 1},
+        {item = 'oil-refinery', groups = 1},
+        {item = 'chemical-plant', groups = 1},
     }, rewards = {
     }},
 
