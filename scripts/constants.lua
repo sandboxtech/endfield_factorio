@@ -94,6 +94,12 @@ function M.ensure_defaults()
         storage.enemy_size_spread = storage.enemy_size_spread or storage.enemy_autoplace_spread
         storage.enemy_autoplace_spread = nil
     end
+    -- enemy_respawn_ticks 改名 respawn_ticks_by_enemy：把旧值(含管理员 /c 改过的)搬到新键，再删旧键。
+    -- 必须在【下方补默认】之前 → 迁移值优先于新默认。幂等：旧键删掉后不再触发，老档加载即自愈。
+    if storage.enemy_respawn_ticks ~= nil then
+        storage.respawn_ticks_by_enemy = storage.respawn_ticks_by_enemy or storage.enemy_respawn_ticks
+        storage.enemy_respawn_ticks = nil
+    end
 
     -- 标量默认（用 nil 判定，布尔 false/0 也能被正确保留）
     local d = {
@@ -141,9 +147,9 @@ function M.ensure_defaults()
         warp_initial_minutes = 30,        -- 每轮开局跃迁倒计时（分钟）
         warp_extend_default_minutes = 60, -- 完成未列入 warp_extend_minutes 的科技瓶科技 → 延长分钟数
         warp_vote_target_minutes = 5,     -- /warp 投票通过后，本世界倒计时直接设为剩余的分钟数（不杀玩家）
-        -- 复活等待 tick（可 /c 热改）：脚本死亡(跃迁清场/离场/自杀)与环境死亡用 respawn_ticks；被敌方打死用 enemy_respawn_ticks。
+        -- 复活等待 tick（可 /c 热改）：脚本死亡(跃迁清场/离场/自杀)与环境死亡用 respawn_ticks；被敌方打死用 respawn_ticks_by_enemy。
         respawn_ticks = 600,              -- 默认复活：600 tick = 10 秒
-        enemy_respawn_ticks = 1800,       -- 被敌方打死：1800 tick = 30 秒
+        respawn_ticks_by_enemy = 1800,    -- 被敌方打死：1800 tick = 30 秒
         warp_vote_divisor = 5,            -- 跃迁投票阈值除数：净同意 > ceil(在线人数/此值) 才推进（5=1/5，越大越易过）
         travel_enabled = true,           -- 前往星球【总开关】（默认开）。关闭：/c storage.travel_enabled=false。开启后每轮每个外星球还要各自过 travel_chance。
         action_cd_minutes = 3,            -- 投票+传送共享冷却（分钟），防止玩家频繁刷动作

@@ -8,8 +8,8 @@ local player_stats = require('scripts.player_stats')
 
 local M = {}
 
--- 复活等待时间改由 storage 配置（可 /c storage.respawn_ticks / enemy_respawn_ticks 热改、持久、同步）；
--- 默认值见 constants.ensure_defaults（respawn_ticks=600=10 秒，enemy_respawn_ticks=1800=30 秒）。
+-- 复活等待时间改由 storage 配置（可 /c storage.respawn_ticks / respawn_ticks_by_enemy 热改、持久、同步）；
+-- 默认值见 constants.ensure_defaults（respawn_ticks=600=10 秒，respawn_ticks_by_enemy=1800=30 秒）。
 
 -- 把 target 的统计数据打印给 viewer：4 项技能 + 在线时长 + 各瓶累计经验。
 -- 文字进度条：BAR_N 个 █，按比例 frac∈[0,1] 前段染 acid(已得)、后段染深灰(待补)。
@@ -153,13 +153,14 @@ script.on_event(defines.events.on_player_died, function(event)
     -- 被【敌方】打死 → 30 秒复活惩罚；脚本死亡(跃迁清场/离场/自杀, cause 为 nil)与环境死亡 → 默认 10 秒。
     local by_enemy = cause and cause.valid and cause.force and cause.force.name == 'enemy'
     if player then
-        player.ticks_to_respawn = by_enemy and (storage.enemy_respawn_ticks or 1800) or (storage.respawn_ticks or 600)
+        player.ticks_to_respawn = by_enemy and (storage.respawn_ticks_by_enemy or 1800) or (storage.respawn_ticks or 600)
         -- 把尸体(连同掉落物)挪到【当前星球中心/出生点】：与"在当前星球复活"一致，方便取回、不用满地图找尸体。
-        -- 自杀/退出走 kill_player 已先传送到中心(尸体即在中心，这里是 no-op)；被敌人/环境打死的尸体在原地，挪到中心。
+        -- 不能按 player.position 限定范围：死亡时玩家已无 character，player.position 退回视角/原点而非死亡地点，
+        -- 野外被敌人/环境打死的尸体就搜不到、留在原地。改为遍历当前星球全部尸体按 player_index 匹配本人，死在哪都搬回中心。
         local surface = player.surface
         if surface and surface.valid then
             local center = player.force.get_spawn_position(surface)
-            for _, corpse in pairs(surface.find_entities_filtered{type = 'character-corpse', position = player.position, radius = 16}) do
+            for _, corpse in pairs(surface.find_entities_filtered{type = 'character-corpse'}) do
                 if corpse.valid and corpse.character_corpse_player_index == event.player_index then
                     corpse.teleport(center)
                 end
