@@ -24,7 +24,7 @@ fisher              LOW        180       3,180       4,775
 artist              LOW        181       3,069         682
 recyclerman         LOW        755       2,755           0
 civilian            LOW        158       2,393           0
-oreman              LOW      1,200       2,151      18,408
+oreman              LOW      1,200       1,851      18,408
 healer              MID     39,100     930,432         682
 helper              MID     13,280     778,018       1,670
 laserman            MID     16,161     231,645       5,417
@@ -139,9 +139,9 @@ afker               MAX          2           2    859,101∞
     初始: car=84、nuclear-fuel=74
     奖励: nuclear-fuel=745、nuclear-fuel=745、nuclear-fuel=745
 
-【oreman 矿物商人】 初始物品=1,200  满级物品=2,151  科技=18,408  techs=['mining-productivity-1', 'mining-productivity-2']
+【oreman 矿物商人】 初始物品=1,200  满级物品=1,851  科技=18,408  techs=['mining-productivity-1', 'mining-productivity-2']
     初始: iron-ore=300、copper-ore=300、stone=300、coal=300
-    奖励: carbon=300、iron-ore=50、copper-ore=50、coal=50、stone=50、iron-ore=50、copper-ore=50、uranium-ore=50、tungsten-ore=50、calcite=50、holmium-ore=50、scrap=50、stone=50、lithium=50、promethium-asteroid-chunk=1
+    奖励: carbon=300、uranium-ore=50、tungsten-ore=50、calcite=50、holmium-ore=50、scrap=50、stone=50、lithium=50、promethium-asteroid-chunk=1
 
 ━━━━━━━━━━━━ 二、MID 档明细（27个，满级中位 86,918）━━━━━━━━━━━━
 
@@ -353,7 +353,7 @@ afker               MAX          2           2    859,101∞
 
 ━━━━━━━━━━━━ 三、复检 ━━━━━━━━━━━━
 初始物品  中位=1,602  范围 0 ~ 54,012（应大致相当）
-LOW 满级物品  中位=7,178  范围 2,151 ~ 126,295
+LOW 满级物品  中位=7,178  范围 1,851 ~ 126,295
 MID 满级物品  中位=86,918  范围 4,602 ~ 930,432
 MAX 满级物品  中位=334,376  范围 2 ~ 1,500,677
 
@@ -426,7 +426,7 @@ MAX 满级物品  中位=334,376  范围 2 ~ 1,500,677
 ──── 满级物品排名 · 后 20（最低，最差，最可能需补强）────
   afker              MAX  满级=         2  科技=859,101∞  主因 （无）
   banker             MAX  满级=     1,200  科技=0  主因 coin=100
-  oreman             LOW  满级=     2,151  科技=18,408  主因 carbon=300
+  oreman             LOW  满级=     1,851  科技=18,408  主因 carbon=300
   civilian           LOW  满级=     2,393  科技=0  主因 nuclear-fuel=745
   recyclerman        LOW  满级=     2,755  科技=0  主因 scrap=500
   artist             LOW  满级=     3,069  科技=682  主因 constant-combinator=1,201
@@ -446,7 +446,7 @@ MAX 满级物品  中位=334,376  范围 2 ~ 1,500,677
   shotgunner         LOW  满级=    27,191  科技=20  主因 piercing-shotgun-shell=19,120
 
 各档档内最差（满级物品最低 3）：
-  LOW  oreman             满级=   2,151  科技=18,408  techs=['mining-productivity-1', 'mining-productivity-2']
+  LOW  oreman             满级=   1,851  科技=18,408  techs=['mining-productivity-1', 'mining-productivity-2']
   LOW  civilian           满级=   2,393  科技=0  techs=无
   LOW  recyclerman        满级=   2,755  科技=0  techs=['recycling']
   MID  chef               满级=   4,602  科技=0  techs=['bioflux', 'bioflux-processing', 'jellynut', 'yumako']

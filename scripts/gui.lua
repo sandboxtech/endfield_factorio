@@ -249,19 +249,20 @@ function M.show_classes(player)
         local icon_item = (def.starter and def.starter[1] and def.starter[1].item)
                        or (def.rewards and def.rewards[1] and def.rewards[1].item)
         local starter_img = icon_item and ('[img=item/' .. icon_item .. ']') or ''
-        local tip = {''}
+        -- tooltip 各行先平铺收集到 parts，最后再分块嵌套（见下）。
+        local parts = {}
         -- 开局解锁的【科技/配方】放最上面(免费物品之前)。techs 用 [technology=]、recipes 用 [recipe=] 自动渲染图标+本地化名。
         local techlist = {}
         for _, t in ipairs(def.techs or {}) do techlist[#techlist + 1] = '[technology=' .. t .. ']' end
-        if #techlist > 0 then tip[#tip + 1] = {'wn.class-tip-tech', table.concat(techlist, ' ')} end
+        if #techlist > 0 then parts[#parts + 1] = {'wn.class-tip-tech', table.concat(techlist, ' ')} end
         local recipelist = {}
         for _, rc in ipairs(def.recipes or {}) do recipelist[#recipelist + 1] = '[recipe=' .. rc .. ']' end
-        if #recipelist > 0 then tip[#tip + 1] = {'wn.class-tip-recipe', table.concat(recipelist, ' ')} end
+        if #recipelist > 0 then parts[#parts + 1] = {'wn.class-tip-recipe', table.concat(recipelist, ' ')} end
         for _, s in ipairs(def.starter or {}) do
             local proto = prototypes.item[s.item]
             -- 白送总个数 = count 个，或 groups 组 × 堆叠（默认 1 组）。每条一行，只显示算好的总数。
             local total = s.count or (((proto and proto.stack_size) or 1) * (s.groups or 1))
-            tip[#tip + 1] = {'wn.class-tip-head', total, '[img=item/' .. s.item .. ']'}
+            parts[#parts + 1] = {'wn.class-tip-head', total, '[img=item/' .. s.item .. ']'}
         end
         for _, r in ipairs(def.rewards or {}) do
             local proto = prototypes.item[r.item]
@@ -270,7 +271,7 @@ function M.show_classes(player)
             local lv = math.min(classes.pack_level(player, r.pack), full)        -- 玩家该瓶当前等级(封顶 full)
             local current = math.floor(total * lv / full)                        -- 当前能拿到的数量(yyy，与 respawn_gifts 发放公式一致)
             local g = util.gcd(full, total)                                       -- 约分 满级线:满级总数 → 每 P 级得 Q 个
-            tip[#tip + 1] = {'wn.class-tip-reward',
+            parts[#parts + 1] = {'wn.class-tip-reward',
                 '[img=item/' .. r.pack .. ']',       -- 瓶图标(等级来源)
                 math.floor(full / g),                -- P：每多少级得一批
                 math.floor(total / g),               -- Q：每批给多少个
@@ -280,7 +281,19 @@ function M.show_classes(player)
         end
         -- 解锁条件（需全部满足）：附在 tooltip 末尾，显示 需求瓶/等级 + 当前等级。
         for _, u in ipairs(def.unlock or {}) do
-            tip[#tip + 1] = {'wn.class-tip-unlock', '[img=item/' .. u.pack .. ']', u.level, classes.pack_level(player, u.pack)}
+            parts[#parts + 1] = {'wn.class-tip-unlock', '[img=item/' .. u.pack .. ']', u.level, classes.pack_level(player, u.pack)}
+        end
+        -- 分块嵌套：localised string 单层最多 20 参数，超了会崩（"too many parameters for localized string"）。
+        -- 把 parts 串成嵌套结构——每层放 ≤19 个真实参数 + 第 20 个参数指向下一层 → 任意条数都安全。
+        local tip = {''}
+        local node = tip
+        for _, p in ipairs(parts) do
+            if #node >= 20 then            -- 本层已 '' + 19 参数，开新嵌套层接在第 20 个参数
+                local nxt = {''}
+                node[#node + 1] = nxt
+                node = nxt
+            end
+            node[#node + 1] = p
         end
         -- 未解锁 → 按钮置灰(enabled=false，不可点)，但 tooltip 仍显示解锁条件。
         buttons[#buttons + 1] = {name = 'wn_act_class_' .. def.key,

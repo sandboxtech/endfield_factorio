@@ -22,8 +22,9 @@ end
 register('replicant', defines.events.on_entity_died, function(e)
     local ent = e.entity
     if not (ent and ent.valid) then return end
-    -- 仅"玩家方建筑、被敌对方杀死"才触发（这两步过滤掉绝大多数 entity 死亡）
+    -- 仅"玩家方【建筑】、被敌对方杀死"才触发（过滤掉绝大多数 entity 死亡）
     if not (ent.force and ent.force.name == 'player') then return end
+    if not ent.prototype.is_building then return end   -- 只认建筑：排除玩家角色/机器人/载具，否则玩家被虫打死会在尸体处冒虫
     local cause = e.cause
     if not (cause and cause.valid and cause.force and cause.force.name == 'enemy') then return end
     if math.random() >= map_features.knobs().danger then return end   -- 概率 = 本轮危险度 danger（危险世界爆虫多、易滚雪球）
