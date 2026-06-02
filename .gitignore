@@ -1,2 +1,5 @@
 # gen_set_classes.py 从 classes.lua 生成的产物，不跟踪（改完 classes.lua 跑一次 gen 即可重新生成）
 set_classes.txt
+
+# gen_item_values.py 扫 Factorio 数据的派生缓存，不跟踪（可随时 --rebuild 重建）
+.value_cache.json

@@ -1,99 +1,457 @@
-职业价值分析（gen_item_values.py 自动生成）。重要性权重：初始物品 > 满级物品 >> 科技。
-价值=递归原矿成本(可挖原矿=1，忽略合成)。触发科技=0；无限科技按一批1000次估(标 inf)。coin 低估。
+╔══════════════════════════════════════════════════════════════╗
+║  职业价值分析（gen_item_values.py 自动生成，勿手改）           ║
+╚══════════════════════════════════════════════════════════════╝
+重要性权重：初始物品 > 满级物品 >> 科技。
+物品价值=递归原矿成本（沿同名主产物配方展开到原矿；可挖原矿=1，忽略合成；coin 低估）。
+满级物品=初始 + 全部 rewards 满配额（stack×groups 或 count）。
+科技价值=研究科学瓶投入；触发科技=0；无限科技按一批 1000 次估（标 ∞）。
 
-职业                  档   初始物品   满级物品      科技
-------------------------------------------------------
-shotgunner          LOW       151        382         20
-oreman              LOW     1,200      2,151          0
-civilian            LOW       158      2,393          0
-recyclerman         LOW       755      2,755          0
-artist              LOW       181      3,069        682
-fisher              LOW       180      3,180      4,775
-foundryman          LOW     2,599      4,599          0
-traindriver         LOW       228      5,734      1,874
-material            LOW     1,000      6,540          0
-electromagneticman  LOW     5,777      7,817          0
-inventor            LOW       319      9,886        682
-energytrader        LOW         0     14,722          0
-programmer          LOW     4,707     29,441      1,670
-producttrader       LOW         0     96,945          0
-civilengineer       LOW     2,049    126,495      1,363
-gunner              MID        65        252         20
-tanker              MID       480      1,713     13,543
-chef                MID     1,602      4,602          0
-plumber             MID     1,983     18,093        341
-thorman             MID       997     20,933      2,758
-porter              MID     1,952     21,467     12,887
-smelter             MID     1,500     27,008      8,863
-pharmacist          MID     1,602     29,502          0
-electrician         MID       682     49,328          0
-herder              MID        81     50,239     63,723
-gridman             MID       136     60,345      4,159
-hunter              MID        20     63,678     63,723
-miner               MID     1,106     68,186         50
-warehouser          MID     3,799     78,277     87,550
-guard               MID    10,000     86,918         40
-launcher            MID     1,893     96,547    256,763
-inserter            MID     1,046    104,362      1,083
-loaderman           MID        43    112,052     34,522
-healer              MID    39,190    141,683        682
-oilman              MID     2,266    147,987        682
-tankman             MID     1,784    157,789      4,137
-runner              MID     5,286    181,476      1,670
-artisan             MID       970    199,349        293
-belter              MID     3,043    215,232      1,403
-bomber              MID     1,500    218,678        682
-greentech           MID    15,977    231,421      2,726
-laserman            MID    16,161    231,645      5,417
-helper              MID    13,280    782,096      1,670
-philosopher         MAX         0          0    287,078
-afker               MAX         2          2   884,797∞
-banker              MAX         0      1,200          0
-spiderman           MAX    54,404     54,404    693,820
-transformer         MAX    54,882     54,882  3,123,150
-biologist           MAX         0     74,388   122,822∞
-rocketeer           MAX     1,063     83,883      3,310
-astronomer          MAX         0     86,785   884,797∞
-artillerist         MAX     3,246    129,802    391,728
-forester            MAX       346    151,346      2,148
-asteroidminer       MAX     5,475    175,661     17,604
-roboticist          MAX     2,282    269,464     14,199
-moduler             MAX         0    319,085        682
-railgunner          MAX     3,412    351,285  1,567,370
-captain             MAX     5,475    359,368    532,626
-farmer              MAX       146    482,846          0
-teslatrooper        MAX     2,982    498,634    936,945
-qualityman          MAX     3,370    525,414  1,287,223
-speedman            MAX     3,370    525,414   248,078∞
-efficiencyman       MAX     3,370    525,414   123,163∞
-productivityman     MAX     3,370    525,414   542,379∞
-metallurgist        MAX         0    753,164   247,737∞
-physicist           MAX         0  1,198,563   133,712∞
-electromancer       MAX         0  1,306,293   542,038∞
-nuclearman          MAX     5,073  1,505,228     26,726
+━━━━━━━━━━━━ 一、汇总表 ━━━━━━━━━━━━
+职业                  档    初始物品    满级物品       科技
+──────────────────────────────────────────────────────────
+civilengineer       LOW      2,049     126,295       1,363
+producttrader       LOW        557      39,068      11,385
+programmer          LOW      4,707      29,441       1,670
+shotgunner          LOW      4,071      27,191          20
+plumber             LOW      1,983      18,093         341
+energytrader        LOW        500      14,972     182,630
+inventor            LOW        319       9,886         682
+electromagneticman  LOW      5,777       7,817           0
+material            LOW      1,000       6,540     182,630
+traindriver         LOW        228       5,734       1,874
+foundryman          LOW      2,588       4,588           0
+fisher              LOW        180       3,180       4,775
+artist              LOW        181       3,069         682
+recyclerman         LOW        755       2,755           0
+civilian            LOW        158       2,393           0
+oreman              LOW      1,200       2,151      18,408
+healer              MID     39,100     930,432         682
+helper              MID     13,280     778,018       1,670
+laserman            MID     16,161     231,645       5,417
+greentech           MID     15,977     226,781       2,726
+bomber              MID      1,500     218,678         682
+artisan             MID        970     199,349         293
+belter              MID      3,043     182,606       1,403
+tankman             MID      1,784     157,789       4,137
+runner              MID      4,552     156,273       1,670
+oilman              MID      2,266     146,537         682
+inserter            MID      1,046     104,362       1,083
+loaderman           MID         43      98,457      34,522
+launcher            MID      1,893      96,547     254,044
+guard               MID     10,000      86,918          40
+warehouser          MID      3,799      78,277      86,190
+tanker              MID        480      76,237      13,543
+miner               MID      1,106      64,923          50
+hunter              MID         20      62,863      63,723
+gridman             MID        136      60,345       4,159
+herder              MID         81      49,424      63,723
+electrician         MID        682      49,328           0
+pharmacist          MID      1,602      29,502           0
+smelter             MID      1,500      27,008       8,863
+gunner              MID      4,025      22,752          20
+porter              MID      1,952      21,467      12,887
+thorman             MID        997      20,933       2,758
+chef                MID      1,602       4,602           0
+nuclearman          MAX      5,073   1,500,677      26,726
+electromancer       MAX          0   1,306,293    519,382∞
+metallurgist        MAX          0     734,676    247,737∞
+physicist           MAX          0     592,031    133,592∞
+qualityman          MAX      3,370     525,414   1,273,628
+speedman            MAX      3,370     525,414    248,078∞
+efficiencyman       MAX      3,370     525,414    123,163∞
+productivityman     MAX      3,370     525,414    519,723∞
+farmer              MAX        146     482,846           0
+teslatrooper        MAX      2,620     430,848     898,882
+captain             MAX      5,475     355,290     527,188
+railgunner          MAX      3,353     345,290   1,516,380
+moduler             MAX      4,376     323,461         682
+roboticist          MAX      2,200     261,225      14,199
+asteroidminer       MAX      5,475     168,320      17,604
+forester            MAX        346     151,346       2,148
+rocketeer           MAX      1,063     136,152       3,310
+artillerist         MAX      3,246     129,802     386,290
+transformer         MAX     54,012      54,012   2,996,275
+spiderman           MAX     53,425      53,425     687,022
+astronomer          MAX          0      42,985    859,101∞
+biologist           MAX          0      37,194    122,822∞
+banker              MAX          0       1,200           0
+afker               MAX          2           2    859,101∞
 
-== 复检 ==
-初始物品 中位=1,350  范围 0~54,882
-LOW 满级物品 中位=5,734  范围 382~126,495
-MID 满级物品 中位=82,598  范围 252~782,096
-MAX 满级物品 中位=319,085  范围 0~1,505,228
+━━━━━━━━━━━━ 二、LOW 档明细（16个，满级中位 7,178）━━━━━━━━━━━━
 
-初始物品最高 8（应大致相当）：
-  transformer        MAX     54,882
-  spiderman          MAX     54,404
-  healer             MID     39,190
-  laserman           MID     16,161
-  greentech          MID     15,977
-  helper             MID     13,280
-  guard              MID     10,000
-  electromagneticman LOW      5,777
+【civilengineer 土木工人】 初始物品=2,049  满级物品=126,295  科技=1,363  techs=['cliff-explosives']
+    初始: cliff-explosives=2,049
+    奖励: foundation=78,240、refined-concrete=32,906、concrete=11,100、stone-brick=2,000
 
-满级物品越级 8（MID/LOW 高于 MAX 中位即偏高）：
-  helper             MID     782,096
-  laserman           MID     231,645
-  greentech          MID     231,421
-  bomber             MID     218,678
-  belter             MID     215,232
-  artisan            MID     199,349
-  runner             MID     181,476
-  tankman            MID     157,789
+【producttrader 产品商人】 初始物品=557  满级物品=39,068  科技=11,385  techs=['electronics', 'advanced-circuit', 'processing-unit']
+    初始: electronic-circuit=353、iron-gear-wheel=204
+    奖励: processing-unit=14,354、flying-robot-frame=14,126、advanced-circuit=4,687、electric-engine-unit=2,461、electronic-circuit=1,765、engine-unit=608、iron-gear-wheel=510
+
+【programmer 程序员】 初始物品=4,707  满级物品=29,441  科技=1,670  techs=['advanced-combinators']
+    初始: selector-combinator=3,697、arithmetic-combinator=505、decider-combinator=505
+    奖励: selector-combinator=18,483、decider-combinator=2,525、arithmetic-combinator=2,525、constant-combinator=1,201
+
+【shotgunner 山上彻也】 初始物品=4,071  满级物品=27,191  科技=20  techs=['military']
+    初始: shotgun-shell=4,000、combat-shotgun=71
+    奖励: piercing-shotgun-shell=19,120、shotgun-shell=4,000
+
+【plumber 管道工人】 初始物品=1,983  满级物品=18,093  科技=341  techs=['fluid-handling']
+    初始: pipe=1,000、pump=507、pipe-to-ground=375、offshore-pump=101
+    奖励: storage-tank=8,825、pipe-to-ground=3,750、pump=2,535、pipe=1,000
+
+【energytrader 能源商人】 初始物品=500  满级物品=14,972  科技=182,630  techs=['rocket-fuel', 'kovarex-enrichment-process']
+    初始: coal=500
+    奖励: rocket-fuel=7,350、solid-fuel=5,000、carbon=1,500、nuclear-fuel=372、coal=250
+
+【inventor 发明家】 初始物品=319  满级物品=9,886  科技=682  techs=['research-speed-1']
+    初始: lab=319
+    奖励: lab=3,189、lab=3,189、lab=3,189
+
+【electromagneticman 电子工人】 初始物品=5,777  满级物品=7,817  科技=0  techs=['electromagnetic-plant']
+    初始: electromagnetic-plant=5,777
+    奖励: copper-cable=510、copper-cable=510、copper-cable=510、copper-cable=510
+
+【material 材料商人】 初始物品=1,000  满级物品=6,540  科技=182,630  techs=['low-density-structure', 'kovarex-enrichment-process']
+    初始: iron-plate=800、copper-plate=200
+    奖励: tungsten-carbide=1,704、carbon-fiber=1,600、plastic-bar=358、steel-plate=306、sulfur=294、holmium-plate=260、tungsten-plate=251、stone-brick=200、uranium-238=167、iron-plate=100、copper-plate=100、lithium-plate=100、uranium-235=100
+
+【traindriver 火车司机】 初始物品=228  满级物品=5,734  科技=1,874  techs=['railway', 'automated-rail-transportation']
+    初始: rail=228
+    奖励: rail=4,560、rail-signal=338、rail-chain-signal=338、train-stop=270
+
+【foundryman 冶金工人】 初始物品=2,588  满级物品=4,588  科技=0  techs=['foundry']
+    初始: foundry=2,588
+    奖励: calcite=500、calcite=500、calcite=500、calcite=500
+
+【fisher 渔夫】 初始物品=180  满级物品=3,180  科技=4,775  techs=['fish-breeding']
+    初始: raw-fish=100、biochamber=80
+    奖励: raw-fish=1,000、raw-fish=1,000、raw-fish=1,000
+
+【artist 艺术家】 初始物品=181  满级物品=3,069  科技=682  techs=['circuit-network']
+    初始: small-lamp=176、constant-combinator=5
+    奖励: constant-combinator=1,201、small-lamp=882、programmable-speaker=667、display-panel=138
+
+【recyclerman 回收工人】 初始物品=755  满级物品=2,755  科技=0  techs=['recycling']
+    初始: recycler=755
+    奖励: scrap=500、scrap=500、scrap=500、scrap=500
+
+【civilian 出租司机】 初始物品=158  满级物品=2,393  科技=0  techs=无
+    初始: car=84、nuclear-fuel=74
+    奖励: nuclear-fuel=745、nuclear-fuel=745、nuclear-fuel=745
+
+【oreman 矿物商人】 初始物品=1,200  满级物品=2,151  科技=18,408  techs=['mining-productivity-1', 'mining-productivity-2']
+    初始: iron-ore=300、copper-ore=300、stone=300、coal=300
+    奖励: carbon=300、iron-ore=50、copper-ore=50、coal=50、stone=50、iron-ore=50、copper-ore=50、uranium-ore=50、tungsten-ore=50、calcite=50、holmium-ore=50、scrap=50、stone=50、lithium=50、promethium-asteroid-chunk=1
+
+━━━━━━━━━━━━ 二、MID 档明细（27个，满级中位 86,918）━━━━━━━━━━━━
+
+【healer 奶妈】 初始物品=39,100  满级物品=930,432  科技=682  techs=['solar-panel-equipment']
+    初始: battery-mk3-equipment=22,527、fission-reactor-equipment=16,573
+    奖励: fusion-reactor-equipment=623,108、fission-reactor-equipment=165,731、battery-mk2-equipment=86,205、solar-panel-equipment=10,261、battery-equipment=6,027
+
+【helper 辅助】 初始物品=13,280  满级物品=778,018  科技=1,670  techs=['personal-roboport-equipment']
+    初始: personal-roboport-equipment=13,280
+    奖励: personal-roboport-mk2-equipment=426,748、personal-roboport-equipment=265,592、construction-robot=72,398
+
+【laserman 输出】 初始物品=16,161  满级物品=231,645  科技=5,417  techs=['personal-laser-defense-equipment']
+    初始: personal-laser-defense-equipment=16,161
+    奖励: personal-laser-defense-equipment=215,484
+
+【greentech 光能工人】 初始物品=15,977  满级物品=226,781  科技=2,726  techs=['solar-energy', 'electric-energy-accumulators']
+    初始: accumulator=13,638、solar-panel=2,339
+    奖励: accumulator=136,375、lightning-collector=47,487、solar-panel=23,388、lightning-rod=3,554
+
+【bomber 拆迁队】 初始物品=1,500  满级物品=218,678  科技=682  techs=['explosives']
+    初始: grenade=1,500
+    奖励: cluster-grenade=81,244、destroyer-capsule=65,513、distractor-capsule=29,386、defender-capsule=13,972、poison-capsule=12,238、grenade=7,500、slowdown-capsule=7,325
+
+【artisan 装配工人】 初始物品=970  满级物品=199,349  科技=293  techs=['automation', 'automation-2']
+    初始: assembling-machine-1=970
+    奖励: assembling-machine-3=170,726、assembling-machine-2=17,955、assembling-machine-1=9,698
+
+【belter 运输工人】 初始物品=3,043  满级物品=182,606  科技=1,403  techs=['logistics', 'logistics-2']
+    初始: splitter=1,786、underground-belt=752、transport-belt=505
+    奖励: turbo-splitter=55,192、turbo-transport-belt=40,705、express-splitter=25,308、turbo-underground-belt=20,912、express-transport-belt=18,155、express-underground-belt=8,872、fast-splitter=4,572、fast-transport-belt=3,055、fast-underground-belt=2,792
+
+【tankman 肉盾】 初始物品=1,784  满级物品=157,789  科技=4,137  techs=['energy-shield-equipment']
+    初始: energy-shield-equipment=1,784
+    奖励: energy-shield-mk2-equipment=147,087、energy-shield-equipment=8,918
+
+【runner 快递员】 初始物品=4,552  满级物品=156,273  科技=1,670  techs=['exoskeleton-equipment']
+    初始: exoskeleton-equipment=4,552
+    奖励: exoskeleton-equipment=151,721
+
+【oilman 石化工人】 初始物品=2,266  满级物品=146,537  科技=682  techs=['oil-gathering', 'oil-processing']
+    初始: oil-refinery=1,038、pumpjack=886、chemical-plant=342
+    奖励: cryogenic-plant=118,406、oil-refinery=10,375、pumpjack=8,865、chemical-plant=3,422、biochamber=3,203
+
+【inserter 斜教】 初始物品=1,046  满级物品=104,362  科技=1,083  techs=['fast-inserter', 'bulk-inserter']
+    初始: fast-inserter=466、long-handed-inserter=290、inserter=189、burner-inserter=101
+    奖励: stack-inserter=70,631、bulk-inserter=25,123、fast-inserter=3,726、long-handed-inserter=2,322、inserter=1,514
+
+【loaderman 装卸工人】 初始物品=43  满级物品=98,457  科技=34,522  techs=['logistics-3']
+    初始: loader=43
+    奖励: turbo-loader=33,102、express-loader=25,500、loader=21,450、fast-loader=18,362
+
+【launcher 发射专家】 初始物品=1,893  满级物品=96,547  科技=254,044  techs=['rocket-silo']
+    初始: rocket-part=1,893
+    奖励: rocket-fuel=36,750、processing-unit=35,886、low-density-structure=22,018
+
+【guard 保安】 初始物品=10,000  满级物品=86,918  科技=40  techs=['gun-turret', 'stone-wall']
+    初始: stone-wall=10,000
+    奖励: laser-turret=37,315、stone-wall=20,000、gun-turret=10,050、flamethrower-turret=7,375、radar=1,196、gate=982
+
+【warehouser 仓库管理员】 初始物品=3,799  满级物品=78,277  科技=86,190  techs=['logistic-system']
+    初始: storage-chest=2,075、steel-chest=1,224、iron-chest=400、wooden-chest=100
+    奖励: storage-chest=20,746、passive-provider-chest=20,746、steel-chest=12,240、requester-chest=10,373、buffer-chest=10,373
+
+【tanker 大运司机】 初始物品=480  满级物品=76,237  科技=13,543  techs=['tank']
+    初始: tank=480
+    奖励: explosive-cannon-shell=30,162、uranium-cannon-shell=23,391、cannon-shell=21,724、tank=480
+
+【miner 采矿工人】 初始物品=1,106  满级物品=64,923  科技=50  techs=['electric-mining-drill']
+    初始: burner-mining-drill=1,106
+    奖励: big-mining-drill=43,422、electric-mining-drill=20,395
+
+【hunter 猎手】 初始物品=20  满级物品=62,863  科技=63,723  techs=['captivity']
+    初始: rocket-launcher=19、biter-egg=1
+    奖励: capture-robot-rocket=42,593、bioflux=6,750、bioflux=6,750、bioflux=6,750
+
+【gridman 电网工人】 初始物品=136  满级物品=60,345  科技=4,159  techs=['electric-energy-distribution-1', 'electric-energy-distribution-2']
+    初始: power-switch=98、small-electric-pole=38
+    奖励: substation=45,356、big-electric-pole=10,160、medium-electric-pole=4,315、small-electric-pole=378
+
+【herder 牧民】 初始物品=81  满级物品=49,424  科技=63,723  techs=['captivity']
+    初始: biochamber=80、pentapod-egg=1
+    奖励: capture-robot-rocket=42,593、bioflux=6,750
+
+【electrician 热能工人】 初始物品=682  满级物品=49,328  科技=0  techs=['steam-power']
+    初始: boiler=450、steam-engine=232
+    奖励: heating-tower=19,720、heat-exchanger=14,060、steam-turbine=12,100、steam-engine=2,316、boiler=450
+
+【pharmacist 培养员】 初始物品=1,602  满级物品=29,502  科技=0  techs=['bacteria-cultivation']
+    初始: biochamber=1,602
+    奖励: bioflux=27,000、iron-bacteria=600、copper-bacteria=300
+
+【smelter 煅烧工人】 初始物品=1,500  满级物品=27,008  科技=8,863  techs=['advanced-material-processing', 'advanced-material-processing-2']
+    初始: stone-furnace=1,500
+    奖励: electric-furnace=10,918、steel-furnace=9,590、stone-furnace=5,000
+
+【gunner 田明建】 初始物品=4,025  满级物品=22,752  科技=20  techs=['military']
+    初始: firearm-magazine=4,000、submachine-gun=25
+    奖励: uranium-rounds-magazine=8,197、piercing-rounds-magazine=6,530、firearm-magazine=4,000
+
+【porter 吃货】 初始物品=1,952  满级物品=21,467  科技=12,887  techs=['toolbelt-equipment']
+    初始: toolbelt-equipment=1,952
+    奖励: toolbelt-equipment=19,515
+
+【thorman 雷神】 初始物品=997  满级物品=20,933  科技=2,758  techs=['land-mine']
+    初始: land-mine=997
+    奖励: land-mine=19,936
+
+【chef 厨师】 初始物品=1,602  满级物品=4,602  科技=0  techs=['bioflux', 'bioflux-processing', 'jellynut', 'yumako']
+    初始: biochamber=1,602
+    奖励: yumako-mash=1,000、jelly=1,000、yumako=500、jellynut=500
+
+━━━━━━━━━━━━ 二、MAX 档明细（24个，满级中位 334,376）━━━━━━━━━━━━
+
+【nuclearman 核能工人】 初始物品=5,073  满级物品=1,500,677  科技=26,726  techs=['nuclear-power']
+    初始: centrifuge=5,073
+    奖励: nuclear-reactor=671,917、centrifuge=634,167、fusion-generator=93,180、fusion-reactor=84,513、fusion-power-cell=10,760、uranium-fuel-cell=1,067
+
+【electromancer 电磁专家】 初始物品=0  满级物品=1,306,293  科技=519,382∞  techs=['processing-unit-productivity']
+    初始: （无）
+    奖励: electromagnetic-plant=1,155,368、recycler=150,925
+
+【metallurgist 冶金专家】 初始物品=0  满级物品=734,676  科技=247,737∞  techs=['low-density-structure-productivity']
+    初始: （无）
+    奖励: foundry=517,564、big-mining-drill=217,112
+
+【physicist 物理专家】 初始物品=0  满级物品=592,031  科技=133,592∞  techs=['rocket-part-productivity']
+    初始: （无）
+    奖励: cryogenic-plant=592,031
+
+【qualityman 品质大师】 初始物品=3,370  满级物品=525,414  科技=1,273,628  techs=['quality-module', 'epic-quality']
+    初始: quality-module=3,370
+    奖励: quality-module-3=316,572、quality-module-2=171,768、quality-module=33,704
+
+【speedman 速度大师】 初始物品=3,370  满级物品=525,414  科技=248,078∞  techs=['speed-module', 'low-density-structure-productivity']
+    初始: speed-module=3,370
+    奖励: speed-module-3=316,572、speed-module-2=171,768、speed-module=33,704
+
+【efficiencyman 节能大师】 初始物品=3,370  满级物品=525,414  科技=123,163∞  techs=['efficiency-module', 'rocket-fuel-productivity']
+    初始: efficiency-module=3,370
+    奖励: efficiency-module-3=316,572、efficiency-module-2=171,768、efficiency-module=33,704
+
+【productivityman 产能大师】 初始物品=3,370  满级物品=525,414  科技=519,723∞  techs=['productivity-module', 'processing-unit-productivity']
+    初始: productivity-module=3,370
+    奖励: productivity-module-3=316,572、productivity-module-2=171,768、productivity-module=33,704
+
+【farmer 农民】 初始物品=146  满级物品=482,846  科技=0  techs=['agriculture', 'jellynut', 'yumako']
+    初始: agricultural-tower=106、yumako-seed=20、jellynut-seed=20
+    奖励: overgrowth-yumako-soil=215,900、overgrowth-jellynut-soil=215,900、artificial-yumako-soil=25,450、artificial-jellynut-soil=25,450
+
+【teslatrooper 杨永信】 初始物品=2,620  满级物品=430,848  科技=898,882  techs=['tesla-weapons']
+    初始: tesla-ammo=2,269、teslagun=351
+    奖励: tesla-turret=313,031、tesla-ammo=113,443、teslagun=1,754
+
+【captain 船长】 初始物品=5,475  满级物品=355,290  科技=527,188  techs=['advanced-asteroid-processing']
+    初始: space-platform-starter-pack=5,475
+    奖励: space-platform-foundation=132,600、cargo-bay=130,079、thruster=87,136
+
+【railgunner 御坂美琴】 初始物品=3,353  满级物品=345,290  科技=1,516,380  techs=['railgun']
+    初始: railgun=3,318、railgun-ammo=35
+    奖励: railgun-turret=338,619、railgun=3,318
+
+【moduler 插件工人】 初始物品=4,376  满级物品=323,461  科技=682  techs=['modules']
+    初始: beacon=3,028、speed-module=674、efficiency-module=674
+    奖励: speed-module-2=68,707、efficiency-module-2=68,707、beacon=60,557、beacon=60,557、beacon=60,557
+
+【roboticist 机械师】 初始物品=2,200  满级物品=261,225  科技=14,199  techs=['robotics', 'construction-robotics', 'logistic-robotics']
+    初始: construction-robot=1,448、roboport=711、storage-chest=41
+    奖励: logistic-robot=82,349、construction-robot=72,398、roboport=71,085、storage-chest=10,373、passive-provider-chest=10,373、active-provider-chest=4,149、requester-chest=4,149、buffer-chest=4,149
+
+【asteroidminer 小行星带矿工】 初始物品=5,475  满级物品=168,320  科技=17,604  techs=['space-platform-thruster']
+    初始: space-platform-starter-pack=5,475
+    奖励: asteroid-collector=71,823、crusher=57,872、space-platform-foundation=33,150
+
+【forester 护林员】 初始物品=346  满级物品=151,346  科技=2,148  techs=['tree-seeding']
+    初始: wood=200、agricultural-tower=106、tree-seed=40
+    奖励: landfill=50,000、landfill=50,000、landfill=50,000、wood=1,000
+
+【rocketeer 胖子发射器】 初始物品=1,063  满级物品=136,152  科技=3,310  techs=['rocketry']
+    初始: rocket=1,044、rocket-launcher=19
+    奖励: rocket-turret=76,438、explosive-rocket=27,312、atomic-bomb=16,642、rocket=10,438、capture-robot-rocket=4,259
+
+【artillerist 李云龙】 初始物品=3,246  满级物品=129,802  科技=386,290  techs=['artillery']
+    初始: artillery-shell=2,121、artillery-turret=1,125
+    奖励: artillery-turret=112,473、artillery-wagon=7,721、artillery-shell=6,362
+
+【transformer 变形金刚】 初始物品=54,012  满级物品=54,012  科技=2,996,275  techs=['mech-armor']
+    初始: mech-armor=54,012
+    奖励: （无）
+
+【spiderman 蜘蛛侠】 初始物品=53,425  满级物品=53,425  科技=687,022  techs=['spidertron']
+    初始: spidertron=53,425
+    奖励: （无）
+
+【astronomer 天文专家】 初始物品=0  满级物品=42,985  科技=859,101∞  techs=['research-productivity']
+    初始: （无）
+    奖励: biolab=42,985
+
+【biologist 生物专家】 初始物品=0  满级物品=37,194  科技=122,822∞  techs=['rocket-fuel-productivity']
+    初始: （无）
+    奖励: agricultural-tower=21,179、biochamber=16,015
+
+【banker 银行家】 初始物品=0  满级物品=1,200  科技=0  techs=无
+    初始: （无）
+    奖励: coin=100、coin=100、coin=100、coin=100、coin=100、coin=100、coin=100、coin=100、coin=100、coin=100、coin=100、coin=100
+
+【afker 挂机大师】 初始物品=2  满级物品=2  科技=859,101∞  techs=['research-productivity']
+    初始: automation-science-pack=2
+    奖励: （无）
+
+━━━━━━━━━━━━ 三、复检 ━━━━━━━━━━━━
+初始物品  中位=1,602  范围 0 ~ 54,012（应大致相当）
+LOW 满级物品  中位=7,178  范围 2,151 ~ 126,295
+MID 满级物品  中位=86,918  范围 4,602 ~ 930,432
+MAX 满级物品  中位=334,376  范围 2 ~ 1,500,677
+
+──── 初始物品排名 · 前 20（最高，最该削平）────
+  transformer        MAX  初始=   54,012  科技=2,996,275  主因 mech-armor=54,012
+  spiderman          MAX  初始=   53,425  科技=687,022  主因 spidertron=53,425
+  healer             MID  初始=   39,100  科技=682  主因 battery-mk3-equipment=22,527
+  laserman           MID  初始=   16,161  科技=5,417  主因 personal-laser-defense-equipment=16,161
+  greentech          MID  初始=   15,977  科技=2,726  主因 accumulator=13,638
+  helper             MID  初始=   13,280  科技=1,670  主因 personal-roboport-equipment=13,280
+  guard              MID  初始=   10,000  科技=40  主因 stone-wall=10,000
+  electromagneticman LOW  初始=    5,777  科技=0  主因 electromagnetic-plant=5,777
+  captain            MAX  初始=    5,475  科技=527,188  主因 space-platform-starter-pack=5,475
+  asteroidminer      MAX  初始=    5,475  科技=17,604  主因 space-platform-starter-pack=5,475
+  nuclearman         MAX  初始=    5,073  科技=26,726  主因 centrifuge=5,073
+  programmer         LOW  初始=    4,707  科技=1,670  主因 selector-combinator=3,697
+  runner             MID  初始=    4,552  科技=1,670  主因 exoskeleton-equipment=4,552
+  moduler            MAX  初始=    4,376  科技=682  主因 beacon=3,028
+  shotgunner         LOW  初始=    4,071  科技=20  主因 shotgun-shell=4,000
+  gunner             MID  初始=    4,025  科技=20  主因 firearm-magazine=4,000
+  warehouser         MID  初始=    3,799  科技=86,190  主因 storage-chest=2,075
+  qualityman         MAX  初始=    3,370  科技=1,273,628  主因 quality-module=3,370
+  speedman           MAX  初始=    3,370  科技=248,078∞  主因 speed-module=3,370
+  efficiencyman      MAX  初始=    3,370  科技=123,163∞  主因 efficiency-module=3,370
+
+──── 初始物品排名 · 后 20（最低，科技列高=靠科技/高科技物品撑，非真弱；coin 低估）────
+  banker             MAX  初始=        0  科技=0  主因 （无）
+  metallurgist       MAX  初始=        0  科技=247,737∞  主因 （无）
+  electromancer      MAX  初始=        0  科技=519,382∞  主因 （无）
+  biologist          MAX  初始=        0  科技=122,822∞  主因 （无）
+  physicist          MAX  初始=        0  科技=133,592∞  主因 （无）
+  astronomer         MAX  初始=        0  科技=859,101∞  主因 （无）
+  afker              MAX  初始=        2  科技=859,101∞  主因 automation-science-pack=2
+  hunter             MID  初始=       20  科技=63,723  主因 rocket-launcher=19
+  loaderman          MID  初始=       43  科技=34,522  主因 loader=43
+  herder             MID  初始=       81  科技=63,723  主因 biochamber=80
+  gridman            MID  初始=      136  科技=4,159  主因 power-switch=98
+  farmer             MAX  初始=      146  科技=0  主因 agricultural-tower=106
+  civilian           LOW  初始=      158  科技=0  主因 car=84
+  fisher             LOW  初始=      180  科技=4,775  主因 raw-fish=100
+  artist             LOW  初始=      181  科技=682  主因 small-lamp=176
+  traindriver        LOW  初始=      228  科技=1,874  主因 rail=228
+  inventor           LOW  初始=      319  科技=682  主因 lab=319
+  forester           MAX  初始=      346  科技=2,148  主因 wood=200
+  tanker             MID  初始=      480  科技=13,543  主因 tank=480
+  energytrader       LOW  初始=      500  科技=182,630  主因 coal=500
+
+──── 满级物品排名 · 前 20（最高，含 MID/LOW 越级）────
+  nuclearman         MAX  满级= 1,500,677  科技=26,726  主因 nuclear-reactor=671,917
+  electromancer      MAX  满级= 1,306,293  科技=519,382∞  主因 electromagnetic-plant=1,155,368
+  healer             MID  满级=   930,432  科技=682  主因 fusion-reactor-equipment=623,108
+  helper             MID  满级=   778,018  科技=1,670  主因 personal-roboport-mk2-equipment=426,748
+  metallurgist       MAX  满级=   734,676  科技=247,737∞  主因 foundry=517,564
+  physicist          MAX  满级=   592,031  科技=133,592∞  主因 cryogenic-plant=592,031
+  qualityman         MAX  满级=   525,414  科技=1,273,628  主因 quality-module-3=316,572
+  speedman           MAX  满级=   525,414  科技=248,078∞  主因 speed-module-3=316,572
+  efficiencyman      MAX  满级=   525,414  科技=123,163∞  主因 efficiency-module-3=316,572
+  productivityman    MAX  满级=   525,414  科技=519,723∞  主因 productivity-module-3=316,572
+  farmer             MAX  满级=   482,846  科技=0  主因 overgrowth-yumako-soil=215,900
+  teslatrooper       MAX  满级=   430,848  科技=898,882  主因 tesla-turret=313,031
+  captain            MAX  满级=   355,290  科技=527,188  主因 space-platform-foundation=132,600
+  railgunner         MAX  满级=   345,290  科技=1,516,380  主因 railgun-turret=338,619
+  moduler            MAX  满级=   323,461  科技=682  主因 speed-module-2=68,707
+  roboticist         MAX  满级=   261,225  科技=14,199  主因 logistic-robot=82,349
+  laserman           MID  满级=   231,645  科技=5,417  主因 personal-laser-defense-equipment=215,484
+  greentech          MID  满级=   226,781  科技=2,726  主因 accumulator=136,375
+  bomber             MID  满级=   218,678  科技=682  主因 cluster-grenade=81,244
+  artisan            MID  满级=   199,349  科技=293  主因 assembling-machine-3=170,726
+
+──── 满级物品排名 · 后 20（最低，最差，最可能需补强）────
+  afker              MAX  满级=         2  科技=859,101∞  主因 （无）
+  banker             MAX  满级=     1,200  科技=0  主因 coin=100
+  oreman             LOW  满级=     2,151  科技=18,408  主因 carbon=300
+  civilian           LOW  满级=     2,393  科技=0  主因 nuclear-fuel=745
+  recyclerman        LOW  满级=     2,755  科技=0  主因 scrap=500
+  artist             LOW  满级=     3,069  科技=682  主因 constant-combinator=1,201
+  fisher             LOW  满级=     3,180  科技=4,775  主因 raw-fish=1,000
+  foundryman         LOW  满级=     4,588  科技=0  主因 calcite=500
+  chef               MID  满级=     4,602  科技=0  主因 yumako-mash=1,000
+  traindriver        LOW  满级=     5,734  科技=1,874  主因 rail=4,560
+  material           LOW  满级=     6,540  科技=182,630  主因 tungsten-carbide=1,704
+  electromagneticman LOW  满级=     7,817  科技=0  主因 copper-cable=510
+  inventor           LOW  满级=     9,886  科技=682  主因 lab=3,189
+  energytrader       LOW  满级=    14,972  科技=182,630  主因 rocket-fuel=7,350
+  plumber            LOW  满级=    18,093  科技=341  主因 storage-tank=8,825
+  thorman            MID  满级=    20,933  科技=2,758  主因 land-mine=19,936
+  porter             MID  满级=    21,467  科技=12,887  主因 toolbelt-equipment=19,515
+  gunner             MID  满级=    22,752  科技=20  主因 uranium-rounds-magazine=8,197
+  smelter            MID  满级=    27,008  科技=8,863  主因 electric-furnace=10,918
+  shotgunner         LOW  满级=    27,191  科技=20  主因 piercing-shotgun-shell=19,120
+
+各档档内最差（满级物品最低 3）：
+  LOW  oreman             满级=   2,151  科技=18,408  techs=['mining-productivity-1', 'mining-productivity-2']
+  LOW  civilian           满级=   2,393  科技=0  techs=无
+  LOW  recyclerman        满级=   2,755  科技=0  techs=['recycling']
+  MID  chef               满级=   4,602  科技=0  techs=['bioflux', 'bioflux-processing', 'jellynut', 'yumako']
+  MID  thorman            满级=  20,933  科技=2,758  techs=['land-mine']
+  MID  porter             满级=  21,467  科技=12,887  techs=['toolbelt-equipment']
+  MAX  afker              满级=       2  科技=859,101∞  techs=['research-productivity']
+  MAX  banker             满级=   1,200  科技=0  techs=无
+  MAX  biologist          满级=  37,194  科技=122,822∞  techs=['rocket-fuel-productivity']
