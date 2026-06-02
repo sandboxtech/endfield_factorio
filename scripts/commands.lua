@@ -461,7 +461,10 @@ function M.claim_charge(player)
     local n = math.floor(pend / unit)                  -- 整数星星数（只领整颗）
     if n <= 0 then player.print({'wn.star-none-yet'}); return end
     storage.star[player.name] = (storage.star[player.name] or 0) + n * unit
-    storage.charge[player.name] = last + n * unit      -- 记录前移 N 颗的量，保留余数
+    -- 记录前移：基准取 max(老记录, 当前-封顶)，再加 N 颗的量。
+    -- 溢出（离线超 charge_max_hours）时把基准抬到 game.tick-maxt，避免领完后剩余仍 > 封顶、可立刻反复领（封顶失效）。
+    -- 非溢出时 last >= game.tick-maxt，等价于 last + n*unit，照常保留不足 1 颗的余数。
+    storage.charge[player.name] = math.max(last, game.tick - maxt) + n * unit
     game.print({'wn.star-claimed', player.name, n})
     M.show_star(player)   -- 刷新星星窗口（充能减少、余额更新）
 end

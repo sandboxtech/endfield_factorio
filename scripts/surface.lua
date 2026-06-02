@@ -776,6 +776,14 @@ script.on_event(defines.events.on_chunk_generated, events.safe('chunk_generated'
     -- HUD 不依赖区块，刷新由 reset/玩家事件触发即可。（染地已提到本处理器最前。）
 end))
 
+-- 区块被勘探(charted)时：补打该块待办的宝箱地图标签（add_chart_tag 要求区块已 charted，故 on_chunk_generated
+-- 时打不上的标签存了待办，到这里 player 力量看到该块时补上）。只关心 player 力量的勘探。
+script.on_event(defines.events.on_chunk_charted, events.safe('chunk_charted', function(event)
+    if event.force and event.force.name ~= 'player' then return end
+    local surface = game.surfaces[event.surface_index]
+    if surface then map_features.flush_chunk_tags(surface, event.position.x, event.position.y) end
+end))
+
 -- 场景加载即构建并校验 tile 池（2.0 控制阶段加载期 prototypes 可用）；无效名记入 log。
 -- pcall 兜底（万一加载期不可用），运行时 valid_pools 也会懒构建。
 pcall(valid_pools)

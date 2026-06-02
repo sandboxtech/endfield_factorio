@@ -124,6 +124,7 @@ function M.ensure_defaults()
         loot_density_treasure  = 1,        -- 木箱（宝箱）
         loot_density_perpetual = 1,        -- 永续箱遭遇
         loot_density_empty     = 1,        -- 空据点遭遇（纯敌人）
+        chest_map_tags         = true,     -- 据点生成宝箱时，在中心打一个【该箱类型图标】的地图标签（无文本）。关：/c storage.chest_map_tags=false
         event_chance = 0.5,               -- 每分钟【全服】发生一次世界事件的固定概率（与人数无关；命中后随机挑 1 名玩家）
         -- 科技世界(事件世界的一种)：每次从所有科技随机抽一个
         tech_world_lose_chance = 0.125,    -- 抽中【已研究】科技时，失去它的概率
@@ -138,7 +139,7 @@ function M.ensure_defaults()
         respawn_ticks = 600,              -- 默认复活：600 tick = 10 秒
         enemy_respawn_ticks = 1800,       -- 被敌方打死：1800 tick = 30 秒
         warp_vote_divisor = 5,            -- 跃迁投票阈值除数：净同意 > ceil(在线人数/此值) 才推进（5=1/5，越大越易过）
-        travel_enabled = true,           -- 前往星球【总开关】（默认关）。开启：/c storage.travel_enabled=true。开启后每轮每个外星球还要各自过 travel_chance。
+        travel_enabled = true,           -- 前往星球【总开关】（默认开）。关闭：/c storage.travel_enabled=false。开启后每轮每个外星球还要各自过 travel_chance。
         action_cd_minutes = 3,            -- 投票+传送共享冷却（分钟），防止玩家频繁刷动作
         charge_max_hours = 30,            -- 星星充能上限（游戏内小时）：随游戏时间累积、封顶此值（1 星星=1 分钟=3600 tick；满充=30h=1800 星星）
         star_unlock_level = 20,           -- 显示【星星按钮及其窗口】所需的人物等级(=floor√在线分钟)；20 级≈在线 6.7 小时(400 分钟)，低于此不显示星星按钮

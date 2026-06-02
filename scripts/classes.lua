@@ -43,6 +43,7 @@ local DEFAULT_CLASSES = {
     {key = 'civilian', name = '出租司机', full = FULL_LOW, starter = {
         {item = 'car', count = 1},
         {item = 'nuclear-fuel', groups = 1},
+        {item = 'automation-science-pack',   count = 1},
     }, rewards = {
         {pack = 'automation-science-pack', item = 'nuclear-fuel',   groups = 10},
         {pack = 'space-science-pack', item = 'nuclear-fuel',   groups = 10},
@@ -51,6 +52,7 @@ local DEFAULT_CLASSES = {
 
     {key = 'afker', techs = {'research-productivity'}, name = '挂机大师', full = FULL_MAX, starter = {
         {item = 'automation-science-pack',   count = 1},
+        {item = 'logistic-science-pack',   count = 1},
     }, rewards = {
         
     }},
@@ -407,9 +409,9 @@ local DEFAULT_CLASSES = {
     }},
 
     {key = 'traindriver', techs = {'railway', 'automated-rail-transportation'}, name = '火车司机', full = FULL_LOW, starter = {
-        {item = 'locomotive', group = 1},
-        {item = 'cargo-wagon', group = 1},
-        {item = 'fluid-wagon', group = 1},
+        {item = 'locomotive', groups = 1},
+        {item = 'cargo-wagon', groups = 1},
+        {item = 'fluid-wagon', groups = 1},
         {item = 'rail', groups = 1},
     }, unlock = {{pack = 'logistic-science-pack', level = 10}}, rewards = {
         {pack = 'logistic-science-pack',   item = 'rail',              groups = 20},   -- 绿：铁轨

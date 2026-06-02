@@ -160,6 +160,7 @@ function M.reset()
             tag.destroy()
         end
     end
+    storage.pending_chest_tags = {}   -- 清空未勘探宝箱标签的待办（新一轮星球会重新生成据点/标签）
 
     -- 清空星球（会触发 surface.lua 的 on_surface_cleared 重新生成）
     for _, surface_name in ipairs(constants.PLANETS) do
@@ -247,12 +248,12 @@ function M.reset()
     storage.warp_vote = {}        -- 新世界清空跃迁投票（上一世界的同意/反对作废）
     storage.warp_vote_delta = nil -- 投票缩减量作废（warp_hours 已重置，无可恢复）
 
-    -- 本轮【能否前往各外星球】独立滚定：母星恒开，其余 4 星各自按 storage.travel_chance[星球](默认50%) 概率开放。
+    -- 本轮【能否前往各外星球】独立滚定：母星恒开，其余 4 星各自按 storage.travel_chance[星球](默认 1.0=恒开，由 ensure_defaults 补齐) 概率开放。
     -- 仅 travel_enabled 总开关开启时这套才生效（见 commands.travel / gui 按钮）。
     storage.travel_open = {nauvis = true}
     local tc = storage.travel_chance or {}
     for _, planet in ipairs(constants.OFF_PLANETS) do
-        storage.travel_open[planet] = math.random() < (tc[planet] or 0.5)
+        storage.travel_open[planet] = math.random() < (tc[planet] or 1.0)
     end
     storage.chat_bubble = {} -- 清空聊天气泡引用（角色已死、气泡已随之销毁，避免残留无效引用）
 

@@ -128,6 +128,7 @@ local function respawn_surface_name(player)
     if s and game.surfaces[s] then return s end
     return 'nauvis'
 end
+M.respawn_surface_name = respawn_surface_name   -- 导出：在线玩家列表显示各玩家出生星球（commands.show_stats）
 
 -- 死亡复活落点：回玩家的默认复活星球出生点（默认/兜底＝母星）。
 local function place_on_respawn(player)

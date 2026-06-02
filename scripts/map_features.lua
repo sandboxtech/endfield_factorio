@@ -541,23 +541,58 @@ end
 local function place_reward_chest(surface, pos, kind)
     if kind == 'perpetual' then
         local p = surface.find_non_colliding_position('steel-chest', pos, 4, 1)
-        if p then spawn_perpetual_chest(surface, p) end
-        return
+        if p then return spawn_perpetual_chest(surface, p) end
+        return false
     end
     local chest_name = (kind == 'equipment' and 'iron-chest') or (kind == 'treasure' and 'wooden-chest') or 'steel-chest'
     local p = surface.find_non_colliding_position(chest_name, pos, 4, 1)
-    if not p then return end
+    if not p then return false end
     local chest = surface.create_entity{name = chest_name, force = 'neutral', position = p}
-    if not chest then return end
+    if not chest then return false end
     chest.destructible = false   -- 不可摧毁（闪电/战斗误炸不掉内容）
     chest.operable = false       -- 不可打开 GUI → 玩家只能用机械臂抓取内容
     chest.minable_flag = false   -- 不可手拆（force=enemy 本就拆不了，双保险）
     -- force = 'enemy'：蓝图/复制(ctrl+c)框选不到敌方实体 → 无法用蓝图扫描箱子位置投机取巧。
     local inv = chest.get_inventory(defines.inventory.chest)
-    if not inv then return end
+    if not inv then return false end
     if kind == 'equipment' then fill_loot(chest, math.random(10, 24), loot_weights().equipment, 2)
     elseif kind == 'treasure' then fill_treasure_chest(inv)
     else fill_material_chest(inv) end
+    return true
+end
+
+-- 据点中心地图标签：图标 = 该宝箱类型对应的箱子物品（无文本）。仅 storage.chest_map_tags 开启时打。
+-- 标签属 player 力量，reset 每轮统一清空（见 reset.lua），不跨轮残留。
+-- 注意：add_chart_tag 要求区块【已 charted】才生效（未勘探返回 nil 不创建）。区块生成(on_chunk_generated)时
+-- 多半尚未 charted，故：先直接试打（已勘探就成），失败则存入 storage.pending_chest_tags，等 on_chunk_charted 补打。
+local CHEST_ICON = {
+    material = 'steel-chest', equipment = 'iron-chest', treasure = 'wooden-chest', perpetual = 'infinity-chest',
+}
+local function add_chest_tag(surface, x, y, icon)
+    if not prototypes.item[icon] then return nil end   -- 物品名失效则不打（避免无效 SignalID 报错）
+    return game.forces.player.add_chart_tag(surface, {position = {x = x, y = y}, icon = {type = 'item', name = icon}})
+end
+local function tag_encounter(surface, center, kind)
+    if not storage.chest_map_tags then return end
+    local icon = CHEST_ICON[kind]
+    if not icon then return end
+    if add_chest_tag(surface, center.x, center.y, icon) then return end   -- 区块已 charted：直接打成
+    -- 未 charted：按区块坐标存待办（每地块至多一个遭遇 → 一块至多一条），on_chunk_charted 时补打
+    storage.pending_chest_tags = storage.pending_chest_tags or {}
+    local m = storage.pending_chest_tags[surface.name]
+    if not m then m = {}; storage.pending_chest_tags[surface.name] = m end
+    m[math.floor(center.x / 32) .. ',' .. math.floor(center.y / 32)] = {x = center.x, y = center.y, icon = icon}
+end
+
+-- on_chunk_charted 调用（见 surface.lua）：cx,cy = 区块坐标。补打该块待办的宝箱标签并清除待办。
+function M.flush_chunk_tags(surface, cx, cy)
+    local m = storage.pending_chest_tags and storage.pending_chest_tags[surface.name]
+    if not m then return end
+    local key = cx .. ',' .. cy
+    local t = m[key]
+    if not t then return end
+    m[key] = nil
+    add_chest_tag(surface, t.x, t.y, t.icon)
 end
 
 -- 飞船残骸外观池（big/medium/small）。force=neutral：机器人拆不掉，作障碍/点缀。
@@ -691,7 +726,11 @@ local function place_encounter(surface, lt)
         if math.random() <= encounter_chance(surface, e.kind) then   -- 命中此遭遇（用全局 RNG，不再坐标哈希 → 随运行状态/人数/时间变，每局每次不可预测）
             -- 奖励：非空据点放【1~16 个同类箱】，数量非线性 floor(1+15·random^6)，再乘本轮 riches 倍率（富庶世界更多）。
             if e.kind ~= 'empty' then
-                for _ = 1, math.floor((1 + 8 * math.random() ^ 6 * riches_mul)) do place_reward_chest(surface, center, e.kind) end
+                local placed = 0
+                for _ = 1, math.floor((1 + 8 * math.random() ^ 6 * riches_mul)) do
+                    if place_reward_chest(surface, center, e.kind) then placed = placed + 1 end
+                end
+                if placed > 0 then tag_encounter(surface, center, e.kind) end   -- 中心打一个该类型图标的地图标签（无文本）
             end
             -- 敌人：出生点 96 格内不放（保护新手）；地砖按类型选——空据点不铺、永续用第二种、普通箱用本星地砖。
             if not near_spawn then
