@@ -49,24 +49,39 @@ local DEFAULT_CLASSES = {
         {pack = 'promethium-science-pack', item = 'nuclear-fuel',   groups = 10},
     }},
 
-    {key = 'philosopher', techs = {'research-speed-1'}, name = '哲学家', full = FULL_LOW, starter = {
+    {key = 'afker', techs = {'research-productivity'}, name = '挂机大师', full = FULL_LOW, starter = {
         
+    }, rewards = {
+        
+    }},
+
+    {key = 'philosopher', techs = {'biolab'}, name = '哲学家', full = FULL_LOW, starter = {
+        
+    }, rewards = {
+        
+    }},
+
+    {key = 'afker', techs = {'circuit-network'}, name = '艺术家', full = FULL_MAX, starter = {
+
+    }, rewards = {
+        {pack = 'automation-science-pack', item = 'lab',                 groups = 1},
+    }},
+
+
+    {key = 'reformer', techs = {'biolab'}, name = '发明家', full = FULL_LOW, starter = {
+        {item = 'lab', groups = 1},
     }, unlock = {{pack = 'automation-science-pack', level = 10}}, rewards = {
         {pack = 'automation-science-pack', item = 'lab',                 groups = 10},
         {pack = 'space-science-pack', item = 'lab',                 groups = 10},
         {pack = 'promethium-science-pack', item = 'lab',                 groups = 10},
     }},
-    {key = 'TODO', techs = {'biolab'}, name = '改革家', full = FULL_LOW, starter = {
-        {item = 'lab', groups = 1},
-    }, unlock = {{pack = 'automation-science-pack', level = 10}}, rewards = {
-        
-    }},
 
-    {key = 'TODO', techs = {'research-speed-1', 'biolab'}, name = '土木工人', full = FULL_LOW, starter = {
+    {key = 'civilengineer', techs = {'research-speed-1', 'biolab'}, name = '土木工人', full = FULL_LOW, starter = {
         {item = 'cliff-explosives', groups = 1},
     }, unlock = {{pack = 'automation-science-pack', level = 10}}, rewards = {
         {pack = 'automation-science-pack', item = 'stone-brick',                 groups = 10},
-        {pack = 'space-science-pack', item = 'concrete',                 groups = 10},
+        {pack = 'logistic-science-pack', item = 'concrete',                 groups = 10},
+        {pack = 'space-science-pack', item = 'refined-concrete',                 groups = 10},
         {pack = 'promethium-science-pack', item = 'foundation',                 groups = 10},
     }},
 
@@ -378,6 +393,20 @@ local DEFAULT_CLASSES = {
         {pack = 'agricultural-science-pack', item = 'stack-inserter',   groups = 10},
     }},
 
+    {key = 'traindriver', techs = {'railway', 'automated-rail-transportation'}, name = '火车司机', full = FULL_MID, starter = {
+        {item = 'locomotive', count = 1},
+        {item = 'cargo-wagon', count = 1},
+        {item = 'rail', groups = 1},
+    }, unlock = {{pack = 'logistic-science-pack', level = 10}}, rewards = {
+        {pack = 'logistic-science-pack',   item = 'rail',              groups = 10},   -- 绿：铁轨
+        {pack = 'logistic-science-pack',   item = 'train-stop',        groups = 2},    -- 绿：火车站
+        {pack = 'logistic-science-pack',   item = 'rail-signal',       groups = 2},    -- 绿：铁路信号
+        {pack = 'logistic-science-pack',   item = 'rail-chain-signal', groups = 2},    -- 绿：链式信号
+        {pack = 'production-science-pack',  item = 'locomotive',        groups = 2},    -- 紫：火车头
+        {pack = 'production-science-pack',  item = 'cargo-wagon',       groups = 5},    -- 紫：货车厢
+        {pack = 'chemical-science-pack',    item = 'fluid-wagon',       groups = 5},    -- 蓝：液罐车厢
+    }},
+
     {key = 'roboticist', techs = {'robotics', 'construction-robotics', 'logistic-robotics'}, name = '机械师', full = FULL_MAX, starter = {
         {item = 'roboport', count = 1},
         {item = 'storage-chest', count = 1}, 
@@ -541,12 +570,16 @@ local DEFAULT_CLASSES = {
         {pack = 'military-science-pack', item = 'energy-shield-equipment',     groups = 5},   -- 灰：能量盾
         {pack = 'utility-science-pack',  item = 'energy-shield-mk2-equipment', groups = 5},   -- 黄：能量盾 mk2
     }},
-    {key = 'healer', techs = {'solar-panel-equipment'}, name = '奶妈', full = FULL_MID, starter = {   -- 全是发电装置
+    {key = 'healer', techs = {'solar-panel-equipment'}, name = '奶妈', full = FULL_MID, starter = {   -- 发电+储能装置
         {item = 'solar-panel-equipment', count = 20},
+        {item = 'battery-equipment', count = 10},
     }, rewards = {
         {pack = 'logistic-science-pack',  item = 'solar-panel-equipment',     groups = 10},  -- 绿：太阳能板
         {pack = 'chemical-science-pack',  item = 'fission-reactor-equipment', groups = 3},   -- 蓝：裂变反应堆
         {pack = 'cryogenic-science-pack', item = 'fusion-reactor-equipment',  groups = 3},   -- 靛：聚变反应堆
+        --
+        {pack = 'military-science-pack',  item = 'battery-equipment',         groups = 5},   -- 灰：电池(储能)
+        {pack = 'utility-science-pack',   item = 'battery-mk2-equipment',     groups = 3},   -- 黄：电池 mk2
     }},
     {key = 'laserman', techs = {'personal-laser-defense-equipment'}, name = '输出', full = FULL_MID, starter = {   -- 全是激光
         {item = 'personal-laser-defense-equipment', count = 3},
