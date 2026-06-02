@@ -186,7 +186,11 @@ function M.ensure_defaults()
     -- 缺失才补空表 → 保留 /c 的填充。热改示例：/c storage.unlock_techs = {'logistics-2', 'steel-processing'}
     --                                          /c storage.unlock_recipes = {'rail', 'pistol'}
     storage.unlock_techs = storage.unlock_techs or {}
-    storage.unlock_recipes = storage.unlock_recipes or {'iron-stick', 'steel-plate', 'ice-melting', 'lubricant'}
+    storage.unlock_recipes = storage.unlock_recipes or {'iron-stick', 'steel-plate', 'ice-melting', 
+        'lubricant', 'concrete', 'refined-concrete',
+        'solar-panel', 'accumulator', 
+        'medium-electric-pole', 'big-electric-pole'
+    }
     -- 必需表（累积数据 / 每星球状态 / 运行时缓存），缺失则建空表。
     -- 这是所有 storage 表的【唯一出生地】，各模块不再各自 `storage.x = storage.x or {}`，统一在此补齐。
     for _, key in ipairs({'width_of', 'height_of', 'shape_of', 'exp', 'player_stats', 'platform_age',
