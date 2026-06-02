@@ -797,13 +797,15 @@ local function place_encounter(surface, lt)
                 guards, core = place_guards(surface, center, e.danger * (0.4 + 0.6 * frac) * danger_mul, floor)   -- ×本轮 danger 倍率
                 guards = guards or {}
             end
-            -- 至少放成一个箱才打地图标签。
+            -- 标记+据点登记【只对有守卫的据点】：清空时才有事件删标记，无守卫的没有删标记的时机 → 干脆不标。
             if #chests > 0 then
-                tag_encounter(surface, center, e.kind)   -- 中心打一个该类型图标的地图标签（无文本）
-                -- 有守卫 → 登记据点（含永续：守卫全灭时摧毁电网核心 + 公告；非永续还解锁箱）。
-                -- 无守卫的非永续箱 → 当场可挖可开。无守卫的永续箱 → 不动（保持 storage.perpetual_* 配置）。
-                if #guards > 0 then register_outpost(chests, guards, core, e.kind, center)
-                elseif e.kind ~= 'perpetual' then unlock_chests(chests) end
+                if #guards > 0 then
+                    tag_encounter(surface, center, e.kind)            -- 有守卫才打标记（清空时删）
+                    register_outpost(chests, guards, core, e.kind, center)
+                elseif e.kind ~= 'perpetual' then
+                    unlock_chests(chests)   -- 无守卫的非永续箱：当场可挖可开，不打标记
+                end
+                -- 无守卫的永续箱：保持 storage.perpetual_* 配置，不标记、不解锁。
             end
             return   -- 每地块至多一个遭遇，命中即停
         end
@@ -852,8 +854,9 @@ script.on_event(defines.events.on_entity_died, events.safe('outpost_combat', fun
             if o.eei and o.eei.valid then o.eei.destroy() end
             if o.sub and o.sub.valid then
                 o.sub.destroy()
-                -- 变电站被摧毁 → 全服公告：谁清空了什么箱型的据点（含永续箱据点）。
-                game.print({'wn.outpost-cleared', killer_name(event.cause) or '?', CHEST_ICON[o.kind] or 'steel-chest'})
+                -- 变电站被摧毁 → 全服公告：谁清空了什么箱型的据点 + GPS 地点（含永续箱据点）。
+                local gps = (e.surface and o.x) and ('[gps=' .. math.floor(o.x) .. ',' .. math.floor(o.y) .. ',' .. e.surface.name .. ']') or ''
+                game.print({'wn.outpost-cleared', killer_name(event.cause) or '?', CHEST_ICON[o.kind] or 'steel-chest', gps})
             end
         end
         -- 清空据点 → 删掉中心的宝箱地图标记（玩家若已手动删，find 不到、静默无事；不会报错）。
