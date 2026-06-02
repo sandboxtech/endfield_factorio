@@ -227,29 +227,49 @@ local DEFAULT_LOOT = {
         'foundation',  'space-platform-foundation',  'ice-platform',                   -- 平台地基
         'cargo-bay',  'cargo-landing-pad',  'asteroid-collector',  'thruster',          -- 平台部件
     }},
+    -- 宝箱精选（木箱专属）：顶级机器/护甲格件/插件/武器，初始奖励里没有的高价值货。木箱权重只给本类(见 DEFAULT_LOOT_WEIGHTS.treasure)。
+    {cat = 'treasure',   items = {
+        'productivity-module-2', 'speed-module-2', 'efficiency-module-2', 'quality-module-2',  -- 顶级插件
+        'productivity-module-3', 'speed-module-3', 'efficiency-module-3', 'quality-module-3',
+        'rocket-silo',
+        'spidertron', 'mech-armor', 'power-armor-mk2', 'tank',                          -- 顶级载具/护甲
+        'recycler', 'roboport', 'electromagnetic-plant', 'foundry', 'cryogenic-plant', 'big-mining-drill',  -- 顶级机器
+        'fission-reactor-equipment', 'fusion-reactor-equipment', 'energy-shield-mk2-equipment',  -- 动力装甲格件
+        'personal-roboport-mk2-equipment', 'exoskeleton-equipment', 'personal-laser-defense-equipment', 'battery-mk3-equipment',
+        'biolab', 'biochamber', 'agricultural-tower', 'fusion-reactor', 'fusion-generator',  -- SA 招牌机器
+        'heating-tower', 'centrifuge', 'assembling-machine-3', 'electric-furnace', 'tesla-turret',
+        'railgun', 'railgun-ammo', 'railgun-turret', 'atomic-bomb',                     -- 顶级武器/弹药
+        'artillery-turret', 'nuclear-reactor', 'toolbelt-equipment',
+    }},
 }
 
 -- 各【按外观区分】的箱子对 LOOT 各【类】的权重：先按权重选类、再类内等概率选物品。
 -- 每表都【列全所有类】(顺序同 LOOT)，不要的标 0 方便手调，0 与省略等价，不影响运算。
--- 木箱(宝箱)走单独精选池 TREASURE_POOL，不在这里。
+-- 木箱(宝箱)= treasure 箱型：只给 treasure 类权重（见下方 treasure），其余类 0。
 local DEFAULT_LOOT_WEIGHTS = {
     -- 钢箱 = 材料箱：基础材料/原料 + 大概率普通科技瓶。普通品质、常见、装得多。
     material = {
         raw = 35, material = 80, logistics = 15,  circuit = 1,  power = 2,
         production = 0,  module = 3,  military = 2,  equipment = 1,  science = 0,
-        gleba = 1,  space = 1,
+        gleba = 1,  space = 1,  treasure = 0,
     },
     -- 铁箱 = 设备箱：实用设备/机器为主，含载具/太空件，少量科技瓶。普通品质、中等数量。
     equipment = {
         raw = 1,  material = 5,  logistics = 35,  circuit = 8,  power = 14,
         production = 30,  module = 15,  military = 12,  equipment = 10,  science = 0,
-        gleba = 4,  space = 15,
+        gleba = 4,  space = 15,  treasure = 0,
     },
     -- 永续(无底)箱：基础材料/矿物为主。注意 science>0 = 无限科技瓶(很强，慎调)。
     perp = {
         raw = 90,  material = 120,  logistics = 15,  circuit = 1,  power = 5,
         production = 3,  module = 5,  military = 1,  equipment = 1,  science = 0,
-        gleba = 1,  space = 1,
+        gleba = 1,  space = 1,  treasure = 0,
+    },
+    -- 木箱 = 宝箱：只出精选顶级池 treasure 类（其余类 0）。想让普通箱也偶尔出顶级货，把对应箱型的 treasure 调 >0 即可。
+    treasure = {
+        raw = 0,  material = 0,  logistics = 0,  circuit = 0,  power = 0,
+        production = 0,  module = 0,  military = 0,  equipment = 0,  science = 0,
+        gleba = 0,  space = 0,  treasure = 100,
     },
 }
 
@@ -267,21 +287,38 @@ local function loot_weights() return storage.loot_weights or DEFAULT_LOOT_WEIGHT
 function M.ensure_loot()
     storage.loot_weights = storage.loot_weights or deepcopy(DEFAULT_LOOT_WEIGHTS)
     storage.loot = storage.loot or deepcopy(DEFAULT_LOOT)   -- 物品名单也存 storage，可 /c 热改（加减物品）
+    -- 迁移：treasure 从单独 TREASURE_POOL 并入 loot 体系。老档已有的 storage.loot/loot_weights（旧结构、无 treasure）
+    -- 不会被上面的 `or` 更新 → 这里【缺则补】默认 treasure 类/箱型，否则 fill_treasure_chest 调 pick_loot 会拿到 nil 崩。
+    local has = false
+    for _, c in ipairs(storage.loot) do if c.cat == 'treasure' then has = true; break end end
+    if not has then
+        for _, c in ipairs(DEFAULT_LOOT) do if c.cat == 'treasure' then storage.loot[#storage.loot + 1] = deepcopy(c); break end end
+    end
+    storage.loot_weights.treasure = storage.loot_weights.treasure or deepcopy(DEFAULT_LOOT_WEIGHTS.treasure)
+    storage.treasure_pool = nil   -- 废弃键清理：treasure 已并入 storage.loot
 end
 
--- 木箱(宝箱)精选池：每箱 1~2 件高品质高价值物品。只放【玩家初始奖励(respawn_gifts.pack_gifts)里
--- 没有的】顶级物品，顶级插件(3级，初始奖励只给基础级) + rocket-silo。
--- foundry/electromagnetic-plant/biochamber/cryogenic-plant/recycler/big-mining-drill 已作为初始
--- 奖励发放，宝箱再给等于重复 → 移除。不放科技瓶(瓶子走科技瓶经验体系，不作宝箱奖励)。
--- (mech-armor/power-armor-mk2/spidertron/tank 已归 equipment，beacon 归 production)
-local TREASURE_POOL = {
-    -- 'rocket-fuel', 'processing-unit','low-density-structure', 'rocket-part',
-    'productivity-module-2', 'speed-module-2', 'efficiency-module-2', 'quality-module-2',  -- 顶级插件
-    'productivity-module-3', 'speed-module-3', 'efficiency-module-3', 'quality-module-3',  -- 顶级插件
-    'rocket-silo',
-    'spidertron', 'mech-armor', 'power-armor-mk2',                                         -- 顶级载具/护甲
-    'recycler', 'roboport', 'electromagnetic-plant', 'foundry', 'cryogenic-plant',         -- 顶级机器/机器人平台
-}
+-- （宝箱精选池已并入 DEFAULT_LOOT 的 'treasure' 类；木箱抽取见 fill_treasure_chest + DEFAULT_LOOT_WEIGHTS.treasure。）
+
+-- storage.loot 某类被 /c 改成空表时的兜底：返回 DEFAULT_LOOT 里同名类的物品（默认填充）；找不到/默认也空则空表。
+local function default_items_for(cat)
+    for _, c in ipairs(DEFAULT_LOOT) do
+        if c.cat == cat then return c.items end
+    end
+    return {}
+end
+-- 报告某战利品类为空（已回退默认填充）：写 log + 通知所有在线管理员，同一类只报一次（去重防刷屏，同 item_ok）。
+local function report_empty_cat(cat)
+    storage.bad_loot_cats = storage.bad_loot_cats or {}
+    if storage.bad_loot_cats[cat] then return end
+    storage.bad_loot_cats[cat] = true
+    log('endfield: 战利品类为空，已回退默认填充: ' .. tostring(cat))
+    for _, p in pairs(game.players) do
+        if p.connected and p.admin then
+            p.print('[战利品] 类 "' .. tostring(cat) .. '" 物品列表为空，已用默认填充（请检查 storage.loot）')
+        end
+    end
+end
 
 -- 按给定【类权重表】选类、类内等概率选物品。weights[cat] 为 0/nil 即跳过该类。
 -- 用 ipairs 顺序确定 → 多人各端一致，math.random 取值不会 desync。
@@ -297,7 +334,15 @@ local function pick_loot(weights)
         local w = weights[c.cat] or 0
         if w > 0 then
             roll = roll - w
-            if roll <= 0 then return c.items[math.random(#c.items)] end
+            if roll <= 0 then
+                local items = c.items
+                if not items or #items == 0 then   -- 该类被 /c 改空：回退默认 + 报告管理员，绝不执行 math.random(0) 崩档
+                    report_empty_cat(c.cat)
+                    items = default_items_for(c.cat)
+                    if #items == 0 then return nil end   -- 连默认也空 → 跳过本次（调用方 item_ok 处理 nil）
+                end
+                return items[math.random(#items)]
+            end
         end
     end
     return nil   -- 浮点误差兜底（极罕见）：返回 nil 跳过本次，不强行塞第一个
@@ -528,10 +573,11 @@ local function fill_material_chest(inv)
     end
 end
 
--- 木箱 = 宝箱：稀有。1~2 种高价值物品，每件【几个】(count = ss×random^4，极偏低)。只发精选池 TREASURE_POOL，不掉科技瓶。
+-- 木箱 = 宝箱：稀有。1~2 种高价值物品，每件【几个】(count = ss×random^4，极偏低)。走 loot 体系的 treasure 类，不掉科技瓶。
 local function fill_treasure_chest(inv)
+    -- 走统一 loot 体系：storage.loot.treasure（物品名单）+ storage.loot_weights.treasure（类权重）均可 /c 热改、持久、同步。
     for _ = 1, math.random(1, 2) do
-        local name = TREASURE_POOL[math.random(#TREASURE_POOL)]
+        local name = pick_loot(loot_weights().treasure)
         if item_ok(name) then
             inv.insert{name = name, count = loot_count(name, 4), quality = roll_treasure_quality()}
         end
