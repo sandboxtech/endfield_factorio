@@ -135,13 +135,13 @@ local DEFAULT_CLASSES = {
         -- {pack = 'utility-science-pack',      item = 'copper-ore',        groups = 1},   -- 紫：石头
         {pack = 'space-science-pack', item = 'uranium-ore', groups = 1},
         --
-        {pack = 'metallurgic-science-pack',     item = 'tungsten-ore', groups = 1},   -- 橙：钨矿(火山)
-        {pack = 'metallurgic-science-pack',     item = 'calcite',      groups = 1},   -- 橙：方解石(火山)
-        {pack = 'electromagnetic-science-pack', item = 'holmium-ore',  groups = 1},   -- 粉：钬矿(电浆星)
-        {pack = 'electromagnetic-science-pack', item = 'scrap',        groups = 1},   -- 粉：废料(电浆星)
-        {pack = 'agricultural-science-pack', item = 'stone', groups = 1},
-        {pack = 'agricultural-science-pack', item = 'carbon', groups = 1},
-        {pack = 'cryogenic-science-pack', item = 'lithium', groups = 1},
+        {pack = 'metallurgic-science-pack',     item = 'tungsten-ore', groups = 4},   -- 橙：钨矿(火山)
+        {pack = 'metallurgic-science-pack',     item = 'calcite',      groups = 4},   -- 橙：方解石(火山)
+        {pack = 'electromagnetic-science-pack', item = 'holmium-ore',  groups = 4},   -- 粉：钬矿(电浆星)
+        {pack = 'electromagnetic-science-pack', item = 'scrap',        groups = 4},   -- 粉：废料(电浆星)
+        {pack = 'agricultural-science-pack', item = 'stone', groups = 4},
+        {pack = 'agricultural-science-pack', item = 'carbon', groups = 4},
+        {pack = 'cryogenic-science-pack', item = 'lithium', groups = 4},
         {pack = 'promethium-science-pack', item = 'promethium-asteroid-chunk', groups = 1},
     }},
 
