@@ -74,25 +74,19 @@ function M.player_reset(player)
     player.disable_flashlight()
 end
 
--- 脚本杀死玩家：先把玩家移到【当前所在表面】的出生点再杀死，尸体(背包货物)留在当前星球，
--- 不会被带回母星（杜绝"在外星捡货 → /suicide 把货带回母星"）。
+-- 脚本杀死玩家：在玩家【当前所在位置】直接处死，尸体(背包货物)留在死亡原地、不搬运。
+-- 不会被带回母星：自杀走"其他死法"，由 place_on_respawn 判定在【当前星球】复活，货要取回得回原地。
 -- 复活去哪由 on_player_respawned → place_on_respawn 决定（玩家的复活星球，默认母星）；这里只设个母星 force 兜底。
 -- 用于所有"杀死玩家"的入口（跃迁清场 / 自杀 / 离场 等）。无 character 时跳过。
 function M.kill_player(player)
     if not player or not player.character then return end
     local force = player.force
-    -- ① 在当前表面出生点处死亡（尸体留在当前星球）
-    local surface = player.surface
-    local origin = force.get_spawn_position(surface)
-    local pos = surface.find_non_colliding_position('character', origin, 64, 1) or origin
-    player.teleport(pos, surface)
-    -- ② force 出生点兜底设母星（实际复活落点以 place_on_respawn 为准）
+    -- force 出生点兜底设母星（实际复活落点以 place_on_respawn 为准）
     local nauvis = game.surfaces['nauvis']
     if nauvis then
         local norigin = force.get_spawn_position(nauvis)
         force.set_spawn_position(nauvis.find_non_colliding_position('character', norigin, 64, 1) or norigin, nauvis)
     end
-    -- ③ 杀死
     player.character.die()
 end
 
@@ -154,18 +148,7 @@ script.on_event(defines.events.on_player_died, function(event)
     local by_enemy = cause and cause.valid and cause.force and cause.force.name == 'enemy'
     if player then
         player.ticks_to_respawn = by_enemy and (storage.respawn_ticks_by_enemy or 1800) or (storage.respawn_ticks or 600)
-        -- 把尸体(连同掉落物)挪到【当前星球中心/出生点】：与"在当前星球复活"一致，方便取回、不用满地图找尸体。
-        -- 不能按 player.position 限定范围：死亡时玩家已无 character，player.position 退回视角/原点而非死亡地点，
-        -- 野外被敌人/环境打死的尸体就搜不到、留在原地。改为遍历当前星球全部尸体按 player_index 匹配本人，死在哪都搬回中心。
-        local surface = player.surface
-        if surface and surface.valid then
-            local center = player.force.get_spawn_position(surface)
-            for _, corpse in pairs(surface.find_entities_filtered{type = 'character-corpse'}) do
-                if corpse.valid and corpse.character_corpse_player_index == event.player_index then
-                    corpse.teleport(center)
-                end
-            end
-        end
+        -- 尸体一律留在【死亡原地】，任何死法都不搬运；要取回背包货物需自行回倒地处。
     end
     if cause then player_stats.bump(event.player_index, 'death_count') end
 end)

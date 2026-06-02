@@ -167,7 +167,6 @@ function M.ensure_defaults()
         enemy_freq_mul = 1,               -- 敌人巢穴 frequency 全局倍率：在 spread 浮动结果上再乘（>1 普遍更密、<1 更稀；与 spread 叠乘，值域变 [mul/n, mul×n]）
         enemy_size_mul = 1,               -- 敌人巢穴 size 全局倍率：在 spread 浮动结果上再乘（>1 团更大、<1 更小）
 
-        enemy_standby_hours = 0.5,        -- 敌方电网初始电量 = 各电炮最大功率持续的小时数(默认 0.5h=30 分钟，容量 buffer 为其 2 倍)；发电功率 = 各电炮待机功率(drain)之和
         roboport_limit = 10000,           -- 单个机器人网络最多 roboport 数，超出则摧毁刚放的并退还
         thunder_chance = 1 / 36000,       -- 雷暴星球每玩家每 tick 被闪电直击概率（期望约 10 分钟一次）
     }
