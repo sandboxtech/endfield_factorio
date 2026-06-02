@@ -428,7 +428,7 @@ local function spawn_perpetual_chest(surface, pos)
             end
         end
     end
-    return true
+    return chest   -- 返回无限箱实体（供据点登记；与铁/钢/木箱一致）
 end
 
 -- 给【非虫子类】敌人(炮塔/地雷等；排除 worm/虫巢/虫)脚下铺一小块【随机矩形】地砖 floor。
@@ -594,6 +594,11 @@ function M.flush_chunk_tags(surface, cx, cy)
     local t = m[key]
     if not t then return end
     m[key] = nil
+    -- 补打前校验：标签位附近确实还有奖励箱才打。tile 替换(surface.lua)可能在 map_features 放箱后把箱子脚下
+    -- 改成水/熔岩/虚空、连箱一起删(set_tiles 默认删碰撞实体)，那样就别留空标记。
+    local found = surface.find_entities_filtered{position = {t.x, t.y}, radius = 6,
+        name = {'steel-chest', 'iron-chest', 'wooden-chest', 'infinity-chest'}, force = 'neutral', limit = 1}
+    if #found == 0 then return end
     add_chest_tag(surface, t.x, t.y, t.icon)
 end
 
@@ -628,18 +633,15 @@ local function build_power_core(surface, center)
     local sub = surface.create_entity{name = 'substation', force = 'enemy', position = sp, quality = 'legendary'}
     if not sub then return nil end
     if math.random() < (storage.enemy_invincible_chance or 1) then sub.destructible = false end   -- 概率无敌(电网核心,/c storage.enemy_invincible_chance 调)
-    local ip = surface.find_non_colliding_position('electric-energy-interface', sp, 4, 1)
-    local eei
-    if ip then
-        eei = surface.create_entity{name = 'electric-energy-interface', force = 'enemy', position = ip}
-        if eei then
-            if math.random() < (storage.enemy_invincible_chance or 1) then eei.destructible = false end   -- 概率无敌(电力接口,同 substation/避雷针，/c storage.enemy_invincible_chance 调)
-            eei.electric_buffer_size = 1     -- 占位(buffer 必须 >0)，下面 place_guards 按电炮最大功率覆盖
-            eei.power_production = 1e6 / 60   -- 固定发电 1 MW（runtime 单位 J/tick，故 1e6 W ÷60）
-            eei.energy = 0                    -- 初始电量下面 place_guards 按电炮最大功率×5 分钟设
-        end
+    -- 隐形电源：hidden-electric-energy-interface（空图/无碰撞/不可选/不可见），直接放在变电站位置喂其电网。
+    -- 玩家看不到电源实体，只见变电站（变电站负责供电范围，无隐形版、仍可见；要全隐形得改脚本供电）。
+    local eei = surface.create_entity{name = 'hidden-electric-energy-interface', force = 'enemy', position = sp}
+    if eei then
+        eei.electric_buffer_size = 1     -- 占位(buffer 必须 >0)，下面 place_guards 按电炮最大功率覆盖
+        eei.power_production = 1e6 / 60   -- 固定发电 1 MW（runtime 单位 J/tick，故 1e6 W ÷60）
+        eei.energy = 0                    -- 初始电量下面 place_guards 按电炮最大功率×5 分钟设
     end
-    return {sp = sp, eei = eei, maxpower = 0, drain = 0}
+    return {sp = sp, eei = eei, sub = sub, maxpower = 0, drain = 0}   -- sub=传说变电站实体（据点清空时连同 eei 一起摧毁）
 end
 
 -- 【统一放敌人逻辑】(所有遭遇共用，只是 danger 不同)：在 center 周围按 danger 放守卫塔 + 飞船残骸。
@@ -695,7 +697,7 @@ local function place_guards(surface, center, danger, floor)
         local wp = surface.find_non_colliding_position(name, {x = center.x + math.cos(ang) * r, y = center.y + math.sin(ang) * r}, 8, 1)
         if wp then surface.create_entity{name = name, position = wp, force = 'neutral'} end
     end
-    return guards
+    return guards, core   -- core = {eei, sub, ...} 或 nil（无电炮时未建电网核心）
 end
 
 -- 把箱子设为可挖+可开（据点守卫全灭 或 本就无守卫时调用）。
@@ -705,9 +707,36 @@ local function unlock_chests(chests)
     end
 end
 
--- 登记一个据点：守卫(unit_number)→据点 id，记录待解锁的箱子与存活守卫数。守卫全灭后解锁（见 on_entity_died）。
--- 无可追踪守卫(都没 unit_number)时直接解锁、不登记。
-local function register_outpost(chests, guards)
+-- 给单个炮塔补满（敌方炮塔击杀友军时调用）：弹药炮塔补满弹仓，喷火塔补流体，电炮无弹仓→跳过(电力由 EEI 单独补)。
+local REFILL_AMMO = {['gun-turret'] = 'firearm-magazine', ['rocket-turret'] = 'rocket',
+                     ['railgun-turret'] = 'railgun-ammo', ['artillery-turret'] = 'artillery-shell'}
+local function refill_turret(e)
+    if not (e and e.valid) then return end
+    if e.type == 'fluid-turret' then e.insert_fluid{name = 'crude-oil', amount = 100}; return end
+    local inv = e.get_inventory(defines.inventory.turret_ammo) or e.get_inventory(defines.inventory.artillery_turret_ammo)
+    if not inv then return end
+    local topped = false
+    for i = 1, #inv do   -- 已有弹种：各槽补满
+        local s = inv[i]
+        if s.valid_for_read then s.count = prototypes.item[s.name].stack_size; topped = true end
+    end
+    if not topped then   -- 打空了：按默认弹种塞满
+        local name = REFILL_AMMO[e.name]
+        if name and prototypes.item[name] then inv.insert{name = name, count = prototypes.item[name].stack_size * #inv} end
+    end
+end
+
+-- 击杀者名字：取最后一击炮塔的 cause（角色→其玩家名；玩家炮塔/载具→last_user）。取不到返回 nil。
+local function killer_name(cause)
+    if not (cause and cause.valid) then return nil end
+    if cause.type == 'character' and cause.player then return cause.player.name end
+    if cause.last_user then return cause.last_user.name end
+    return nil
+end
+
+-- 登记一个据点：守卫(unit_number)→据点 id，记录守卫数/箱子/电网核心/箱类型。守卫全灭后处理（见 on_entity_died）。
+-- 无可追踪守卫(都没 unit_number)时：非永续直接解锁、永续不动；都不登记。
+local function register_outpost(chests, guards, core, kind, center)
     storage.outposts = storage.outposts or {}
     storage.outpost_of = storage.outpost_of or {}
     storage.outpost_seq = (storage.outpost_seq or 0) + 1
@@ -716,8 +745,13 @@ local function register_outpost(chests, guards)
     for _, g in pairs(guards) do
         if g.valid and g.unit_number then storage.outpost_of[g.unit_number] = oid; n = n + 1 end
     end
-    if n == 0 then unlock_chests(chests); return end
-    storage.outposts[oid] = {chests = chests, alive = n}
+    if n == 0 then
+        if kind ~= 'perpetual' then unlock_chests(chests) end
+        return
+    end
+    -- 存 guards(补弹)/eei(补电+清空摧毁)/sub(清空摧毁+公告)/kind(公告箱型)/x,y(清空时删中心地图标记)。
+    storage.outposts[oid] = {chests = chests, alive = n, guards = guards, kind = kind,
+                             eei = core and core.eei, sub = core and core.sub, x = center.x, y = center.y}
 end
 
 -- 【单地块至多一个遭遇】：按稀有度优先级依次尝试，命中即放置(箱/敌人)并 return，后面不再试。
@@ -755,51 +789,85 @@ local function place_encounter(surface, lt)
                 end
             end
             -- 敌人：出生点 96 格内不放（保护新手）；地砖按类型选——空据点不铺、永续用第二种、普通箱用本星地砖。
-            local guards = {}
+            local guards, core = {}, nil
             if not near_spawn then
                 local floor
                 if e.kind == 'perpetual' then floor = (storage.enemy_floor2 or {})[surface.name]
                 elseif e.kind ~= 'empty' then floor = (storage.enemy_floor or {})[surface.name] end
-                guards = place_guards(surface, center, e.danger * (0.4 + 0.6 * frac) * danger_mul, floor) or {}   -- ×本轮 danger 倍率
+                guards, core = place_guards(surface, center, e.danger * (0.4 + 0.6 * frac) * danger_mul, floor)   -- ×本轮 danger 倍率
+                guards = guards or {}
             end
             -- 至少放成一个箱才打地图标签。
             if #chests > 0 then
                 tag_encounter(surface, center, e.kind)   -- 中心打一个该类型图标的地图标签（无文本）
-                -- 铁/钢/木箱(非永续)：有守卫→登记据点，守卫全灭后解锁；无守卫→当场就可挖可开。
-                -- （perpetual 是无限箱、由 storage.perpetual_* 单独管，不走此解锁。）
-                if e.kind ~= 'perpetual' then
-                    if #guards > 0 then register_outpost(chests, guards)
-                    else unlock_chests(chests) end
-                end
+                -- 有守卫 → 登记据点（含永续：守卫全灭时摧毁电网核心 + 公告；非永续还解锁箱）。
+                -- 无守卫的非永续箱 → 当场可挖可开。无守卫的永续箱 → 不动（保持 storage.perpetual_* 配置）。
+                if #guards > 0 then register_outpost(chests, guards, core, e.kind, center)
+                elseif e.kind ~= 'perpetual' then unlock_chests(chests) end
             end
             return   -- 每地块至多一个遭遇，命中即停
         end
     end
 end
 
--- 据点守卫(炮塔/沙虫)死亡 → 对应据点存活数 -1；归零则解锁该据点所有箱(可挖+可开)。
--- 只对登记过的守卫(storage.outpost_of[unit_number])生效；按 turret 类型过滤事件，频率低。
-local OUTPOST_DEATH_FILTER = {
-    {filter = 'type', type = 'ammo-turret'}, {filter = 'type', type = 'electric-turret'},
-    {filter = 'type', type = 'fluid-turret'}, {filter = 'type', type = 'artillery-turret'},
-    {filter = 'type', type = 'turret'},
+-- 据点战斗 handler（一个事件只能挂一个，故合并两套逻辑，按 turret 或 player-force 过滤）：
+--   ① 友军(玩家力量)被某据点的炮塔击杀 → 给该据点【全部炮塔补弹 + EEI 补满电】（需 storage.outpost_combat）。
+--   ② 据点守卫炮塔死亡 → 存活数 -1；归零 → 解锁该据点所有箱；并（开关开时）摧毁 EEI + 传说变电站。
+local OUTPOST_DIED_FILTER = {
+    {filter = 'type', type = 'ammo-turret'},                      -- 机枪/火箭/磁轨/重炮
+    {filter = 'type', type = 'electric-turret', mode = 'or'},     -- 激光/特斯拉
+    {filter = 'type', type = 'fluid-turret',    mode = 'or'},     -- 喷火
+    {filter = 'type', type = 'artillery-turret',mode = 'or'},     -- 火炮
+    {filter = 'type', type = 'turret',          mode = 'or'},     -- 沙虫
+    {filter = 'force', force = 'player',         mode = 'or'},     -- 友军死亡 → 补给判定
 }
-script.on_event(defines.events.on_entity_died, events.safe('outpost_clear', function(event)
+script.on_event(defines.events.on_entity_died, events.safe('outpost_combat', function(event)
+    local e = event.entity
+    if not (e and e.valid) then return end
+    -- ① 友军被敌方据点炮塔击杀 → 补给该据点
+    if e.force and e.force.name == 'player' then
+        if not storage.outpost_combat then return end
+        local cause = event.cause
+        local map = storage.outpost_of
+        local coid = map and cause and cause.valid and cause.unit_number and map[cause.unit_number]
+        local o = coid and storage.outposts and storage.outposts[coid]
+        if o then
+            for _, g in pairs(o.guards or {}) do refill_turret(g) end                  -- 炮塔补弹
+            if o.eei and o.eei.valid then o.eei.energy = o.eei.electric_buffer_size end  -- EEI 补满电
+        end
+        return
+    end
+    -- ② 据点守卫炮塔死亡 → 计数，归零则解锁箱(+开关开时摧毁电网核心)
     local map = storage.outpost_of
     if not map then return end
-    local e = event.entity
-    local un = e and e.valid and e.unit_number
-    local oid = un and map[un]
+    local oid = e.unit_number and map[e.unit_number]
     if not oid then return end
-    map[un] = nil
+    map[e.unit_number] = nil
     local o = storage.outposts and storage.outposts[oid]
     if not o then return end
     o.alive = o.alive - 1
     if o.alive <= 0 then
-        unlock_chests(o.chests)
+        if o.kind ~= 'perpetual' then unlock_chests(o.chests) end   -- 永续箱不解锁（保持其配置）
+        if storage.outpost_combat then   -- 炮塔全灭：连同 EEI + 传说变电站一起摧毁(destroy 无视无敌)
+            if o.eei and o.eei.valid then o.eei.destroy() end
+            if o.sub and o.sub.valid then
+                o.sub.destroy()
+                -- 变电站被摧毁 → 全服公告：谁清空了什么箱型的据点（含永续箱据点）。
+                game.print({'wn.outpost-cleared', killer_name(event.cause) or '?', CHEST_ICON[o.kind] or 'steel-chest'})
+            end
+        end
+        -- 清空据点 → 删掉中心的宝箱地图标记（玩家若已手动删，find 不到、静默无事；不会报错）。
+        local surf = e.surface
+        if surf and o.x then
+            for _, tag in pairs(game.forces.player.find_chart_tags(surf, {{o.x - 1, o.y - 1}, {o.x + 1, o.y + 1}})) do
+                if tag.valid then tag.destroy() end
+            end
+            local m = storage.pending_chest_tags and storage.pending_chest_tags[surf.name]
+            if m then m[math.floor(o.x / 32) .. ',' .. math.floor(o.y / 32)] = nil end   -- 顺带清未补打的待办
+        end
         storage.outposts[oid] = nil
     end
-end), OUTPOST_DEATH_FILTER)
+end), OUTPOST_DIED_FILTER)
 
 -- 树木主题（连续插值，不是离散几种世界）：把每棵树【从原版色/灰度插值到本轮目标】，插值量 = strength。
 --   strength 立方偏置：绝大多数 ≈0（几乎原版）、极小概率接近 1（大改）。所以"特殊树世界"很罕见。

@@ -101,9 +101,9 @@ function M.ensure_defaults()
         size_multiplier = 4,              -- 矿脉更大 · rail world：原 1 的 ×4
         frequency_multiplier = 1,       
         local_specialty_multiplier = 0.25,
-        radius_standard = 1024,           -- 标准(基准)半径：每星球真实半径 = clamp(standard × random_exp(2), radius_min, radius_max)
+        radius_standard = 768,            -- 标准(基准)半径：每星球真实半径 = clamp(standard × random_exp(2), radius_min, radius_max)
         radius_min = 256,                 -- 真实半径下限
-        radius_max = 4096,                -- 真实半径上限
+        radius_max = 1536,                -- 真实半径上限
         planet_eccentricity = 0.2,        -- 星球椭圆离心系数(原 0.35)：越小越圆，0=全圆。实际 ecc=(rand-rand)×此值，长短轴比最大 (1+e):(1-e)
         platform_lifetime = 10,
         difficulty = 1,
@@ -129,6 +129,8 @@ function M.ensure_defaults()
         perpetual_operable     = false,    -- 可打开 GUI/重配（默认否）
         perpetual_minable      = false,    -- 可手挖拆走（默认否）
         perpetual_destructible = false,    -- 可被摧毁（默认否；开了 fulgora 闪电/火炮会劈烂它）
+        -- 据点战斗规则（map_features）：① 敌方炮塔击杀友军 → 给该据点炮塔补弹 + EEI 补电；② 据点炮塔全灭 → 连同 EEI+变电站一起摧毁。关：/c storage.outpost_combat=false
+        outpost_combat         = true,
         event_chance = 0.5,               -- 每分钟【全服】发生一次世界事件的固定概率（与人数无关；命中后随机挑 1 名玩家）
         -- 科技世界(事件世界的一种)：每次从所有科技随机抽一个
         tech_world_lose_chance = 0.125,    -- 抽中【已研究】科技时，失去它的概率
