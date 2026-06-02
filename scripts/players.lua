@@ -130,9 +130,19 @@ local function respawn_surface_name(player)
 end
 M.respawn_surface_name = respawn_surface_name   -- 导出：在线玩家列表显示各玩家出生星球（commands.show_stats）
 
--- 死亡复活落点：回玩家的默认复活星球出生点（默认/兜底＝母星）。
+-- 死亡复活落点，分两种：
+--   · 跃迁清场(reset 打了 storage.respawn_home 标记，含跃迁时已死的玩家) → 回【出生星球】(respawn_surface，兜底母星)。
+--   · 其他死法(自杀/退出/被敌人杀/环境死) → 在【当前所在星球】出生点复活(死在哪星球就在那复活)。
+-- 区分目的：防止玩家靠死亡在星球间搬运物资——平时死了留在本星，只有跃迁(已清空全图)才统一回出生星球。
 local function place_on_respawn(player)
-    M.place_on_surface(player, respawn_surface_name(player))
+    if not player then return end
+    if storage.respawn_home and storage.respawn_home[player.index] then
+        storage.respawn_home[player.index] = nil                       -- 一次性消费：仅本次(跃迁后)复活生效
+        M.place_on_surface(player, respawn_surface_name(player))        -- 跃迁清场 → 出生星球
+    else
+        local s = player.surface
+        M.place_on_surface(player, (s and s.valid and s.name) or 'nauvis')   -- 其他死法 → 当前所在星球
+    end
 end
 
 -- 死亡：把复活倒计时压到 3 秒；只把【有 cause 的真实死亡】（被敌人/环境打死）计入该玩家 death_count，
@@ -144,6 +154,17 @@ script.on_event(defines.events.on_player_died, function(event)
     local by_enemy = cause and cause.valid and cause.force and cause.force.name == 'enemy'
     if player then
         player.ticks_to_respawn = by_enemy and (storage.enemy_respawn_ticks or 1800) or (storage.respawn_ticks or 600)
+        -- 把尸体(连同掉落物)挪到【当前星球中心/出生点】：与"在当前星球复活"一致，方便取回、不用满地图找尸体。
+        -- 自杀/退出走 kill_player 已先传送到中心(尸体即在中心，这里是 no-op)；被敌人/环境打死的尸体在原地，挪到中心。
+        local surface = player.surface
+        if surface and surface.valid then
+            local center = player.force.get_spawn_position(surface)
+            for _, corpse in pairs(surface.find_entities_filtered{type = 'character-corpse', position = player.position, radius = 16}) do
+                if corpse.valid and corpse.character_corpse_player_index == event.player_index then
+                    corpse.teleport(center)
+                end
+            end
+        end
     end
     if cause then player_stats.bump(event.player_index, 'death_count') end
 end)

@@ -63,7 +63,7 @@ productivityman     MAX      3,370     525,414    519,723∞
 farmer              MAX        146     482,846           0
 teslatrooper        MAX      2,620     430,848     898,882
 captain             MAX      5,475     355,290     527,188
-railgunner          MAX      3,353     345,290   1,516,380
+railgunner          MAX      3,353     348,917   1,516,380
 moduler             MAX      4,376     323,461         682
 roboticist          MAX      2,200     261,225      14,199
 asteroidminer       MAX      5,475     168,320      17,604
@@ -303,9 +303,9 @@ aquilo              MAX          0           0   2,401,707
     初始: space-platform-starter-pack=5,475
     奖励: space-platform-foundation=132,600、cargo-bay=130,079、thruster=87,136
 
-【railgunner 御坂美琴】 初始物品=3,353  满级物品=345,290  科技=1,516,380  techs=['railgun']
+【railgunner 御坂美琴】 初始物品=3,353  满级物品=348,917  科技=1,516,380  techs=['railgun']
     初始: railgun=3,318、railgun-ammo=35
-    奖励: railgun-turret=338,619、railgun=3,318
+    奖励: railgun-turret=338,619、railgun-ammo=6,945
 
 【moduler 插件工人】 初始物品=4,376  满级物品=323,461  科技=682  techs=['modules']
     初始: beacon=3,028、speed-module=674、efficiency-module=674
@@ -435,7 +435,7 @@ MAX 满级物品  中位=214,772  范围 0 ~ 1,500,677
   farmer             MAX  满级=   482,846  科技=0  主因 overgrowth-yumako-soil=215,900
   teslatrooper       MAX  满级=   430,848  科技=898,882  主因 tesla-turret=313,031
   captain            MAX  满级=   355,290  科技=527,188  主因 space-platform-foundation=132,600
-  railgunner         MAX  满级=   345,290  科技=1,516,380  主因 railgun-turret=338,619
+  railgunner         MAX  满级=   348,917  科技=1,516,380  主因 railgun-turret=338,619
   moduler            MAX  满级=   323,461  科技=682  主因 speed-module-2=68,707
   roboticist         MAX  满级=   261,225  科技=14,199  主因 logistic-robot=82,349
   laserdefense       MID  满级=   231,645  科技=5,417  主因 personal-laser-defense-equipment=215,484

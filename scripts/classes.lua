@@ -570,8 +570,8 @@ local DEFAULT_CLASSES = {
         {item = 'railgun', count = 1},
         {item = 'railgun-ammo', count = 1},
     }, unlock = {{pack = 'cryogenic-science-pack', level = 1000}}, rewards = {
-        {pack = 'cryogenic-science-pack', item = 'railgun', groups = 1},
-        -- {pack = 'cryogenic-science-pack', item = 'railgun-ammo',   groups = 20},   -- stack10：1组=10发
+        -- {pack = 'cryogenic-science-pack', item = 'railgun', groups = 1},
+        {pack = 'cryogenic-science-pack', item = 'railgun-ammo',   groups = 20},   -- stack10：1组=10发
         {pack = 'cryogenic-science-pack', item = 'railgun-turret', groups = 2},
     }},
 

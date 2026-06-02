@@ -131,8 +131,11 @@ function M.reset()
     -- 重置所有玩家（含飞船上的）：有 character 的在当前星球杀死(尸体留当地) → 在其复活星球复活领奖励；
     -- 否则清空背包。这样每轮跃迁人人重置、背包必空，杜绝"待在飞船上跨轮保留背包、反复白嫖经验"。
     -- 飞船本身仍按 platform_lifetime 老化（见上方循环），与玩家死亡解耦。
+    storage.respawn_home = storage.respawn_home or {}
     for _, player in pairs(game.players) do
         if player.surface then
+            -- 跃迁清场：这次复活去【出生星球】(含此刻已是死亡状态、待复活的玩家)。一次性，复活时消费(见 players.place_on_respawn)。
+            storage.respawn_home[player.index] = true
             local inventory = player.get_inventory(defines.inventory.character_main)
             if player.character then
                 players.kill_player(player)

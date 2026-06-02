@@ -11,7 +11,7 @@ import subprocess, sys, os
 ROOT = os.path.dirname(os.path.abspath(__file__))
 args = sys.argv[1:]
 rc = 0
-for script in ('gen_set_classes.py', 'gen_item_values.py'):
+for script in ('gen_set_classes.py', 'gen_item_values.py', 'gen_scenario.py'):
     print(f'\n===== {script} =====')
     r = subprocess.run([sys.executable, os.path.join(ROOT, script)] + args)
     rc = rc or r.returncode
