@@ -1,0 +1,99 @@
+职业价值分析（gen_item_values.py 自动生成）。重要性权重：初始物品 > 满级物品 >> 科技。
+价值=递归原矿成本(可挖原矿=1，忽略合成)。触发科技=0；无限科技按一批1000次估(标 inf)。coin 低估。
+
+职业                  档   初始物品   满级物品      科技
+------------------------------------------------------
+shotgunner          LOW       151        382         20
+oreman              LOW     1,200      2,151          0
+civilian            LOW       158      2,393          0
+recyclerman         LOW       755      2,755          0
+artist              LOW       181      3,069        682
+fisher              LOW       180      3,180      4,775
+foundryman          LOW     2,599      4,599          0
+traindriver         LOW       228      5,734      1,874
+material            LOW     1,000      6,540          0
+electromagneticman  LOW     5,777      7,817          0
+inventor            LOW       319      9,886        682
+energytrader        LOW         0     14,722          0
+programmer          LOW     4,707     29,441      1,670
+producttrader       LOW         0     96,945          0
+civilengineer       LOW     2,049    126,495      1,363
+gunner              MID        65        252         20
+tanker              MID       480      1,713     13,543
+chef                MID     1,602      4,602          0
+plumber             MID     1,983     18,093        341
+thorman             MID       997     20,933      2,758
+porter              MID     1,952     21,467     12,887
+smelter             MID     1,500     27,008      8,863
+pharmacist          MID     1,602     29,502          0
+electrician         MID       682     49,328          0
+herder              MID        81     50,239     63,723
+gridman             MID       136     60,345      4,159
+hunter              MID        20     63,678     63,723
+miner               MID     1,106     68,186         50
+warehouser          MID     3,799     78,277     87,550
+guard               MID    10,000     86,918         40
+launcher            MID     1,893     96,547    256,763
+inserter            MID     1,046    104,362      1,083
+loaderman           MID        43    112,052     34,522
+healer              MID    39,190    141,683        682
+oilman              MID     2,266    147,987        682
+tankman             MID     1,784    157,789      4,137
+runner              MID     5,286    181,476      1,670
+artisan             MID       970    199,349        293
+belter              MID     3,043    215,232      1,403
+bomber              MID     1,500    218,678        682
+greentech           MID    15,977    231,421      2,726
+laserman            MID    16,161    231,645      5,417
+helper              MID    13,280    782,096      1,670
+philosopher         MAX         0          0    287,078
+afker               MAX         2          2   884,797∞
+banker              MAX         0      1,200          0
+spiderman           MAX    54,404     54,404    693,820
+transformer         MAX    54,882     54,882  3,123,150
+biologist           MAX         0     74,388   122,822∞
+rocketeer           MAX     1,063     83,883      3,310
+astronomer          MAX         0     86,785   884,797∞
+artillerist         MAX     3,246    129,802    391,728
+forester            MAX       346    151,346      2,148
+asteroidminer       MAX     5,475    175,661     17,604
+roboticist          MAX     2,282    269,464     14,199
+moduler             MAX         0    319,085        682
+railgunner          MAX     3,412    351,285  1,567,370
+captain             MAX     5,475    359,368    532,626
+farmer              MAX       146    482,846          0
+teslatrooper        MAX     2,982    498,634    936,945
+qualityman          MAX     3,370    525,414  1,287,223
+speedman            MAX     3,370    525,414   248,078∞
+efficiencyman       MAX     3,370    525,414   123,163∞
+productivityman     MAX     3,370    525,414   542,379∞
+metallurgist        MAX         0    753,164   247,737∞
+physicist           MAX         0  1,198,563   133,712∞
+electromancer       MAX         0  1,306,293   542,038∞
+nuclearman          MAX     5,073  1,505,228     26,726
+
+== 复检 ==
+初始物品 中位=1,350  范围 0~54,882
+LOW 满级物品 中位=5,734  范围 382~126,495
+MID 满级物品 中位=82,598  范围 252~782,096
+MAX 满级物品 中位=319,085  范围 0~1,505,228
+
+初始物品最高 8（应大致相当）：
+  transformer        MAX     54,882
+  spiderman          MAX     54,404
+  healer             MID     39,190
+  laserman           MID     16,161
+  greentech          MID     15,977
+  helper             MID     13,280
+  guard              MID     10,000
+  electromagneticman LOW      5,777
+
+满级物品越级 8（MID/LOW 高于 MAX 中位即偏高）：
+  helper             MID     782,096
+  laserman           MID     231,645
+  greentech          MID     231,421
+  bomber             MID     218,678
+  belter             MID     215,232
+  artisan            MID     199,349
+  runner             MID     181,476
+  tankman            MID     157,789

@@ -1,12 +1,11 @@
--- 物品价值 + 科技价值 + 职业总价值（脚本估算，仅供平衡参考，非游戏内数据）。
+-- 物品价值表（gen_item_values.py 自动生成，勿手改；改 classes.lua 后重跑）。
 -- 物品价值=递归原矿成本(沿同名主产物配方到原矿)。【可挖原矿 coal/stone/iron-ore/copper-ore 等强制=1，忽略合成配方】。
---           不反映"高科技但造价低"(如 combat-shotgun)；coin 按 1(低估其市场购买力)。
--- 科技价值=研究科学瓶投入；【触发科技 research_trigger=0】；无限科技按一批1000次估(inf)。重要性：初始物品>满级物品>>科技。
--- 满级"1组"=stack×unit。数据源 Factorio 2.0.x(base+space-age+quality)。
+--           不反映"高科技但造价低"(如 combat-shotgun)；coin 按 1(低估其市场购买力)。满级"1组"=stack×unit。
+-- 数据源：正版 Factorio 2.0.x(base+space-age+quality)，配方变动需重跑。职业/科技价值分析见 class_values.txt。
 local M = {}
 
 M.unit = {
-    ['accumulator'] = 112,
+    ['accumulator'] = 272.75,
     ['active-provider-chest'] = 41.492,
     ['advanced-circuit'] = 11.717,
     ['agricultural-tower'] = 105.895,
@@ -19,18 +18,18 @@ M.unit = {
     ['assembling-machine-1'] = 19.395,
     ['assembling-machine-2'] = 35.91,
     ['assembling-machine-3'] = 341.453,
-    ['asteroid-collector'] = 1365.08,
-    ['atomic-bomb'] = 751.708,
+    ['asteroid-collector'] = 1501.72,
+    ['atomic-bomb'] = 832.083,
     ['automation-science-pack'] = 2.02,
-    ['battery-equipment'] = 140.6,
-    ['battery-mk2-equipment'] = 2582.18,
-    ['battery-mk3-equipment'] = 13521.7,
+    ['battery-equipment'] = 301.35,
+    ['battery-mk2-equipment'] = 4310.25,
+    ['battery-mk3-equipment'] = 22617.5,
     ['beacon'] = 302.783,
     ['big-electric-pole'] = 20.32,
-    ['big-mining-drill'] = 725.062,
+    ['big-mining-drill'] = 1167.12,
     ['biochamber'] = 80.075,
     ['bioflux'] = 6.75,
-    ['biolab'] = 1550.84,
+    ['biolab'] = 1735.71,
     ['biter-egg'] = 1,
     ['boiler'] = 9,
     ['buffer-chest'] = 41.492,
@@ -39,11 +38,11 @@ M.unit = {
     ['burner-mining-drill'] = 11.06,
     ['calcite'] = 1,
     ['cannon-shell'] = 21.724,
-    ['capture-robot-rocket'] = 341.652,
+    ['capture-robot-rocket'] = 434.083,
     ['car'] = 83.94,
     ['carbon'] = 6,
     ['carbon-fiber'] = 16,
-    ['cargo-bay'] = 1260.6,
+    ['cargo-bay'] = 1300.79,
     ['centrifuge'] = 2536.67,
     ['chemical-plant'] = 34.225,
     ['cliff-explosives'] = 102.435,
@@ -53,51 +52,50 @@ M.unit = {
     ['combat-shotgun'] = 71,
     ['concrete'] = 11.1,
     ['constant-combinator'] = 4.805,
-    ['construction-robot'] = 76.595,
+    ['construction-robot'] = 152.951,
     ['copper-bacteria'] = 3,
     ['copper-cable'] = 0.255,
     ['copper-ore'] = 1,
     ['copper-plate'] = 1,
-    ['crusher'] = 1118.43,
-    ['cryogenic-plant'] = 2782.07,
+    ['crusher'] = 1239,
+    ['cryogenic-plant'] = 2996.41,
     ['decider-combinator'] = 10.1,
     ['defender-capsule'] = 27.945,
     ['destroyer-capsule'] = 655.128,
     ['display-panel'] = 2.765,
     ['distractor-capsule'] = 146.93,
     ['efficiency-module'] = 67.408,
-    ['efficiency-module-2'] = 646.883,
-    ['efficiency-module-3'] = 2964.78,
-    ['electric-engine-unit'] = 20.71,
+    ['efficiency-module-2'] = 687.071,
+    ['efficiency-module-3'] = 3165.72,
+    ['electric-engine-unit'] = 32.766,
     ['electric-furnace'] = 109.183,
     ['electric-mining-drill'] = 20.395,
-    ['electromagnetic-plant'] = 5374.97,
+    ['electromagnetic-plant'] = 5776.84,
     ['electronic-circuit'] = 1.765,
     ['energy-shield-equipment'] = 89.183,
-    ['energy-shield-mk2-equipment'] = 1430.68,
+    ['energy-shield-mk2-equipment'] = 1470.87,
     ['engine-unit'] = 6.08,
-    ['exoskeleton-equipment'] = 1319.83,
+    ['exoskeleton-equipment'] = 1761.9,
     ['explosive-cannon-shell'] = 30.162,
     ['explosive-rocket'] = 27.312,
-    ['express-loader'] = 229,
-    ['express-splitter'] = 232.282,
-    ['express-transport-belt'] = 31.11,
-    ['express-underground-belt'] = 83.525,
+    ['express-loader'] = 309.375,
+    ['express-splitter'] = 296.582,
+    ['express-transport-belt'] = 47.185,
+    ['express-underground-belt'] = 99.6,
     ['fast-inserter'] = 9.315,
     ['fast-loader'] = 73.45,
     ['fast-splitter'] = 45.715,
     ['fast-transport-belt'] = 6.11,
     ['fast-underground-belt'] = 27.925,
     ['firearm-magazine'] = 4,
-    ['fission-reactor-equipment'] = 14965.6,
+    ['fission-reactor-equipment'] = 16573.1,
     ['flamethrower-turret'] = 147.5,
-    ['flying-robot-frame'] = 73.065,
-    ['foundation'] = 154.4,
-    ['foundry'] = 1778.87,
-    ['fusion-generator'] = 7930.42,
+    ['flying-robot-frame'] = 149.421,
+    ['foundation'] = 156.88,
+    ['foundry'] = 2598.7,
+    ['fusion-generator'] = 9599.92,
     ['fusion-power-cell'] = 107.6,
-    ['fusion-reactor'] = 35578.6,
-    ['fusion-reactor-equipment'] = 53286.4,
+    ['fusion-reactor'] = 43122.3,
     ['gate'] = 19.65,
     ['grenade'] = 15,
     ['gun-turret'] = 40.2,
@@ -117,16 +115,16 @@ M.unit = {
     ['lab'] = 31.89,
     ['land-mine'] = 4.984,
     ['landfill'] = 50,
-    ['laser-turret'] = 360.5,
-    ['lightning-collector'] = 713.753,
+    ['laser-turret'] = 746.3,
+    ['lightning-collector'] = 1303.17,
     ['lightning-rod'] = 35.54,
     ['lithium'] = 1,
     ['lithium-plate'] = 1,
     ['loader'] = 42.9,
-    ['logistic-robot'] = 96.498,
+    ['logistic-robot'] = 172.855,
     ['long-handed-inserter'] = 5.805,
     ['low-density-structure'] = 44.037,
-    ['mech-armor'] = 48692.8,
+    ['mech-armor'] = 54881.6,
     ['medium-electric-pole'] = 8.63,
     ['nuclear-fuel'] = 74.5,
     ['nuclear-reactor'] = 13438.3,
@@ -136,9 +134,9 @@ M.unit = {
     ['overgrowth-yumako-soil'] = 215.9,
     ['passive-provider-chest'] = 41.492,
     ['pentapod-egg'] = 1,
-    ['personal-laser-defense-equipment'] = 3297.35,
-    ['personal-roboport-equipment'] = 1209.17,
-    ['personal-roboport-mk2-equipment'] = 13299.9,
+    ['personal-laser-defense-equipment'] = 5387.1,
+    ['personal-roboport-equipment'] = 2655.92,
+    ['personal-roboport-mk2-equipment'] = 21337.4,
     ['piercing-rounds-magazine'] = 6.53,
     ['piercing-shotgun-shell'] = 19.12,
     ['pipe'] = 1,
@@ -146,34 +144,34 @@ M.unit = {
     ['plastic-bar'] = 3.583,
     ['poison-capsule'] = 24.475,
     ['power-switch'] = 9.805,
-    ['processing-unit'] = 63.733,
+    ['processing-unit'] = 71.771,
     ['productivity-module'] = 67.408,
-    ['productivity-module-2'] = 646.883,
-    ['productivity-module-3'] = 2964.78,
+    ['productivity-module-2'] = 687.071,
+    ['productivity-module-3'] = 3165.72,
     ['programmable-speaker'] = 13.335,
     ['promethium-asteroid-chunk'] = 1,
     ['pump'] = 10.14,
     ['pumpjack'] = 44.325,
     ['quality-module'] = 67.408,
-    ['quality-module-2'] = 646.883,
-    ['quality-module-3'] = 2964.78,
+    ['quality-module-2'] = 687.071,
+    ['quality-module-3'] = 3165.72,
     ['radar'] = 23.925,
     ['rail'] = 2.28,
     ['rail-chain-signal'] = 6.765,
     ['rail-signal'] = 6.765,
-    ['railgun'] = 2787.98,
+    ['railgun'] = 3376.64,
     ['railgun-ammo'] = 34.725,
-    ['railgun-turret'] = 14275.3,
+    ['railgun-turret'] = 17224.8,
     ['raw-fish'] = 1,
-    ['recycler'] = 706.4,
+    ['recycler'] = 754.625,
     ['refined-concrete'] = 32.906,
     ['requester-chest'] = 41.492,
     ['roboport'] = 710.85,
     ['rocket'] = 10.438,
     ['rocket-fuel'] = 73.5,
     ['rocket-launcher'] = 18.925,
-    ['rocket-part'] = 1812.7,
-    ['rocket-turret'] = 732.233,
+    ['rocket-part'] = 1893.08,
+    ['rocket-turret'] = 764.383,
     ['scrap'] = 1,
     ['selector-combinator'] = 73.933,
     ['shotgun-shell'] = 4,
@@ -182,15 +180,15 @@ M.unit = {
     ['small-lamp'] = 3.53,
     ['solar-panel'] = 46.775,
     ['solar-panel-equipment'] = 85.508,
-    ['solid-fuel'] = 14.8,
+    ['solid-fuel'] = 21,
     ['space-platform-foundation'] = 66.3,
-    ['space-platform-starter-pack'] = 5313.87,
+    ['space-platform-starter-pack'] = 5474.62,
     ['speed-module'] = 67.408,
-    ['speed-module-2'] = 646.883,
-    ['speed-module-3'] = 2964.78,
-    ['spidertron'] = 48889.8,
+    ['speed-module-2'] = 687.071,
+    ['speed-module-3'] = 3165.72,
+    ['spidertron'] = 54403.5,
     ['splitter'] = 17.865,
-    ['stack-inserter'] = 168.54,
+    ['stack-inserter'] = 176.577,
     ['steam-engine'] = 23.16,
     ['steam-turbine'] = 121,
     ['steel-chest'] = 24.48,
@@ -206,21 +204,21 @@ M.unit = {
     ['substation'] = 90.713,
     ['sulfur'] = 5.875,
     ['tank'] = 480.027,
-    ['tesla-ammo'] = 74.36,
-    ['tesla-turret'] = 2477.1,
-    ['teslagun'] = 316.083,
-    ['thruster'] = 771.483,
+    ['tesla-ammo'] = 127.943,
+    ['tesla-turret'] = 3655.93,
+    ['teslagun'] = 423.25,
+    ['thruster'] = 912.14,
     ['toolbelt-equipment'] = 195.15,
     ['train-stop'] = 27.005,
     ['transport-belt'] = 1.01,
     ['tree-seed'] = 2,
-    ['tungsten-carbide'] = 18,
+    ['tungsten-carbide'] = 34.075,
     ['tungsten-ore'] = 1,
     ['tungsten-plate'] = 5.02,
-    ['turbo-loader'] = 584.05,
-    ['turbo-splitter'] = 494.248,
-    ['turbo-transport-belt'] = 71.01,
-    ['turbo-underground-belt'] = 198.725,
+    ['turbo-loader'] = 825.175,
+    ['turbo-splitter'] = 638.923,
+    ['turbo-transport-belt'] = 103.16,
+    ['turbo-underground-belt'] = 230.875,
     ['underground-belt'] = 7.525,
     ['uranium-235'] = 1,
     ['uranium-238'] = 1.667,
@@ -327,7 +325,6 @@ M.stack = {
     ['fusion-generator'] = 5,
     ['fusion-power-cell'] = 50,
     ['fusion-reactor'] = 1,
-    ['fusion-reactor-equipment'] = 20,
     ['gate'] = 50,
     ['grenade'] = 100,
     ['gun-turret'] = 50,
@@ -463,155 +460,6 @@ M.stack = {
     ['yumako'] = 50,
     ['yumako-mash'] = 100,
     ['yumako-seed'] = 10,
-}
-
-M.tech = {  -- cost=0 即触发科技(免费)
-    ['advanced-asteroid-processing'] = {cost = 493606},
-    ['advanced-combinators'] = {cost = 1670},
-    ['advanced-material-processing'] = {cost = 511},
-    ['advanced-material-processing-2'] = {cost = 8352},
-    ['agriculture'] = {cost = 0},
-    ['artillery'] = {cost = 706458},
-    ['automated-rail-transportation'] = {cost = 1363},
-    ['automation'] = {cost = 20},
-    ['automation-2'] = {cost = 273},
-    ['bacteria-cultivation'] = {cost = 0},
-    ['bioflux'] = {cost = 0},
-    ['bioflux-processing'] = {cost = 0},
-    ['biolab'] = {cost = 444443},
-    ['bulk-inserter'] = {cost = 1022},
-    ['captivity'] = {cost = 240598},
-    ['circuit-network'] = {cost = 682},
-    ['cliff-explosives'] = {cost = 1363},
-    ['construction-robotics'] = {cost = 3341},
-    ['efficiency-module'] = {cost = 341},
-    ['electric-energy-accumulators'] = {cost = 1022},
-    ['electric-energy-distribution-1'] = {cost = 818},
-    ['electric-energy-distribution-2'] = {cost = 3341},
-    ['electric-mining-drill'] = {cost = 50},
-    ['electromagnetic-plant'] = {cost = 0},
-    ['energy-shield-equipment'] = {cost = 30668},
-    ['epic-quality'] = {cost = 1186265},
-    ['exoskeleton-equipment'] = {cost = 1670},
-    ['explosives'] = {cost = 682},
-    ['fast-inserter'] = {cost = 61},
-    ['fish-breeding'] = {cost = 4775},
-    ['fluid-handling'] = {cost = 341},
-    ['foundry'] = {cost = 0},
-    ['gun-turret'] = {cost = 20},
-    ['jellynut'] = {cost = 0},
-    ['land-mine'] = {cost = 20446},
-    ['logistic-robotics'] = {cost = 8352},
-    ['logistic-system'] = {cost = 77794},
-    ['logistics'] = {cost = 40},
-    ['logistics-2'] = {cost = 1363},
-    ['logistics-3'] = {cost = 34522},
-    ['low-density-structure-productivity'] = {cost = 199512, inf = true},
-    ['mech-armor'] = {cost = 4171235},
-    ['military'] = {cost = 20},
-    ['modules'] = {cost = 682},
-    ['nuclear-power'] = {cost = 26726},
-    ['oil-gathering'] = {cost = 682},
-    ['oil-processing'] = {cost = 0},
-    ['personal-laser-defense-equipment'] = {cost = 23105},
-    ['personal-roboport-equipment'] = {cost = 1670},
-    ['processing-unit-productivity'] = {cost = 594290, inf = true},
-    ['productivity-module'] = {cost = 341},
-    ['quality-module'] = {cost = 3408},
-    ['railgun'] = {cost = 1933028},
-    ['railway'] = {cost = 511},
-    ['recycling'] = {cost = 0},
-    ['research-productivity'] = {cost = 1071184, inf = true},
-    ['research-speed-1'] = {cost = 682},
-    ['robotics'] = {cost = 2506},
-    ['rocket-fuel-productivity'] = {cost = 122822, inf = true},
-    ['rocket-part-productivity'] = {cost = 155149, inf = true},
-    ['rocket-silo'] = {cost = 237253},
-    ['rocketry'] = {cost = 24535},
-    ['solar-energy'] = {cost = 1704},
-    ['solar-panel-equipment'] = {cost = 682},
-    ['space-platform-thruster'] = {cost = 17604},
-    ['speed-module'] = {cost = 341},
-    ['spidertron'] = {cost = 1087232},
-    ['steam-power'] = {cost = 0},
-    ['stone-wall'] = {cost = 20},
-    ['tank'] = {cost = 57762},
-    ['tesla-weapons'] = {cost = 1251370},
-    ['toolbelt-equipment'] = {cost = 12887},
-    ['tree-seeding'] = {cost = 2148},
-    ['yumako'] = {cost = 0},
-}
-
--- full / 初始物品 / 科技 / 满级物品(初始+rewards,不含科技)
-M.class = {
-    shotgunner =     {full=1000  , item_start=151     , tech=20       , item_max=382      },  -- LOW
-    oreman =         {full=1000  , item_start=1200    , tech=0        , item_max=2151     },  -- LOW
-    civilian =       {full=1000  , item_start=158     , tech=0        , item_max=2393     },  -- LOW
-    recyclerman =    {full=1000  , item_start=706     , tech=0        , item_max=2706     },  -- LOW
-    artist =         {full=1000  , item_start=181     , tech=682      , item_max=3069     },  -- LOW
-    fisher =         {full=1000  , item_start=180     , tech=4775     , item_max=3180     },  -- LOW
-    foundryman =     {full=1000  , item_start=1779    , tech=0        , item_max=3779     },  -- LOW
-    traindriver =    {full=1000  , item_start=228     , tech=1874     , item_max=5734     },  -- LOW
-    material =       {full=1000  , item_start=1000    , tech=0        , item_max=5736     },  -- LOW
-    electromagneticman ={full=1000  , item_start=5375    , tech=0        , item_max=7415     },  -- LOW
-    inventor =       {full=1000  , item_start=319     , tech=682      , item_max=9886     },  -- LOW
-    energytrader =   {full=1000  , item_start=0       , tech=0        , item_max=13172    },  -- LOW
-    programmer =     {full=1000  , item_start=4707    , tech=1670     , item_max=29441    },  -- LOW
-    producttrader =  {full=1000  , item_start=0       , tech=0        , item_max=70822    },  -- LOW
-    civilengineer =  {full=1000  , item_start=2049    , tech=1363     , item_max=125255   },  -- LOW
-    gunner =         {full=10000 , item_start=65      , tech=20       , item_max=252      },  -- MID
-    tanker =         {full=10000 , item_start=480     , tech=57762    , item_max=1713     },  -- MID
-    chef =           {full=10000 , item_start=1602    , tech=0        , item_max=4602     },  -- MID
-    plumber =        {full=10000 , item_start=1983    , tech=341      , item_max=18093    },  -- MID
-    thorman =        {full=10000 , item_start=997     , tech=20446    , item_max=20933    },  -- MID
-    porter =         {full=10000 , item_start=1952    , tech=12887    , item_max=21467    },  -- MID
-    smelter =        {full=10000 , item_start=1500    , tech=8863     , item_max=27008    },  -- MID
-    pharmacist =     {full=10000 , item_start=1602    , tech=0        , item_max=29502    },  -- MID
-    herder =         {full=10000 , item_start=81      , tech=240598   , item_max=40996    },  -- MID
-    electrician =    {full=10000 , item_start=682     , tech=0        , item_max=49328    },  -- MID
-    miner =          {full=10000 , item_start=1106    , tech=50       , item_max=50503    },  -- MID
-    hunter =         {full=10000 , item_start=20      , tech=240598   , item_max=54435    },  -- MID
-    gridman =        {full=10000 , item_start=136     , tech=4159     , item_max=60345    },  -- MID
-    guard =          {full=10000 , item_start=10000   , tech=40       , item_max=67628    },  -- MID
-    warehouser =     {full=10000 , item_start=3799    , tech=77794    , item_max=78277    },  -- MID
-    loaderman =      {full=10000 , item_start=43      , tech=34522    , item_max=91957    },  -- MID
-    launcher =       {full=10000 , item_start=1813    , tech=237253   , item_max=92447    },  -- MID
-    inserter =       {full=10000 , item_start=1046    , tech=1083     , item_max=101147   },  -- MID
-    greentech =      {full=10000 , item_start=7939    , tech=2726     , item_max=119431   },  -- MID
-    runner =         {full=10000 , item_start=3959    , tech=1670     , item_max=135942   },  -- MID
-    oilman =         {full=10000 , item_start=2266    , tech=682      , item_max=139414   },  -- MID
-    laserman =       {full=10000 , item_start=9892    , tech=23105    , item_max=141786   },  -- MID
-    healer =         {full=10000 , item_start=81774   , tech=682      , item_max=146491   },  -- MID
-    tankman =        {full=10000 , item_start=1784    , tech=30668    , item_max=153770   },  -- MID
-    belter =         {full=10000 , item_start=3043    , tech=1403     , item_max=165399   },  -- MID
-    artisan =        {full=10000 , item_start=970     , tech=293      , item_max=199349   },  -- MID
-    bomber =         {full=10000 , item_start=1500    , tech=682      , item_max=218678   },  -- MID
-    helper =         {full=10000 , item_start=6046    , tech=1670     , item_max=431259   },  -- MID
-    philosopher =    {full=100000, item_start=0       , tech=444443   , item_max=0        },  -- MAX
-    afker =          {full=100000, item_start=2       , tech=1071184  , item_max=2        },  -- MAX inf-tech
-    banker =         {full=100000, item_start=0       , tech=0        , item_max=1200     },  -- MAX
-    transformer =    {full=100000, item_start=48693   , tech=4171235  , item_max=48693    },  -- MAX
-    spiderman =      {full=100000, item_start=48890   , tech=1087232  , item_max=48890    },  -- MAX
-    biologist =      {full=100000, item_start=0       , tech=122822   , item_max=74388    },  -- MAX inf-tech
-    astronomer =     {full=100000, item_start=0       , tech=1071184  , item_max=77542    },  -- MAX inf-tech
-    rocketeer =      {full=100000, item_start=1063    , tech=24535    , item_max=79583    },  -- MAX
-    artillerist =    {full=100000, item_start=3246    , tech=706458   , item_max=129802   },  -- MAX
-    forester =       {full=100000, item_start=346     , tech=2148     , item_max=151346   },  -- MAX
-    asteroidminer =  {full=100000, item_start=5314    , tech=17604    , item_max=162640   },  -- MAX
-    roboticist =     {full=100000, item_start=1518    , tech=14199    , item_max=192343   },  -- MAX
-    railgunner =     {full=100000, item_start=2823    , tech=1933028  , item_max=291117   },  -- MAX
-    moduler =        {full=100000, item_start=0       , tech=682      , item_max=311047   },  -- MAX
-    teslatrooper =   {full=100000, item_start=1803    , tech=1251370  , item_max=325453   },  -- MAX
-    captain =        {full=100000, item_start=5314    , tech=493606   , item_max=341122   },  -- MAX
-    farmer =         {full=100000, item_start=146     , tech=0        , item_max=482846   },  -- MAX
-    qualityman =     {full=100000, item_start=3370    , tech=1189673  , item_max=495273   },  -- MAX
-    speedman =       {full=100000, item_start=3370    , tech=199853   , item_max=495273   },  -- MAX inf-tech
-    efficiencyman =  {full=100000, item_start=3370    , tech=123163   , item_max=495273   },  -- MAX inf-tech
-    productivityman ={full=100000, item_start=3370    , tech=594631   , item_max=495273   },  -- MAX inf-tech
-    metallurgist =   {full=100000, item_start=0       , tech=199512   , item_max=500786   },  -- MAX inf-tech
-    physicist =      {full=100000, item_start=0       , tech=155149   , item_max=1112829  },  -- MAX inf-tech
-    electromancer =  {full=100000, item_start=0       , tech=594290   , item_max=1216273  },  -- MAX inf-tech
-    nuclearman =     {full=100000, item_start=5073    , tech=26726    , item_max=1473445  },  -- MAX
 }
 
 return M

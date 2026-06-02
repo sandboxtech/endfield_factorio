@@ -559,6 +559,16 @@ local DEFAULT_CLASSES = {
 
     }},
 
+    {key = 'transformer', techs = {'mech-armor'}, name = '变形金刚', full = FULL_MAX, starter = {   -- 终极机甲：粉瓶 1000 级解锁
+        {item = 'mech-armor', count = 1},
+    }, unlock = {{pack = 'electromagnetic-science-pack', level = 1000}}, rewards = {
+        -- {pack = 'electromagnetic-science-pack', item = 'mech-armor',                      groups = 1},   -- 粉：机甲护甲(终极)
+        -- {pack = 'cryogenic-science-pack',       item = 'fusion-reactor-equipment',        groups = 1},   -- 靛：聚变堆装备
+        -- {pack = 'electromagnetic-science-pack', item = 'battery-mk3-equipment',           groups = 1},   -- 粉：mk3 电池
+        -- {pack = 'utility-science-pack',         item = 'energy-shield-mk2-equipment',     groups = 1},   -- 黄：能量盾 mk2
+        -- {pack = 'utility-science-pack',         item = 'personal-roboport-mk2-equipment', groups = 1},   -- 黄：机器人网格 mk2
+    }},
+
     {section = '装备护甲'},
     -- 分组换行：战斗 ↔ 装备护甲
     -- ── 装备护甲组（护甲网格组件 + 终极机甲；按各组件解锁科技配瓶）──
@@ -602,15 +612,6 @@ local DEFAULT_CLASSES = {
         {item = 'toolbelt-equipment', count = 10},
     }, rewards = {
         {pack = 'logistic-science-pack', item = 'toolbelt-equipment', groups = 5},   -- 绿：工具腰带(扩快捷栏)
-    }},
-    {key = 'transformer', techs = {'mech-armor'}, name = '变形金刚', full = FULL_MAX, starter = {   -- 终极机甲：粉瓶 1000 级解锁
-        {item = 'mech-armor', count = 1},
-    }, unlock = {{pack = 'electromagnetic-science-pack', level = 1000}}, rewards = {
-        -- {pack = 'electromagnetic-science-pack', item = 'mech-armor',                      groups = 1},   -- 粉：机甲护甲(终极)
-        -- {pack = 'cryogenic-science-pack',       item = 'fusion-reactor-equipment',        groups = 1},   -- 靛：聚变堆装备
-        -- {pack = 'electromagnetic-science-pack', item = 'battery-mk3-equipment',           groups = 1},   -- 粉：mk3 电池
-        -- {pack = 'utility-science-pack',         item = 'energy-shield-mk2-equipment',     groups = 1},   -- 黄：能量盾 mk2
-        -- {pack = 'utility-science-pack',         item = 'personal-roboport-mk2-equipment', groups = 1},   -- 黄：机器人网格 mk2
     }},
 
     {section = '农牧'},
