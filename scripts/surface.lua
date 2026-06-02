@@ -693,30 +693,8 @@ script.on_event(defines.events.on_chunk_generated, events.safe('chunk_generated'
         if #tiles > 0 then surface.set_tiles(tiles) end
     end
 
-    -- 各星球地图风味（本地特色矿/石/树/遗迹/冰山 + 跨星球异物 + 树木主题 + 虫群/物资箱）：
-    -- 放在铺虚空【之后】，can_place_entity 自动跳过虚空/水/障碍。generate 内部按 PLANET[表面名]
-    -- 自行判断，未定义的表面（飞船平台）直接跳过。详见 scripts/map_features.lua。
-    map_features.generate(surface, left_top)
-
-    -- 惰性放置出生点市场（母星 + 其余 4 个星球，凡 PLANET_GEN 有配置）：当出生点附近区块生成时尝试放，
-    -- 每轮每星只放一次（成功才记 storage.market_run，否则邻块生成时重试）。不再强制生成区块。
-    if PLANET_GEN[surface.name] then
-        storage.market_run = storage.market_run or {}
-        if storage.market_run[surface.name] ~= storage.run then
-            local s = game.forces.player.get_spawn_position(surface)
-            -- 本区块在出生点周围 3×3 区块范围内才尝试（块中心距出生点 ≤48 格）
-            if math.abs((left_top.x + 16) - s.x) <= 48 and math.abs((left_top.y + 16) - s.y) <= 48 then
-                if market.place_on_surface(surface.name) then
-                    storage.market_run[surface.name] = storage.run
-                    -- 母星：市场就绪后顺带 chart 出生点 ±128，落地即看清地形
-                    if surface == game.surfaces.nauvis then
-                        game.forces.player.chart(surface, {{x = -128, y = -128}, {x = 128, y = 128}})
-                    end
-                end
-            end
-        end
-    end
-
+    -- tile 替换【先于实体放置】：先把本块地砖换成最终形态，下面 map_features/市场的 find_non_colliding 才会
+    -- 避开水/熔岩/虚空，实体落在最终地砖上、不会被随后的 set_tiles 删（根治"水面上有标记/守卫残留"）。
     -- tile 替换：本轮该表面每条规则，把匹配到的源 tile 按 mask 换成目标 tile。圆外已是虚空、不匹配。
     -- mask=all 整片；noise 平滑噪声区；tree/rock/ore 跟随原生树/石/矿分布（在其 tile 及邻近替换）。
     local remap = storage.tile_remap and storage.tile_remap[surface.name]
@@ -768,6 +746,30 @@ script.on_event(defines.events.on_chunk_generated, events.safe('chunk_generated'
                 end
                 -- set_tiles 会把被盖住的原地形自动存为 hidden_tile：玩家拆掉人造铺装后露出该格原本的地形。
                 if #tiles > 0 then surface.set_tiles(tiles) end
+            end
+        end
+    end
+
+    -- 各星球地图风味（本地特色矿/石/树/遗迹/冰山 + 跨星球异物 + 树木主题 + 虫群/物资箱）：
+    -- 放在铺虚空【之后】，can_place_entity 自动跳过虚空/水/障碍。generate 内部按 PLANET[表面名]
+    -- 自行判断，未定义的表面（飞船平台）直接跳过。详见 scripts/map_features.lua。
+    map_features.generate(surface, left_top)
+
+    -- 惰性放置出生点市场（母星 + 其余 4 个星球，凡 PLANET_GEN 有配置）：当出生点附近区块生成时尝试放，
+    -- 每轮每星只放一次（成功才记 storage.market_run，否则邻块生成时重试）。不再强制生成区块。
+    if PLANET_GEN[surface.name] then
+        storage.market_run = storage.market_run or {}
+        if storage.market_run[surface.name] ~= storage.run then
+            local s = game.forces.player.get_spawn_position(surface)
+            -- 本区块在出生点周围 3×3 区块范围内才尝试（块中心距出生点 ≤48 格）
+            if math.abs((left_top.x + 16) - s.x) <= 48 and math.abs((left_top.y + 16) - s.y) <= 48 then
+                if market.place_on_surface(surface.name) then
+                    storage.market_run[surface.name] = storage.run
+                    -- 母星：市场就绪后顺带 chart 出生点 ±128，落地即看清地形
+                    if surface == game.surfaces.nauvis then
+                        game.forces.player.chart(surface, {{x = -128, y = -128}, {x = 128, y = 128}})
+                    end
+                end
             end
         end
     end

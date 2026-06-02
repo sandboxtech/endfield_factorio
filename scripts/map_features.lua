@@ -749,8 +749,8 @@ local function register_outpost(chests, guards, core, kind, center)
         if kind ~= 'perpetual' then unlock_chests(chests) end
         return
     end
-    -- 存 guards(补弹)/eei(补电+清空摧毁)/sub(清空摧毁+公告)/kind(公告箱型)/x,y(清空时删中心地图标记)。
-    storage.outposts[oid] = {chests = chests, alive = n, guards = guards, kind = kind,
+    -- 存 guards(补弹+清空判定)/eei(补电+清空摧毁)/sub(清空摧毁+公告)/kind(公告箱型;empty=空据点)/x,y(清空删标记)。
+    storage.outposts[oid] = {chests = chests, guards = guards, kind = kind,
                              eei = core and core.eei, sub = core and core.sub, x = center.x, y = center.y}
 end
 
@@ -797,15 +797,13 @@ local function place_encounter(surface, lt)
                 guards, core = place_guards(surface, center, e.danger * (0.4 + 0.6 * frac) * danger_mul, floor)   -- ×本轮 danger 倍率
                 guards = guards or {}
             end
-            -- 标记+据点登记【只对有守卫的据点】：清空时才有事件删标记，无守卫的没有删标记的时机 → 干脆不标。
-            if #chests > 0 then
-                if #guards > 0 then
-                    tag_encounter(surface, center, e.kind)            -- 有守卫才打标记（清空时删）
-                    register_outpost(chests, guards, core, e.kind, center)
-                elseif e.kind ~= 'perpetual' then
-                    unlock_chests(chests)   -- 无守卫的非永续箱：当场可挖可开，不打标记
-                end
-                -- 无守卫的永续箱：保持 storage.perpetual_* 配置，不标记、不解锁。
+            -- 登记据点【只要有守卫就登记，含空据点】：守卫全灭 → 摧毁电网核心(EEI+变电站)；箱子据点还解锁箱/公告/删标记。
+            -- 标记只给【箱子据点 + 有守卫】打（空据点无箱不标；无守卫的箱没有删标记时机也不标，当场解锁）。
+            if #guards > 0 then
+                if #chests > 0 then tag_encounter(surface, center, e.kind) end
+                register_outpost(chests, guards, core, e.kind, center)
+            elseif #chests > 0 and e.kind ~= 'perpetual' then
+                unlock_chests(chests)   -- 无守卫的非永续箱：当场可挖可开，不打标记
             end
             return   -- 每地块至多一个遭遇，命中即停
         end
@@ -847,29 +845,38 @@ script.on_event(defines.events.on_entity_died, events.safe('outpost_combat', fun
     map[e.unit_number] = nil
     local o = storage.outposts and storage.outposts[oid]
     if not o then return end
-    o.alive = o.alive - 1
-    if o.alive <= 0 then
-        if o.kind ~= 'perpetual' then unlock_chests(o.chests) end   -- 永续箱不解锁（保持其配置）
-        if storage.outpost_combat then   -- 炮塔全灭：连同 EEI + 传说变电站一起摧毁(destroy 无视无敌)
-            if o.eei and o.eei.valid then o.eei.destroy() end
-            if o.sub and o.sub.valid then
-                o.sub.destroy()
-                -- 变电站被摧毁 → 全服公告：谁清空了什么箱型的据点 + GPS 地点（含永续箱据点）。
-                local gps = (e.surface and o.x) and ('[gps=' .. math.floor(o.x) .. ',' .. math.floor(o.y) .. ',' .. e.surface.name .. ']') or ''
-                game.print({'wn.outpost-cleared', killer_name(event.cause) or '?', CHEST_ICON[o.kind] or 'steel-chest', gps})
-            end
-        end
-        -- 清空据点 → 删掉中心的宝箱地图标记（玩家若已手动删，find 不到、静默无事；不会报错）。
-        local surf = e.surface
-        if surf and o.x then
-            for _, tag in pairs(game.forces.player.find_chart_tags(surf, {{o.x - 1, o.y - 1}, {o.x + 1, o.y + 1}})) do
-                if tag.valid then tag.destroy() end
-            end
-            local m = storage.pending_chest_tags and storage.pending_chest_tags[surf.name]
-            if m then m[math.floor(o.x / 32) .. ',' .. math.floor(o.y / 32)] = nil end   -- 顺带清未补打的待办
-        end
-        storage.outposts[oid] = nil
+    -- 是否还有别的存活守卫？(排除正在死亡的 e；tile 替换等【非死亡移除】会让守卫 invalid，也算"没了"，避免计数卡住)
+    for _, g in pairs(o.guards) do
+        if g.valid and g ~= e then return end   -- 还有守卫存活 → 不清空
     end
+    -- 全部守卫已死/失效 → 清空据点
+    if o.kind ~= 'perpetual' then unlock_chests(o.chests) end   -- 永续箱不解锁；空据点 chests={} → no-op
+    -- 电网核心摧毁：仅当存在（有电炮才有）且开关开。无核心的据点跳过这步、但下面公告/删标记照常。
+    if storage.outpost_combat then   -- 连同 EEI + 传说变电站一起摧毁(destroy 无视无敌)
+        if o.eei and o.eei.valid then o.eei.destroy() end
+        if o.sub and o.sub.valid then
+            local sp = o.sub.position
+            o.sub.destroy()
+            -- 变电站位置放一个爆炸动画（纯特效）。
+            if e.surface and prototypes.entity['massive-explosion'] then
+                e.surface.create_entity{name = 'massive-explosion', position = sp}
+            end
+        end
+    end
+    local surf = e.surface
+    if surf and o.x then
+        if o.kind ~= 'empty' then   -- 公告只针对【箱子据点】(空据点无箱、不报)，含 GPS 地点
+            local gps = '[gps=' .. math.floor(o.x) .. ',' .. math.floor(o.y) .. ',' .. surf.name .. ']'
+            game.print({'wn.outpost-cleared', killer_name(event.cause) or '?', CHEST_ICON[o.kind] or 'steel-chest', gps})
+        end
+        -- 删中心地图标记(空据点本就没标记，find 不到→no-op；玩家已手删同理静默)
+        for _, tag in pairs(game.forces.player.find_chart_tags(surf, {{o.x - 1, o.y - 1}, {o.x + 1, o.y + 1}})) do
+            if tag.valid then tag.destroy() end
+        end
+        local m = storage.pending_chest_tags and storage.pending_chest_tags[surf.name]
+        if m then m[math.floor(o.x / 32) .. ',' .. math.floor(o.y / 32)] = nil end
+    end
+    storage.outposts[oid] = nil
 end), OUTPOST_DIED_FILTER)
 
 -- 树木主题（连续插值，不是离散几种世界）：把每棵树【从原版色/灰度插值到本轮目标】，插值量 = strength。
