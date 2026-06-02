@@ -227,12 +227,11 @@ function M.reset()
                 local proto = tech.prototype
                 -- 无限/多级科技：开关 storage.class_tech_stack 控制多职业指向同一科技的行为。普通单级用 researched。
                 if proto.level and proto.max_level and proto.level < proto.max_level then
-                    if storage.class_tech_stack then
-                        -- 累加：每个【选该职业的玩家】各 +1 级（u.count=人数，含离线）。封顶 max_level。
-                        tech.level = math.min(proto.max_level, tech.level + u.count)
-                    else
-                        tech.level = 2                -- 固定第一级(level=2=研究到 level 1)，多职业也不累加
-                    end
+                    -- 无限/多级科技：科技进度【跨跃迁保留】，必须【幂等设级】而非累加，否则每跃迁都 +人数级、无限涨（bug）。
+                    -- 目标级：class_tech_stack 开 = 1+人数级（每个选该职业的玩家各 1 级）、关 = 固定第一级(level=2)。
+                    -- 用 max 取大：不累加、也不把玩家自己研究到的更高级降下来。封顶 max_level。
+                    local target = storage.class_tech_stack and (1 + u.count) or 2
+                    tech.level = math.min(proto.max_level, math.max(tech.level, target))
                 else
                     tech.researched = true
                 end
