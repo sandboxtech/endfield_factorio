@@ -255,46 +255,42 @@ local DEFAULT_CLASSES = {
         {item = 'beacon', count=10},
         {item = 'speed-module', count=10},
         {item = 'efficiency-module', count=10},
-        {item = 'productivity-module', count=10},
-        {item = 'quality-module', count=10},
     }, unlock = {{pack = 'production-science-pack', level = 10}}, rewards = {
-        {pack = 'production-science-pack', item = 'beacon', groups = 5},
-        {pack = 'space-science-pack', item = 'beacon', groups = 5},
-        {pack = 'promethium-science-pack', item = 'beacon', groups = 5},
+        {pack = 'production-science-pack', item = 'beacon', groups = 10},
+        {pack = 'space-science-pack', item = 'beacon', groups = 10},
+        {pack = 'promethium-science-pack', item = 'beacon', groups = 10},
         --
-        {pack = 'metallurgic-science-pack',     item = 'speed-module', groups = 5},
-        {pack = 'electromagnetic-science-pack', item = 'quality-module',  groups = 5},
-        {pack = 'agricultural-science-pack', item = 'efficiency-module', groups = 5},
-        {pack = 'cryogenic-science-pack', item = 'productivity-module', groups = 5},
+        {pack = 'metallurgic-science-pack',     item = 'speed-module-2', groups = 2},
+        {pack = 'agricultural-science-pack', item = 'efficiency-module-2', groups = 2},
     }},
 
     {key = 'qualityman', techs = {'quality-module', 'epic-quality'}, name = '品质大师', full = FULL_MAX, starter = {
         {item = 'quality-module', groups = 1},
     }, unlock = {{pack = 'electromagnetic-science-pack', level = 10}}, rewards = {
         {pack = 'chemical-science-pack',        item = 'quality-module',     groups = 10},   -- 蓝：1级
-        {pack = 'space-science-pack',           item = 'quality-module-2',   groups = 10},   -- 白：2级
-        {pack = 'electromagnetic-science-pack', item = 'quality-module-3',   groups = 10},   -- 粉：3级(电浆星)
+        {pack = 'space-science-pack',           item = 'quality-module-2',   groups = 5},   -- 白：2级
+        {pack = 'electromagnetic-science-pack', item = 'quality-module-3',   groups = 2},   -- 粉：3级(电浆星)
     }},
     {key = 'speedman', techs = {'speed-module', 'low-density-structure-productivity'}, name = '速度大师', full = FULL_MAX, starter = {
         {item = 'speed-module', groups = 1},
     }, unlock = {{pack = 'metallurgic-science-pack', level = 10}}, rewards = {
         {pack = 'chemical-science-pack',    item = 'speed-module',     groups = 10},   -- 蓝：1级
-        {pack = 'space-science-pack',       item = 'speed-module-2',   groups = 10},   -- 白：2级
-        {pack = 'metallurgic-science-pack', item = 'speed-module-3',   groups = 10},   -- 橙：3级(火山)
+        {pack = 'space-science-pack',       item = 'speed-module-2',   groups = 5},   -- 白：2级
+        {pack = 'metallurgic-science-pack', item = 'speed-module-3',   groups = 2},   -- 橙：3级(火山)
     }},
     {key = 'efficiencyman', techs = {'efficiency-module', 'rocket-fuel-productivity'}, name = '节能大师', full = FULL_MAX, starter = {
         {item = 'efficiency-module', groups = 1},
     }, unlock = {{pack = 'agricultural-science-pack', level = 10}}, rewards = {
         {pack = 'chemical-science-pack',     item = 'efficiency-module',     groups = 10},   -- 蓝：1级
-        {pack = 'space-science-pack',        item = 'efficiency-module-2',   groups = 10},   -- 白：2级
-        {pack = 'agricultural-science-pack', item = 'efficiency-module-3',   groups = 10},   -- 草：3级(Gleba)
+        {pack = 'space-science-pack',        item = 'efficiency-module-2',   groups = 5},   -- 白：2级
+        {pack = 'agricultural-science-pack', item = 'efficiency-module-3',   groups = 2},   -- 草：3级(Gleba)
     }},
     {key = 'productivityman', techs = {'productivity-module', 'processing-unit-productivity'}, name = '产能大师', full = FULL_MAX, starter = {
         {item = 'productivity-module', groups = 1},
     }, unlock = {{pack = 'cryogenic-science-pack', level = 10}}, rewards = {
         {pack = 'chemical-science-pack',  item = 'productivity-module',     groups = 10},   -- 蓝：1级
-        {pack = 'space-science-pack',     item = 'productivity-module-2',   groups = 10},   -- 白：2级
-        {pack = 'cryogenic-science-pack', item = 'productivity-module-3',   groups = 10},   -- 靛：3级(Aquilo)
+        {pack = 'space-science-pack',     item = 'productivity-module-2',   groups = 5},   -- 白：2级
+        {pack = 'cryogenic-science-pack', item = 'productivity-module-3',   groups = 2},   -- 靛：3级(Aquilo)
     }},
 
 
@@ -376,9 +372,9 @@ local DEFAULT_CLASSES = {
         {item = 'loader', count = 1},
     }, unlock = {{pack = 'logistic-science-pack', level = 10}}, rewards = {
         {pack = 'logistic-science-pack',    item = 'loader',         groups = 10},   -- 绿：装卸机
-        {pack = 'logistic-science-pack',    item = 'fast-loader',    groups = 10},   -- 绿：快速装卸机
-        {pack = 'production-science-pack',  item = 'express-loader', groups = 10},   -- 紫：极速装卸机
-        {pack = 'metallurgic-science-pack', item = 'turbo-loader',   groups = 10},   -- 橙：涡轮装卸机(火山)
+        {pack = 'logistic-science-pack',    item = 'fast-loader',    groups = 5},   -- 绿：快速装卸机
+        {pack = 'production-science-pack',  item = 'express-loader', groups = 2},   -- 紫：极速装卸机
+        {pack = 'metallurgic-science-pack', item = 'turbo-loader',   groups = 1},   -- 橙：涡轮装卸机(火山)
     }},
     {key = 'warehouser', techs = {'logistic-system'}, name = '仓库管理员', full = FULL_MID, starter = {
         {item = 'wooden-chest', groups = 1},
@@ -502,8 +498,8 @@ local DEFAULT_CLASSES = {
         {pack = 'chemical-science-pack', item = 'slowdown-capsule',  groups = 5},   -- 蓝：减速胶囊
 
         {pack = 'military-science-pack',  item = 'defender-capsule', groups = 5},
-        {pack = 'chemical-science-pack',  item = 'distractor-capsule', groups = 5},
-        {pack = 'utility-science-pack',  item = 'destroyer-capsule', groups = 5},
+        {pack = 'chemical-science-pack',  item = 'distractor-capsule', groups = 2},
+        {pack = 'utility-science-pack',  item = 'destroyer-capsule', groups = 1},
     }},
 
     {key = 'thorman', techs = {'land-mine'}, name = '雷神', full = FULL_MID, starter = {
@@ -576,7 +572,7 @@ local DEFAULT_CLASSES = {
     {key = 'healer', techs = {'solar-panel-equipment'}, name = '奶妈', full = FULL_MID, starter = {   -- 发电+储能装置
         {item = 'fusion-reactor-equipment', count = 1},
         {item = 'fission-reactor-equipment', count = 1},
-        {item = 'battery-mk3-equipment', groups = 1},
+        {item = 'battery-mk3-equipment', count = 1},
     }, rewards = {
         {pack = 'logistic-science-pack',  item = 'solar-panel-equipment',     groups = 6},  -- 绿：太阳能板
         {pack = 'chemical-science-pack',  item = 'fission-reactor-equipment', count=10},   -- 蓝：裂变反应堆
@@ -588,24 +584,24 @@ local DEFAULT_CLASSES = {
     {key = 'laserman', techs = {'personal-laser-defense-equipment'}, name = '输出', full = FULL_MID, starter = {   -- 全是激光
         {item = 'personal-laser-defense-equipment', count = 3},
     }, rewards = {
-        {pack = 'military-science-pack', item = 'personal-laser-defense-equipment', groups = 10},  -- 灰：个人激光防御
+        {pack = 'military-science-pack', item = 'personal-laser-defense-equipment', groups = 2},  -- 灰：个人激光防御
     }},
     {key = 'helper', techs = {'personal-roboport-equipment'}, name = '辅助', full = FULL_MID, starter = {   -- 全是机器人
         {item = 'personal-roboport-equipment', count = 5},
     }, rewards = {
         {pack = 'logistic-science-pack', item = 'construction-robot',            groups = 10},  -- 绿：建造机器人
         {pack = 'chemical-science-pack', item = 'personal-roboport-equipment',     groups = 5},   -- 蓝：个人机器人网格
-        {pack = 'utility-science-pack',  item = 'personal-roboport-mk2-equipment', groups = 5},   -- 黄：网格 mk2
+        {pack = 'utility-science-pack',  item = 'personal-roboport-mk2-equipment', groups = 1},   -- 黄：网格 mk2
     }},
     {key = 'runner', techs = {'exoskeleton-equipment'}, name = '快递员', full = FULL_MID, starter = {   -- 全是外骨骼
         {item = 'exoskeleton-equipment', count = 3},
     }, rewards = {
-        {pack = 'chemical-science-pack', item = 'exoskeleton-equipment', groups = 10},   -- 蓝：外骨骼(移动加速)
+        {pack = 'chemical-science-pack', item = 'exoskeleton-equipment', groups = 5},   -- 蓝：外骨骼(移动加速)
     }},
     {key = 'porter', techs = {'toolbelt-equipment'}, name = '吃货', full = FULL_MID, starter = {   -- 全是工具腰带
         {item = 'toolbelt-equipment', count = 10},
     }, rewards = {
-        {pack = 'logistic-science-pack', item = 'toolbelt-equipment', groups = 10},   -- 绿：工具腰带(扩快捷栏)
+        {pack = 'logistic-science-pack', item = 'toolbelt-equipment', groups = 5},   -- 绿：工具腰带(扩快捷栏)
     }},
     {key = 'transformer', techs = {'mech-armor'}, name = '变形金刚', full = FULL_MAX, starter = {   -- 终极机甲：粉瓶 1000 级解锁
         {item = 'mech-armor', count = 1},

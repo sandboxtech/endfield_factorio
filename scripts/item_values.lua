@@ -1,8 +1,8 @@
--- 物品价值 + 科技价值 + 职业总价值（脚本估算，非游戏内数据，仅供职业平衡参考）。
--- 物品价值：递归原矿成本——沿"与物品同名的主产物配方"展开到原矿求和；原矿/流体/无配方=1。
---           不计产能/采矿加成/回收/火山铸造等更省路径，也不反映"高科技但造价低"(如 combat-shotgun 价低是正常)。coin 按 1（低估）。
--- 科技价值：granted techs 的科学瓶投入(次数×瓶数×瓶单价)；【触发科技(research_trigger)=0,免费解锁】；无限科技按一批1000次估(inf)。
--- 满级"1组"=stack×unit。职业满级值 = 初始物品 + 科技 + rewards 满配额。数据源 Factorio 2.0.x(base+space-age+quality)。
+-- 物品价值 + 科技价值 + 职业总价值（脚本估算，仅供平衡参考，非游戏内数据）。
+-- 物品价值=递归原矿成本(沿同名主产物配方到原矿)。【可挖原矿 coal/stone/iron-ore/copper-ore 等强制=1，忽略合成配方】。
+--           不反映"高科技但造价低"(如 combat-shotgun)；coin 按 1(低估其市场购买力)。
+-- 科技价值=研究科学瓶投入；【触发科技 research_trigger=0】；无限科技按一批1000次估(inf)。重要性：初始物品>满级物品>>科技。
+-- 满级"1组"=stack×unit。数据源 Factorio 2.0.x(base+space-age+quality)。
 local M = {}
 
 M.unit = {
@@ -13,24 +13,24 @@ M.unit = {
     ['arithmetic-combinator'] = 10.1,
     ['artificial-jellynut-soil'] = 25.45,
     ['artificial-yumako-soil'] = 25.45,
-    ['artillery-shell'] = 419.072,
-    ['artillery-turret'] = 554.733,
+    ['artillery-shell'] = 212.072,
+    ['artillery-turret'] = 1124.73,
     ['artillery-wagon'] = 772.053,
     ['assembling-machine-1'] = 19.395,
     ['assembling-machine-2'] = 35.91,
     ['assembling-machine-3'] = 341.453,
-    ['asteroid-collector'] = 1636.28,
-    ['atomic-bomb'] = 881.083,
+    ['asteroid-collector'] = 1365.08,
+    ['atomic-bomb'] = 751.708,
     ['automation-science-pack'] = 2.02,
     ['battery-equipment'] = 140.6,
     ['battery-mk2-equipment'] = 2582.18,
-    ['battery-mk3-equipment'] = 14586.9,
+    ['battery-mk3-equipment'] = 13521.7,
     ['beacon'] = 302.783,
     ['big-electric-pole'] = 20.32,
-    ['big-mining-drill'] = 1064.06,
+    ['big-mining-drill'] = 725.062,
     ['biochamber'] = 80.075,
     ['bioflux'] = 6.75,
-    ['biolab'] = 906.143,
+    ['biolab'] = 1550.84,
     ['biter-egg'] = 1,
     ['boiler'] = 9,
     ['buffer-chest'] = 41.492,
@@ -38,28 +38,28 @@ M.unit = {
     ['burner-inserter'] = 2.02,
     ['burner-mining-drill'] = 11.06,
     ['calcite'] = 1,
-    ['cannon-shell'] = 34.662,
-    ['capture-robot-rocket'] = 375.552,
+    ['cannon-shell'] = 21.724,
+    ['capture-robot-rocket'] = 341.652,
     ['car'] = 83.94,
     ['carbon'] = 6,
     ['carbon-fiber'] = 16,
     ['cargo-bay'] = 1260.6,
-    ['centrifuge'] = 1586.67,
+    ['centrifuge'] = 2536.67,
     ['chemical-plant'] = 34.225,
-    ['cliff-explosives'] = 585.56,
-    ['cluster-grenade'] = 2703.43,
-    ['coal'] = 36.375,
+    ['cliff-explosives'] = 102.435,
+    ['cluster-grenade'] = 162.488,
+    ['coal'] = 1,
     ['coin'] = 1,
     ['combat-shotgun'] = 71,
-    ['concrete'] = 1.6,
+    ['concrete'] = 11.1,
     ['constant-combinator'] = 4.805,
-    ['construction-robot'] = 110.495,
+    ['construction-robot'] = 76.595,
     ['copper-bacteria'] = 3,
     ['copper-cable'] = 0.255,
     ['copper-ore'] = 1,
     ['copper-plate'] = 1,
-    ['crusher'] = 1457.43,
-    ['cryogenic-plant'] = 2430.04,
+    ['crusher'] = 1118.43,
+    ['cryogenic-plant'] = 2782.07,
     ['decider-combinator'] = 10.1,
     ['defender-capsule'] = 27.945,
     ['destroyer-capsule'] = 655.128,
@@ -68,21 +68,21 @@ M.unit = {
     ['efficiency-module'] = 67.408,
     ['efficiency-module-2'] = 646.883,
     ['efficiency-module-3'] = 2964.78,
-    ['electric-engine-unit'] = 54.61,
+    ['electric-engine-unit'] = 20.71,
     ['electric-furnace'] = 109.183,
     ['electric-mining-drill'] = 20.395,
-    ['electromagnetic-plant'] = 3664.97,
+    ['electromagnetic-plant'] = 5374.97,
     ['electronic-circuit'] = 1.765,
     ['energy-shield-equipment'] = 89.183,
     ['energy-shield-mk2-equipment'] = 1430.68,
     ['engine-unit'] = 6.08,
-    ['exoskeleton-equipment'] = 2336.83,
-    ['explosive-cannon-shell'] = 56.037,
-    ['explosive-rocket'] = 66.125,
-    ['express-loader'] = 455,
-    ['express-splitter'] = 413.082,
-    ['express-transport-belt'] = 76.31,
-    ['express-underground-belt'] = 128.725,
+    ['exoskeleton-equipment'] = 1319.83,
+    ['explosive-cannon-shell'] = 30.162,
+    ['explosive-rocket'] = 27.312,
+    ['express-loader'] = 229,
+    ['express-splitter'] = 232.282,
+    ['express-transport-belt'] = 31.11,
+    ['express-underground-belt'] = 83.525,
     ['fast-inserter'] = 9.315,
     ['fast-loader'] = 73.45,
     ['fast-splitter'] = 45.715,
@@ -91,20 +91,20 @@ M.unit = {
     ['firearm-magazine'] = 4,
     ['fission-reactor-equipment'] = 14965.6,
     ['flamethrower-turret'] = 147.5,
-    ['flying-robot-frame'] = 106.965,
-    ['foundation'] = 241.096,
-    ['foundry'] = 1254.07,
-    ['fusion-generator'] = 13136.6,
-    ['fusion-power-cell'] = 201.4,
-    ['fusion-reactor'] = 55531.8,
-    ['fusion-reactor-equipment'] = 72788.9,
+    ['flying-robot-frame'] = 73.065,
+    ['foundation'] = 154.4,
+    ['foundry'] = 1778.87,
+    ['fusion-generator'] = 7930.42,
+    ['fusion-power-cell'] = 107.6,
+    ['fusion-reactor'] = 35578.6,
+    ['fusion-reactor-equipment'] = 53286.4,
     ['gate'] = 19.65,
-    ['grenade'] = 368.75,
+    ['grenade'] = 15,
     ['gun-turret'] = 40.2,
     ['heat-exchanger'] = 140.6,
-    ['heating-tower'] = 303,
+    ['heating-tower'] = 493,
     ['holmium-ore'] = 1,
-    ['holmium-plate'] = 0.7,
+    ['holmium-plate'] = 2.6,
     ['inserter'] = 3.785,
     ['iron-bacteria'] = 6,
     ['iron-chest'] = 8,
@@ -115,25 +115,25 @@ M.unit = {
     ['jellynut'] = 1,
     ['jellynut-seed'] = 1,
     ['lab'] = 31.89,
-    ['land-mine'] = 11.453,
+    ['land-mine'] = 4.984,
     ['landfill'] = 50,
     ['laser-turret'] = 360.5,
-    ['lightning-collector'] = 2124.29,
+    ['lightning-collector'] = 713.753,
     ['lightning-rod'] = 35.54,
-    ['lithium'] = 20.14,
-    ['lithium-plate'] = 20.14,
+    ['lithium'] = 1,
+    ['lithium-plate'] = 1,
     ['loader'] = 42.9,
-    ['logistic-robot'] = 130.398,
+    ['logistic-robot'] = 96.498,
     ['long-handed-inserter'] = 5.805,
     ['low-density-structure'] = 44.037,
-    ['mech-armor'] = 56007.5,
+    ['mech-armor'] = 48692.8,
     ['medium-electric-pole'] = 8.63,
-    ['nuclear-fuel'] = 46,
-    ['nuclear-reactor'] = 8688.33,
+    ['nuclear-fuel'] = 74.5,
+    ['nuclear-reactor'] = 13438.3,
     ['offshore-pump'] = 5.04,
     ['oil-refinery'] = 103.75,
-    ['overgrowth-jellynut-soil'] = 120.9,
-    ['overgrowth-yumako-soil'] = 120.9,
+    ['overgrowth-jellynut-soil'] = 215.9,
+    ['overgrowth-yumako-soil'] = 215.9,
     ['passive-provider-chest'] = 41.492,
     ['pentapod-egg'] = 1,
     ['personal-laser-defense-equipment'] = 3297.35,
@@ -144,7 +144,7 @@ M.unit = {
     ['pipe'] = 1,
     ['pipe-to-ground'] = 7.5,
     ['plastic-bar'] = 3.583,
-    ['poison-capsule'] = 378.225,
+    ['poison-capsule'] = 24.475,
     ['power-switch'] = 9.805,
     ['processing-unit'] = 63.733,
     ['productivity-module'] = 67.408,
@@ -161,34 +161,34 @@ M.unit = {
     ['rail'] = 2.28,
     ['rail-chain-signal'] = 6.765,
     ['rail-signal'] = 6.765,
-    ['railgun'] = 4267.76,
-    ['railgun-ammo'] = 60.6,
-    ['railgun-turret'] = 21699.5,
+    ['railgun'] = 2787.98,
+    ['railgun-ammo'] = 34.725,
+    ['railgun-turret'] = 14275.3,
     ['raw-fish'] = 1,
-    ['recycler'] = 516.4,
-    ['refined-concrete'] = 4.406,
+    ['recycler'] = 706.4,
+    ['refined-concrete'] = 32.906,
     ['requester-chest'] = 41.492,
     ['roboport'] = 710.85,
-    ['rocket'] = 23.375,
-    ['rocket-fuel'] = 45,
+    ['rocket'] = 10.438,
+    ['rocket-fuel'] = 73.5,
     ['rocket-launcher'] = 18.925,
-    ['rocket-part'] = 1527.7,
+    ['rocket-part'] = 1812.7,
     ['rocket-turret'] = 732.233,
     ['scrap'] = 1,
     ['selector-combinator'] = 73.933,
     ['shotgun-shell'] = 4,
-    ['slowdown-capsule'] = 191.525,
+    ['slowdown-capsule'] = 14.65,
     ['small-electric-pole'] = 0.755,
     ['small-lamp'] = 3.53,
     ['solar-panel'] = 46.775,
     ['solar-panel-equipment'] = 85.508,
-    ['solid-fuel'] = 21,
+    ['solid-fuel'] = 14.8,
     ['space-platform-foundation'] = 66.3,
     ['space-platform-starter-pack'] = 5313.87,
     ['speed-module'] = 67.408,
     ['speed-module-2'] = 646.883,
     ['speed-module-3'] = 2964.78,
-    ['spidertron'] = 52957.8,
+    ['spidertron'] = 48889.8,
     ['splitter'] = 17.865,
     ['stack-inserter'] = 168.54,
     ['steam-engine'] = 23.16,
@@ -206,10 +206,10 @@ M.unit = {
     ['substation'] = 90.713,
     ['sulfur'] = 5.875,
     ['tank'] = 480.027,
-    ['tesla-ammo'] = 250.677,
-    ['tesla-turret'] = 8926.77,
-    ['teslagun'] = 1197.67,
-    ['thruster'] = 940.983,
+    ['tesla-ammo'] = 74.36,
+    ['tesla-turret'] = 2477.1,
+    ['teslagun'] = 316.083,
+    ['thruster'] = 771.483,
     ['toolbelt-equipment'] = 195.15,
     ['train-stop'] = 27.005,
     ['transport-belt'] = 1.01,
@@ -217,14 +217,14 @@ M.unit = {
     ['tungsten-carbide'] = 18,
     ['tungsten-ore'] = 1,
     ['tungsten-plate'] = 5.02,
-    ['turbo-loader'] = 1262.05,
-    ['turbo-splitter'] = 855.848,
-    ['turbo-transport-belt'] = 161.41,
-    ['turbo-underground-belt'] = 289.125,
+    ['turbo-loader'] = 584.05,
+    ['turbo-splitter'] = 494.248,
+    ['turbo-transport-belt'] = 71.01,
+    ['turbo-underground-belt'] = 198.725,
     ['underground-belt'] = 7.525,
     ['uranium-235'] = 1,
     ['uranium-238'] = 1.667,
-    ['uranium-cannon-shell'] = 36.328,
+    ['uranium-cannon-shell'] = 23.391,
     ['uranium-fuel-cell'] = 4.267,
     ['uranium-ore'] = 1,
     ['uranium-rounds-magazine'] = 8.197,
@@ -542,76 +542,76 @@ M.tech = {  -- cost=0 即触发科技(免费)
     ['yumako'] = {cost = 0},
 }
 
--- full / 初始物品 / 科技 / 初始合计 / 满级合计
+-- full / 初始物品 / 科技 / 满级物品(初始+rewards,不含科技)
 M.class = {
-    shotgunner =     {full=1000  , item_start=151     , tech=20       , init=171      , max=402      },  -- LOW
-    civilian =       {full=1000  , item_start=130     , tech=0        , init=130      , max=1510     },  -- LOW
-    recyclerman =    {full=1000  , item_start=516     , tech=0        , init=516      , max=2516     },  -- LOW
-    foundryman =     {full=1000  , item_start=1254    , tech=0        , init=1254     , max=3254     },  -- LOW
-    artist =         {full=1000  , item_start=181     , tech=682      , init=863      , max=3752     },  -- LOW
-    electromagneticman ={full=1000  , item_start=3665    , tech=0        , init=3665     , max=5705     },  -- LOW
-    material =       {full=1000  , item_start=1000    , tech=0        , init=1000     , max=7460     },  -- LOW
-    traindriver =    {full=1000  , item_start=228     , tech=1874     , init=2102     , max=7609     },  -- LOW
-    fisher =         {full=1000  , item_start=180     , tech=4775     , init=4955     , max=7955     },  -- LOW
-    inventor =       {full=1000  , item_start=319     , tech=682      , init=1001     , max=10568    },  -- LOW
-    oreman =         {full=1000  , item_start=11812   , tech=0        , init=11812    , max=15489    },  -- LOW
-    energytrader =   {full=1000  , item_start=0       , tech=0        , init=0        , max=20574    },  -- LOW
-    programmer =     {full=1000  , item_start=4707    , tech=1670     , init=6377     , max=31111    },  -- LOW
-    producttrader =  {full=1000  , item_start=0       , tech=0        , init=0        , max=87772    },  -- LOW
-    civilengineer =  {full=1000  , item_start=11711   , tech=1363     , init=13074    , max=141628   },  -- LOW
-    gunner =         {full=10000 , item_start=65      , tech=20       , init=85       , max=272      },  -- MID
-    chef =           {full=10000 , item_start=1602    , tech=0        , init=1602     , max=4602     },  -- MID
-    plumber =        {full=10000 , item_start=1983    , tech=341      , init=2324     , max=18434    },  -- MID
-    pharmacist =     {full=10000 , item_start=1602    , tech=0        , init=1602     , max=29502    },  -- MID
-    smelter =        {full=10000 , item_start=1500    , tech=8863     , init=10363    , max=35871    },  -- MID
-    electrician =    {full=10000 , item_start=682     , tech=0        , init=682      , max=41728    },  -- MID
-    porter =         {full=10000 , item_start=1952    , tech=12887    , init=14838    , max=53868    },  -- MID
-    tanker =         {full=10000 , item_start=480     , tech=57762    , init=58242    , max=59992    },  -- MID
-    miner =          {full=10000 , item_start=1106    , tech=50       , init=1156     , max=64113    },  -- MID
-    gridman =        {full=10000 , item_start=136     , tech=4159     , init=4295     , max=64504    },  -- MID
-    guard =          {full=10000 , item_start=10000   , tech=40       , init=10040    , max=67669    },  -- MID
-    thorman =        {full=10000 , item_start=2291    , tech=20446    , init=22737    , max=68549    },  -- MID
-    inserter =       {full=10000 , item_start=1046    , tech=1083     , init=2129     , max=102230   },  -- MID
-    oilman =         {full=10000 , item_start=2266    , tech=682      , init=2948     , max=126015   },  -- MID
-    warehouser =     {full=10000 , item_start=3799    , tech=77794    , init=81593    , max=156071   },  -- MID
-    moduler =        {full=10000 , item_start=0       , tech=682      , init=682      , max=158925   },  -- MID
-    greentech =      {full=10000 , item_start=7939    , tech=2726     , init=10665    , max=178578   },  -- MID
-    tankman =        {full=10000 , item_start=1784    , tech=30668    , init=32452    , max=184438   },  -- MID
-    artisan =        {full=10000 , item_start=970     , tech=293      , init=1263     , max=199642   },  -- MID
-    herder =         {full=10000 , item_start=81      , tech=240598   , init=240679   , max=284984   },  -- MID
-    hunter =         {full=10000 , item_start=20      , tech=240598   , init=240618   , max=298423   },  -- MID
-    belter =         {full=10000 , item_start=3044    , tech=1403     , init=4447     , max=302404   },  -- MID
-    launcher =       {full=10000 , item_start=1528    , tech=237253   , init=238781   , max=315166   },  -- MID
-    runner =         {full=10000 , item_start=7010    , tech=1670     , init=8680     , max=476047   },  -- MID
-    laserman =       {full=10000 , item_start=9892    , tech=23105    , init=32997    , max=692467   },  -- MID
-    loaderman =      {full=10000 , item_start=43      , tech=34522    , init=34565    , max=951265   },  -- MID
-    helper =         {full=10000 , item_start=6046    , tech=1670     , init=7716     , max=1513870  },  -- MID
-    efficiencyman =  {full=10000 , item_start=3370    , tech=123163   , init=126533   , max=1966070  },  -- MID inf-tech
-    speedman =       {full=10000 , item_start=3370    , tech=199853   , init=203223   , max=2042760  },  -- MID inf-tech
-    healer =         {full=10000 , item_start=379491  , tech=682      , init=380173   , max=2206820  },  -- MID
-    bomber =         {full=10000 , item_start=36875   , tech=682      , init=37557    , max=2273521  },  -- MID
-    productivityman ={full=10000 , item_start=3370    , tech=594631   , init=598001   , max=2437538  },  -- MID inf-tech
-    qualityman =     {full=10000 , item_start=3370    , tech=1189673  , init=1193043  , max=3032580  },  -- MID
-    banker =         {full=100000, item_start=0       , tech=0        , init=0        , max=1200     },  -- MAX
-    rocketeer =      {full=100000, item_start=2356    , tech=24535    , init=26891    , max=106527   },  -- MAX
-    forester =       {full=100000, item_start=346     , tech=2148     , init=2494     , max=153494   },  -- MAX
-    biologist =      {full=100000, item_start=0       , tech=122822   , init=122822   , max=197210   },  -- MAX inf-tech
-    asteroidminer =  {full=100000, item_start=5314    , tech=17604    , init=22918    , max=210754   },  -- MAX
-    roboticist =     {full=100000, item_start=1857    , tech=14199    , init=16056    , max=240781   },  -- MAX
-    farmer =         {full=100000, item_start=146     , tech=0        , init=146      , max=292846   },  -- MAX
-    philosopher =    {full=100000, item_start=0       , tech=444443   , init=444443   , max=444443   },  -- MAX
-    metallurgist =   {full=100000, item_start=0       , tech=199512   , init=199512   , max=663138   },  -- MAX inf-tech
-    artillerist =    {full=100000, item_start=4745    , tech=706458   , init=711203   , max=786969   },  -- MAX
-    captain =        {full=100000, item_start=5314    , tech=493606   , init=498920   , max=851678   },  -- MAX
-    afker =          {full=100000, item_start=2       , tech=1071184  , init=1071186  , max=1071186  },  -- MAX inf-tech
-    astronomer =     {full=100000, item_start=0       , tech=1071184  , init=1071184  , max=1116491  },  -- MAX inf-tech
-    nuclearman =     {full=100000, item_start=3173    , tech=26726    , init=29899    , max=1124619  },  -- MAX
-    physicist =      {full=100000, item_start=0       , tech=155149   , init=155149   , max=1127165  },  -- MAX inf-tech
-    spiderman =      {full=100000, item_start=52958   , tech=1087232  , init=1140190  , max=1140190  },  -- MAX
-    electromancer =  {full=100000, item_start=0       , tech=594290   , init=594290   , max=1430563  },  -- MAX inf-tech
-    railgunner =     {full=100000, item_start=4328    , tech=1933028  , init=1937356  , max=2375614  },  -- MAX
-    teslatrooper =   {full=100000, item_start=6211    , tech=1251370  , init=1257581  , max=2406923  },  -- MAX
-    transformer =    {full=100000, item_start=56008   , tech=4171235  , init=4227242  , max=4227242  },  -- MAX
+    shotgunner =     {full=1000  , item_start=151     , tech=20       , item_max=382      },  -- LOW
+    oreman =         {full=1000  , item_start=1200    , tech=0        , item_max=2151     },  -- LOW
+    civilian =       {full=1000  , item_start=158     , tech=0        , item_max=2393     },  -- LOW
+    recyclerman =    {full=1000  , item_start=706     , tech=0        , item_max=2706     },  -- LOW
+    artist =         {full=1000  , item_start=181     , tech=682      , item_max=3069     },  -- LOW
+    fisher =         {full=1000  , item_start=180     , tech=4775     , item_max=3180     },  -- LOW
+    foundryman =     {full=1000  , item_start=1779    , tech=0        , item_max=3779     },  -- LOW
+    traindriver =    {full=1000  , item_start=228     , tech=1874     , item_max=5734     },  -- LOW
+    material =       {full=1000  , item_start=1000    , tech=0        , item_max=5736     },  -- LOW
+    electromagneticman ={full=1000  , item_start=5375    , tech=0        , item_max=7415     },  -- LOW
+    inventor =       {full=1000  , item_start=319     , tech=682      , item_max=9886     },  -- LOW
+    energytrader =   {full=1000  , item_start=0       , tech=0        , item_max=13172    },  -- LOW
+    programmer =     {full=1000  , item_start=4707    , tech=1670     , item_max=29441    },  -- LOW
+    producttrader =  {full=1000  , item_start=0       , tech=0        , item_max=70822    },  -- LOW
+    civilengineer =  {full=1000  , item_start=2049    , tech=1363     , item_max=125255   },  -- LOW
+    gunner =         {full=10000 , item_start=65      , tech=20       , item_max=252      },  -- MID
+    tanker =         {full=10000 , item_start=480     , tech=57762    , item_max=1713     },  -- MID
+    chef =           {full=10000 , item_start=1602    , tech=0        , item_max=4602     },  -- MID
+    plumber =        {full=10000 , item_start=1983    , tech=341      , item_max=18093    },  -- MID
+    thorman =        {full=10000 , item_start=997     , tech=20446    , item_max=20933    },  -- MID
+    smelter =        {full=10000 , item_start=1500    , tech=8863     , item_max=27008    },  -- MID
+    pharmacist =     {full=10000 , item_start=1602    , tech=0        , item_max=29502    },  -- MID
+    porter =         {full=10000 , item_start=1952    , tech=12887    , item_max=40982    },  -- MID
+    herder =         {full=10000 , item_start=81      , tech=240598   , item_max=40996    },  -- MID
+    electrician =    {full=10000 , item_start=682     , tech=0        , item_max=49328    },  -- MID
+    miner =          {full=10000 , item_start=1106    , tech=50       , item_max=50503    },  -- MID
+    hunter =         {full=10000 , item_start=20      , tech=240598   , item_max=54435    },  -- MID
+    gridman =        {full=10000 , item_start=136     , tech=4159     , item_max=60345    },  -- MID
+    guard =          {full=10000 , item_start=10000   , tech=40       , item_max=67628    },  -- MID
+    warehouser =     {full=10000 , item_start=3799    , tech=77794    , item_max=78277    },  -- MID
+    launcher =       {full=10000 , item_start=1813    , tech=237253   , item_max=92447    },  -- MID
+    inserter =       {full=10000 , item_start=1046    , tech=1083     , item_max=101147   },  -- MID
+    greentech =      {full=10000 , item_start=7939    , tech=2726     , item_max=119431   },  -- MID
+    oilman =         {full=10000 , item_start=2266    , tech=682      , item_max=139414   },  -- MID
+    tankman =        {full=10000 , item_start=1784    , tech=30668    , item_max=153770   },  -- MID
+    belter =         {full=10000 , item_start=3043    , tech=1403     , item_max=165399   },  -- MID
+    artisan =        {full=10000 , item_start=970     , tech=293      , item_max=199349   },  -- MID
+    runner =         {full=10000 , item_start=3959    , tech=1670     , item_max=267926   },  -- MID
+    healer =         {full=10000 , item_start=338686  , tech=682      , item_max=403403   },  -- MID
+    loaderman =      {full=10000 , item_start=43      , tech=34522    , item_max=464743   },  -- MID
+    bomber =         {full=10000 , item_start=1500    , tech=682      , item_max=524808   },  -- MID
+    laserman =       {full=10000 , item_start=9892    , tech=23105    , item_max=669362   },  -- MID
+    helper =         {full=10000 , item_start=6046    , tech=1670     , item_max=1495251  },  -- MID
+    philosopher =    {full=100000, item_start=0       , tech=444443   , item_max=0        },  -- MAX
+    afker =          {full=100000, item_start=2       , tech=1071184  , item_max=2        },  -- MAX inf-tech
+    banker =         {full=100000, item_start=0       , tech=0        , item_max=1200     },  -- MAX
+    transformer =    {full=100000, item_start=48693   , tech=4171235  , item_max=48693    },  -- MAX
+    spiderman =      {full=100000, item_start=48890   , tech=1087232  , item_max=48890    },  -- MAX
+    biologist =      {full=100000, item_start=0       , tech=122822   , item_max=74388    },  -- MAX inf-tech
+    astronomer =     {full=100000, item_start=0       , tech=1071184  , item_max=77542    },  -- MAX inf-tech
+    rocketeer =      {full=100000, item_start=1063    , tech=24535    , item_max=79583    },  -- MAX
+    artillerist =    {full=100000, item_start=3246    , tech=706458   , item_max=129802   },  -- MAX
+    forester =       {full=100000, item_start=346     , tech=2148     , item_max=151346   },  -- MAX
+    asteroidminer =  {full=100000, item_start=5314    , tech=17604    , item_max=162640   },  -- MAX
+    roboticist =     {full=100000, item_start=1518    , tech=14199    , item_max=192343   },  -- MAX
+    railgunner =     {full=100000, item_start=2823    , tech=1933028  , item_max=291117   },  -- MAX
+    moduler =        {full=100000, item_start=0       , tech=682      , item_max=311047   },  -- MAX
+    teslatrooper =   {full=100000, item_start=1803    , tech=1251370  , item_max=325453   },  -- MAX
+    captain =        {full=100000, item_start=5314    , tech=493606   , item_max=341122   },  -- MAX
+    farmer =         {full=100000, item_start=146     , tech=0        , item_max=482846   },  -- MAX
+    qualityman =     {full=100000, item_start=3370    , tech=1189673  , item_max=495273   },  -- MAX
+    speedman =       {full=100000, item_start=3370    , tech=199853   , item_max=495273   },  -- MAX inf-tech
+    efficiencyman =  {full=100000, item_start=3370    , tech=123163   , item_max=495273   },  -- MAX inf-tech
+    productivityman ={full=100000, item_start=3370    , tech=594631   , item_max=495273   },  -- MAX inf-tech
+    metallurgist =   {full=100000, item_start=0       , tech=199512   , item_max=500786   },  -- MAX inf-tech
+    physicist =      {full=100000, item_start=0       , tech=155149   , item_max=1112829  },  -- MAX inf-tech
+    electromancer =  {full=100000, item_start=0       , tech=594290   , item_max=1216273  },  -- MAX inf-tech
+    nuclearman =     {full=100000, item_start=5073    , tech=26726    , item_max=1473445  },  -- MAX
 }
 
 return M
