@@ -187,7 +187,8 @@ local function place_on_respawn(player)
     end
 end
 
--- 死亡：把复活倒计时压到 3 秒；只把【有 cause 的真实死亡】（被敌人/环境打死）计入该玩家 death_count，
+-- 死亡：按死法设复活倒计时（环境/自杀默认 10 秒、被敌方 30 秒、跃迁致死按出生星球序号递增，见下）；
+-- 只把【有 cause 的真实死亡】（被敌人/环境打死）计入该玩家 death_count，
 -- 跃迁清场 / 离场 / 自杀脱困走的是脚本 die()（cause 为 nil），不计入。
 script.on_event(defines.events.on_player_died, function(event)
     local player = game.get_player(event.player_index)
