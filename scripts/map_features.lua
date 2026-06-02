@@ -632,9 +632,9 @@ local function build_power_core(surface, center)
         eei = surface.create_entity{name = 'electric-energy-interface', force = 'enemy', position = ip}
         if eei then
             if math.random() < (storage.enemy_invincible_chance or 1) then eei.destructible = false end   -- 概率无敌(电力接口,同 substation/避雷针，/c storage.enemy_invincible_chance 调)
-            eei.electric_buffer_size = 1   -- 占位(buffer 必须 >0)，下面 place_guards 按电炮累加覆盖
-            eei.power_production = 0        -- 发电=各电炮最大功率之和，place_guards 累加
-            eei.energy = 0                  -- 初始电量=各电炮 12h 待机量，place_guards 充满
+            eei.electric_buffer_size = 1     -- 占位(buffer 必须 >0)，下面 place_guards 按电炮最大功率覆盖
+            eei.power_production = 1e6 / 60   -- 固定发电 1 MW（runtime 单位 J/tick，故 1e6 W ÷60）
+            eei.energy = 0                    -- 初始电量下面 place_guards 按电炮最大功率×5 分钟设
         end
     end
     return {sp = sp, eei = eei, maxpower = 0, drain = 0}
@@ -671,16 +671,11 @@ local function place_guards(surface, center, danger, floor)
                 enemy_floor_patch(surface, e, floor)
                 if e then
                     if def.electric and core and core.eei then
-                        local es = e.prototype.electric_energy_source_prototype
                         local maxp = TURRET_MAX_POWER[e.name] or 0                  -- 该炮最大功率(W，手填表 tesla 7 / railgun 10 / laser 1.3 MW)
                         core.maxpower = core.maxpower + maxp                         -- Σ最大功率(W)
-                        core.drain = core.drain + (es and es.drain or 0)            -- Σ待机功率(W)，多数电炮(tesla/railgun)为 0
-                        -- 发电功率 = 仅【待机功率】(Σdrain)：buffer 打空后只够待机，玩家可逐渐耗光敌方电力。runtime 单位是 J/tick 故 /60。
-                        core.eei.power_production = core.drain / 60
-                        -- 初始电量 = 最大功率持续 N 小时(Σmaxp × N×3600 秒，J=W×s；默认 0.5h=30 分钟)；容量(buffer) = 初始电量的 2 倍。
-                        local init = core.maxpower * (storage.enemy_standby_hours or 0.5) * 3600
-                        core.eei.electric_buffer_size = math.max(1, init * 2)
-                        core.eei.energy = init
+                        -- 容量 = 各电炮最大功率工作【20 分钟】、初始电量 = 工作【5 分钟】(J = W×秒)；发电固定 1MW(见 build_power_core)。
+                        core.eei.electric_buffer_size = math.max(1, core.maxpower * 20 * 60)
+                        core.eei.energy = core.maxpower * 5 * 60
                     end
                     if def.mag then fill_turret_ammo(e, pick_ammo(MAG_AMMO)) end
                     if def.ammo then fill_turret_ammo(e, def.ammo) end
@@ -880,15 +875,6 @@ local function pick_other_fluid(current)
     return #others > 0 and others[math.random(#others)] or nil
 end
 
--- 该资源原型开采是否产流体（区分喷口 vs 固体矿；比 resource_category 命名可靠）。
-local function yields_fluid(proto)
-    local mp = proto.mineable_properties
-    for _, pr in ipairs(mp and mp.products or {}) do
-        if pr.type == 'fluid' then return true end
-    end
-    return false
-end
-
 -- 流体资源互换：rm = storage.fluid_remap[星球]（surface.lua 滚定），命中的喷口变成【随机另一种】喷口。
 --   两种门控二选一：
 --     · {p=概率}        → 每个产流体资源【各自】以概率 p 突变（零星散布，每星每世界 p 不同）
@@ -898,8 +884,12 @@ local function feature_fluid_remap(surface, lt)
     local rm = storage.fluid_remap and storage.fluid_remap[surface.name]
     if not rm then return end
     -- （旧裸 p 数值格式已对线上老档用一次性 /c 统一成 {p=…} 表；新档只产出表格式，此处不再判型。）
-    for _, e in pairs(surface.find_entities_filtered{area = {{lt.x, lt.y}, {lt.x + 32, lt.y + 32}}, type = 'resource'}) do
-        if e.valid and yields_fluid(e.prototype) then
+    -- 只按【喷口名字】find(那 4 种产流体资源)，而非 type='resource' 全量(含成片固体矿)：多数区块 0 喷口、
+    -- find 直接空返回，省去扫数百个矿石实体 + 每个跑 yields_fluid（名字命中即喷口、产物本就含流体，无需再判）。
+    local pool = fluids_pool()
+    if #pool == 0 then return end
+    for _, e in pairs(surface.find_entities_filtered{area = {{lt.x, lt.y}, {lt.x + 32, lt.y + 32}}, name = pool}) do
+        if e.valid then
             local pos = e.position
             local hit = rm.p and (math.random() < rm.p)
                 or (rm.seed and noise.fractal(noise.octaves.smooth, pos.x, pos.y, rm.seed) > (rm.threshold or 0))

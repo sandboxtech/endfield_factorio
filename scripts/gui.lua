@@ -230,8 +230,9 @@ function M.show_classes(player)
     if not player then return end
     local cur = classes.selected_key(player)
     -- 分区标题中文 → locale key 映射（英文环境走 wn.class-section-*，中文 fallback def.section）。
-    local SECTION_KEY = {['基础生产'] = 'basic', ['能源 · 物流'] = 'energy', ['战斗'] = 'combat',
-                         ['装备护甲'] = 'gear', ['农牧'] = 'farm', ['星球专精'] = 'planet', ['星球开荒'] = 'pioneer'}
+    local SECTION_KEY = {['生产'] = 'basic', ['能源 · 物流'] = 'energy', ['战斗'] = 'combat',
+                         ['装备护甲'] = 'gear', ['农牧'] = 'farm', ['星球专精'] = 'planet', ['星球开荒'] = 'pioneer',
+                         ['航天'] = 'space', ['市民'] = 'civilian', ['杂货商人'] = 'merchant'}
     local buttons = {}
     for _, def in ipairs(classes.all()) do
         if not def.key or def.key == '' then
