@@ -243,8 +243,7 @@ local DEFAULT_CLASSES = {
         {pack = 'electromagnetic-science-pack', item = 'scrap',                 groups = 10},
         {pack = 'promethium-science-pack', item = 'scrap',                 groups = 10},
     }},
-
-    {key = 'oilman', techs = {'oil-gathering', 'oil-processing'}, name = '石化工人', full = FULL_MID, starter = {
+    {key = 'oilman', techs = {'oil-gathering', 'oil-processing', 'advanced-oil-processing'}, name = '石化工人', full = FULL_MID, starter = {
         {item = 'pumpjack', groups = 1},
         {item = 'oil-refinery', groups = 1},
         {item = 'chemical-plant', groups = 1},
