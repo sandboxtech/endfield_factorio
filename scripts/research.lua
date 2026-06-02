@@ -12,6 +12,17 @@ script.on_event(defines.events.on_research_finished, function(event)
     player_stats.bump_connected('research')   -- 在线玩家各记一次"研究完成"
 
     local research = event.research
+
+    -- 研究【连带自动解锁】：研完源科技 → 自动研究映射表里的目标科技（storage.auto_research，可 /c 热改）。
+    -- 目标科技存在且未研究才设；by_script 触发的二次 on_research_finished 会被本函数开头的 by_script 挡掉，不递归。
+    local auto = storage.auto_research and storage.auto_research[research.name]
+    if auto then
+        local target = research.force.technologies[auto]
+        if target and not target.researched then
+            target.researched = true   -- 直接置已研究 → 该科技全部 effects（解锁的配方等）立即生效
+        end
+    end
+
     -- 严格匹配后缀，避免误伤可能的 "*-science-pack-*" 变体
     if string.sub(research.name, -13) ~= '-science-pack' then
         return

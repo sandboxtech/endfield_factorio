@@ -198,7 +198,7 @@ function M.ensure_defaults()
     -- 开局额外【解锁的科技/配方】白名单（数组，默认空）：reset 每轮据此标记科技已研究 / 启用配方。
     -- 缺失才补空表 → 保留 /c 的填充。热改示例：/c storage.unlock_techs = {'logistics-2', 'steel-processing'}
     --                                          /c storage.unlock_recipes = {'rail', 'pistol'}
-    storage.unlock_techs = storage.unlock_techs or {}
+    storage.unlock_techs = storage.unlock_techs or {'oil-processing', 'uranium-processing', 'biter-egg-handling'}
     storage.unlock_recipes = storage.unlock_recipes or {'iron-stick', 'steel-plate', 'ice-melting',
         'solar-panel', 'accumulator',
         'concrete', 'refined-concrete', 'lubricant', 'light-oil-cracking', 'heavy-oil-cracking',
@@ -209,6 +209,13 @@ function M.ensure_defaults()
     -- 开局额外解锁的【品质】白名单（数组，默认四档全开）：reset 每轮对 force 调 unlock_quality，无需研发 quality 科技。
     -- 热改示例：/c storage.unlock_quality = {'uncommon', 'rare'}   清空：/c storage.unlock_quality = {}
     storage.unlock_quality = storage.unlock_quality or {'uncommon', 'rare', 'epic', 'legendary'}
+    -- 研究【连带自动解锁】映射 {源科技 = 目标科技}：研完源科技 → research.lua 自动把目标科技标记已研究。
+    -- 缺失才补 → 保留 /c 的增删。热改示例：/c storage.auto_research['kovarex-enrichment-process'] = 'nuclear-fuel-reprocessing'
+    storage.auto_research = storage.auto_research or {
+        ['uranium-mining'] = 'uranium-processing',     -- 铀矿采集 → 铀矿加工
+        ['oil-gathering']  = 'oil-processing',         -- 原油采集 → 原油加工
+        ['captivity']      = 'biter-egg-handling',     -- 捕获 → 虫卵处理（SA）
+    }
     -- 必需表（累积数据 / 每星球状态 / 运行时缓存），缺失则建空表。
     -- 这是所有 storage 表的【唯一出生地】，各模块不再各自 `storage.x = storage.x or {}`，统一在此补齐。
     for _, key in ipairs({'width_of', 'height_of', 'shape_of', 'exp', 'player_stats', 'platform_age',
