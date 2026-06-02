@@ -198,7 +198,10 @@ function M.ensure_defaults()
     -- 开局额外【解锁的科技/配方】白名单（数组，默认空）：reset 每轮据此标记科技已研究 / 启用配方。
     -- 缺失才补空表 → 保留 /c 的填充。热改示例：/c storage.unlock_techs = {'logistics-2', 'steel-processing'}
     --                                          /c storage.unlock_recipes = {'rail', 'pistol'}
-    storage.unlock_techs = storage.unlock_techs or {'oil-processing', 'uranium-processing', 'biter-egg-handling'}
+    storage.unlock_techs = storage.unlock_techs or {
+        
+        'oil-processing', 'uranium-processing', 'biter-egg-handling',
+    }
     storage.unlock_recipes = storage.unlock_recipes or {'iron-stick', 'steel-plate', 'ice-melting',
         'solar-panel', 'accumulator',
         'concrete', 'refined-concrete', 'lubricant', 'light-oil-cracking', 'heavy-oil-cracking',

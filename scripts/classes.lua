@@ -215,8 +215,8 @@ local DEFAULT_CLASSES = {
         -- {item = 'assembling-machine-3', groups = 1},
     }, unlock = {{pack = 'automation-science-pack', level = 10}}, rewards = {
         {pack = 'automation-science-pack', item = 'assembling-machine-1', groups = 10},
-        {pack = 'space-science-pack',   item = 'assembling-machine-2', groups = 10},
-        {pack = 'promethium-science-pack', item = 'assembling-machine-3', groups = 10},
+        {pack = 'logistic-science-pack',   item = 'assembling-machine-2', groups = 10},
+        {pack = 'production-science-pack', item = 'assembling-machine-3', groups = 10},
     }},
 
     {key = 'foundryman', techs = {'foundry'}, name = '冶金工人', full = FULL_LOW, starter = {
@@ -346,13 +346,13 @@ local DEFAULT_CLASSES = {
         {pack = 'logistic-science-pack',   item = 'storage-tank',   groups = 5},
     }},
     {key = 'gridman', techs = {'electric-energy-distribution-1', 'electric-energy-distribution-2'}, name = '电网工人', full = FULL_MID, starter = {
-        {item = 'small-electric-pole', groups = 1},
+        {item = 'small-electric-pole', groups = 5},
         {item = 'power-switch', groups = 1},
     }, rewards = {
-        {pack = 'automation-science-pack', item = 'small-electric-pole',  groups = 10},   -- 红：小电杆
-        {pack = 'space-science-pack', item = 'medium-electric-pole', groups = 10},   -- 红：中电杆
-        {pack = 'cryogenic-science-pack',   item = 'big-electric-pole',    groups = 10},   -- 绿：大电杆
-        {pack = 'promethium-science-pack', item = 'substation',           groups = 10},   -- 紫：变电站
+        {pack = 'automation-science-pack', item = 'small-electric-pole',  groups = 5},   -- 红：小电杆
+        {pack = 'logistic-science-pack', item = 'medium-electric-pole', groups = 10},   -- 红：中电杆
+        {pack = 'chemical-science-pack',   item = 'big-electric-pole',    groups = 10},   -- 绿：大电杆
+        {pack = 'chemical-science-pack', item = 'substation',           groups = 10},   -- 紫：变电站
     }},
     {key = 'belter', techs = {'logistics', 'logistics-2'}, name = '运输工人', full = FULL_MID, starter = {
         {item = 'transport-belt', groups = 5},

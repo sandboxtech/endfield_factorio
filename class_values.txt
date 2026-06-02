@@ -34,7 +34,7 @@ artisan             MID        970     199,349         293
 belter              MID      3,043     182,606       1,403
 shielder            MID      1,784     157,789       4,137
 exoskeleton         MID      4,552     156,273       1,670
-oilman              MID      2,266     146,537         682
+oilman              MID      2,266     146,537       3,188
 inserter            MID      1,046     104,362       1,083
 loaderman           MID         43      98,457      34,522
 launcher            MID      1,893      96,547     254,044
@@ -43,7 +43,7 @@ warehouser          MID      3,799      78,277      86,190
 tanker              MID        480      76,237      13,543
 miner               MID      1,106      64,923          50
 hunter              MID         20      62,863      63,723
-gridman             MID        136      60,345       4,159
+gridman             MID        287      60,307       4,159
 herder              MID         81      49,424      63,723
 electrician         MID        682      49,328           0
 pharmacist          MID      1,602      29,502           0
@@ -185,7 +185,7 @@ aquilo              MAX          0           0   2,401,707
     初始: exoskeleton-equipment=4,552
     奖励: exoskeleton-equipment=151,721
 
-【oilman 石化工人】 初始物品=2,266  满级物品=146,537  科技=682  techs=['oil-gathering', 'oil-processing']
+【oilman 石化工人】 初始物品=2,266  满级物品=146,537  科技=3,188  techs=['oil-gathering', 'oil-processing', 'advanced-oil-processing']
     初始: oil-refinery=1,038、pumpjack=886、chemical-plant=342
     奖励: cryogenic-plant=118,406、oil-refinery=10,375、pumpjack=8,865、chemical-plant=3,422、biochamber=3,203
 
@@ -221,9 +221,9 @@ aquilo              MAX          0           0   2,401,707
     初始: rocket-launcher=19、biter-egg=1
     奖励: capture-robot-rocket=42,593、bioflux=6,750、bioflux=6,750、bioflux=6,750
 
-【gridman 电网工人】 初始物品=136  满级物品=60,345  科技=4,159  techs=['electric-energy-distribution-1', 'electric-energy-distribution-2']
-    初始: power-switch=98、small-electric-pole=38
-    奖励: substation=45,356、big-electric-pole=10,160、medium-electric-pole=4,315、small-electric-pole=378
+【gridman 电网工人】 初始物品=287  满级物品=60,307  科技=4,159  techs=['electric-energy-distribution-1', 'electric-energy-distribution-2']
+    初始: small-electric-pole=189、power-switch=98
+    奖励: substation=45,356、big-electric-pole=10,160、medium-electric-pole=4,315、small-electric-pole=189
 
 【herder 牧民】 初始物品=81  满级物品=49,424  科技=63,723  techs=['captivity']
     初始: biochamber=80、pentapod-egg=1
@@ -415,11 +415,11 @@ MAX 满级物品  中位=206,286  范围 0 ~ 1,500,677
   hunter             MID  初始=       20  科技=63,723  主因 rocket-launcher=19
   loaderman          MID  初始=       43  科技=34,522  主因 loader=43
   herder             MID  初始=       81  科技=63,723  主因 biochamber=80
-  gridman            MID  初始=      136  科技=4,159  主因 power-switch=98
   farmer             MAX  初始=      146  科技=0  主因 agricultural-tower=106
   civilian           LOW  初始=      160  科技=0  主因 car=84
   fisher             LOW  初始=      180  科技=4,775  主因 raw-fish=100
   artist             LOW  初始=      181  科技=682  主因 small-lamp=176
+  gridman            MID  初始=      287  科技=4,159  主因 small-electric-pole=189
 
 ──── 满级物品排名 · 前 20（最高，含 MID/LOW 越级）────
   nuclearman         MAX  满级= 1,500,677  科技=26,726  主因 nuclear-reactor=671,917
