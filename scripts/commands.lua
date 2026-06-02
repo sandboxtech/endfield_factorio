@@ -239,11 +239,7 @@ end
 -- 自杀脱困：死后在当前星球留尸、回复活星球(默认母星)复活（见 players.lua kill_player）。
 function M.do_suicide(player)
     if not player or not player.character then return end
-    local last_run_ticks = game.tick - (storage.run_start_tick or game.tick)
-    local life = (storage.warp_hours or 1) * constants.hour_to_tick - last_run_ticks
     players.kill_player(player)
-    local h, m = util.hm(life)
-    game.print({'wn.suicide-notice', player.name, h, m})
 end
 
 -- ── 跃迁投票 ───────────────────────────────────────────────────────────────
