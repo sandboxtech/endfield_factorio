@@ -225,9 +225,9 @@ script.on_event(defines.events.on_player_joined_game, function(event)
     game.print(welcome)
 end)
 
--- 玩家聊天 → 头顶冒【对话气泡】，跟随角色、约 5 秒后自动淡出（compi-speech-bubble 的 lifetime 处理，无需手动定时）。
+-- 玩家聊天 → 头顶冒【对话气泡】，跟随角色、约 10 秒后自动淡出（compi-speech-bubble 的 lifetime 处理，无需手动定时）。
 -- 连发会先销毁上一个气泡，避免叠加。无角色(旁观/未生成)不冒。文本截断防刷屏。
-local CHAT_BUBBLE_TICKS = 600   -- 气泡寿命（5 秒）
+local CHAT_BUBBLE_TICKS = 600   -- 气泡寿命（10 秒 = 600 tick）
 script.on_event(defines.events.on_console_chat, events.safe('chat_bubble', function(event)
     if not (event.player_index and event.message) then return end
     local player = game.get_player(event.player_index)

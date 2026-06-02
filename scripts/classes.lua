@@ -1,5 +1,5 @@
 -- 职业系统：每个职业决定开局发什么物品。玩家随时在【职业】窗口切换（同时只能一种，存 storage.player_class[名]，带短冷却）。
--- 进服默认 = 平民（未选 → 按平民，见 M.DEFAULT / selected_key 兜底）。
+-- 进服默认 = 出租司机 civilian（未选 → 按默认职业，见 M.DEFAULT / selected_key 兜底）。
 --
 -- 【职业表存 storage.classes，可热改】：DEFAULT_CLASSES 只是初始默认，M.ensure() 深拷贝进 storage.classes。
 --   /c storage.classes[2].full = 1000   改某职业满级线；  /c storage.classes = nil  清空恢复默认。
@@ -8,7 +8,7 @@
 -- 字段：
 --   name     职业显示名（中文字符串，直接显示、绕过 locale）。
 --   full     职业级满级线（可选，默认 MAX_LEVEL=100000=最大等级10万）：该职业每种相关瓶练到 full 级，即拿满所有 rewards 的
---            groups 组——这就是这个职业的“完美追求”目标等级。full 三档：基础速成 100 / 进阶 1000 / 终极 10000(默认)；
+--            groups 组——这就是这个职业的“完美追求”目标等级。full 三档：基础速成 1000 / 进阶 10000 / 终极 100000(默认)；
 --            full 越大越难满、满级回报越丰厚。价值高低主要靠物品档次体现(廉价职业=低 full，稀有/终极职业=高 full)。
 --   starter  无条件初始物品列表：每条 {item=物品, count=个数 或 groups=组数}；count 个 > groups 组 > 默认 1 组。
 --   rewards  经验奖励列表：每条 {pack=瓶, item=物品, groups=满配额组数}；按该瓶等级线性发，
@@ -738,7 +738,7 @@ function M.def_for_key(key)
     return nil
 end
 
--- 玩家当前选择的职业 key（未选 → 默认平民）。
+-- 玩家当前选择的职业 key（未选 → 默认职业 civilian）。
 function M.selected_key(player)
     return player and ((storage.player_class or {})[player.name] or M.DEFAULT)
 end
@@ -759,7 +759,7 @@ function M.active_class_unlocks()
     return out
 end
 
--- 玩家当前职业定义（一定返回一个，兜底平民）。
+-- 玩家当前职业定义（一定返回一个，兜底默认职业 civilian）。
 function M.def_of(player)
     return M.def_for_key(M.selected_key(player)) or M.def_for_key(M.DEFAULT)
 end
@@ -800,7 +800,7 @@ end
 
 -- 显示文本三层兜底（i18n + 动态 + 默认）：利用 localised-string 的 '?' fallback 依次尝试，第一个能解析的生效。
 --   ① locale_key 词条（有翻译则按玩家语言显示，英文友好）；② 失败则 dyn（动态表值，/c 可热改，nil 则跳过）；
---   ③ 再失败用 default（纯字符串恒成功，保底）。例：name = text_loc('wn.class-name-civilian', storage.class_names.civilian, '平民')。
+--   ③ 再失败用 default（纯字符串恒成功，保底）。例：name = text_loc('wn.class-name-civilian', storage.class_names.civilian, '出租司机')。
 function M.text_loc(locale_key, dyn, default)
     return {'?', {locale_key}, dyn or default or ''}
 end

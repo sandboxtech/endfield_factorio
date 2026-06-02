@@ -14,7 +14,7 @@
 
 - `control.lua`：场景入口，按顺序 require 各子模块；`on_init` 执行第一轮跃迁、`on_configuration_changed` 补齐新增默认字段，二者的 storage 默认值统一经 `constants.ensure_defaults`（亦在每轮 `reset` 开头调用，幂等不覆盖已调参数）。`ensure_defaults` 开头有**常驻清理**：删除已废弃的 storage 键（如 `danger_theme`/`wreck_density`/`loot_density_outpost`…）并修正类型已变更的键（`travel_chance` 标量→表）→ 老存档加载/跃迁即自愈。（更早的一次性数据格式规范化，如 `radius_of` 拆 `width_of`/`height_of`，是用 `/c` 脚本处理的。）
 - `info.json` / `description.json`：场景元数据。
-- `locale/`：本地化字符串（`wn.*` 键由代码引用，en + zh-CN）。
+- `locale/`：本地化字符串（`wn.*` 键由代码引用）。**11 种语言**：de / en / es-ES / fr / ja / ko / pl / pt-BR / ru / zh-CN / zh-TW。职业名 `class-name-<key>` 的 zh-CN 由 `gen_set_classes.py` 从 `classes.lua` 自动同步，其余语言人工维护（缺失则游戏内回退 `def.name` 中文）。
 
 ## scripts/
 
@@ -39,7 +39,19 @@
 | `player_stats.lua` | 行为统计存储（craft/mining/move/deaths/online_minutes，按玩家名，跨跃迁累积）；递增在 `passives.lua`。 |
 | `rocket.lua` | 发射火箭惩罚：每次 `on_rocket_launched` 令本轮 `warp_hours` -1 分钟，公告 + 打印载荷。 |
 | `commands.lua` | 命令（**全英文名、无中文/拼音别名**）：管理员 `/reset`（破坏性，保留打字命令；清空经验改用控制台 `/c storage.exp = {}`）；会员管理 `/member`/`/unmember`(仅管理员)/`/kickout`。**管理员的 gen / diff(=ensure_defaults+参数对比) / 刷新玩家界面 已改为左上角【红按钮】**（仅管理员可见，`M.admin_gen`/`admin_diff`/`admin_players_gui`）；预览/排行/自杀/前往/出生星球 = HUD 或功能菜单弹窗按钮；**在线玩家**(原"统计")按钮列出所有在线玩家(等级+职业)、点开看其数据(`show_stats`/`show_stats_of`)。瓶子经验已并入该数据页，原独立"科技瓶经验"按钮(`show_panel`/`show_player_list`)已删。**前往星球** `M.travel`：受总开关 `storage.travel_enabled`(默认关) + 每轮每外星独立 `storage.travel_chance[星球]`(默认0.5，reset 滚定 `travel_open`) 双重控制，要求鼠标/背包/物流/弹药四区为空；**出生星球** `M.set_home_planet` 设 `respawn_surface[名]`(下次跃迁在此复活并领起手装备)。**跃迁投票** `M.cast_warp_vote`→`warp_vote_eval`：净同意 ≥ ceil(在线/`warp_vote_divisor`) 即把倒计时**砍到剩 `warp_vote_target_minutes`(默认5) 分钟**并记缩减量 `warp_vote_delta`；**票持续生效不清空**，改票跌破阈值则把时间**加回(取消提前)**，reset 清空、不杀玩家。**投票+前往共享每玩家冷却** `action_cd`(默认3分钟，`action_cd_minutes`)。`add_command` 包装层在执行前公告全体"谁用了什么"。 |
+| `item_values.lua` | **自动生成·勿手改**（`gen_item_values.py` 产出）：物品价值表 `M.unit`/`M.stack`，仅供职业平衡参考、**不被运行时 require**。 |
 | `gui.lua` | 左上角 HUD：**① 玩法&指令按钮**(`show_tutorial`，纯说明文字) **② 功能菜单按钮**(`show_actions`：预览/排行/自杀/前往星球(未开放置灰)/出生星球(当前标✓)) + **在线玩家**(列各玩家等级/职业,点开看能力/战绩/经验)/职业/星星/跃迁/停留 sprite 按钮(星星按 `star_unlock_level`、投票按 `vote_unlock_level` 级以下置灰；职业窗口 `columns` 多列平铺) + **管理员专属红按钮 GEN/DIFF**（`style='red_button'`，仅 `player.admin` 创建 → 普通玩家看不到，点击经 tick 路由到 `commands.admin_*`）+ 轮次·倒计时标签。屏幕中央临时弹窗 `show_popup`(支持按钮 `enabled`/`tooltip`)。 |
+
+## 开发工具链（根目录 `gen_*.py`，非运行时；产物均不入库，见 `.gitignore`）
+
+改完 `classes.lua` 后跑脚本同步衍生产物：
+
+- `gen.py`：一键依次跑下面两个（日常用这个）。`--check` 校验同步、`--rebuild` 透传给价值脚本。
+- `gen_set_classes.py`：从 `DEFAULT_CLASSES` 生成 `set_classes.txt`（`/sc storage.classes = {...}` 热更指令）+ 同步 zh-CN 的 `class-name-<key>`。
+- `gen_item_values.py`：扫正版 Factorio 数据估算物品/科技价值 → `scripts/item_values.lua`（物品价值）+ `class_values.txt`（职业价值分析报告，分档+前后排名）。结果缓存 `.value_cache.json`（首次慢、之后秒出；Factorio 升级后 `--rebuild` 重扫）。价值=递归原矿成本（**可挖原矿=1、忽略合成路径**）；权重口径：**初始物品 > 满级物品 >> 科技**（触发科技计 0）。
+- `gen_scenario.py`：把 5 个可玩组件（`scripts/`+`locale/`+`control.lua`+`description.json`+`info.json`）打包成干净的 `endfield_factorio/`（排除全部开发文件）；带任意参数 → 输出到桌面。
+
+⚠️ **热更范围**：`storage` 数据（职业表经 `set_classes.txt`、各 `/c storage.x=` 旋钮）可**不停服**热改；**代码改动（脚本/GUI/逻辑）必须重载存档才生效**——Factorio 多人服无法热重载场景代码（代码烤进存档）。
 
 ## 世界变体系统（`surface.lua` + `map_features.lua` + `noise.lua` + `tick.lua` + `world_fx.lua`）
 
@@ -87,6 +99,7 @@
   - 上限钳（防 /c 填超大数一 tick 卡死）：事件落点 `EVENT_MAX_SPAWN=50`、tile 规则 `≤20`
   - `storage.world_fx.<name>`(默认 true)：事件驱动效果总闸，false 全局禁用（如 `replicant` 复制虫）
   - `storage.event_types.<raid/meteor/supply/coinfall/drones/barrage/tech>`(默认 true)：事件世界各类型开关，`/c` 设 false 即排除某类型
+  - `storage.unlock_quality`(默认 {uncommon,rare,epic,legendary})：开局对 force 解锁的品质等级，**无需研发 quality 科技**（reset 调 `force.unlock_quality`）；同类白名单 `unlock_techs`/`unlock_recipes` 开局直接标记科技已研究 / 启用配方。
   - `storage.event_chance`(默认0.5)：每分钟全服发生一次事件的概率 / `storage.tech_world_lose_chance`(默认0.125，抽中已研究科技时失去它的概率) / `storage.tech_world_gain_chance`(默认0.1，抽中未研究科技时得到它的概率)
   - 跃迁投票：`warp_vote_divisor`(默认5，阈值=ceil(在线/此值)) / `warp_vote_target_minutes`(默认5，通过后倒计时砍到的剩余分钟)
 
@@ -132,7 +145,7 @@ on_entity_died（world_fx 经总线）: 玩家建筑被虫毁 -> 按 replicant_c
 
 ### 2. 职业系统（`classes.lua` + `respawn_gifts.gift_list`）
 
-进服默认【平民】。HUD「职业」按钮窗口随时切换（同时只能一种，存 `storage.player_class`，切换即时生效、带短冷却）。
+进服默认【出租司机】(key `civilian`)。HUD「职业」按钮窗口随时切换（同时只能一种，存 `storage.player_class`，切换即时生效、带短冷却）。
 职业不与单一瓶一一对应，而是围绕一个**专精主题**；每个职业开局发两类物品（发到背包主格，见 `gift_list`）：
 
 - **starter**（无条件起手物列表）：每条 `{item, groups=组数(默认1)}`，每轮开局直接发、不看等级；可列多种、各自组数。
