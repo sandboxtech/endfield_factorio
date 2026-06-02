@@ -6,6 +6,7 @@
 local constants = require('scripts.constants')
 local util = require('scripts.util')
 local gui = require('scripts.gui')
+local events = require('scripts.events')
 
 local M = {}
 
@@ -24,7 +25,8 @@ local function payload_text(pod)
     return table.concat(parts, ' ')
 end
 
-script.on_event(defines.events.on_cargo_pod_finished_ascending, function(event)
+-- events.safe 包裹：handler 内任何报错（读 cargo_pod_origin/surface 等意外）被 pcall 兜住、报管理员，不崩服。
+script.on_event(defines.events.on_cargo_pod_finished_ascending, events.safe('rocket_penalty', function(event)
     if not event.launched_by_rocket then return end   -- 仅火箭发射的 pod（排除玩家手动 pod 跃迁/下行）
 
     storage.warp_hours = (storage.warp_hours or 1) - PENALTY_MINUTES / 60
@@ -32,11 +34,21 @@ script.on_event(defines.events.on_cargo_pod_finished_ascending, function(event)
     local last_run_ticks = game.tick - (storage.run_start_tick or game.tick)
     local rh, rm = util.hm(storage.warp_hours * constants.hour_to_tick - last_run_ticks)
 
+    -- 发射井位置 GPS（cargo_pod_origin = 发射它的井/枢纽/着陆台）：拼成可点击的地图 ping，公告里指出谁在哪发射。
+    -- 全程判空：pod / origin 可能 nil 或失效，surface 也可能取不到 → 任一缺失就退回空串，绝不让公告本身崩。
+    local pod = event.cargo_pod
+    local origin = pod and pod.valid and pod.cargo_pod_origin
+    local gps = ''
+    if origin and origin.valid and origin.position and origin.surface then
+        local p = origin.position
+        gps = '[gps=' .. math.floor(p.x) .. ',' .. math.floor(p.y) .. ',' .. origin.surface.name .. ']'
+    end
+
     game.print({'wn.rocket-penalty',
-                payload_text(event.cargo_pod),
+                payload_text(pod),
                 PENALTY_MINUTES,
-                rh, rm})
+                rh, rm, gps})
     gui.refresh_countdown()   -- 倒计时已变 → 立刻刷新所有人头顶 UI
-end)
+end))
 
 return M
