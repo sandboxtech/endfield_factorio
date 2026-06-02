@@ -349,12 +349,10 @@ function M.show_stats(player)
     }
     for _, p in pairs(game.connected_players) do
         local lv = respawn_gifts.coin_reward(passives.get_stat(p.index, 'online_minutes'))
-        local def = classes.def_of(p)
-        -- 职业名三层兜底(同职业窗口)：locale 词条 → storage.class_names 热改 → def.name 中文默认。
-        local cname = def and classes.text_loc('wn.class-name-' .. def.key, (storage.class_names or {})[def.key], def.name or def.key) or ''
         local stars = math.floor(((storage.star or {})[p.name] or 0) / constants.min_to_tick)
-        buttons[#buttons + 1] = {name = 'wn_stats_view_' .. p.index,   -- 名称 职业 等级 星星
-            caption = {'wn.stats-entry', p.name, cname, lv, stars}, tags = {wn_stats_view = p.name}}
+        local planet = players.respawn_surface_name(p)   -- 出生星球（space-location 图标名）
+        buttons[#buttons + 1] = {name = 'wn_stats_view_' .. p.index,   -- 名称 星球 语言 等级 星星（职业移到详情页）
+            caption = {'wn.stats-entry', p.name, planet, p.locale, lv, stars}, tags = {wn_stats_view = p.name}}
     end
     gui.show_popup(player, {'wn.stats-title'}, {}, buttons)
 end
