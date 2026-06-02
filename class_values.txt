@@ -145,15 +145,15 @@ afker               MAX          2           2    859,101∞
 
 ━━━━━━━━━━━━ 二、MID 档明细（27个，满级中位 86,918）━━━━━━━━━━━━
 
-【powergear 供能兵】 初始物品=39,100  满级物品=930,432  科技=682  techs=['solar-panel-equipment']
+【powergear 奶妈】 初始物品=39,100  满级物品=930,432  科技=682  techs=['solar-panel-equipment']
     初始: battery-mk3-equipment=22,527、fission-reactor-equipment=16,573
     奖励: fusion-reactor-equipment=623,108、fission-reactor-equipment=165,731、battery-mk2-equipment=86,205、solar-panel-equipment=10,261、battery-equipment=6,027
 
-【roboportgear 机器人兵】 初始物品=13,280  满级物品=778,018  科技=1,670  techs=['personal-roboport-equipment']
+【roboportgear 辅助】 初始物品=13,280  满级物品=778,018  科技=1,670  techs=['personal-roboport-equipment']
     初始: personal-roboport-equipment=13,280
     奖励: personal-roboport-mk2-equipment=426,748、personal-roboport-equipment=265,592、construction-robot=72,398
 
-【laserdefense 激光兵】 初始物品=16,161  满级物品=231,645  科技=5,417  techs=['personal-laser-defense-equipment']
+【laserdefense 输出】 初始物品=16,161  满级物品=231,645  科技=5,417  techs=['personal-laser-defense-equipment']
     初始: personal-laser-defense-equipment=16,161
     奖励: personal-laser-defense-equipment=215,484
 
@@ -161,7 +161,7 @@ afker               MAX          2           2    859,101∞
     初始: accumulator=13,638、solar-panel=2,339
     奖励: accumulator=136,375、lightning-collector=47,487、solar-panel=23,388、lightning-rod=3,554
 
-【bomber 掷弹兵】 初始物品=1,500  满级物品=218,678  科技=682  techs=['explosives']
+【bomber 拆迁队】 初始物品=1,500  满级物品=218,678  科技=682  techs=['explosives']
     初始: grenade=1,500
     奖励: cluster-grenade=81,244、destroyer-capsule=65,513、distractor-capsule=29,386、defender-capsule=13,972、poison-capsule=12,238、grenade=7,500、slowdown-capsule=7,325
 
@@ -173,11 +173,11 @@ afker               MAX          2           2    859,101∞
     初始: splitter=1,786、underground-belt=752、transport-belt=505
     奖励: turbo-splitter=55,192、turbo-transport-belt=40,705、express-splitter=25,308、turbo-underground-belt=20,912、express-transport-belt=18,155、express-underground-belt=8,872、fast-splitter=4,572、fast-transport-belt=3,055、fast-underground-belt=2,792
 
-【shielder 护盾兵】 初始物品=1,784  满级物品=157,789  科技=4,137  techs=['energy-shield-equipment']
+【shielder 肉盾】 初始物品=1,784  满级物品=157,789  科技=4,137  techs=['energy-shield-equipment']
     初始: energy-shield-equipment=1,784
     奖励: energy-shield-mk2-equipment=147,087、energy-shield-equipment=8,918
 
-【exoskeleton 疾行兵】 初始物品=4,552  满级物品=156,273  科技=1,670  techs=['exoskeleton-equipment']
+【exoskeleton 快递员】 初始物品=4,552  满级物品=156,273  科技=1,670  techs=['exoskeleton-equipment']
     初始: exoskeleton-equipment=4,552
     奖励: exoskeleton-equipment=151,721
 
@@ -185,7 +185,7 @@ afker               MAX          2           2    859,101∞
     初始: oil-refinery=1,038、pumpjack=886、chemical-plant=342
     奖励: cryogenic-plant=118,406、oil-refinery=10,375、pumpjack=8,865、chemical-plant=3,422、biochamber=3,203
 
-【inserter 插爪工】 初始物品=1,046  满级物品=104,362  科技=1,083  techs=['fast-inserter', 'bulk-inserter']
+【inserter 斜教】 初始物品=1,046  满级物品=104,362  科技=1,083  techs=['fast-inserter', 'bulk-inserter']
     初始: fast-inserter=466、long-handed-inserter=290、inserter=189、burner-inserter=101
     奖励: stack-inserter=70,631、bulk-inserter=25,123、fast-inserter=3,726、long-handed-inserter=2,322、inserter=1,514
 
@@ -205,7 +205,7 @@ afker               MAX          2           2    859,101∞
     初始: storage-chest=2,075、steel-chest=1,224、iron-chest=400、wooden-chest=100
     奖励: storage-chest=20,746、passive-provider-chest=20,746、steel-chest=12,240、requester-chest=10,373、buffer-chest=10,373
 
-【tanker 坦克兵】 初始物品=480  满级物品=76,237  科技=13,543  techs=['tank']
+【tanker 大运司机】 初始物品=480  满级物品=76,237  科技=13,543  techs=['tank']
     初始: tank=480
     奖励: explosive-cannon-shell=30,162、uranium-cannon-shell=23,391、cannon-shell=21,724、tank=480
 
@@ -241,11 +241,11 @@ afker               MAX          2           2    859,101∞
     初始: firearm-magazine=4,000、submachine-gun=25
     奖励: uranium-rounds-magazine=8,197、piercing-rounds-magazine=6,530、firearm-magazine=4,000
 
-【toolbelt 工具兵】 初始物品=1,952  满级物品=21,467  科技=12,887  techs=['toolbelt-equipment']
+【toolbelt 吃货】 初始物品=1,952  满级物品=21,467  科技=12,887  techs=['toolbelt-equipment']
     初始: toolbelt-equipment=1,952
     奖励: toolbelt-equipment=19,515
 
-【minelayer 布雷兵】 初始物品=997  满级物品=20,933  科技=2,758  techs=['land-mine']
+【minelayer 雷神】 初始物品=997  满级物品=20,933  科技=2,758  techs=['land-mine']
     初始: land-mine=997
     奖励: land-mine=19,936
 
@@ -319,7 +319,7 @@ afker               MAX          2           2    859,101∞
     初始: wood=200、agricultural-tower=106、tree-seed=40
     奖励: landfill=50,000、landfill=50,000、landfill=50,000、wood=1,000
 
-【rocketeer 火箭兵】 初始物品=1,063  满级物品=136,152  科技=3,310  techs=['rocketry']
+【rocketeer 胖子发射器】 初始物品=1,063  满级物品=136,152  科技=3,310  techs=['rocketry']
     初始: rocket=1,044、rocket-launcher=19
     奖励: rocket-turret=76,438、explosive-rocket=27,312、atomic-bomb=16,642、rocket=10,438、capture-robot-rocket=4,259
 
@@ -327,11 +327,11 @@ afker               MAX          2           2    859,101∞
     初始: artillery-shell=2,121、artillery-turret=1,125
     奖励: artillery-turret=112,473、artillery-wagon=7,721、artillery-shell=6,362
 
-【mecharmor 机甲兵】 初始物品=54,012  满级物品=54,012  科技=2,996,275  techs=['mech-armor']
+【mecharmor 变形金刚】 初始物品=54,012  满级物品=54,012  科技=2,996,275  techs=['mech-armor']
     初始: mech-armor=54,012
     奖励: （无）
 
-【spidertron 蜘蛛机甲】 初始物品=53,425  满级物品=53,425  科技=687,022  techs=['spidertron']
+【spidertron 蜘蛛侠】 初始物品=53,425  满级物品=53,425  科技=687,022  techs=['spidertron']
     初始: spidertron=53,425
     奖励: （无）
 
