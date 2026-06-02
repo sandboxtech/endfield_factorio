@@ -354,8 +354,8 @@ function M.show_stats(player)
         local def = classes.def_of(p)
         -- 职业名三层兜底：locale 词条 → storage.class_names 热改 → def.name 中文默认。
         local cname = def and classes.text_loc('wn.class-name-' .. def.key, (storage.class_names or {})[def.key], def.name or def.key) or ''
-        buttons[#buttons + 1] = {name = 'wn_stats_view_' .. p.index,   -- 名称 职业 星球 语言 等级 星星
-            caption = {'wn.stats-entry', p.name, cname, planet, p.locale, lv, stars}, tags = {wn_stats_view = p.name}}
+        buttons[#buttons + 1] = {name = 'wn_stats_view_' .. p.index,   -- 名称 语言 星球 职业 等级 星星
+            caption = {'wn.stats-entry', p.name, p.locale, planet, cname, lv, stars}, tags = {wn_stats_view = p.name}}
     end
     gui.show_popup(player, {'wn.stats-title'}, {}, buttons)
 end
