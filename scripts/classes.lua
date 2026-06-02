@@ -38,23 +38,52 @@ local FULL_MAX = 100000       -- 终极档（= MAX_LEVEL，练到满级正好拿
 local DEFAULT_CLASSES = {
     -- ── 基础生产组（红瓶起步：矿/板/齿轮/电路，满级线低 full=100，开局速成大宗）──
     -- 默认职业。
-    {section = '基础生产'},   -- 分区标题（无 key，职业窗口里渲染成粗体小标题）
-    {key = 'civilian', name = '平民', full = FULL_LOW, starter = {
+    {section = '市民'}, 
+
+    {key = 'civilian', name = '出租司机', full = FULL_LOW, starter = {
         {item = 'car', count = 1},
         {item = 'nuclear-fuel', groups = 1},
     }, rewards = {
         {pack = 'automation-science-pack', item = 'nuclear-fuel',   groups = 50},
     }},
+
+    {key = 'philosopher', techs = {'research-speed-1', 'biolab'}, name = '哲学家', full = FULL_LOW, starter = {
+        
+    }, unlock = {{pack = 'automation-science-pack', level = 10}}, rewards = {
+        {pack = 'automation-science-pack', item = 'lab',                 groups = 10},
+        {pack = 'space-science-pack', item = 'lab',                 groups = 10},
+        {pack = 'promethium-science-pack', item = 'lab',                 groups = 10},
+    }},
+
+    {key = 'banker', name = '银行家', full = FULL_MAX, starter = {
+
+    }, unlock = {{pack = 'automation-science-pack', level = 1000}}, rewards = {
+        {pack = 'automation-science-pack', item = 'coin',   count = 100},
+        {pack = 'logistic-science-pack', item = 'coin',   count = 100},
+        {pack = 'military-science-pack', item = 'coin',   count = 100},
+        {pack = 'chemical-science-pack', item = 'coin',   count = 100},
+        {pack = 'production-science-pack', item = 'coin',   count = 100},
+        {pack = 'utility-science-pack', item = 'coin',   count = 100},
+        {pack = 'space-science-pack', item = 'coin', count = 100},
+        --
+        {pack = 'metallurgic-science-pack',     item = 'coin', count = 100},
+        {pack = 'electromagnetic-science-pack', item = 'coin',  count = 100},
+        {pack = 'agricultural-science-pack', item = 'coin', count = 100},
+        {pack = 'cryogenic-science-pack', item = 'coin', count = 100},
+        {pack = 'promethium-science-pack', item = 'coin', count = 100},
+    }},
+
+    {section = '收藏家'}, 
     -- 矿物
     {key = 'oreman', techs = {'mining-productivity-1'}, name = '矿物专家', full = FULL_LOW, starter = {
-        {item = 'iron-ore', groups = 5},
-        {item = 'copper-ore', groups = 5},
-        {item = 'stone', groups = 5},
-        {item = 'coal', groups = 5},
+        {item = 'iron-ore', groups = 4},
+        {item = 'copper-ore', groups = 4},
+        {item = 'stone', groups = 4},
+        {item = 'coal', groups = 4},
     }, rewards = {
-        {pack = 'automation-science-pack',      item = 'iron-ore',     groups = 5},   -- 红：铁矿
-        {pack = 'logistic-science-pack',        item = 'copper-ore',   groups = 5},   -- 绿：铜矿
-        {pack = 'military-science-pack',        item = 'coal',         groups = 5},   -- 灰：煤
+        {pack = 'automation-science-pack',      item = 'iron-ore',     groups = 4},   -- 红：铁矿
+        {pack = 'logistic-science-pack',        item = 'copper-ore',   groups = 4},   -- 绿：铜矿
+        {pack = 'military-science-pack',        item = 'coal',         groups = 4},   -- 灰：煤
         {pack = 'chemical-science-pack',        item = 'stone',  groups = 5},   -- 蓝：铀矿(需硫酸,蓝瓶时代)
         {pack = 'production-science-pack',      item = 'iron-ore',        groups = 1},   -- 紫：石头
         {pack = 'utility-science-pack',      item = 'copper-ore',        groups = 1},   -- 紫：石头
@@ -69,6 +98,7 @@ local DEFAULT_CLASSES = {
         {pack = 'cryogenic-science-pack', item = 'lithium', groups = 1},
         {pack = 'promethium-science-pack', item = 'promethium-asteroid-chunk', groups = 1},
     }},
+
     -- 材料
     {key = 'material', name = '材料专家', full = FULL_LOW, starter = {
         {item = 'iron-plate', groups = 5},
@@ -90,6 +120,19 @@ local DEFAULT_CLASSES = {
         {pack = 'promethium-science-pack', item = 'uranium-235', groups = 1},
     }},
 
+    -- 能源
+    {key = 'TODO', techs = {'mining-productivity-1'}, name = '能源专家', full = FULL_LOW, starter = {
+        {item = 'coal', groups = 10},
+    }, unlock = {{pack = 'automation-science-pack', level = 10}}, rewards = {
+        {pack = 'military-science-pack', item = 'coal', groups = 10},
+        {pack = 'production-science-pack', item = 'solid-fuel',      groups = 10},
+        {pack = 'utility-science-pack', item = 'rocket-fuel', groups = 10},
+        {pack = 'space-science-pack', item = 'carbon', groups = 10},
+        {pack = 'promethium-science-pack', item = 'nuclear-fuel', groups = 10},
+    }},
+
+    {section = '生产'},   -- 分区标题（无 key，职业窗口里渲染成粗体小标题）
+
     {key = 'miner', techs = {'electric-mining-drill'}, name = '采矿工人', full = FULL_LOW, starter = {
         {item = 'burner-mining-drill', groups = 2},
         -- {item = 'electric-mining-drill', groups = 1},
@@ -105,11 +148,6 @@ local DEFAULT_CLASSES = {
         {pack = 'automation-science-pack', item = 'stone-furnace',       groups = 2},
         {pack = 'logistic-science-pack', item = 'steel-furnace',       groups = 2},
         {pack = 'chemical-science-pack', item = 'electric-furnace',   groups = 2},
-        --
-        {pack = 'military-science-pack', item = 'coal', groups = 2},
-        {pack = 'production-science-pack', item = 'solid-fuel',      groups = 2},
-        {pack = 'utility-science-pack', item = 'rocket-fuel', groups = 2},
-        {pack = 'space-science-pack', item = 'carbon', groups = 2},
     }},
 
     {key = 'artisan', techs = {'automation', 'automation-2'}, name = '装配工人', full = FULL_LOW, starter = {
@@ -217,7 +255,7 @@ local DEFAULT_CLASSES = {
     {section = '能源 · 物流'},
     -- 分组换行：基础生产 ↔ 能源化工
     -- ── 能源化工组（电力/蒸汽/太阳能/化工/石油/管道/核能/回收）──
-    {key = 'electrician', techs = {'steam-power'}, name = '蒸汽工人', full = FULL_LOW, starter = {
+    {key = 'electrician', techs = {'steam-power'}, name = '热能工人', full = FULL_LOW, starter = {
         {item = 'boiler', groups = 1},
         {item = 'steam-engine', groups = 1},
     }, rewards = {
@@ -228,7 +266,7 @@ local DEFAULT_CLASSES = {
         {pack = 'agricultural-science-pack', item = 'heat-exchanger',  groups = 10},   -- 紫：热交换器
         {pack = 'cryogenic-science-pack',  item = 'heating-tower',   groups = 10},   -- 靛：供热塔(寒星)
     }},
-    {key = 'greentech', techs = {'solar-energy', 'electric-energy-accumulators'}, name = '光电工人', full = FULL_MID, starter = {
+    {key = 'greentech', techs = {'solar-energy', 'electric-energy-accumulators'}, name = '光能工人', full = FULL_MID, starter = {
         {item = 'solar-panel', groups = 1},
         {item = 'accumulator', groups = 1},
     }, unlock = {{pack = 'logistic-science-pack', level = 10}}, rewards = {
@@ -339,6 +377,8 @@ local DEFAULT_CLASSES = {
         {pack = 'space-science-pack',   item = 'logistic-robot',         groups = 10},  -- 绿：物流机器人
     }},
 
+    {section = '航天'},
+
     {key = 'launcher', techs = {'rocket-silo'}, name = '发射专家', full = FULL_MID, starter = {
         {item = 'rocket-part', count = 1},
     }, unlock = {{pack = 'space-science-pack', level = 1000}}, rewards = {
@@ -354,8 +394,8 @@ local DEFAULT_CLASSES = {
         {pack = 'space-science-pack',   item = 'cargo-bay',                   groups = 10},
         {pack = 'space-science-pack',   item = 'thruster',                    groups = 10},
     }},
-
-    {key = 'asteroidminer', techs = {'thruster'}, name = '小行星带矿工', full = FULL_MAX, starter = {
+    
+    {key = 'asteroidminer', techs = {'space-platform-thruster'}, name = '小行星带矿工', full = FULL_MAX, starter = {
         {item = 'space-platform-starter-pack', count = 1},
     }, unlock = {{pack = 'space-science-pack', level = 1000}}, rewards = {
         {pack = 'production-science-pack', item = 'space-platform-foundation',   groups = 5},
@@ -363,30 +403,6 @@ local DEFAULT_CLASSES = {
         {pack = 'space-science-pack',   item = 'crusher',                     groups = 5},
     }},
 
-    {key = 'philosopher', techs = {'research-speed-1', 'biolab'}, name = '哲学家', full = FULL_LOW, starter = {
-        
-    }, unlock = {{pack = 'automation-science-pack', level = 10}}, rewards = {
-        {pack = 'automation-science-pack', item = 'lab',                 groups = 10},
-        {pack = 'space-science-pack', item = 'lab',                 groups = 10},
-        {pack = 'promethium-science-pack', item = 'lab',                 groups = 10},
-    }},
-    {key = 'banker', name = '银行家', full = FULL_MAX, starter = {
-
-    }, unlock = {{pack = 'automation-science-pack', level = 1000}}, rewards = {
-        {pack = 'automation-science-pack', item = 'coin',   count = 100},
-        {pack = 'logistic-science-pack', item = 'coin',   count = 100},
-        {pack = 'military-science-pack', item = 'coin',   count = 100},
-        {pack = 'chemical-science-pack', item = 'coin',   count = 100},
-        {pack = 'production-science-pack', item = 'coin',   count = 100},
-        {pack = 'utility-science-pack', item = 'coin',   count = 100},
-        {pack = 'space-science-pack', item = 'coin', count = 100},
-        --
-        {pack = 'metallurgic-science-pack',     item = 'coin', count = 100},
-        {pack = 'electromagnetic-science-pack', item = 'coin',  count = 100},
-        {pack = 'agricultural-science-pack', item = 'coin', count = 100},
-        {pack = 'cryogenic-science-pack', item = 'coin', count = 100},
-        {pack = 'promethium-science-pack', item = 'coin', count = 100},
-    }},
 
     {section = '战斗'},
     -- 分组换行：物流 ↔ 战斗
