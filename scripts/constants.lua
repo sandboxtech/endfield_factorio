@@ -25,6 +25,12 @@ local M = {
         'cryogenic-science-pack', 'promethium-science-pack', 'military-science-pack',
     },
 
+    -- 杀死虫巢掉落的科技瓶池（基础 6 瓶：含【军事】、不含 space 与各 SA 星球瓶）。独立于 science_packs，改这里不影响经验/面板。
+    nest_science_packs = {
+        'automation-science-pack', 'logistic-science-pack', 'military-science-pack',
+        'chemical-science-pack', 'production-science-pack', 'utility-science-pack',
+    },
+
     -- 星球列表（多处共用：reset 清表/进化度、gui 前往/出生、travel 开放概率）。改这一处即全改，避免各处漂移。
     PLANETS = {'nauvis', 'vulcanus', 'gleba', 'fulgora', 'aquilo'},   -- 母星 + 4 外星（标准顺序）
     OFF_PLANETS = {'vulcanus', 'gleba', 'fulgora', 'aquilo'},         -- 仅外星（travel 开放概率、本轮可达判定用）
@@ -120,6 +126,7 @@ function M.ensure_defaults()
         prob_fluid_remap = 1,             -- 流体资源互换世界（0=关）
         prob_event = 1,                   -- 事件世界出现概率乘数
         replicant_chance = 0.5,           -- 复制虫：玩家建筑被虫破坏时，按此概率原地冒新虫（全局，world_fx 开关另控）
+        nest_coin = 6,                    -- 杀死虫巢掉落的金币数（开关：0=不掉金币）。可 /c storage.nest_coin=N 热改
         enemy_dmg_max = 12,               -- 敌人武器伤害上限倍率：每种伤害类型各自独立随机加成 [0, 此值]，线性递减分布（12=最高+1200%，越高越罕见）
         enemy_evo_max = 1,                -- 敌人进化度上限：每局随机 evo = min(1, 此值×(1-√r))，线性递减（>1 把分布推向高进化、更多猛虫；<1 压低上限）
         -- 战利品密度：全局乘数 × 各类乘数（相乘共同影响）。默认全 1，可 /c 单独热改：2 更多、0.5 更少、0 不刷。

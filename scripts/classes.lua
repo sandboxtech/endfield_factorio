@@ -505,7 +505,7 @@ local DEFAULT_CLASSES = {
     'biter-egg-handling'}, recipes = {}, name = '雨林开拓者', full = FULL_MID, starter = {
         {item = 'agricultural-tower', count = 1},
         {item = 'biochamber', count = 1},
-    }, unlock = {{pack = 'agricultural-science-pack', level = 100}}, rewards = {
+    }, unlock = {{pack = 'agricultural-science-pack', level = 10}}, rewards = {
         --
     }},
 
@@ -516,12 +516,44 @@ local DEFAULT_CLASSES = {
         'cryogenic-plant', 
         'cryogenic-science-pack'
     }, recipes = {}, name = '冰原开拓者', full = FULL_MAX, starter = {
-        {item = 'agricultural-tower', count = 1},
-    }, unlock = {{pack = 'military-science-pack', level = 100}}, rewards = {
         {item = 'cryogenic-plant', count = 1},
         {item = 'heating-tower', count = 1},
+    }, unlock = {{pack = 'military-science-pack', level = 10}}, rewards = {
+
     }},
 
+    {section = '星球专精'},
+    -- 分组换行：农牧 ↔ 科学/星球
+    -- ── 星球专精组（各星球招牌机器/材料 + 太空平台；满级线 1000，需对应高级瓶 100 级解锁）──
+    {key = 'metallurgist', techs = {'low-density-structure-productivity'}, name = '冶金专家', full = FULL_MAX, starter = {
+
+    }, unlock = {{pack = 'metallurgic-science-pack', level = 500}}, rewards = {
+        {pack = 'metallurgic-science-pack', item = 'foundry',         groups = 10},
+        {pack = 'metallurgic-science-pack', item = 'big-mining-drill', groups = 10},
+    }},
+    {key = 'electromancer', techs = {'processing-unit-productivity'}, name = '电磁专家', full = FULL_MAX, starter = {
+
+    }, unlock = {{pack = 'electromagnetic-science-pack', level = 500}}, rewards = {
+        {pack = 'electromagnetic-science-pack', item = 'electromagnetic-plant', groups = 10},
+        {pack = 'electromagnetic-science-pack', item = 'recycler',    groups = 10},
+    }},
+    {key = 'biologist', techs = {'rocket-fuel-productivity'}, name = '生物专家', full = FULL_MAX, starter = {
+
+    }, unlock = {{pack = 'agricultural-science-pack', level = 500}}, rewards = {
+        {pack = 'agricultural-science-pack', item = 'biochamber',         groups = 10},
+        {pack = 'agricultural-science-pack', item = 'agricultural-tower', groups = 10},
+    }},
+    {key = 'physicist', techs = {'rocket-part-productivity'}, name = '物理专家', full = FULL_MAX, starter = {
+
+    }, unlock = {{pack = 'cryogenic-science-pack', level = 500}}, rewards = {
+        {pack = 'cryogenic-science-pack', item = 'cryogenic-plant',   groups = 10},
+        {pack = 'cryogenic-science-pack', item = 'heating-tower',   groups = 10},
+    }},
+    {key = 'astronomer', techs = {'research-productivity'}, name = '天文专家', full = FULL_MAX, starter = {
+
+    }, unlock = {{pack = 'promethium-science-pack', level = 2000}}, rewards = {
+        {pack = 'promethium-science-pack', item = 'biolab',            groups = 5},
+    }},
 
     {section = '战斗'},
     -- 分组换行：物流 ↔ 战斗
@@ -736,39 +768,6 @@ local DEFAULT_CLASSES = {
         {pack = 'agricultural-science-pack', item = 'iron-bacteria',  groups = 2},
         {pack = 'agricultural-science-pack', item = 'copper-bacteria',  groups = 2},
         {pack = 'agricultural-science-pack', item = 'bioflux',     groups = 40},
-    }},
-
-    {section = '星球专精'},
-    -- 分组换行：农牧 ↔ 科学/星球
-    -- ── 星球专精组（各星球招牌机器/材料 + 太空平台；满级线 1000，需对应高级瓶 100 级解锁）──
-    {key = 'metallurgist', techs = {'low-density-structure-productivity'}, name = '冶金专家', full = FULL_MAX, starter = {
-
-    }, unlock = {{pack = 'metallurgic-science-pack', level = 500}}, rewards = {
-        {pack = 'metallurgic-science-pack', item = 'foundry',         groups = 10},
-        {pack = 'metallurgic-science-pack', item = 'big-mining-drill', groups = 10},
-    }},
-    {key = 'electromancer', techs = {'processing-unit-productivity'}, name = '电磁专家', full = FULL_MAX, starter = {
-
-    }, unlock = {{pack = 'electromagnetic-science-pack', level = 500}}, rewards = {
-        {pack = 'electromagnetic-science-pack', item = 'electromagnetic-plant', groups = 10},
-        {pack = 'electromagnetic-science-pack', item = 'recycler',    groups = 10},
-    }},
-    {key = 'biologist', techs = {'rocket-fuel-productivity'}, name = '生物专家', full = FULL_MAX, starter = {
-
-    }, unlock = {{pack = 'agricultural-science-pack', level = 500}}, rewards = {
-        {pack = 'agricultural-science-pack', item = 'biochamber',         groups = 10},
-        {pack = 'agricultural-science-pack', item = 'agricultural-tower', groups = 10},
-    }},
-    {key = 'physicist', techs = {'rocket-part-productivity'}, name = '物理专家', full = FULL_MAX, starter = {
-
-    }, unlock = {{pack = 'cryogenic-science-pack', level = 500}}, rewards = {
-        {pack = 'cryogenic-science-pack', item = 'cryogenic-plant',   groups = 10},
-        {pack = 'cryogenic-science-pack', item = 'heating-tower',   groups = 10},
-    }},
-    {key = 'astronomer', techs = {'research-productivity'}, name = '天文专家', full = FULL_MAX, starter = {
-
-    }, unlock = {{pack = 'promethium-science-pack', level = 2000}}, rewards = {
-        {pack = 'promethium-science-pack', item = 'biolab',            groups = 5},
     }},
 
 }
