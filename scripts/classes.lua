@@ -73,9 +73,9 @@ local DEFAULT_CLASSES = {
         {pack = 'promethium-science-pack', item = 'coin', count = 100},
     }},
 
-    {section = '收藏家'}, 
+    {section = '杂货商人'}, 
     -- 矿物
-    {key = 'oreman', techs = {'mining-productivity-1'}, name = '矿物专家', full = FULL_LOW, starter = {
+    {key = 'oreman', techs = {'mining-productivity-1'}, name = '矿物商人', full = FULL_LOW, starter = {
         {item = 'iron-ore', groups = 4},
         {item = 'copper-ore', groups = 4},
         {item = 'stone', groups = 4},
@@ -100,7 +100,7 @@ local DEFAULT_CLASSES = {
     }},
 
     -- 材料
-    {key = 'material', name = '材料专家', full = FULL_LOW, starter = {
+    {key = 'material', name = '材料商人', full = FULL_LOW, starter = {
         {item = 'iron-plate', groups = 5},
         {item = 'copper-plate', groups = 5},
     }, unlock = {{pack = 'automation-science-pack', level = 10}}, rewards = {
@@ -121,14 +121,26 @@ local DEFAULT_CLASSES = {
     }},
 
     -- 能源
-    {key = 'TODO', techs = {'mining-productivity-1'}, name = '能源专家', full = FULL_LOW, starter = {
+    {key = 'energytrader', techs = {'mining-productivity-1'}, name = '能源商人', full = FULL_LOW, starter = {
         {item = 'coal', groups = 10},
     }, unlock = {{pack = 'automation-science-pack', level = 10}}, rewards = {
-        {pack = 'military-science-pack', item = 'coal', groups = 10},
-        {pack = 'production-science-pack', item = 'solid-fuel',      groups = 10},
-        {pack = 'utility-science-pack', item = 'rocket-fuel', groups = 10},
-        {pack = 'space-science-pack', item = 'carbon', groups = 10},
-        {pack = 'promethium-science-pack', item = 'nuclear-fuel', groups = 10},
+        {pack = 'military-science-pack', item = 'coal', groups = 5},
+        {pack = 'production-science-pack', item = 'solid-fuel',      groups = 5},
+        {pack = 'utility-science-pack', item = 'rocket-fuel', groups = 5},
+        {pack = 'space-science-pack', item = 'carbon', groups = 5},
+        {pack = 'promethium-science-pack', item = 'nuclear-fuel', groups = 5},
+    }},
+
+    {key = 'producttrader', techs = {'mining-productivity-1'}, name = '产品商人', full = FULL_LOW, starter = {
+        {item = 'coal', groups = 10},
+    }, unlock = {{pack = 'automation-science-pack', level = 10}}, rewards = {
+        {pack = 'automation-science-pack', item = 'iron-gear-wheel',   groups = 5},
+        {pack = 'logistic-science-pack', item = 'electronic-circuit',   groups = 5},
+        {pack = 'military-science-pack', item = 'engine-unit',   groups = 5},
+        {pack = 'chemical-science-pack', item = 'advanced-circuit',   groups = 5},
+        {pack = 'production-science-pack', item = 'electric-engine-unit',   groups = 5},
+        {pack = 'utility-science-pack', item = 'flying-robot-frame',   groups = 5},
+        {pack = 'cryogenic-science-pack', item = 'processing-unit', groups = 5},
     }},
 
     {section = '生产'},   -- 分区标题（无 key，职业窗口里渲染成粗体小标题）
@@ -155,17 +167,9 @@ local DEFAULT_CLASSES = {
         -- {item = 'assembling-machine-2', groups = 1},
         -- {item = 'assembling-machine-3', groups = 1},
     }, unlock = {{pack = 'automation-science-pack', level = 10}}, rewards = {
-        {pack = 'automation-science-pack', item = 'assembling-machine-1', groups = 5},
-        {pack = 'space-science-pack',   item = 'assembling-machine-2', groups = 5},
-        {pack = 'promethium-science-pack', item = 'assembling-machine-3', groups = 5},
-        --
-        {pack = 'automation-science-pack', item = 'iron-gear-wheel',   groups = 1},
-        {pack = 'logistic-science-pack', item = 'electronic-circuit',   groups = 1},
-        {pack = 'military-science-pack', item = 'engine-unit',   groups = 1},
-        {pack = 'chemical-science-pack', item = 'advanced-circuit',   groups = 1},
-        {pack = 'production-science-pack', item = 'electric-engine-unit',   groups = 1},
-        {pack = 'utility-science-pack', item = 'flying-robot-frame',   groups = 1},
-        {pack = 'cryogenic-science-pack', item = 'processing-unit', groups = 1},
+        {pack = 'automation-science-pack', item = 'assembling-machine-1', groups = 10},
+        {pack = 'space-science-pack',   item = 'assembling-machine-2', groups = 10},
+        {pack = 'promethium-science-pack', item = 'assembling-machine-3', groups = 10},
     }},
 
     {key = 'foundryman', techs = {'foundry'}, name = '冶金工人', full = FULL_LOW, starter = {
@@ -394,7 +398,7 @@ local DEFAULT_CLASSES = {
         {pack = 'space-science-pack',   item = 'cargo-bay',                   groups = 10},
         {pack = 'space-science-pack',   item = 'thruster',                    groups = 10},
     }},
-    
+
     {key = 'asteroidminer', techs = {'space-platform-thruster'}, name = '小行星带矿工', full = FULL_MAX, starter = {
         {item = 'space-platform-starter-pack', count = 1},
     }, unlock = {{pack = 'space-science-pack', level = 1000}}, rewards = {
