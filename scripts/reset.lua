@@ -204,6 +204,12 @@ function M.reset()
         local recipe = force.recipes[name]
         if recipe then recipe.enabled = true end
     end
+    -- 开局额外解锁的【品质】白名单（storage.unlock_quality，默认四档全开）：直接对 force 放开品质等级，无需研发 quality 科技。
+    for _, name in ipairs(storage.unlock_quality or {}) do
+        if prototypes.quality[name] and not force.is_quality_unlocked(name) then
+            force.unlock_quality(name)
+        end
+    end
     -- 职业【专属科技】：若存在选了某职业的玩家（含离线），解锁该职业配置的 tech（每职业 0~1 个，见 classes.lua 的 tech 字段）。
     -- 职业【专属解锁】：按职业逐个应用 techs(标记已研究)/recipes(force 级 enabled)，并【全服广播】哪个职业解锁了什么。
     -- 职业【专属解锁】：有该职业玩家则开局解锁其 techs/recipes（不广播）。找不到的名字向管理员告警。
