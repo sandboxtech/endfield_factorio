@@ -202,7 +202,9 @@ function M.ensure_defaults()
     storage.unlock_recipes = storage.unlock_recipes or {'iron-stick', 'steel-plate', 'ice-melting',
         'lubricant', 'concrete', 'refined-concrete',
         'solar-panel', 'accumulator',
-        'medium-electric-pole', 'big-electric-pole'
+        'medium-electric-pole', 'big-electric-pole',
+        'basic-oil-processing', 'advanced-oil-processing',
+        'light-oil-cracking', 'heavy-oil-cracking',
     }
     -- 开局额外解锁的【品质】白名单（数组，默认四档全开）：reset 每轮对 force 调 unlock_quality，无需研发 quality 科技。
     -- 热改示例：/c storage.unlock_quality = {'uncommon', 'rare'}   清空：/c storage.unlock_quality = {}

@@ -122,6 +122,45 @@ add_command('ensureall', '补齐全部默认/迁移：标量+必需表+职业表
     ;(player or game).print('ensure_all 已执行：默认值/必需表/职业表/战利品权重均已补齐。')
 end)
 
+-- ── 开局解锁白名单：管理员增删【初始科技 / 初始配方】（addtech/deltech/addrecipe/delrecipe）─────
+-- 直接 append / remove 到 storage.unlock_techs / unlock_recipes（reset 每轮据此标记科技已研究、启用配方）。
+-- 逐个校验原型是否存在(prototypes.technology / prototypes.recipe)，不存在的【跳过并报错】，不污染清单。
+-- 仅管理员（控制台调用 player_index 为 nil 时视作管理员，与 ensureall 同口径）。改动【下次跃迁生效】。
+local function edit_unlock(command, kind, add)
+    local player = command.player_index and game.get_player(command.player_index)
+    if player and not player.admin then player.print(constants.not_admin_text); return end
+    local out     = player or game
+    local is_tech = (kind == 'tech')
+    local key     = is_tech and 'unlock_techs' or 'unlock_recipes'
+    local protos  = is_tech and prototypes.technology or prototypes.recipe
+    local word    = is_tech and '科技' or '配方'
+    local list = storage[key] or {}
+    storage[key] = list                         -- 老档兜底：ensure_defaults 没补到也不崩
+    if not command.parameter or command.parameter == '' then
+        out.print('用法：/' .. command.name .. ' <' .. word .. '名...>（可空格分隔多个）')
+        return
+    end
+    for name in string.gmatch(command.parameter, '%S+') do
+        if not protos[name] then
+            out.print('找不到' .. word .. '【' .. name .. '】，已跳过')
+        else
+            local idx
+            for i, v in ipairs(list) do if v == name then idx = i; break end end
+            if add then
+                if idx then out.print(word .. '【' .. name .. '】已在开局清单中')
+                else list[#list + 1] = name; out.print('已加入开局' .. word .. '：' .. name .. '（下次跃迁生效）') end
+            else
+                if idx then table.remove(list, idx); out.print('已移出开局' .. word .. '：' .. name .. '（下次跃迁生效）')
+                else out.print(word .. '【' .. name .. '】本就不在开局清单中') end
+            end
+        end
+    end
+end
+add_command('addtech',   '管理员：把科技加入开局解锁清单 /addtech <科技名...>',   function(c) edit_unlock(c, 'tech',   true)  end)
+add_command('deltech',   '管理员：从开局解锁清单移除科技 /deltech <科技名...>',   function(c) edit_unlock(c, 'tech',   false) end)
+add_command('addrecipe', '管理员：把配方加入开局解锁清单 /addrecipe <配方名...>', function(c) edit_unlock(c, 'recipe', true)  end)
+add_command('delrecipe', '管理员：从开局解锁清单移除配方 /delrecipe <配方名...>', function(c) edit_unlock(c, 'recipe', false) end)
+
 -- 参数 diff（合并了原 /ensuredefaults + /config）：先跑一次 M.ensure_all（补默认/必需表/职业表/战利品权重 + 清废弃键/修类型，
 -- 迁移），再弹窗对比【当前 storage】与【默认值】、改过的高亮。仅标量常量(constants.scalar_defaults)；
 -- 表型(travel_chance/event_types…)不在此列。只弹给本人、不公告。
@@ -339,8 +378,9 @@ add_command('kickout', {'wn.kickout-help'}, member_kick_cmd)
 function M.show_stats(player)
     if not player then return end
     if #game.connected_players <= 1 then return M.show_stats_of(player, player) end   -- 只有自己在线：跳过列表，直接看自己的面板
+    local STATS_BTN_MIN_W = 360   -- 玩家条目按钮最小宽（像职业按钮，但用最小宽可随表伸展，整窗更宽更整齐）
     local buttons = {
-        {name = 'wn_stats_view_self', caption = {'wn.stats-view-self'}, tags = {wn_stats_view = player.name}},  -- 最上方：查看自己（name 固定唯一，避免与列表里自己那项重名崩溃；路由靠 tags）
+        {name = 'wn_stats_view_self', caption = {'wn.stats-view-self'}, tags = {wn_stats_view = player.name}, min_width = STATS_BTN_MIN_W},  -- 最上方：查看自己（name 固定唯一，避免与列表里自己那项重名崩溃；路由靠 tags）
         {newrow = true},   -- 分隔线：自己 / 其他在线玩家
     }
     for _, p in pairs(game.connected_players) do
@@ -351,9 +391,10 @@ function M.show_stats(player)
         -- 职业名三层兜底：locale 词条 → storage.class_names 热改 → def.name 中文默认。
         local cname = def and classes.text_loc('wn.class-name-' .. def.key, (storage.class_names or {})[def.key], def.name or def.key) or ''
         buttons[#buttons + 1] = {name = 'wn_stats_view_' .. p.index,   -- 名称 语言 星球 职业 等级 星星
-            caption = {'wn.stats-entry', p.name, p.locale, planet, cname, lv, stars}, tags = {wn_stats_view = p.name}}
+            caption = {'wn.stats-entry', p.name, p.locale, planet, cname, lv, stars}, tags = {wn_stats_view = p.name},
+            min_width = STATS_BTN_MIN_W}
     end
-    gui.show_popup(player, {'wn.stats-title'}, {}, buttons)
+    gui.show_popup(player, {'wn.stats-title'}, {}, buttons, nil, nil, 2)   -- 2 列平铺成更宽的表
 end
 
 -- 看某玩家的详细统计（顶部说明 + 人物等级 + 三能力 + 6 项战绩）；底部【返回】回到玩家列表。

@@ -90,6 +90,44 @@ function M.kill_player(player)
     player.character.die()
 end
 
+-- ── 蓝图权限：跃迁满 BLUEPRINT_WARPS 次（warps 统计）才解锁【蓝图库 + 导入蓝图字符串】────────
+-- 用 permission group 实现：未达次数(或新玩家)放进 'no_blueprint' 受限组，禁掉进库/取库/导入字符串等动作；
+-- 达标后(及管理员)放回 'Default' 组。本地框选创建、使用自己手上的蓝图仍允许。
+-- 注意：手上【已持有】的蓝图去放 ghost 走的是普通建造动作，服务端无法在此单独拦截，这点挡不住。
+local BLUEPRINT_WARPS = 2   -- 解锁蓝图所需的跃迁次数
+local BLUEPRINT_BLOCKED = {
+    'open_blueprint_library_gui',   -- 打开蓝图库
+    'grab_blueprint_record',        -- 从库里取出蓝图到手
+    'import_blueprint',             -- 导入蓝图（进库）
+    'import_blueprint_string',      -- 粘贴蓝图字符串
+    'import_blueprints_filtered',   -- 过滤导入
+}
+-- 取（缺则建）受限组并重设禁用动作（幂等）。permission group 持久存档，create 重复会返回 nil，故 get 优先。
+local function blueprint_locked_group()
+    local perms = game.permissions
+    local g = perms.get_group('no_blueprint') or perms.create_group('no_blueprint')
+    if g then
+        for _, name in ipairs(BLUEPRINT_BLOCKED) do
+            g.set_allows_action(defines.input_action[name], false)
+        end
+    end
+    return g
+end
+
+-- 按玩家 warps 把其分到 受限组 / Default 组。管理员永不受限。
+local function update_blueprint_perm(player)
+    if not (player and player.valid) then return end
+    local unlocked = player.admin or passives.get_stat(player.index, 'warps') >= BLUEPRINT_WARPS
+    local g = unlocked and game.permissions.get_group('Default') or blueprint_locked_group()
+    if g then player.permission_group = g end
+end
+M.update_blueprint_perm = update_blueprint_perm
+
+-- 刷新所有在线玩家蓝图权限（每次跃迁 warps+1 后由 reset 调用，让刚满 2 次的玩家即时解锁）。
+function M.refresh_blueprint_perms()
+    for _, p in pairs(game.connected_players) do update_blueprint_perm(p) end
+end
+
 -- 玩家本世界（storage.run）首次拥有 character 时发放起手装备 + 经验奖励。
 -- 同时被 on_player_created（开局直接领）和 on_player_respawned（跃迁后第一次死亡复活）调用。
 local function try_gift_first_in_world(player)
@@ -211,6 +249,7 @@ script.on_event(defines.events.on_player_created, function(event)
     gui.player_gui(player)
     passives.apply(player)     -- 施加手搓/移动/挖矿速度技能（新角色 modifier 默认 0）
     try_gift_first_in_world(player)
+    update_blueprint_perm(player)   -- 新玩家 warps=0 → 进受限组，禁蓝图库/导入字符串
     gui.show_intro(player)   -- 新玩家首次进服自动弹简介（即世界标签的悬停内容）
 end)
 
@@ -228,6 +267,7 @@ script.on_event(defines.events.on_player_joined_game, function(event)
     -- 星星充能基准：首次见到该玩家时锚定为当前 tick（之后随游戏时间累积；不重置已有值）。
     storage.charge = storage.charge or {}
     storage.charge[player.name] = storage.charge[player.name] or game.tick
+    update_blueprint_perm(player)   -- 重连时按当前 warps 重新判定蓝图权限
     -- 名册变了，刷新所有人 HUD（自然包含自己）
     gui.players_gui()
 

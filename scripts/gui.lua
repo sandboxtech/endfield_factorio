@@ -147,7 +147,7 @@ function M.show_popup(player, title, lines, buttons, buttons_at_bottom, bottom_b
             if b.label then
                 local l = pane.add{type = 'label', caption = b.caption}
                 l.style.font = 'default-bold'
-                l.style.top_margin = 6
+                l.style.top_margin = 16   -- 分组标题上方留更大空行（travel / 出生星球 等组之间更分明）
             elseif b.newrow then
                 -- 空职业/分隔占位：加一条分隔线 + 开新 table，后面按钮另起一组。单列也画线（如在线玩家列表"查看自己"与其他人之间）。
                 pane.add{type = 'line'}
@@ -156,7 +156,12 @@ function M.show_popup(player, title, lines, buttons, buttons_at_bottom, bottom_b
                 -- enabled=false → 按钮置灰且不触发 on_gui_click（如本轮关闭的星球）。tooltip 说明为何不可点。
                 local btn = box.add{type = 'button', name = b.name, caption = b.caption, tags = b.tags,
                         enabled = b.enabled, tooltip = b.tooltip}
-                if cols and cols > 1 then btn.style.width = 220 end   -- 网格按钮统一【固定】宽(非最小宽)：英文长短不一也强制对齐、加宽防截断
+                if b.min_width then
+                    btn.style.minimal_width = b.min_width                 -- 【最小宽】（可随内容/列宽伸展）：玩家列表用，像职业但允许加宽
+                    btn.style.horizontally_stretchable = true
+                elseif cols and cols > 1 then
+                    btn.style.width = 220   -- 网格按钮统一【固定】宽(非最小宽)：英文长短不一也强制对齐、加宽防截断
+                end
             end
         end
     end

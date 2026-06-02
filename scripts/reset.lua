@@ -54,6 +54,7 @@ function M.reset()
     constants.ensure_defaults()   -- 补齐默认值：新档初始化 / 老档迁移 / 每轮兜底（幂等，不覆盖已调参数）
     storage.run = (storage.run or 0) + 1
     player_stats.bump_connected('warps')   -- 给当前在线玩家各记一次"经历的跃迁"
+    players.refresh_blueprint_perms()      -- warps 刚 +1：刷新在线玩家蓝图权限，让满 2 次的即时解锁
 
     -- 跃迁时：人物等级(=floor√在线分钟) ≥ 50 的【在线】玩家自动成为会员（会员名单按玩家名存，见 commands.is_member）。
     storage.members = storage.members or {}
