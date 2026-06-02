@@ -555,7 +555,7 @@ local DEFAULT_CLASSES = {
 
     {key = 'spiderman', techs = {'spidertron'}, name = '蜘蛛侠', full = FULL_MAX, starter = {
         {item = 'spidertron', count = 1},
-    }, unlock = {{pack = 'utility-science-pack', level = 100}}, rewards = {
+    }, unlock = {{pack = 'utility-science-pack', level = 1000}}, rewards = {
 
     }},
 
@@ -570,7 +570,7 @@ local DEFAULT_CLASSES = {
         {pack = 'utility-science-pack',  item = 'energy-shield-mk2-equipment', groups = 5},   -- 黄：能量盾 mk2
     }},
     {key = 'healer', techs = {'solar-panel-equipment'}, name = '奶妈', full = FULL_MID, starter = {   -- 发电+储能装置
-        {item = 'fusion-reactor-equipment', count = 1},
+        -- {item = 'fusion-reactor-equipment', count = 1},
         {item = 'fission-reactor-equipment', count = 1},
         {item = 'battery-mk3-equipment', count = 1},
     }, rewards = {
@@ -605,7 +605,7 @@ local DEFAULT_CLASSES = {
     }},
     {key = 'transformer', techs = {'mech-armor'}, name = '变形金刚', full = FULL_MAX, starter = {   -- 终极机甲：粉瓶 1000 级解锁
         {item = 'mech-armor', count = 1},
-    }, unlock = {{pack = 'electromagnetic-science-pack', level = 100}}, rewards = {
+    }, unlock = {{pack = 'electromagnetic-science-pack', level = 1000}}, rewards = {
         -- {pack = 'electromagnetic-science-pack', item = 'mech-armor',                      groups = 1},   -- 粉：机甲护甲(终极)
         -- {pack = 'cryogenic-science-pack',       item = 'fusion-reactor-equipment',        groups = 1},   -- 靛：聚变堆装备
         -- {pack = 'electromagnetic-science-pack', item = 'battery-mk3-equipment',           groups = 1},   -- 粉：mk3 电池

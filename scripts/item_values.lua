@@ -564,9 +564,9 @@ M.class = {
     chef =           {full=10000 , item_start=1602    , tech=0        , item_max=4602     },  -- MID
     plumber =        {full=10000 , item_start=1983    , tech=341      , item_max=18093    },  -- MID
     thorman =        {full=10000 , item_start=997     , tech=20446    , item_max=20933    },  -- MID
+    porter =         {full=10000 , item_start=1952    , tech=12887    , item_max=21467    },  -- MID
     smelter =        {full=10000 , item_start=1500    , tech=8863     , item_max=27008    },  -- MID
     pharmacist =     {full=10000 , item_start=1602    , tech=0        , item_max=29502    },  -- MID
-    porter =         {full=10000 , item_start=1952    , tech=12887    , item_max=40982    },  -- MID
     herder =         {full=10000 , item_start=81      , tech=240598   , item_max=40996    },  -- MID
     electrician =    {full=10000 , item_start=682     , tech=0        , item_max=49328    },  -- MID
     miner =          {full=10000 , item_start=1106    , tech=50       , item_max=50503    },  -- MID
@@ -574,19 +574,19 @@ M.class = {
     gridman =        {full=10000 , item_start=136     , tech=4159     , item_max=60345    },  -- MID
     guard =          {full=10000 , item_start=10000   , tech=40       , item_max=67628    },  -- MID
     warehouser =     {full=10000 , item_start=3799    , tech=77794    , item_max=78277    },  -- MID
+    loaderman =      {full=10000 , item_start=43      , tech=34522    , item_max=91957    },  -- MID
     launcher =       {full=10000 , item_start=1813    , tech=237253   , item_max=92447    },  -- MID
     inserter =       {full=10000 , item_start=1046    , tech=1083     , item_max=101147   },  -- MID
     greentech =      {full=10000 , item_start=7939    , tech=2726     , item_max=119431   },  -- MID
+    runner =         {full=10000 , item_start=3959    , tech=1670     , item_max=135942   },  -- MID
     oilman =         {full=10000 , item_start=2266    , tech=682      , item_max=139414   },  -- MID
+    laserman =       {full=10000 , item_start=9892    , tech=23105    , item_max=141786   },  -- MID
+    healer =         {full=10000 , item_start=81774   , tech=682      , item_max=146491   },  -- MID
     tankman =        {full=10000 , item_start=1784    , tech=30668    , item_max=153770   },  -- MID
     belter =         {full=10000 , item_start=3043    , tech=1403     , item_max=165399   },  -- MID
     artisan =        {full=10000 , item_start=970     , tech=293      , item_max=199349   },  -- MID
-    runner =         {full=10000 , item_start=3959    , tech=1670     , item_max=267926   },  -- MID
-    healer =         {full=10000 , item_start=338686  , tech=682      , item_max=403403   },  -- MID
-    loaderman =      {full=10000 , item_start=43      , tech=34522    , item_max=464743   },  -- MID
-    bomber =         {full=10000 , item_start=1500    , tech=682      , item_max=524808   },  -- MID
-    laserman =       {full=10000 , item_start=9892    , tech=23105    , item_max=669362   },  -- MID
-    helper =         {full=10000 , item_start=6046    , tech=1670     , item_max=1495251  },  -- MID
+    bomber =         {full=10000 , item_start=1500    , tech=682      , item_max=218678   },  -- MID
+    helper =         {full=10000 , item_start=6046    , tech=1670     , item_max=431259   },  -- MID
     philosopher =    {full=100000, item_start=0       , tech=444443   , item_max=0        },  -- MAX
     afker =          {full=100000, item_start=2       , tech=1071184  , item_max=2        },  -- MAX inf-tech
     banker =         {full=100000, item_start=0       , tech=0        , item_max=1200     },  -- MAX
