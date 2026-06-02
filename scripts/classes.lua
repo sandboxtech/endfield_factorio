@@ -49,26 +49,40 @@ local DEFAULT_CLASSES = {
         {pack = 'promethium-science-pack', item = 'nuclear-fuel',   groups = 10},
     }},
 
-    {key = 'afker', techs = {'research-productivity'}, name = '挂机大师', full = FULL_LOW, starter = {
-        
+    {key = 'afker', techs = {'research-productivity'}, name = '挂机大师', full = FULL_MAX, starter = {
+        {item = 'automation-science-pack',   count = 1},
     }, rewards = {
         
     }},
 
-    {key = 'philosopher', techs = {'biolab'}, name = '哲学家', full = FULL_LOW, starter = {
+    {key = 'philosopher', techs = {'biolab'}, name = '哲学家', full = FULL_MAX, starter = {
         
     }, rewards = {
-        
+        {pack = 'automation-science-pack', item = 'automation-science-pack',   groups = 2},
     }},
 
-    {key = 'afker', techs = {'circuit-network'}, name = '艺术家', full = FULL_MAX, starter = {
-
+    {key = 'artist', techs = {'circuit-network'}, name = '艺术家', full = FULL_LOW, starter = {
+        {item = 'small-lamp', groups = 1},
+        {item = 'constant-combinator', count = 1},
     }, rewards = {
-        {pack = 'automation-science-pack', item = 'lab',                 groups = 1},
+        {pack = 'automation-science-pack',    item = 'constant-combinator',  groups = 5},   -- 绿：常量运算器(配色信号)
+        {pack = 'logistic-science-pack',  item = 'small-lamp',           groups = 5},  -- 红：小灯(像素画)
+        {pack = 'logistic-science-pack',    item = 'display-panel',        groups = 5},  -- 绿：显示屏
+        {pack = 'promethium-science-pack',    item = 'programmable-speaker', groups = 5},
     }},
 
+    {key = 'programmer', techs = {'advanced-combinators'}, name = '程序员', full = FULL_LOW, starter = {
+        {item = 'selector-combinator', groups = 1},
+        {item = 'arithmetic-combinator', groups = 1},
+        {item = 'decider-combinator', groups = 1},
+    }, rewards = {
+        {pack = 'automation-science-pack',  item = 'constant-combinator',   groups = 5},  -- 紫：常量运算器
+        {pack = 'logistic-science-pack',   item = 'decider-combinator',    groups = 5},  -- 绿：判断运算器
+        {pack = 'logistic-science-pack',   item = 'arithmetic-combinator', groups = 5},  -- 绿：算术运算器
+        {pack = 'promethium-science-pack',   item = 'selector-combinator',   groups = 5},  -- 蓝：选择运算器(高级运算器)
+    }},
 
-    {key = 'reformer', techs = {'biolab'}, name = '发明家', full = FULL_LOW, starter = {
+    {key = 'inventor', techs = {'research-speed-1'}, name = '发明家', full = FULL_LOW, starter = {
         {item = 'lab', groups = 1},
     }, unlock = {{pack = 'automation-science-pack', level = 10}}, rewards = {
         {pack = 'automation-science-pack', item = 'lab',                 groups = 10},
@@ -76,7 +90,7 @@ local DEFAULT_CLASSES = {
         {pack = 'promethium-science-pack', item = 'lab',                 groups = 10},
     }},
 
-    {key = 'civilengineer', techs = {'research-speed-1', 'biolab'}, name = '土木工人', full = FULL_LOW, starter = {
+    {key = 'civilengineer', techs = {'cliff-explosives'}, name = '土木工人', full = FULL_LOW, starter = {
         {item = 'cliff-explosives', groups = 1},
     }, unlock = {{pack = 'automation-science-pack', level = 10}}, rewards = {
         {pack = 'automation-science-pack', item = 'stone-brick',                 groups = 10},
