@@ -460,6 +460,23 @@ local DEFAULT_CLASSES = {
         {pack = 'space-science-pack',   item = 'crusher',                     groups = 5},
     }},
 
+    -- 宇航·四星殖民者：起始科技 = 各星球发现科技；starter/rewards/recipes 待填。
+    {key = 'vulcanus', techs = {'planet-discovery-vulcanus'}, recipes = {}, name = '火山殖民者', full = FULL_MAX, starter = {
+    }, rewards = {
+    }},
+
+    {key = 'fulgora', techs = {'planet-discovery-fulgora'}, recipes = {}, name = '废土殖民者', full = FULL_MAX, starter = {
+    }, rewards = {
+    }},
+
+    {key = 'gleba', techs = {'planet-discovery-gleba'}, recipes = {}, name = '雨林殖民者', full = FULL_MAX, starter = {
+    }, rewards = {
+    }},
+
+    {key = 'aquilo', techs = {'planet-discovery-aquilo'}, recipes = {}, name = '冰原殖民者', full = FULL_MAX, starter = {
+    }, rewards = {
+    }},
+
 
     {section = '战斗'},
     -- 分组换行：物流 ↔ 战斗

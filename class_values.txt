@@ -76,6 +76,10 @@ astronomer          MAX          0      42,985    859,101∞
 biologist           MAX          0      37,194    122,822∞
 banker              MAX          0       1,200           0
 afker               MAX          2           2    859,101∞
+vulcanus            MAX          0           0      35,208
+fulgora             MAX          0           0      35,208
+gleba               MAX          0           0      35,208
+aquilo              MAX          0           0   2,401,707
 
 ━━━━━━━━━━━━ 二、LOW 档明细（16个，满级中位 7,178）━━━━━━━━━━━━
 
@@ -253,7 +257,7 @@ afker               MAX          2           2    859,101∞
     初始: biochamber=1,602
     奖励: yumako-mash=1,000、jelly=1,000、yumako=500、jellynut=500
 
-━━━━━━━━━━━━ 二、MAX 档明细（24个，满级中位 334,376）━━━━━━━━━━━━
+━━━━━━━━━━━━ 二、MAX 档明细（28个，满级中位 214,772）━━━━━━━━━━━━
 
 【nuclearman 核能工人】 初始物品=5,073  满级物品=1,500,677  科技=26,726  techs=['nuclear-power']
     初始: centrifuge=5,073
@@ -351,11 +355,27 @@ afker               MAX          2           2    859,101∞
     初始: automation-science-pack=2
     奖励: （无）
 
+【vulcanus 火山殖民者】 初始物品=0  满级物品=0  科技=35,208  techs=['planet-discovery-vulcanus']
+    初始: （无）
+    奖励: （无）
+
+【fulgora 雷电殖民者】 初始物品=0  满级物品=0  科技=35,208  techs=['planet-discovery-fulgora']
+    初始: （无）
+    奖励: （无）
+
+【gleba 雨林殖民者】 初始物品=0  满级物品=0  科技=35,208  techs=['planet-discovery-gleba']
+    初始: （无）
+    奖励: （无）
+
+【aquilo 冰原殖民者】 初始物品=0  满级物品=0  科技=2,401,707  techs=['planet-discovery-aquilo']
+    初始: （无）
+    奖励: （无）
+
 ━━━━━━━━━━━━ 三、复检 ━━━━━━━━━━━━
-初始物品  中位=1,602  范围 0 ~ 54,012（应大致相当）
+初始物品  中位=1,500  范围 0 ~ 54,012（应大致相当）
 LOW 满级物品  中位=7,178  范围 1,851 ~ 126,295
 MID 满级物品  中位=86,918  范围 4,602 ~ 930,432
-MAX 满级物品  中位=334,376  范围 2 ~ 1,500,677
+MAX 满级物品  中位=214,772  范围 0 ~ 1,500,677
 
 ──── 初始物品排名 · 前 20（最高，最该削平）────
   mecharmor          MAX  初始=   54,012  科技=2,996,275  主因 mech-armor=54,012
@@ -381,6 +401,10 @@ MAX 满级物品  中位=334,376  范围 2 ~ 1,500,677
 
 ──── 初始物品排名 · 后 20（最低，科技列高=靠科技/高科技物品撑，非真弱；coin 低估）────
   banker             MAX  初始=        0  科技=0  主因 （无）
+  vulcanus           MAX  初始=        0  科技=35,208  主因 （无）
+  fulgora            MAX  初始=        0  科技=35,208  主因 （无）
+  gleba              MAX  初始=        0  科技=35,208  主因 （无）
+  aquilo             MAX  初始=        0  科技=2,401,707  主因 （无）
   metallurgist       MAX  初始=        0  科技=247,737∞  主因 （无）
   electromancer      MAX  初始=        0  科技=519,382∞  主因 （无）
   biologist          MAX  初始=        0  科技=122,822∞  主因 （无）
@@ -396,10 +420,6 @@ MAX 满级物品  中位=334,376  范围 2 ~ 1,500,677
   fisher             LOW  初始=      180  科技=4,775  主因 raw-fish=100
   artist             LOW  初始=      181  科技=682  主因 small-lamp=176
   traindriver        LOW  初始=      228  科技=1,874  主因 rail=228
-  inventor           LOW  初始=      319  科技=682  主因 lab=319
-  forester           MAX  初始=      346  科技=2,148  主因 wood=200
-  tanker             MID  初始=      480  科技=13,543  主因 tank=480
-  energytrader       LOW  初始=      500  科技=182,630  主因 coal=500
 
 ──── 满级物品排名 · 前 20（最高，含 MID/LOW 越级）────
   nuclearman         MAX  满级= 1,500,677  科技=26,726  主因 nuclear-reactor=671,917
@@ -424,6 +444,10 @@ MAX 满级物品  中位=334,376  范围 2 ~ 1,500,677
   artisan            MID  满级=   199,349  科技=293  主因 assembling-machine-3=170,726
 
 ──── 满级物品排名 · 后 20（最低，最差，最可能需补强）────
+  vulcanus           MAX  满级=         0  科技=35,208  主因 （无）
+  fulgora            MAX  满级=         0  科技=35,208  主因 （无）
+  gleba              MAX  满级=         0  科技=35,208  主因 （无）
+  aquilo             MAX  满级=         0  科技=2,401,707  主因 （无）
   afker              MAX  满级=         2  科技=859,101∞  主因 （无）
   banker             MAX  满级=     1,200  科技=0  主因 coin=100
   oreman             LOW  满级=     1,851  科技=18,408  主因 carbon=300
@@ -440,10 +464,6 @@ MAX 满级物品  中位=334,376  范围 2 ~ 1,500,677
   energytrader       LOW  满级=    14,972  科技=182,630  主因 rocket-fuel=7,350
   plumber            LOW  满级=    18,093  科技=341  主因 storage-tank=8,825
   minelayer          MID  满级=    20,933  科技=2,758  主因 land-mine=19,936
-  toolbelt           MID  满级=    21,467  科技=12,887  主因 toolbelt-equipment=19,515
-  gunner             MID  满级=    22,752  科技=20  主因 uranium-rounds-magazine=8,197
-  smelter            MID  满级=    27,008  科技=8,863  主因 electric-furnace=10,918
-  shotgunner         LOW  满级=    27,191  科技=20  主因 piercing-shotgun-shell=19,120
 
 各档档内最差（满级物品最低 3）：
   LOW  oreman             满级=   1,851  科技=18,408  techs=['mining-productivity-1', 'mining-productivity-2']
@@ -452,6 +472,6 @@ MAX 满级物品  中位=334,376  范围 2 ~ 1,500,677
   MID  chef               满级=   4,602  科技=0  techs=['bioflux', 'bioflux-processing', 'jellynut', 'yumako']
   MID  minelayer          满级=  20,933  科技=2,758  techs=['land-mine']
   MID  toolbelt           满级=  21,467  科技=12,887  techs=['toolbelt-equipment']
-  MAX  afker              满级=       2  科技=859,101∞  techs=['research-productivity']
-  MAX  banker             满级=   1,200  科技=0  techs=无
-  MAX  biologist          满级=  37,194  科技=122,822∞  techs=['rocket-fuel-productivity']
+  MAX  vulcanus           满级=       0  科技=35,208  techs=['planet-discovery-vulcanus']
+  MAX  fulgora            满级=       0  科技=35,208  techs=['planet-discovery-fulgora']
+  MAX  gleba              满级=       0  科技=35,208  techs=['planet-discovery-gleba']
