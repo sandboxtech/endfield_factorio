@@ -560,7 +560,7 @@ local function place_reward_chest(surface, pos, kind)
     if kind == 'equipment' then fill_loot(chest, math.random(10, 24), loot_weights().equipment, 2)
     elseif kind == 'treasure' then fill_treasure_chest(inv)
     else fill_material_chest(inv) end
-    return true
+    return chest   -- 返回箱实体（供据点登记/解锁；perpetual 分支返回 bool，不参与解锁）
 end
 
 -- 据点中心地图标签：图标 = 该宝箱类型对应的箱子物品（无文本）。仅 storage.chest_map_tags 开启时打。
@@ -657,6 +657,7 @@ local function place_guards(surface, center, danger, floor)
     end
     local tmax = math.max(1, math.floor(1 + danger * 7 + 0.5))
     local core, core_tried = nil, false
+    local guards = {}   -- 收集【可击杀的守卫】(炮塔/沙虫，排除地雷/电网核心)：供据点"清空解锁"判定（见 place_encounter）
     for _, def in ipairs(OUTPOST_GUARDS) do
         for _ = 1, nonlinear_count(tmax, 3) do
             if def.electric and not core then
@@ -672,6 +673,7 @@ local function place_guards(surface, center, danger, floor)
                 local e = surface.create_entity{name = name, force = 'enemy', position = gsp, direction = math.random(0, 3) * 4, quality = roll_quality(0.7)}
                 enemy_floor_patch(surface, e, floor)
                 if e then
+                    if def.name ~= 'land-mine' then guards[#guards + 1] = e end   -- 地雷是被动陷阱、不计入"守卫全灭"
                     if def.electric and core and core.eei then
                         local maxp = TURRET_MAX_POWER[e.name] or 0                  -- 该炮最大功率(W，手填表 tesla 7 / railgun 10 / laser 1.3 MW)
                         core.maxpower = core.maxpower + maxp                         -- Σ最大功率(W)
@@ -693,6 +695,29 @@ local function place_guards(surface, center, danger, floor)
         local wp = surface.find_non_colliding_position(name, {x = center.x + math.cos(ang) * r, y = center.y + math.sin(ang) * r}, 8, 1)
         if wp then surface.create_entity{name = name, position = wp, force = 'neutral'} end
     end
+    return guards
+end
+
+-- 把箱子设为可挖+可开（据点守卫全灭 或 本就无守卫时调用）。
+local function unlock_chests(chests)
+    for _, c in pairs(chests) do
+        if c.valid then c.minable_flag = true; c.operable = true end
+    end
+end
+
+-- 登记一个据点：守卫(unit_number)→据点 id，记录待解锁的箱子与存活守卫数。守卫全灭后解锁（见 on_entity_died）。
+-- 无可追踪守卫(都没 unit_number)时直接解锁、不登记。
+local function register_outpost(chests, guards)
+    storage.outposts = storage.outposts or {}
+    storage.outpost_of = storage.outpost_of or {}
+    storage.outpost_seq = (storage.outpost_seq or 0) + 1
+    local oid = storage.outpost_seq
+    local n = 0
+    for _, g in pairs(guards) do
+        if g.valid and g.unit_number then storage.outpost_of[g.unit_number] = oid; n = n + 1 end
+    end
+    if n == 0 then unlock_chests(chests); return end
+    storage.outposts[oid] = {chests = chests, alive = n}
 end
 
 -- 【单地块至多一个遭遇】：按稀有度优先级依次尝试，命中即放置(箱/敌人)并 return，后面不再试。
@@ -722,24 +747,59 @@ local function place_encounter(surface, lt)
     for _, e in ipairs(ENCOUNTERS) do
         if math.random() <= encounter_chance(surface, e.kind) then   -- 命中此遭遇（用全局 RNG，不再坐标哈希 → 随运行状态/人数/时间变，每局每次不可预测）
             -- 奖励：非空据点放【1~16 个同类箱】，数量非线性 floor(1+15·random^6)，再乘本轮 riches 倍率（富庶世界更多）。
+            local chests = {}
             if e.kind ~= 'empty' then
-                local placed = 0
                 for _ = 1, math.floor((1 + 8 * math.random() ^ 6 * riches_mul)) do
-                    if place_reward_chest(surface, center, e.kind) then placed = placed + 1 end
+                    local c = place_reward_chest(surface, center, e.kind)
+                    if c then chests[#chests + 1] = c end
                 end
-                if placed > 0 then tag_encounter(surface, center, e.kind) end   -- 中心打一个该类型图标的地图标签（无文本）
             end
             -- 敌人：出生点 96 格内不放（保护新手）；地砖按类型选——空据点不铺、永续用第二种、普通箱用本星地砖。
+            local guards = {}
             if not near_spawn then
                 local floor
                 if e.kind == 'perpetual' then floor = (storage.enemy_floor2 or {})[surface.name]
                 elseif e.kind ~= 'empty' then floor = (storage.enemy_floor or {})[surface.name] end
-                place_guards(surface, center, e.danger * (0.4 + 0.6 * frac) * danger_mul, floor)   -- ×本轮 danger 倍率
+                guards = place_guards(surface, center, e.danger * (0.4 + 0.6 * frac) * danger_mul, floor) or {}   -- ×本轮 danger 倍率
+            end
+            -- 至少放成一个箱才打地图标签。
+            if #chests > 0 then
+                tag_encounter(surface, center, e.kind)   -- 中心打一个该类型图标的地图标签（无文本）
+                -- 铁/钢/木箱(非永续)：有守卫→登记据点，守卫全灭后解锁；无守卫→当场就可挖可开。
+                -- （perpetual 是无限箱、由 storage.perpetual_* 单独管，不走此解锁。）
+                if e.kind ~= 'perpetual' then
+                    if #guards > 0 then register_outpost(chests, guards)
+                    else unlock_chests(chests) end
+                end
             end
             return   -- 每地块至多一个遭遇，命中即停
         end
     end
 end
+
+-- 据点守卫(炮塔/沙虫)死亡 → 对应据点存活数 -1；归零则解锁该据点所有箱(可挖+可开)。
+-- 只对登记过的守卫(storage.outpost_of[unit_number])生效；按 turret 类型过滤事件，频率低。
+local OUTPOST_DEATH_FILTER = {
+    {filter = 'type', type = 'ammo-turret'}, {filter = 'type', type = 'electric-turret'},
+    {filter = 'type', type = 'fluid-turret'}, {filter = 'type', type = 'artillery-turret'},
+    {filter = 'type', type = 'turret'},
+}
+script.on_event(defines.events.on_entity_died, events.safe('outpost_clear', function(event)
+    local map = storage.outpost_of
+    if not map then return end
+    local e = event.entity
+    local un = e and e.valid and e.unit_number
+    local oid = un and map[un]
+    if not oid then return end
+    map[un] = nil
+    local o = storage.outposts and storage.outposts[oid]
+    if not o then return end
+    o.alive = o.alive - 1
+    if o.alive <= 0 then
+        unlock_chests(o.chests)
+        storage.outposts[oid] = nil
+    end
+end), OUTPOST_DEATH_FILTER)
 
 -- 树木主题（连续插值，不是离散几种世界）：把每棵树【从原版色/灰度插值到本轮目标】，插值量 = strength。
 --   strength 立方偏置：绝大多数 ≈0（几乎原版）、极小概率接近 1（大改）。所以"特殊树世界"很罕见。

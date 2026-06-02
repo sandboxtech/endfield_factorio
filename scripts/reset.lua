@@ -161,6 +161,7 @@ function M.reset()
         end
     end
     storage.pending_chest_tags = {}   -- 清空未勘探宝箱标签的待办（新一轮星球会重新生成据点/标签）
+    storage.outposts, storage.outpost_of = {}, {}   -- 清空据点"守卫全灭解锁箱"登记（旧世界实体已失效，新世界重建）
 
     -- 清空星球（会触发 surface.lua 的 on_surface_cleared 重新生成）
     for _, surface_name in ipairs(constants.PLANETS) do
