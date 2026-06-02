@@ -251,7 +251,7 @@ local DEFAULT_CLASSES = {
         {pack = 'cryogenic-science-pack',   item = 'cryogenic-plant', groups = 2},   -- 蓝：化工厂
     }},
 
-    {key = 'moduler', techs = {'modules'}, name = '插件工人', full = FULL_MID, starter = {
+    {key = 'moduler', techs = {'modules'}, name = '插件工人', full = FULL_MAX, starter = {
         {item = 'beacon', count=10},
         {item = 'speed-module', count=10},
         {item = 'efficiency-module', count=10},
@@ -268,28 +268,28 @@ local DEFAULT_CLASSES = {
         {pack = 'cryogenic-science-pack', item = 'productivity-module', groups = 5},
     }},
 
-    {key = 'qualityman', techs = {'quality-module', 'epic-quality'}, name = '品质大师', full = FULL_MID, starter = {
+    {key = 'qualityman', techs = {'quality-module', 'epic-quality'}, name = '品质大师', full = FULL_MAX, starter = {
         {item = 'quality-module', groups = 1},
     }, unlock = {{pack = 'electromagnetic-science-pack', level = 10}}, rewards = {
         {pack = 'chemical-science-pack',        item = 'quality-module',     groups = 10},   -- 蓝：1级
         {pack = 'space-science-pack',           item = 'quality-module-2',   groups = 10},   -- 白：2级
         {pack = 'electromagnetic-science-pack', item = 'quality-module-3',   groups = 10},   -- 粉：3级(电浆星)
     }},
-    {key = 'speedman', techs = {'speed-module', 'low-density-structure-productivity'}, name = '速度大师', full = FULL_MID, starter = {
+    {key = 'speedman', techs = {'speed-module', 'low-density-structure-productivity'}, name = '速度大师', full = FULL_MAX, starter = {
         {item = 'speed-module', groups = 1},
     }, unlock = {{pack = 'metallurgic-science-pack', level = 10}}, rewards = {
         {pack = 'chemical-science-pack',    item = 'speed-module',     groups = 10},   -- 蓝：1级
         {pack = 'space-science-pack',       item = 'speed-module-2',   groups = 10},   -- 白：2级
         {pack = 'metallurgic-science-pack', item = 'speed-module-3',   groups = 10},   -- 橙：3级(火山)
     }},
-    {key = 'efficiencyman', techs = {'efficiency-module', 'rocket-fuel-productivity'}, name = '节能大师', full = FULL_MID, starter = {
+    {key = 'efficiencyman', techs = {'efficiency-module', 'rocket-fuel-productivity'}, name = '节能大师', full = FULL_MAX, starter = {
         {item = 'efficiency-module', groups = 1},
     }, unlock = {{pack = 'agricultural-science-pack', level = 10}}, rewards = {
         {pack = 'chemical-science-pack',     item = 'efficiency-module',     groups = 10},   -- 蓝：1级
         {pack = 'space-science-pack',        item = 'efficiency-module-2',   groups = 10},   -- 白：2级
         {pack = 'agricultural-science-pack', item = 'efficiency-module-3',   groups = 10},   -- 草：3级(Gleba)
     }},
-    {key = 'productivityman', techs = {'productivity-module', 'processing-unit-productivity'}, name = '产能大师', full = FULL_MID, starter = {
+    {key = 'productivityman', techs = {'productivity-module', 'processing-unit-productivity'}, name = '产能大师', full = FULL_MAX, starter = {
         {item = 'productivity-module', groups = 1},
     }, unlock = {{pack = 'cryogenic-science-pack', level = 10}}, rewards = {
         {pack = 'chemical-science-pack',  item = 'productivity-module',     groups = 10},   -- 蓝：1级
@@ -578,9 +578,9 @@ local DEFAULT_CLASSES = {
         {item = 'fission-reactor-equipment', count = 1},
         {item = 'battery-mk3-equipment', groups = 1},
     }, rewards = {
-        {pack = 'logistic-science-pack',  item = 'solar-panel-equipment',     groups = 10},  -- 绿：太阳能板
-        {pack = 'chemical-science-pack',  item = 'fission-reactor-equipment', groups = 1},   -- 蓝：裂变反应堆
-        {pack = 'cryogenic-science-pack', item = 'fusion-reactor-equipment',  groups = 1},   -- 靛：聚变反应堆
+        {pack = 'logistic-science-pack',  item = 'solar-panel-equipment',     groups = 6},  -- 绿：太阳能板
+        {pack = 'chemical-science-pack',  item = 'fission-reactor-equipment', count=10},   -- 蓝：裂变反应堆
+        {pack = 'cryogenic-science-pack', item = 'fusion-reactor-equipment',  count=10},   -- 靛：聚变反应堆
         --
         {pack = 'military-science-pack',  item = 'battery-equipment',         groups = 1},   -- 灰：电池(储能)
         {pack = 'utility-science-pack',   item = 'battery-mk2-equipment',     groups = 1},   -- 黄：电池 mk2
