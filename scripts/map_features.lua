@@ -414,9 +414,10 @@ local function spawn_perpetual_chest(surface, pos)
     if not item then chest.destroy(); return false end
     local ss = prototypes.item[item].stack_size
     chest.infinity_container_filters = {{index = 1, name = item, count = ss, mode = 'exactly', quality = roll_perpetual_quality()}}
-    chest.operable = false        -- 不可打开/重配
-    chest.minable_flag = false    -- 不可拆走
-    chest.destructible = false    -- 不可摧毁（否则 fulgora 闪电/火炮会把它劈烂）
+    -- 三个属性可 /c 调（默认 false=现状）。`or false` 兜 nil 并保证返回布尔（API 不接受 nil）。
+    chest.operable = storage.perpetual_operable or false             -- 可打开/重配（默认否）
+    chest.minable_flag = storage.perpetual_minable or false          -- 可手挖拆走（默认否）
+    chest.destructible = storage.perpetual_destructible or false     -- 可摧毁（默认否；开了 fulgora 闪电/火炮会把它劈烂）
     -- 周围 8 格各 50% 放一堵【无敌敌方石墙】：玩家贴不到箱子放机械臂/传送带，掏货效率下降（墙拆不掉，只能从随机留出的缝隙接）。
     for dx = -1, 1 do
         for dy = -1, 1 do

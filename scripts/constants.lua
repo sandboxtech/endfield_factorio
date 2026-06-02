@@ -125,6 +125,10 @@ function M.ensure_defaults()
         loot_density_perpetual = 1,        -- 永续箱遭遇
         loot_density_empty     = 1,        -- 空据点遭遇（纯敌人）
         chest_map_tags         = true,     -- 据点生成宝箱时，在中心打一个【该箱类型图标】的地图标签（无文本）。关：/c storage.chest_map_tags=false
+        -- 永续箱（infinity-chest）三个属性，默认全 false=现状。/c storage.perpetual_xxx=true 开。
+        perpetual_operable     = false,    -- 可打开 GUI/重配（默认否）
+        perpetual_minable      = false,    -- 可手挖拆走（默认否）
+        perpetual_destructible = false,    -- 可被摧毁（默认否；开了 fulgora 闪电/火炮会劈烂它）
         event_chance = 0.5,               -- 每分钟【全服】发生一次世界事件的固定概率（与人数无关；命中后随机挑 1 名玩家）
         -- 科技世界(事件世界的一种)：每次从所有科技随机抽一个
         tech_world_lose_chance = 0.125,    -- 抽中【已研究】科技时，失去它的概率
