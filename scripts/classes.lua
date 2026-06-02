@@ -339,12 +339,12 @@ local DEFAULT_CLASSES = {
         {pack = 'space-science-pack',   item = 'logistic-robot',         groups = 10},  -- 绿：物流机器人
     }},
 
-    {key = 'launcher', techs = {'rocket-silo'}, name = '发射专家', full = FULL_MAX, starter = {
+    {key = 'launcher', techs = {'rocket-silo'}, name = '发射专家', full = FULL_MID, starter = {
         {item = 'rocket-part', count = 1},
     }, unlock = {{pack = 'space-science-pack', level = 1000}}, rewards = {
         {pack = 'metallurgic-science-pack',   item = 'low-density-structure',                    groups = 10},
-        {pack = 'electromagnetic-science-pack',   item = 'processing-unit',                    groups = 10},
-        {pack = 'agricultural-science-pack',   item = 'rocket-fuel',                    groups = 10},
+        {pack = 'electromagnetic-science-pack',   item = 'processing-unit',                    groups = 5},
+        {pack = 'agricultural-science-pack',   item = 'rocket-fuel',                    groups = 25},
     }},
 
     {key = 'captain', techs = {'advanced-asteroid-processing'}, name = '船长', full = FULL_MAX, starter = {
@@ -632,7 +632,7 @@ local DEFAULT_CLASSES = {
     }},
     {key = 'astronomer', techs = {'research-productivity'}, name = '天文专家', full = FULL_MAX, starter = {
 
-    }, unlock = {{pack = 'promethium-science-pack', level = 500}}, rewards = {
+    }, unlock = {{pack = 'promethium-science-pack', level = 1000}}, rewards = {
         {pack = 'promethium-science-pack', item = 'biolab',            groups = 20},
     }},
 
