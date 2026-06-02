@@ -493,6 +493,7 @@ local DEFAULT_CLASSES = {
         {pack = 'automation-science-pack',        item = 'gun-turret',          groups = 5},   -- 灰：机枪炮塔
         {pack = 'military-science-pack',        item = 'flamethrower-turret', groups = 1},   -- 蓝：喷火炮塔
         {pack = 'chemical-science-pack',        item = 'laser-turret',        groups = 1},   -- 灰：激光炮塔
+        {pack = 'agricultural-science-pack', item = 'rocket-turret',        groups = 1},   -- 灰：火箭炮塔
     }},
     {key = 'gunner', techs = {'military'}, name = '田明建', full = FULL_MID, starter = {
         {item = 'submachine-gun', count = 1},
@@ -547,8 +548,6 @@ local DEFAULT_CLASSES = {
         {pack = 'chemical-science-pack', item = 'explosive-rocket',     groups = 10},  -- 蓝：爆破火箭
         {pack = 'utility-science-pack',  item = 'atomic-bomb',          groups = 2},   -- 黄：核弹
         --
-        {pack = 'agricultural-science-pack', item = 'rocket-turret',        groups = 10},   -- 灰：火箭炮塔
-        {pack = 'promethium-science-pack',    item = 'capture-robot-rocket', groups = 1},   -- 白：捕获火箭(抓虫繁殖)
     }},
     {key = 'artillerist', techs = {'artillery'}, name = '李云龙', full = FULL_MAX, starter = {
         {item = 'artillery-turret', count = 1},

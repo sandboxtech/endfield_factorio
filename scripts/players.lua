@@ -124,6 +124,16 @@ local function respawn_surface_name(player)
 end
 M.respawn_surface_name = respawn_surface_name   -- 导出：在线玩家列表显示各玩家出生星球（commands.show_stats）
 
+-- 出生星球在 PLANETS 标准顺序里的序号：nauvis=1 / vulcanus=2 / gleba=3 / fulgora=4 / aquilo=5。
+-- 不新增 storage 变量，直接复用星球列表位置作为【跃迁致死复活时间】的缩放因子（越靠后/越远的星球，复活越久）。
+local function respawn_planet_rank(player)
+    local name = respawn_surface_name(player)
+    for i, p in ipairs(constants.PLANETS) do
+        if p == name then return i end
+    end
+    return 1   -- 兜底按母星算
+end
+
 -- 死亡复活落点，分两种：
 --   · 跃迁清场(reset 打了 storage.respawn_home 标记，含跃迁时已死的玩家) → 回【出生星球】(respawn_surface，兜底母星)。
 --   · 其他死法(自杀/退出/被敌人杀/环境死) → 在【当前所在星球】出生点复活(死在哪星球就在那复活)。
@@ -147,7 +157,15 @@ script.on_event(defines.events.on_player_died, function(event)
     -- 被【敌方】打死 → 30 秒复活惩罚；脚本死亡(跃迁清场/离场/自杀, cause 为 nil)与环境死亡 → 默认 10 秒。
     local by_enemy = cause and cause.valid and cause.force and cause.force.name == 'enemy'
     if player then
-        player.ticks_to_respawn = by_enemy and (storage.respawn_ticks_by_enemy or 1800) or (storage.respawn_ticks or 600)
+        local base = storage.respawn_ticks or 600
+        if by_enemy then
+            player.ticks_to_respawn = storage.respawn_ticks_by_enemy or 1800   -- 被敌方打死：固定惩罚
+        elseif storage.respawn_home and storage.respawn_home[player.index] then
+            -- 跃迁致死复活：按出生星球序号缩放（母星 ×1=10 秒，最远星球 ×5=50 秒），不引入新变量、纯用 PLANETS 位置。
+            player.ticks_to_respawn = base * respawn_planet_rank(player)
+        else
+            player.ticks_to_respawn = base   -- 环境死 / 自杀 / 离场：默认时间
+        end
         -- 尸体一律留在【死亡原地】，任何死法都不搬运；要取回背包货物需自行回倒地处。
     end
     if cause then player_stats.bump(event.player_index, 'death_count') end
