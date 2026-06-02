@@ -221,7 +221,7 @@ local DEFAULT_CLASSES = {
     }},
 
     {key = 'foundryman', techs = {'foundry'}, name = '冶金工人', full = FULL_LOW, starter = {
-        {item = 'foundry', count = 1},
+        {item = 'foundry', count = 5},
     }, unlock = {{pack = 'metallurgic-science-pack', level = 10}}, rewards = {
         {pack = 'automation-science-pack', item = 'calcite',                 groups = 10},
         {pack = 'space-science-pack', item = 'calcite',                 groups = 10},
@@ -229,7 +229,7 @@ local DEFAULT_CLASSES = {
         {pack = 'promethium-science-pack', item = 'calcite',                 groups = 10},
     }},
     {key = 'electromagneticman', techs = {'electromagnetic-plant'}, name = '电子工人', full = FULL_LOW, starter = {
-        {item = 'electromagnetic-plant', count = 1},
+        {item = 'electromagnetic-plant', count = 5},
     }, unlock = {{pack = 'electromagnetic-science-pack', level = 10}}, rewards = {
         {pack = 'automation-science-pack', item = 'copper-cable',                 groups = 10},
         {pack = 'space-science-pack', item = 'copper-cable',                 groups = 10},
@@ -237,7 +237,7 @@ local DEFAULT_CLASSES = {
         {pack = 'promethium-science-pack', item = 'copper-cable',                 groups = 10},
     }},
     {key = 'recyclerman', techs = {'recycling'}, name = '回收工人', full = FULL_LOW, starter = {
-        {item = 'recycler', count = 1},
+        {item = 'recycler', count = 5},
     }, unlock = {{pack = 'electromagnetic-science-pack', level = 10}}, rewards = {
         {pack = 'automation-science-pack', item = 'scrap',                 groups = 10},
         {pack = 'space-science-pack', item = 'scrap',                 groups = 10},
@@ -462,19 +462,32 @@ local DEFAULT_CLASSES = {
     }},
 
     -- 宇航·四星开拓者：起始科技 = 各星球发现科技；starter/rewards/recipes 待填。
-    {key = 'vulcanus', techs = {'planet-discovery-vulcanus', 'calcite-processing', 'tungsten-carbide', 'tungsten-steel', 'big-mining-drill', 'metallurgic-science-pack'}, recipes = {}, name = '火山开拓者', full = FULL_MAX, starter = {
-        {item = 'pumpjack', groups = 1},
-        {item = 'oil-refinery', groups = 1},
-        {item = 'chemical-plant', groups = 1},
-    }, rewards = {
+    {key = 'vulcanus', techs = {
+        'planet-discovery-vulcanus', 
+        'calcite-processing',
+        'tungsten-carbide', 
+        'foundry', 
+        'big-mining-drill', 
+        'tungsten-steel', 
+        'metallurgic-science-pack'
+    }, recipes = {}, name = '火山开拓者', full = FULL_MID, starter = {
+        {item = 'big-mining-drill', count = 1},
+        {item = 'foundry', count = 1},
+    }, unlock = {{pack = 'metallurgic-science-pack', level = 10}}, rewards = {
+        --
     }},
 
     {key = 'fulgora', techs = {
-        'planet-discovery-fulgora', 
+        'planet-discovery-fulgora',
+        'recycling',
         'holmium-processing', 
         'electromagnetic-plant', 
-        'electromagnetic-science-pack'}, recipes = {}, name = '废土开拓者', full = FULL_MAX, starter = {
-    }, unlock = {{pack = 'electromagnetic-science-pack', level = 100}}, rewards = {
+        'electromagnetic-science-pack'
+    }, recipes = {}, name = '废土开拓者', full = FULL_MID, starter = {
+        {item = 'recycler', count = 1},
+        {item = 'electromagnetic-plant', count = 1},
+    }, unlock = {{pack = 'electromagnetic-science-pack', level = 10}}, rewards = {
+        --
     }},
 
     {key = 'gleba', techs = {
@@ -489,8 +502,11 @@ local DEFAULT_CLASSES = {
         'artificial-soil', 
         'biochamber', 
         'agricultural-science-pack', 
-    'biter-egg-handling'}, recipes = {}, name = '雨林开拓者', full = FULL_MAX, starter = {
+    'biter-egg-handling'}, recipes = {}, name = '雨林开拓者', full = FULL_MID, starter = {
+        {item = 'agricultural-tower', count = 1},
+        {item = 'biochamber', count = 1},
     }, unlock = {{pack = 'agricultural-science-pack', level = 100}}, rewards = {
+        --
     }},
 
     {key = 'aquilo', techs = {
@@ -500,7 +516,10 @@ local DEFAULT_CLASSES = {
         'cryogenic-plant', 
         'cryogenic-science-pack'
     }, recipes = {}, name = '冰原开拓者', full = FULL_MAX, starter = {
+        {item = 'agricultural-tower', count = 1},
     }, unlock = {{pack = 'military-science-pack', level = 100}}, rewards = {
+        {item = 'cryogenic-plant', count = 1},
+        {item = 'heating-tower', count = 1},
     }},
 
 
@@ -744,6 +763,7 @@ local DEFAULT_CLASSES = {
 
     }, unlock = {{pack = 'cryogenic-science-pack', level = 500}}, rewards = {
         {pack = 'cryogenic-science-pack', item = 'cryogenic-plant',   groups = 10},
+        {pack = 'cryogenic-science-pack', item = 'heating-tower',   groups = 10},
     }},
     {key = 'astronomer', techs = {'research-productivity'}, name = '天文专家', full = FULL_MAX, starter = {
 
