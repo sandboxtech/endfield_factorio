@@ -38,7 +38,7 @@ oilman              MID      2,266     146,537         682
 inserter            MID      1,046     104,362       1,083
 loaderman           MID         43      98,457      34,522
 launcher            MID      1,893      96,547     254,044
-guard               MID     10,000      86,918          40
+guard               MID     10,000      94,562          40
 warehouser          MID      3,799      78,277      86,190
 tanker              MID        480      76,237      13,543
 miner               MID      1,106      64,923          50
@@ -62,14 +62,14 @@ efficiencyman       MAX      3,370     525,414    123,163∞
 productivityman     MAX      3,370     525,414    519,723∞
 farmer              MAX        146     482,846           0
 teslatrooper        MAX      2,620     430,848     898,882
-captain             MAX      5,475     355,290     527,188
+captain             MAX      5,475     355,290      17,604
 railgunner          MAX      3,353     348,917   1,516,380
 moduler             MAX      4,376     323,461         682
 roboticist          MAX      2,200     261,225      14,199
-asteroidminer       MAX      5,475     168,320      17,604
 forester            MAX        346     151,346       2,148
-rocketeer           MAX      1,063     136,152       3,310
 artillerist         MAX      3,246     129,802     386,290
+asteroidminer       MAX          0     129,695     527,188
+rocketeer           MAX      1,063      55,455       3,310
 mecharmor           MAX     54,012      54,012   2,996,275
 spidertron          MAX     53,425      53,425     687,022
 astronomer          MAX          0      42,985    859,101∞
@@ -147,7 +147,7 @@ aquilo              MAX          0           0   2,401,707
     初始: iron-ore=300、copper-ore=300、stone=300、coal=300
     奖励: carbon=300、uranium-ore=50、tungsten-ore=50、calcite=50、holmium-ore=50、scrap=50、stone=50、lithium=50、promethium-asteroid-chunk=1
 
-━━━━━━━━━━━━ 二、MID 档明细（27个，满级中位 86,918）━━━━━━━━━━━━
+━━━━━━━━━━━━ 二、MID 档明细（27个，满级中位 94,562）━━━━━━━━━━━━
 
 【powergear 奶妈】 初始物品=39,100  满级物品=930,432  科技=682  techs=['solar-panel-equipment']
     初始: battery-mk3-equipment=22,527、fission-reactor-equipment=16,573
@@ -201,9 +201,9 @@ aquilo              MAX          0           0   2,401,707
     初始: rocket-part=1,893
     奖励: rocket-fuel=36,750、processing-unit=35,886、low-density-structure=22,018
 
-【guard 保安】 初始物品=10,000  满级物品=86,918  科技=40  techs=['gun-turret', 'stone-wall']
+【guard 保安】 初始物品=10,000  满级物品=94,562  科技=40  techs=['gun-turret', 'stone-wall']
     初始: stone-wall=10,000
-    奖励: laser-turret=37,315、stone-wall=20,000、gun-turret=10,050、flamethrower-turret=7,375、radar=1,196、gate=982
+    奖励: laser-turret=37,315、stone-wall=20,000、gun-turret=10,050、rocket-turret=7,644、flamethrower-turret=7,375、radar=1,196、gate=982
 
 【warehouser 仓库管理员】 初始物品=3,799  满级物品=78,277  科技=86,190  techs=['logistic-system']
     初始: storage-chest=2,075、steel-chest=1,224、iron-chest=400、wooden-chest=100
@@ -257,7 +257,7 @@ aquilo              MAX          0           0   2,401,707
     初始: biochamber=1,602
     奖励: yumako-mash=1,000、jelly=1,000、yumako=500、jellynut=500
 
-━━━━━━━━━━━━ 二、MAX 档明细（28个，满级中位 214,772）━━━━━━━━━━━━
+━━━━━━━━━━━━ 二、MAX 档明细（28个，满级中位 206,286）━━━━━━━━━━━━
 
 【nuclearman 核能工人】 初始物品=5,073  满级物品=1,500,677  科技=26,726  techs=['nuclear-power']
     初始: centrifuge=5,073
@@ -299,7 +299,7 @@ aquilo              MAX          0           0   2,401,707
     初始: tesla-ammo=2,269、teslagun=351
     奖励: tesla-turret=313,031、tesla-ammo=113,443、teslagun=1,754
 
-【captain 船长】 初始物品=5,475  满级物品=355,290  科技=527,188  techs=['advanced-asteroid-processing']
+【captain 船长】 初始物品=5,475  满级物品=355,290  科技=17,604  techs=['space-platform-thruster']
     初始: space-platform-starter-pack=5,475
     奖励: space-platform-foundation=132,600、cargo-bay=130,079、thruster=87,136
 
@@ -315,21 +315,21 @@ aquilo              MAX          0           0   2,401,707
     初始: construction-robot=1,448、roboport=711、storage-chest=41
     奖励: logistic-robot=82,349、construction-robot=72,398、roboport=71,085、storage-chest=10,373、passive-provider-chest=10,373、active-provider-chest=4,149、requester-chest=4,149、buffer-chest=4,149
 
-【asteroidminer 小行星带矿工】 初始物品=5,475  满级物品=168,320  科技=17,604  techs=['space-platform-thruster']
-    初始: space-platform-starter-pack=5,475
-    奖励: asteroid-collector=71,823、crusher=57,872、space-platform-foundation=33,150
-
 【forester 护林员】 初始物品=346  满级物品=151,346  科技=2,148  techs=['tree-seeding']
     初始: wood=200、agricultural-tower=106、tree-seed=40
     奖励: landfill=50,000、landfill=50,000、landfill=50,000、wood=1,000
 
-【rocketeer 胖子发射器】 初始物品=1,063  满级物品=136,152  科技=3,310  techs=['rocketry']
-    初始: rocket=1,044、rocket-launcher=19
-    奖励: rocket-turret=76,438、explosive-rocket=27,312、atomic-bomb=16,642、rocket=10,438、capture-robot-rocket=4,259
-
 【artillerist 李云龙】 初始物品=3,246  满级物品=129,802  科技=386,290  techs=['artillery']
     初始: artillery-shell=2,121、artillery-turret=1,125
     奖励: artillery-turret=112,473、artillery-wagon=7,721、artillery-shell=6,362
+
+【asteroidminer 小行星带矿工】 初始物品=0  满级物品=129,695  科技=527,188  techs=['advanced-asteroid-processing']
+    初始: （无）
+    奖励: asteroid-collector=71,823、crusher=57,872
+
+【rocketeer 胖子发射器】 初始物品=1,063  满级物品=55,455  科技=3,310  techs=['rocketry']
+    初始: rocket=1,044、rocket-launcher=19
+    奖励: explosive-rocket=27,312、atomic-bomb=16,642、rocket=10,438
 
 【mecharmor 变形金刚】 初始物品=54,012  满级物品=54,012  科技=2,996,275  techs=['mech-armor']
     初始: mech-armor=54,012
@@ -372,10 +372,10 @@ aquilo              MAX          0           0   2,401,707
     奖励: （无）
 
 ━━━━━━━━━━━━ 三、复检 ━━━━━━━━━━━━
-初始物品  中位=1,602  范围 0 ~ 54,012（应大致相当）
+初始物品  中位=1,500  范围 0 ~ 54,012（应大致相当）
 LOW 满级物品  中位=7,838  范围 1,851 ~ 126,295
-MID 满级物品  中位=86,918  范围 4,602 ~ 930,432
-MAX 满级物品  中位=214,772  范围 0 ~ 1,500,677
+MID 满级物品  中位=94,562  范围 4,602 ~ 930,432
+MAX 满级物品  中位=206,286  范围 0 ~ 1,500,677
 
 ──── 初始物品排名 · 前 20（最高，最该削平）────
   mecharmor          MAX  初始=   54,012  科技=2,996,275  主因 mech-armor=54,012
@@ -386,8 +386,7 @@ MAX 满级物品  中位=214,772  范围 0 ~ 1,500,677
   roboportgear       MID  初始=   13,280  科技=1,670  主因 personal-roboport-equipment=13,280
   guard              MID  初始=   10,000  科技=40  主因 stone-wall=10,000
   electromagneticman LOW  初始=    5,777  科技=0  主因 electromagnetic-plant=5,777
-  captain            MAX  初始=    5,475  科技=527,188  主因 space-platform-starter-pack=5,475
-  asteroidminer      MAX  初始=    5,475  科技=17,604  主因 space-platform-starter-pack=5,475
+  captain            MAX  初始=    5,475  科技=17,604  主因 space-platform-starter-pack=5,475
   nuclearman         MAX  初始=    5,073  科技=26,726  主因 centrifuge=5,073
   programmer         LOW  初始=    4,707  科技=1,670  主因 selector-combinator=3,697
   exoskeleton        MID  初始=    4,552  科技=1,670  主因 exoskeleton-equipment=4,552
@@ -398,9 +397,11 @@ MAX 满级物品  中位=214,772  范围 0 ~ 1,500,677
   qualityman         MAX  初始=    3,370  科技=1,273,628  主因 quality-module=3,370
   speedman           MAX  初始=    3,370  科技=248,078∞  主因 speed-module=3,370
   efficiencyman      MAX  初始=    3,370  科技=123,163∞  主因 efficiency-module=3,370
+  productivityman    MAX  初始=    3,370  科技=519,723∞  主因 productivity-module=3,370
 
 ──── 初始物品排名 · 后 20（最低，科技列高=靠科技/高科技物品撑，非真弱；coin 低估）────
   banker             MAX  初始=        0  科技=0  主因 （无）
+  asteroidminer      MAX  初始=        0  科技=527,188  主因 （无）
   vulcanus           MAX  初始=        0  科技=35,208  主因 （无）
   fulgora            MAX  初始=        0  科技=35,208  主因 （无）
   gleba              MAX  初始=        0  科技=35,208  主因 （无）
@@ -419,7 +420,6 @@ MAX 满级物品  中位=214,772  范围 0 ~ 1,500,677
   civilian           LOW  初始=      160  科技=0  主因 car=84
   fisher             LOW  初始=      180  科技=4,775  主因 raw-fish=100
   artist             LOW  初始=      181  科技=682  主因 small-lamp=176
-  inventor           LOW  初始=      319  科技=682  主因 lab=319
 
 ──── 满级物品排名 · 前 20（最高，含 MID/LOW 越级）────
   nuclearman         MAX  满级= 1,500,677  科技=26,726  主因 nuclear-reactor=671,917
@@ -434,7 +434,7 @@ MAX 满级物品  中位=214,772  范围 0 ~ 1,500,677
   productivityman    MAX  满级=   525,414  科技=519,723∞  主因 productivity-module-3=316,572
   farmer             MAX  满级=   482,846  科技=0  主因 overgrowth-yumako-soil=215,900
   teslatrooper       MAX  满级=   430,848  科技=898,882  主因 tesla-turret=313,031
-  captain            MAX  满级=   355,290  科技=527,188  主因 space-platform-foundation=132,600
+  captain            MAX  满级=   355,290  科技=17,604  主因 space-platform-foundation=132,600
   railgunner         MAX  满级=   348,917  科技=1,516,380  主因 railgun-turret=338,619
   moduler            MAX  满级=   323,461  科技=682  主因 speed-module-2=68,707
   roboticist         MAX  满级=   261,225  科技=14,199  主因 logistic-robot=82,349

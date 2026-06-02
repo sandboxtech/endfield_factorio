@@ -446,7 +446,7 @@ local DEFAULT_CLASSES = {
         {pack = 'agricultural-science-pack',   item = 'rocket-fuel',                    groups = 25},
     }},
 
-    {key = 'captain', techs = {'advanced-asteroid-processing'}, name = '船长', full = FULL_MAX, starter = {
+    {key = 'captain', techs = {'space-platform-thruster'}, name = '船长', full = FULL_MAX, starter = {
         {item = 'space-platform-starter-pack', count = 1},
     }, unlock = {{pack = 'space-science-pack', level = 100}}, rewards = {
         {pack = 'production-science-pack', item = 'space-platform-foundation',   groups = 20},
@@ -454,10 +454,9 @@ local DEFAULT_CLASSES = {
         {pack = 'space-science-pack',   item = 'thruster',                    groups = 10},
     }},
 
-    {key = 'asteroidminer', techs = {'space-platform-thruster'}, name = '小行星带矿工', full = FULL_MAX, starter = {
-        {item = 'space-platform-starter-pack', count = 1},
+    {key = 'asteroidminer', techs = {'advanced-asteroid-processing'}, name = '小行星带矿工', full = FULL_MAX, starter = {
+        -- {item = 'space-platform-starter-pack', count = 1},
     }, unlock = {{pack = 'space-science-pack', level = 100}}, rewards = {
-        {pack = 'production-science-pack', item = 'space-platform-foundation',   groups = 5},
         {pack = 'space-science-pack',   item = 'asteroid-collector',          groups = 5},
         {pack = 'space-science-pack',   item = 'crusher',                     groups = 5},
     }},

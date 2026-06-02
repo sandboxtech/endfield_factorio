@@ -150,6 +150,7 @@ function M.ensure_defaults()
         -- 复活等待 tick（可 /c 热改）：脚本死亡(跃迁清场/离场/自杀)与环境死亡用 respawn_ticks；被敌方打死用 respawn_ticks_by_enemy。
         respawn_ticks = 600,              -- 默认复活：600 tick = 10 秒
         respawn_ticks_by_enemy = 1800,    -- 被敌方打死：1800 tick = 30 秒
+        respawn_step_ticks = 300,         -- 跃迁致死：出生星球每远一个，复活多等的 tick（300 = 5 秒）
         warp_vote_divisor = 5,            -- 跃迁投票阈值除数：净同意 > ceil(在线人数/此值) 才推进（5=1/5，越大越易过）
         travel_enabled = true,           -- 前往星球【总开关】（默认开）。关闭：/c storage.travel_enabled=false。开启后每轮每个外星球还要各自过 travel_chance。
         action_cd_minutes = 3,            -- 投票+传送共享冷却（分钟），防止玩家频繁刷动作

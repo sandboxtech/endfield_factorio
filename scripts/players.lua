@@ -161,8 +161,8 @@ script.on_event(defines.events.on_player_died, function(event)
         if by_enemy then
             player.ticks_to_respawn = storage.respawn_ticks_by_enemy or 1800   -- 被敌方打死：固定惩罚
         elseif storage.respawn_home and storage.respawn_home[player.index] then
-            -- 跃迁致死复活：按出生星球序号缩放（母星 ×1=10 秒，最远星球 ×5=50 秒），不引入新变量、纯用 PLANETS 位置。
-            player.ticks_to_respawn = base * respawn_planet_rank(player)
+            -- 跃迁致死复活：母星=base(10 秒)，每远一个出生星球多等 storage.respawn_step_ticks（默认 300=5 秒）。
+            player.ticks_to_respawn = base + (respawn_planet_rank(player) - 1) * (storage.respawn_step_ticks or 300)
         else
             player.ticks_to_respawn = base   -- 环境死 / 自杀 / 离场：默认时间
         end
