@@ -83,7 +83,14 @@ local DEFAULT_CLASSES = {
         {pack = 'promethium-science-pack',   item = 'selector-combinator',   groups = 5},  -- 蓝：选择运算器(高级运算器)
     }},
 
-    {key = 'inventor', techs = {'research-speed-1'}, name = '发明家', full = FULL_LOW, starter = {
+    {key = 'inventor', techs = {
+        'research-speed-1',
+        'research-speed-2',
+        'research-speed-3',
+        'research-speed-4',
+        'research-speed-5',
+        'research-speed-6',
+    }, name = '发明家', full = FULL_LOW, starter = {
         {item = 'lab', groups = 1},
     }, unlock = {{pack = 'automation-science-pack', level = 10}}, rewards = {
         {pack = 'automation-science-pack', item = 'lab',                 groups = 10},
@@ -546,8 +553,8 @@ local DEFAULT_CLASSES = {
     }},
     {key = 'astronomer', techs = {'research-productivity'}, name = '天文专家', full = FULL_MAX, starter = {
 
-    }, unlock = {{pack = 'promethium-science-pack', level = 2000}}, rewards = {
-        {pack = 'promethium-science-pack', item = 'biolab',            groups = 5},
+    }, unlock = {{pack = 'promethium-science-pack', level = 1000}}, rewards = {
+        {pack = 'promethium-science-pack', item = 'biolab',            groups = 20},
     }},
 
     {section = '战斗'},
