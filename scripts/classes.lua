@@ -17,10 +17,12 @@
 --            用于让同职业里某些奖励满得更快/更慢，互不影响。满级配额(stack×groups)不变，只改逼近速度。
 --   unlock   解锁条件(可选)：每条 {pack=瓶, level=级}，需全满足；无则人人可选。
 --   techs    职业【专属科技】(可选，数组)：只要存在选了该职业的玩家(含离线)，开局把这些科技标记已研究(reset 调 M.active_class_unlocks)。
---            条目两种写法：'科技名' = 恒解锁；{'科技名', chance = 0.5} = 每轮开局按概率解锁(每职业每科技每轮各掷一次，未中本轮不解锁)。
+--            条目两种写法：'科技名' = 恒解锁；{'科技名', chance = p} = 每轮开局按概率解锁——
+--            每个选该职业的玩家独立掷 p，任一命中即解锁，故有效概率 = 1-(1-p)^人数(人多更稳)，未中本轮不解锁。
 --            如 techs = {'logistics', {'automation-2', chance = 0.3}}。【勿用 name= 键】：gen_set_classes.py 按 name= 抓职业名，会误抓。
 --   recipes  职业【专属配方】(可选，数组)：同上，但开局解锁配方(force 级 enabled，无需对应科技。reset 调 M.active_class_unlocks)。
---            条目格式与 techs 相同：'配方名' = 恒解锁；{'配方名', chance = 0.5} = 每轮 50% 概率解锁。如 recipes = {'rail', {'pistol', chance = 0.5}}。
+--            条目格式与 techs 相同：'配方名' = 恒解锁；{'配方名', chance = p} = 每轮按概率解锁(有效概率同 techs = 1-(1-p)^人数)。
+--            如 recipes = {'rail', {'pistol', chance = 0.5}}。
 --   {}       空表 = 占位，在职业窗口里作【换行/分组】分隔（无 key，选不到）。
 --
 -- 【容量约束】每个职业「满级资源含量」（starter 固定组 + 各 rewards 满级 groups 之和）控制在 50 组以内。
