@@ -258,7 +258,23 @@ function M.reset()
     -- 跃迁倒计时重置为初始值（storage.warp_initial_minutes 分钟，可 /c 热改）；研究科技瓶科技按
     -- storage.warp_extend_minutes 各自延长。内部以小时记账，故 /60。
     storage.warp_hours = (storage.warp_initial_minutes or 10) / 60
+    -- 提前跃迁投票【返还】：跃迁发生时退还"输的一方"已花的投票星星（star sink 只消耗赢家、补偿输家）。
+    --   · 提前跃迁达成(warp_vote_delta ~= nil) → 退还所有投【反对】的人（他们没拦住）；
+    --   · 自然倒计时结束(delta == nil，反对方赢) → 退还所有投【支持】的人（没推成）。
+    -- 必须在下面清空 warp_vote/warp_vote_cost 之前结算；离线玩家也按名字加回 storage.star，下次上线即得。
+    do
+        local refund_side = (storage.warp_vote_delta ~= nil) and 'oppose' or 'agree'
+        local cost = storage.warp_vote_cost or {}
+        storage.star = storage.star or {}
+        for name, v in pairs(storage.warp_vote or {}) do
+            if v == refund_side then
+                local c = cost[name] or 0
+                if c > 0 then storage.star[name] = (storage.star[name] or 0) + c * constants.min_to_tick end
+            end
+        end
+    end
     storage.warp_vote = {}        -- 新世界清空跃迁投票（上一世界的同意/反对作废）
+    storage.warp_vote_cost = {}   -- 投票花费记录一并清空（已在上面结算返还）
     storage.warp_vote_delta = nil -- 投票缩减量作废（warp_hours 已重置，无可恢复）
     storage.star_extend_used = 0  -- 新世界花星星延长额度清零（每星系上限 star_extend_cap）
 

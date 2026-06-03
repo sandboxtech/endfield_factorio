@@ -290,6 +290,29 @@ end
 --     并把被砍掉的小时数记入 storage.warp_vote_delta（仅当当前剩余【多于】目标才砍，否则反而延长 → 不动）。
 --   · 净同意 < 阈值且此前施加过 → 把 warp_vote_delta 加回 warp_hours（取消提前、恢复倒计时），清除 delta；需再投票才能再推。
 --   delta 与期间研究/敌人死亡对 warp_hours 的增减解耦（记的是"投票净缩减量"），reset 时随 warp_vote 一并清空。不杀任何玩家。
+-- 投票/加时间态势 + 各动作可用性【单一真相源】：show_star 据此置灰按钮、cast_warp_vote/buy_warp_extend 据此服务端校验。
+-- GUI 与服务端共用同一判定，杜绝"按钮看着能点、点了被拒"。规则（投票判定只看 net 与 threshold，不掺剩余时间）：
+--   · can_agree  支持：净同意 < threshold(成功线)才可投。提前触发时 net==threshold → 由此条自动锁死支持(5分钟内无需另判时间)。
+--   · can_oppose 反对：净同意 > 0 才可投(可抵消/拉回)。净票已为 0 再反对会压成负数、纯浪费 → 禁。
+--   · can_extend 加时间：仅此项需"未处于投票提前(5分钟)倒计时状态"；已提前则倒计时被钳 5分钟、加时间无意义 → 禁。
+-- 注：threshold 随在线人数变化，net 可能短暂落在 [0,threshold] 之外（如人数骤减使 threshold 降到 net 之下），属合理边缘、不另处理。
+local function warp_vote_state()
+    storage.warp_vote = storage.warp_vote or {}
+    local agree, oppose = 0, 0
+    for _, v in pairs(storage.warp_vote) do
+        if v == 'agree' then agree = agree + 1 elseif v == 'oppose' then oppose = oppose + 1 end
+    end
+    local net = agree - oppose
+    local threshold = math.ceil(#game.connected_players / (storage.warp_vote_divisor or 5))
+    local in_countdown = storage.warp_vote_delta ~= nil   -- 已进入投票提前(5分钟)倒计时状态
+    return {
+        agree = agree, oppose = oppose, net = net, threshold = threshold, in_countdown = in_countdown,
+        can_agree  = net < threshold,
+        can_oppose = net > 0,
+        can_extend = not in_countdown,
+    }
+end
+
 local function warp_vote_eval()
     storage.warp_vote = storage.warp_vote or {}
     local agree, oppose = 0, 0
@@ -423,6 +446,8 @@ function M.show_star(player)
     local vc = storage.star_vote_cost or 100
     local ec, em = storage.star_extend_cost or 100, storage.star_extend_minutes or 10
     local cap, used = storage.star_extend_cap or 60, storage.star_extend_used or 0
+    local st = warp_vote_state()   -- 投票/加时间可用性：余额够仍要满足态势条件，否则按钮置灰（见 warp_vote_state 规则）
+    local voted = (storage.warp_vote or {})[player.name] ~= nil   -- 本轮已投过 → 两个投票按钮都置灰（不可改票）
     -- 说明区：show_popup 顶部 lines（通用说明，花费说明已移到花费区）。
     local lines = {{'wn.star-help'}}
     -- 星星区 + 花费区放 bottom_buttons（label 做文本、button 做按钮）：区首行默认 top_pad=16 与上一区换行，区内 top_pad 小=紧凑。
@@ -437,11 +462,11 @@ function M.show_star(player)
         -- ── 花费区（花费说明 + 投跃迁/停留/延长）──
         {label = true, caption = {'wn.star-spend-help'}},                                -- 花费说明（区首行 → 与星星区换行）
         {name = 'wn_btn_warp',   caption = {'wn.star-btn-warp', vc},
-            enabled = bal >= vc, tooltip = {'wn.star-btn-warp-tip', vc}},
+            enabled = (bal >= vc) and st.can_agree and not voted, tooltip = {'wn.star-btn-warp-tip', vc}},
         {name = 'wn_btn_stay',   caption = {'wn.star-btn-stay', vc},
-            enabled = bal >= vc, tooltip = {'wn.star-btn-stay-tip', vc}},
+            enabled = (bal >= vc) and st.can_oppose and not voted, tooltip = {'wn.star-btn-stay-tip', vc}},
         {name = 'wn_act_extend', caption = {'wn.star-btn-extend', em, ec},
-            enabled = (bal >= ec) and (used < cap), tooltip = {'wn.star-btn-extend-tip', em, ec, used, cap}},
+            enabled = (bal >= ec) and (used < cap) and st.can_extend, tooltip = {'wn.star-btn-extend-tip', em, ec, used, cap}},
     }
     gui.show_popup(player, {'wn.star-title'}, lines, nil, false, bottom_buttons)
 end
@@ -565,20 +590,44 @@ end)
 -- 投跃迁票（vote='agree'/'oppose'，等同 /跃迁 /停留）并结算广播。
 function M.cast_warp_vote(player, vote)
     if not player then return end
+    -- 每人本轮只能投一次、不可改票：已投过 → 拒绝、不扣星星，刷新窗口并提示已锁定。
+    if (storage.warp_vote or {})[player.name] ~= nil then
+        player.print({'wn.warp-vote-locked'})
+        M.show_star(player)
+        return
+    end
+    -- 态势校验（与 show_star 置灰同源）：玩家开窗后态势可能被别人投票改变 → 本应置灰的按钮被点到。
+    -- 此时不生效、不扣星星，刷新该玩家窗口并提示"按钮状态已变"。
+    local st = warp_vote_state()
+    local allowed = (vote == 'agree' and st.can_agree) or (vote == 'oppose' and st.can_oppose)
+    if not allowed then
+        player.print({'wn.btn-state-changed'})
+        M.show_star(player)
+        return
+    end
     if on_cooldown(player, 'vote_cd', 'wn.cd-vote') then return end   -- 投票冷却（被拒不扣星星）
     local cost = storage.star_vote_cost or 100
     if not spend_stars(player, cost) then player.print({'wn.star-need', cost}); return end   -- 星星不足：不投、不占冷却
     storage.warp_vote = storage.warp_vote or {}
     storage.warp_vote[player.name] = vote
+    storage.warp_vote_cost = storage.warp_vote_cost or {}
+    storage.warp_vote_cost[player.name] = cost   -- 记录【实际】花费：star_vote_cost 可能被 /c 改，返还须按当时花费退
     mark_action(player, 'vote_cd')
     game.print({vote == 'agree' and 'wn.warp-vote-cast-agree' or 'wn.warp-vote-cast-oppose', player.name})
     warp_vote_eval()
+    M.show_star(player)   -- 投票后刷新自己的窗口（净票/按钮态随之变化）
 end
 
 -- 花星星给【本世界】倒计时延长 star_extend_minutes 分钟。每星系累计上限 star_extend_cap，达上限按钮禁用。
--- 若处于投票提前状态(warp_vote_delta 非 nil)，把这次延长并入投票缩减量（同 research.lua 研发加时），倒计时仍钳 target。
+-- 处于投票提前(5分钟)倒计时状态时禁止加时间（倒计时已被钳 target、加时间无意义、浪费星星）：按钮置灰；
+-- 若玩家开窗后才进入该状态、点了过期按钮 → 不生效、不扣星星，刷新窗口并提示"按钮状态已变"。
 function M.buy_warp_extend(player)
     if not player then return end
+    if warp_vote_state().in_countdown then   -- 已进入投票提前倒计时：竞态拦截（与 show_star 置灰同源）
+        player.print({'wn.btn-state-changed'})
+        M.show_star(player)
+        return
+    end
     local cap = storage.star_extend_cap or 60
     storage.star_extend_used = storage.star_extend_used or 0
     if storage.star_extend_used >= cap then player.print({'wn.warp-extend-cap', cap}); return end
@@ -587,13 +636,6 @@ function M.buy_warp_extend(player)
     local add_min = storage.star_extend_minutes or 10
     storage.star_extend_used = storage.star_extend_used + add_min
     storage.warp_hours = (storage.warp_hours or ((storage.warp_initial_minutes or 10) / 60)) + add_min / 60
-    if storage.warp_vote_delta ~= nil then
-        local last = game.tick - (storage.run_start_tick or game.tick)
-        local target = (storage.warp_vote_target_minutes or 5) * constants.min_to_tick
-        local new_hours = (last + target) / constants.hour_to_tick
-        storage.warp_vote_delta = storage.warp_vote_delta + (storage.warp_hours - new_hours)
-        storage.warp_hours = new_hours
-    end
     game.print({'wn.warp-extend-star', player.name, add_min, storage.star_extend_used, cap})
     gui.refresh_countdown()
     M.show_star(player)   -- 刷新星星窗口（余额 / 已延长 / 倒计时）
