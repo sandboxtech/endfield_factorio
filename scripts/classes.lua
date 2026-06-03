@@ -524,12 +524,12 @@ local DEFAULT_CLASSES = {
         'metallic-asteroid-crushing', 
         'carbonic-asteroid-crushing', 
         'oxide-asteroid-crushing', 
-        {'metallic-asteroid-reprocessing', p = 0.5}, 
-        {'carbonic-asteroid-reprocessing', p = 0.5}, 
-        {'oxide-asteroid-reprocessing', p = 0.5}, 
-        {'advanced-metallic-asteroid-crushing', p = 0.2}, 
-        {'advanced-carbonic-asteroid-crushing', p = 0.2}, 
-        {'advanced-oxide-asteroid-crushing', p = 0.2}, 
+        {'metallic-asteroid-reprocessing', p = 0.8}, 
+        {'carbonic-asteroid-reprocessing', p = 0.8}, 
+        {'oxide-asteroid-reprocessing', p = 0.8}, 
+        {'advanced-metallic-asteroid-crushing', p = 0.5}, 
+        {'advanced-carbonic-asteroid-crushing', p = 0.5}, 
+        {'advanced-oxide-asteroid-crushing', p = 0.5}, 
     }, name = '小行星带矿工', full = FULL_MAX, starter = {
         {item = 'space-platform-starter-pack', count = 1},
     }, unlock = {{pack = 'space-science-pack', level = 100}}, rewards = {
