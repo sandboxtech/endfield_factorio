@@ -66,7 +66,7 @@ local DEFAULT_CLASSES = {
     }},
 
     {key = 'philosopher', recipes = {   -- 由原 techs 转换而来(科技自带的解锁配方)
-        'biolab',
+        {'biolab', p = 0.5},
     }, name = '哲学大师', full = FULL_LOW, starter = {
         {item = 'chemical-science-pack',   count = 1},
     }, rewards = {
@@ -393,7 +393,7 @@ local DEFAULT_CLASSES = {
         {pack = 'logistic-science-pack',   item = 'storage-tank',   groups = 5},
     }},
     {key = 'gridman', recipes = {   -- 由原 techs 转换而来(科技自带的解锁配方)
-        'medium-electric-pole', 'big-electric-pole', 'substation', 'iron-stick',
+        'medium-electric-pole', 'big-electric-pole', 'substation',
     }, name = '电网工人', full = FULL_MID, starter = {
         {item = 'small-electric-pole', groups = 5},
         {item = 'power-switch', groups = 1},
@@ -702,7 +702,7 @@ local DEFAULT_CLASSES = {
     }},
 
     {key = 'tanker', recipes = {   -- 由原 techs 转换而来(科技自带的解锁配方)
-        'tank', 'cannon-shell', 'explosive-cannon-shell',
+        'cannon-shell', 'explosive-cannon-shell',
     }, name = '大运司机', full = FULL_MID, starter = {
         {item = 'tank', count = 1},
     }, unlock = {{pack = 'military-science-pack', level = 100}}, rewards = {
@@ -713,7 +713,7 @@ local DEFAULT_CLASSES = {
         {pack = 'utility-science-pack', item = 'uranium-cannon-shell',   groups = 10, full = FULL_MAX},
     }},
     {key = 'rocketeer', recipes = {   -- 由原 techs 转换而来(科技自带的解锁配方)
-        'rocket-launcher', 'rocket', 'explosive-rocket', 'atomic-bomb',
+        'rocket', 'explosive-rocket', 'atomic-bomb',
     }, name = '胖子发射器', full = FULL_MAX, starter = {
         {item = 'rocket-launcher', count = 1},
         {item = 'rocket', count = 100},
