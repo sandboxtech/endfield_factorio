@@ -213,7 +213,8 @@ function M.ensure_defaults()
         'planet-discovery-vulcanus', 'planet-discovery-gleba',
         'planet-discovery-fulgora', 'planet-discovery-aquilo',
     }
-    storage.unlock_recipes = storage.unlock_recipes or {'iron-stick', 'steel-plate', 'ice-melting',
+    storage.unlock_recipes = storage.unlock_recipes or {
+        'iron-stick', 'steel-plate', 'ice-melting',
         'solar-panel', 'accumulator',
         'concrete', 'refined-concrete',
         'lubricant', 'light-oil-cracking', 'heavy-oil-cracking',
