@@ -67,8 +67,11 @@ function M.print_status(target, viewer)
         viewer.print({ab.locale, math.floor(val), math.floor(math.sqrt(val)),
                       math.floor((1 + passives.skill_factor(target.index, ab)) * 100 + 0.5)})
     end
-    -- 额外生命值（随阵亡数对数增长）：__1__ = +HP(=100×log10(阵亡+1))，__2__ = 阵亡数
-    viewer.print({'wn.ability-health', math.floor(passives.health_bonus(target.index) + 0.5), s('death_count')})
+    -- 额外生命值：与上面三能力【同格式】（统计值 · 等级=floor√统计 · 当前能力值）。
+    -- __1__ 阵亡数，__2__ 等级(=floor√阵亡，沿用面板通用约定)，__3__ 当前额外生命值(=100×log10(阵亡+1))
+    local deaths = s('death_count')
+    viewer.print({'wn.ability-health', deaths, math.floor(math.sqrt(deaths)),
+                  math.floor(passives.health_bonus(target.index) + 0.5)})
     blank()
 
     -- ③ 12 种科技瓶经验

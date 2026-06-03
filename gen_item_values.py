@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# 从 scripts/classes.lua + 正版 Factorio 数据，估算物品/科技/职业价值，生成 scripts/item_values.lua + class_values.txt。
+# 从 scripts/classes.lua + 正版 Factorio 数据，估算物品/科技/职业价值，生成 class_values.txt（职业价值分析）。
 # 价值口径见生成文件头部注释。改完 classes.lua 跑一下即可复算。
 #   用法：python3 gen_item_values.py            # 生成(用缓存，秒出)
 #         python3 gen_item_values.py --check     # 只校验是否已同步(不写文件)
@@ -12,7 +12,6 @@ import re, os, sys, glob, json, statistics
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 CLASSES = os.path.join(ROOT, 'scripts', 'classes.lua')
-OUT = os.path.join(ROOT, 'scripts', 'item_values.lua')
 TXT = os.path.join(ROOT, 'class_values.txt')
 CACHE = os.path.join(ROOT, '.value_cache.json')
 FACTORIO = os.environ.get('FACTORIO_DIR', '/mnt/c/Program Files (x86)/Steam/steamapps/common/Factorio')
@@ -196,18 +195,6 @@ for n, (pos, key) in enumerate(idxs):
     rows.append({'key': key, 'name': cname, 'full': full, 'si': si, 'mi': mi,
                  'tv': round(tv), 'inf': inf, 'techs': tl, 'st': st, 'rw': rw})
 
-# ---------- 生成 item_values.lua（只含物品价值）----------
-L = ['-- 物品价值表（gen_item_values.py 自动生成，勿手改；改 classes.lua 后重跑）。',
-     '-- 物品价值=递归原矿成本(沿同名主产物配方到原矿)。【可挖原矿 coal/stone/iron-ore/copper-ore 等强制=1，忽略合成配方】。',
-     '--           不反映"高科技但造价低"(如 combat-shotgun)；coin 按 1(低估其市场购买力)。满级"1组"=stack×unit。',
-     '-- 数据源：正版 Factorio 2.0.x(base+space-age+quality)。职业/科技价值分析见 class_values.txt。',
-     'local M = {}', '', 'M.unit = {']
-for it in sorted(used): L.append(f"    ['{it}'] = {COST.get(it, 1.0):g},")
-L += ['}', '', 'M.stack = {']
-for it in sorted(used): L.append(f"    ['{it}'] = {stack.get(it, 1)},")
-L += ['}', '', 'return M']
-lua_content = '\n'.join(L) + '\n'
-
 # ---------- 生成 class_values.txt（职业 + 科技价值分析，详细，按价值分组排列）----------
 tag = lambda f: {1000: 'LOW', 10000: 'MID', 100000: 'MAX'}[f]
 def fmt_items(lst):
@@ -274,12 +261,10 @@ for f in (1000, 10000, 100000):
 txt_content = '\n'.join(T) + '\n'
 
 if '--check' in sys.argv:
-    ok = (open(OUT, encoding='utf-8').read() if os.path.exists(OUT) else '') == lua_content \
-        and (open(TXT, encoding='utf-8').read() if os.path.exists(TXT) else '') == txt_content
+    ok = (open(TXT, encoding='utf-8').read() if os.path.exists(TXT) else '') == txt_content
     if ok:
         print(f'已同步（{len(used)} 物品 / {len(rows)} 职业）'); sys.exit(0)
-    print('item_values.lua / class_values.txt 与 classes.lua 不同步！请运行 python3 gen_item_values.py'); sys.exit(1)
+    print('class_values.txt 与 classes.lua 不同步！请运行 python3 gen_item_values.py'); sys.exit(1)
 
-open(OUT, 'w', encoding='utf-8').write(lua_content)
 open(TXT, 'w', encoding='utf-8').write(txt_content)
-print(f'已生成 scripts/item_values.lua（{len(used)} 物品）+ class_values.txt（{len(rows)} 职业 / {len(techused)} 科技）')
+print(f'已生成 class_values.txt（{len(rows)} 职业 / {len(techused)} 科技）')
