@@ -215,7 +215,8 @@ function M.ensure_defaults()
     }
     storage.unlock_recipes = storage.unlock_recipes or {'iron-stick', 'steel-plate', 'ice-melting',
         'solar-panel', 'accumulator',
-        'concrete', 'refined-concrete', 'lubricant', 'light-oil-cracking', 'heavy-oil-cracking',
+        'concrete', 'refined-concrete',
+        'lubricant', 'light-oil-cracking', 'heavy-oil-cracking',
     }
     -- 'basic-oil-processing', 'advanced-oil-processing',
     -- 'medium-electric-pole', 'big-electric-pole',

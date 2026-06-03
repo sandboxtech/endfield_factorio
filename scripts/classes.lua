@@ -56,13 +56,13 @@ local DEFAULT_CLASSES = {
         
     }},
 
-    {key = 'philosopher', techs = {'biolab'}, name = '哲学家', full = FULL_LOW, starter = {
+    {key = 'philosopher', techs = {'biolab'}, name = '哲学大师', full = FULL_LOW, starter = {
         {item = 'chemical-science-pack',   count = 1},
     }, rewards = {
         {pack = 'logistic-science-pack', item = 'logistic-science-pack',   count=10},
     }},
 
-    {key = 'artist', techs = {'circuit-network'}, name = '艺术家', full = FULL_LOW, starter = {
+    {key = 'artist', techs = {'circuit-network'}, name = '艺术大师', full = FULL_LOW, starter = {
         {item = 'small-lamp', groups = 1},
         {item = 'constant-combinator', count = 1},
     }, rewards = {
@@ -72,7 +72,7 @@ local DEFAULT_CLASSES = {
         {pack = 'promethium-science-pack',    item = 'programmable-speaker', groups = 5},
     }},
 
-    {key = 'programmer', techs = {'advanced-combinators'}, name = '程序员', full = FULL_LOW, starter = {
+    {key = 'programmer', techs = {'advanced-combinators'}, name = '计算机专家', full = FULL_LOW, starter = {
         {item = 'selector-combinator', groups = 1},
         {item = 'arithmetic-combinator', groups = 1},
         {item = 'decider-combinator', groups = 1},
@@ -98,7 +98,7 @@ local DEFAULT_CLASSES = {
         {pack = 'promethium-science-pack', item = 'lab',                 groups = 10},
     }},
 
-    {key = 'civilengineer', techs = {'cliff-explosives'}, name = '建筑师', full = FULL_LOW, starter = {
+    {key = 'civilengineer', techs = {'cliff-explosives'}, name = '建筑大师', full = FULL_LOW, starter = {
         {item = 'cliff-explosives', groups = 1},
     }, unlock = {{pack = 'automation-science-pack', level = 10}}, rewards = {
         {pack = 'automation-science-pack', item = 'stone-brick',                 groups = 10},
@@ -139,7 +139,6 @@ local DEFAULT_CLASSES = {
         -- {pack = 'chemical-science-pack',        item = 'stone',  groups = 1},   -- 蓝：铀矿(需硫酸,蓝瓶时代)
         -- {pack = 'production-science-pack',      item = 'iron-ore',        groups = 1},   -- 紫：石头
         -- {pack = 'utility-science-pack',      item = 'copper-ore',        groups = 1},   -- 紫：石头
-        --
         {pack = 'space-science-pack', item = 'uranium-ore', groups = 4},
 
         {pack = 'metallurgic-science-pack',     item = 'tungsten-ore', groups = 4},   -- 橙：钨矿(火山)
@@ -250,7 +249,7 @@ local DEFAULT_CLASSES = {
         {pack = 'electromagnetic-science-pack', item = 'scrap',                 groups = 10},
         {pack = 'promethium-science-pack', item = 'scrap',                 groups = 10},
     }},
-    {key = 'oilman', techs = {'oil-gathering', 'oil-processing', 'advanced-oil-processing'}, name = '石化工人', full = FULL_MID, starter = {
+    {key = 'oilman', techs = {'oil-gathering', 'oil-processing', 'advanced-oil-processing'}, name = '石化工人', full = FULL_LOW, starter = {
         {item = 'pumpjack', groups = 1},
         {item = 'oil-refinery', groups = 1},
         {item = 'chemical-plant', groups = 1},
@@ -262,7 +261,7 @@ local DEFAULT_CLASSES = {
         {pack = 'cryogenic-science-pack',   item = 'cryogenic-plant', groups = 2}, 
     }},
 
-    {key = 'moduler', techs = {'modules'}, name = '插件工人', full = FULL_MAX, starter = {
+    {key = 'moduler', techs = {'modules'}, name = '插件工人', full = FULL_MID, starter = {
         {item = 'beacon', count = 10},
         {item = 'speed-module', count = 10},
         {item = 'efficiency-module', count = 10},
@@ -275,7 +274,7 @@ local DEFAULT_CLASSES = {
         {pack = 'agricultural-science-pack', item = 'efficiency-module-2', groups = 2},
     }},
 
-    {key = 'qualityman', techs = {'quality-module', 'epic-quality'}, name = '品质大师', full = FULL_MAX, starter = {
+    {key = 'qualityman', techs = {'quality-module', 'processing-unit-productivity'}, name = '品质大师', full = FULL_MAX, starter = {
         {item = 'quality-module', groups = 1},
     }, unlock = {{pack = 'electromagnetic-science-pack', level = 10}}, rewards = {
         {pack = 'chemical-science-pack',        item = 'quality-module',     groups = 10},   -- 蓝：1级
@@ -444,7 +443,23 @@ local DEFAULT_CLASSES = {
 
     {section = '航天'},
 
-    {key = 'launcher', techs = {'rocket-silo'}, name = '发射专家', full = FULL_MID, starter = {
+    {key = 'TODO', techs = {'processing-unit-productivity'}, name = '飞船控制大师', full = FULL_MAX, starter = {
+        {item = 'processing-unit', groups = 1},
+    }, unlock = {{pack = 'electromagnetic-science-pack', level = 10}}, rewards = {
+
+    }},
+    {key = 'TODO', techs = {'low-density-structure-productivity'}, name = '飞船结构大师', full = FULL_MAX, starter = {
+        {item = 'low-density-structure', groups = 1},
+    }, unlock = {{pack = 'metallurgic-science-pack', level = 10}}, rewards = {
+
+    }},
+    {key = 'TODO', techs = {'rocket-fuel-productivity'}, name = '飞船燃料大师', full = FULL_MAX, starter = {
+        {item = 'rocket-fuel', groups = 1},
+    }, unlock = {{pack = 'agricultural-science-pack', level = 10}}, rewards = {
+)
+    }},
+
+    {key = 'TODO', techs = {'rocket-silo'}, name = '发射专家', full = FULL_MID, starter = {
         {item = 'rocket-part', count = 1},
     }, unlock = {{pack = 'space-science-pack', level = 100}}, rewards = {
         {pack = 'metallurgic-science-pack',   item = 'low-density-structure',                    groups = 10},

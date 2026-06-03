@@ -258,21 +258,34 @@ function M.show_classes(player)
         local icon_item = (def.starter and def.starter[1] and def.starter[1].item)
                        or (def.rewards and def.rewards[1] and def.rewards[1].item)
         local starter_img = icon_item and ('[img=item/' .. icon_item .. ']') or ''
-        -- tooltip 各行先平铺收集到 parts，最后再分块嵌套（见下）。
-        local parts = {}
-        -- 开局解锁的【科技/配方】放最上面(免费物品之前)。techs 用 [technology=]、recipes 用 [recipe=] 自动渲染图标+本地化名。
-        local techlist = {}
-        for _, t in ipairs(def.techs or {}) do techlist[#techlist + 1] = '[technology=' .. t .. ']' end
-        if #techlist > 0 then parts[#parts + 1] = {'wn.class-tip-tech', table.concat(techlist, ' ')} end
-        local recipelist = {}
-        for _, rc in ipairs(def.recipes or {}) do recipelist[#recipelist + 1] = '[recipe=' .. rc .. ']' end
-        if #recipelist > 0 then parts[#parts + 1] = {'wn.class-tip-recipe', table.concat(recipelist, ' ')} end
+        -- tooltip 按【区域】分组收集，相邻非空区域间插一个空行，最后再分块嵌套（见下）。
+        -- 4 区域：① 开局解锁（科技每个一行=图标+Localised 名；配方一行平铺图标）② 白送物品 ③ 满级奖励 ④ 解锁条件。
+        local regions = {}
+        -- 区域① 开局解锁：科技【逐个一行】，用 {''} 空键拼接「图标 + 本地化名」(无需新 locale 键)；配方仍一行平铺图标。
+        local r_unlock = {}
+        if def.techs and #def.techs > 0 then
+            r_unlock[#r_unlock + 1] = {'wn.class-tip-tech'}   -- 区域标题（纯标签，无参数）
+            for _, t in ipairs(def.techs) do
+                local proto = prototypes.technology[t]
+                r_unlock[#r_unlock + 1] = {'', '\n[technology=' .. t .. '] ', proto and proto.localised_name or t}
+            end
+        end
+        if def.recipes and #def.recipes > 0 then
+            local recipelist = {}
+            for _, rc in ipairs(def.recipes) do recipelist[#recipelist + 1] = '[recipe=' .. rc .. ']' end
+            r_unlock[#r_unlock + 1] = {'wn.class-tip-recipe', table.concat(recipelist, ' ')}
+        end
+        if #r_unlock > 0 then regions[#regions + 1] = r_unlock end
+        -- 区域② 白送物品：每物品一行 "+N [img]"。总个数 = count 个，或 groups 组 × 堆叠（默认 1 组）。
+        local r_starter = {}
         for _, s in ipairs(def.starter or {}) do
             local proto = prototypes.item[s.item]
-            -- 白送总个数 = count 个，或 groups 组 × 堆叠（默认 1 组）。每条一行，只显示算好的总数。
             local total = s.count or (((proto and proto.stack_size) or 1) * (s.groups or 1))
-            parts[#parts + 1] = {'wn.class-tip-head', total, '[img=item/' .. s.item .. ']'}
+            r_starter[#r_starter + 1] = {'wn.class-tip-head', total, '[img=item/' .. s.item .. ']'}
         end
+        if #r_starter > 0 then regions[#regions + 1] = r_starter end
+        -- 区域③ 满级奖励：每条 "每 P 级得 Q 个 [物品] 当前/满级"。
+        local r_reward = {}
         for _, r in ipairs(def.rewards or {}) do
             local proto = prototypes.item[r.item]
             local total = r.count or (((proto and proto.stack_size) or 1) * (r.groups or 1))   -- 满级最多给多少个(M)：有 count 按个数(与 respawn_gifts 发放口径一致)，否则 堆叠×groups
@@ -280,7 +293,7 @@ function M.show_classes(player)
             local lv = math.min(classes.pack_level(player, r.pack), full)        -- 玩家该瓶当前等级(封顶 full)
             local current = math.floor(total * lv / full)                        -- 当前能拿到的数量(yyy，与 respawn_gifts 发放公式一致)
             local g = util.gcd(full, total)                                       -- 约分 满级线:满级总数 → 每 P 级得 Q 个
-            parts[#parts + 1] = {'wn.class-tip-reward',
+            r_reward[#r_reward + 1] = {'wn.class-tip-reward',
                 '[img=item/' .. r.pack .. ']',       -- 瓶图标(等级来源)
                 math.floor(full / g),                -- P：每多少级得一批
                 math.floor(total / g),               -- Q：每批给多少个
@@ -288,9 +301,18 @@ function M.show_classes(player)
                 current,                             -- __5__ yyy：当前等级能拿到的数量(动态)
                 total}                               -- __6__ xxx：满级最多(不变)
         end
-        -- 解锁条件（需全部满足）：附在 tooltip 末尾，显示 需求瓶/等级 + 当前等级。
+        if #r_reward > 0 then regions[#regions + 1] = r_reward end
+        -- 区域④ 解锁条件（需全部满足）：需求瓶/等级 + 当前等级。
+        local r_cond = {}
         for _, u in ipairs(def.unlock or {}) do
-            parts[#parts + 1] = {'wn.class-tip-unlock', '[img=item/' .. u.pack .. ']', u.level, classes.pack_level(player, u.pack)}
+            r_cond[#r_cond + 1] = {'wn.class-tip-unlock', '[img=item/' .. u.pack .. ']', u.level, classes.pack_level(player, u.pack)}
+        end
+        if #r_cond > 0 then regions[#regions + 1] = r_cond end
+        -- 合并：相邻非空区域间插一个 '\n'（空行）。每条本身以 \n 起，额外一个 \n 即得一空行分隔。
+        local parts = {}
+        for ri, reg in ipairs(regions) do
+            if ri > 1 then parts[#parts + 1] = '\n' end
+            for _, p in ipairs(reg) do parts[#parts + 1] = p end
         end
         -- 分块嵌套：localised string 单层最多 20 参数，超了会崩（"too many parameters for localized string"）。
         -- 把 parts 串成嵌套结构——每层放 ≤19 个真实参数 + 第 20 个参数指向下一层 → 任意条数都安全。
