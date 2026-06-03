@@ -294,7 +294,11 @@ function M.ensure_loot()
     if not has then
         for _, c in ipairs(DEFAULT_LOOT) do if c.cat == 'treasure' then storage.loot[#storage.loot + 1] = deepcopy(c); break end end
     end
-    storage.loot_weights.treasure = storage.loot_weights.treasure or deepcopy(DEFAULT_LOOT_WEIGHTS.treasure)
+    -- 逐【箱型】键补齐：老档 storage.loot_weights 是非 nil 的旧表，loot_weights() 的 `or` 只整张兜底、不补缺键，
+    -- 缺哪个箱型(treasure 是后并入的)就给默认。比单补 treasure 更稳：将来新增箱型也自动覆盖，不会再喂 nil 给 pick_loot。
+    for box, w in pairs(DEFAULT_LOOT_WEIGHTS) do
+        storage.loot_weights[box] = storage.loot_weights[box] or deepcopy(w)
+    end
     storage.treasure_pool = nil   -- 废弃键清理：treasure 已并入 storage.loot
 end
 
@@ -323,6 +327,7 @@ end
 -- 按给定【类权重表】选类、类内等概率选物品。weights[cat] 为 0/nil 即跳过该类。
 -- 用 ipairs 顺序确定 → 多人各端一致，math.random 取值不会 desync。
 local function pick_loot(weights)
+    if not weights then return nil end   -- 老档缺该箱型键(如旧结构无 treasure)→ loot_weights().X 取到 nil，视为无可用类，调用方 item_ok 跳过本次
     local LOOT = storage.loot or DEFAULT_LOOT   -- 读 storage（可 /c 热改物品名单），未初始化退回默认
     local total = 0
     for _, c in ipairs(LOOT) do
