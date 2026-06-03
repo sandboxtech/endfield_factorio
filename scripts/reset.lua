@@ -237,35 +237,43 @@ function M.reset()
     local class_infinite_lvl = {}
     for _, def in ipairs(classes.all()) do
         for _, t in ipairs(def.techs or {}) do
-            local tech = force.technologies[t]
+            local tname = classes.tech_entry(t)   -- 条目可为 '名' 或 {'名', chance=}：基准重置不看概率，所有候选都压回 floor
+            local tech = tname and force.technologies[tname]
             if tech then
                 local proto = tech.prototype
                 if proto.level and proto.max_level and proto.level < proto.max_level then
-                    class_infinite_lvl[t] = proto.level   -- 基准=科技自身最低级(未研究 floor)。不能写死 1：如 physical-projectile-damage-7 最低 7 级，设更低会被引擎拒绝→进游戏崩
+                    class_infinite_lvl[tname] = proto.level   -- 基准=科技自身最低级(未研究 floor)。不能写死 1：如 physical-projectile-damage-7 最低 7 级，设更低会被引擎拒绝→进游戏崩
                 end
             end
         end
     end
     for _, u in ipairs(classes.active_class_unlocks()) do
         for _, t in ipairs(u.techs) do
-            local tech = force.technologies[t]
+            local tname, chance = classes.tech_entry(t)
+            local tech = tname and force.technologies[tname]
             if not tech then
-                admin_warn('职业 ' .. u.key .. ' 配置的科技不存在：' .. t)
-            elseif class_infinite_lvl[t] then
-                -- 无限/多级科技：开 = 最低级 + 在场人数；关 = 最低级 + 1（固定首研级，多职业指向也不叠）
-                if storage.class_tech_stack then
-                    class_infinite_lvl[t] = class_infinite_lvl[t] + u.count
-                else
-                    class_infinite_lvl[t] = tech.prototype.level + 1
+                admin_warn('职业 ' .. u.key .. ' 配置的科技不存在：' .. tostring(tname))
+            elseif chance >= 1 or math.random() < chance then   -- 概率解锁：chance 缺省 1=恒中；未中则本轮不解锁(无限科技停留在 floor)
+                if class_infinite_lvl[tname] then
+                    -- 无限/多级科技：开 = 最低级 + 在场人数；关 = 最低级 + 1（固定首研级，多职业指向也不叠）
+                    if storage.class_tech_stack then
+                        class_infinite_lvl[tname] = class_infinite_lvl[tname] + u.count
+                    else
+                        class_infinite_lvl[tname] = tech.prototype.level + 1
+                    end
+                elseif not tech.researched then
+                    tech.researched = true
                 end
-            elseif not tech.researched then
-                tech.researched = true
             end
         end
         for _, rc in ipairs(u.recipes) do
-            local recipe = force.recipes[rc]
-            if recipe then recipe.enabled = true
-            else admin_warn('职业 ' .. u.key .. ' 配置的配方不存在：' .. rc) end
+            local rname, chance = classes.tech_entry(rc)   -- 配方条目与 techs 同格式：'名' 或 {'名', chance=}（每轮各掷一次）
+            local recipe = rname and force.recipes[rname]
+            if not recipe then
+                admin_warn('职业 ' .. u.key .. ' 配置的配方不存在：' .. tostring(rname))
+            elseif chance >= 1 or math.random() < chance then
+                recipe.enabled = true
+            end
         end
     end
     -- 统一【设级】(直接赋值、非取大)：把无限职业科技无条件归位到算出的目标级，封顶 max_level。

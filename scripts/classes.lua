@@ -17,8 +17,10 @@
 --            用于让同职业里某些奖励满得更快/更慢，互不影响。满级配额(stack×groups)不变，只改逼近速度。
 --   unlock   解锁条件(可选)：每条 {pack=瓶, level=级}，需全满足；无则人人可选。
 --   techs    职业【专属科技】(可选，数组)：只要存在选了该职业的玩家(含离线)，开局把这些科技标记已研究(reset 调 M.active_class_unlocks)。
---            如 techs = {'logistics', 'automation-2'}。
---   recipes  职业【专属配方】(可选，数组)：同上，但开局解锁配方(force 级 enabled，无需对应科技。reset 调 M.active_class_unlocks)。如 recipes = {'rail', 'pistol'}。
+--            条目两种写法：'科技名' = 恒解锁；{'科技名', chance = 0.5} = 每轮开局按概率解锁(每职业每科技每轮各掷一次，未中本轮不解锁)。
+--            如 techs = {'logistics', {'automation-2', chance = 0.3}}。【勿用 name= 键】：gen_set_classes.py 按 name= 抓职业名，会误抓。
+--   recipes  职业【专属配方】(可选，数组)：同上，但开局解锁配方(force 级 enabled，无需对应科技。reset 调 M.active_class_unlocks)。
+--            条目格式与 techs 相同：'配方名' = 恒解锁；{'配方名', chance = 0.5} = 每轮 50% 概率解锁。如 recipes = {'rail', {'pistol', chance = 0.5}}。
 --   {}       空表 = 占位，在职业窗口里作【换行/分组】分隔（无 key，选不到）。
 --
 -- 【容量约束】每个职业「满级资源含量」（starter 固定组 + 各 rewards 满级 groups 之和）控制在 50 组以内。
@@ -436,7 +438,10 @@ local DEFAULT_CLASSES = {
         {pack = 'agricultural-science-pack',   item = 'rocket-fuel',                    groups = 25},
     }},
 
-    {key = 'captain', techs = {'space-platform-thruster'}, name = '船长', full = FULL_MAX, starter = {
+    {key = 'captain', techs = {'space-platform-thruster'}, recipes = {
+        'thruster-fuel', 'thruster-oxidizer',                                                       -- 基础推进器燃料/氧化剂：恒解锁
+        {'advanced-thruster-fuel', chance = 0.5}, {'advanced-thruster-oxidizer', chance = 0.5},     -- 高级款：各 50% 每轮掷
+    }, name = '船长', full = FULL_MAX, starter = {
         {item = 'space-platform-starter-pack', count = 1},
     }, unlock = {{pack = 'space-science-pack', level = 100}}, rewards = {
         {pack = 'production-science-pack', item = 'space-platform-foundation',   groups = 20},
@@ -444,11 +449,16 @@ local DEFAULT_CLASSES = {
         {pack = 'space-science-pack',   item = 'thruster',                    groups = 10},
     }},
 
-    {key = 'asteroidminer', techs = {'asteroid-reprocessing', 'advanced-asteroid-processing'}, name = '小行星带矿工', full = FULL_MAX, starter = {
+    -- 注意：不再送 asteroid-reprocessing / advanced-asteroid-processing 科技（科技会整包解锁下列配方，概率就失效了），改为逐配方概率控制。
+    {key = 'asteroidminer', recipes = {
+        'metallic-asteroid-crushing', 'carbonic-asteroid-crushing', 'oxide-asteroid-crushing',      -- 基础星岩粉碎 ×3：恒解锁
+        {'metallic-asteroid-reprocessing', chance = 0.5}, {'carbonic-asteroid-reprocessing', chance = 0.5}, {'oxide-asteroid-reprocessing', chance = 0.5},   -- 星岩回收 ×3：各 50%
+        {'advanced-metallic-asteroid-crushing', chance = 0.5}, {'advanced-carbonic-asteroid-crushing', chance = 0.5}, {'advanced-oxide-asteroid-crushing', chance = 0.5},   -- 高级星岩粉碎 ×3：各 50%
+    }, name = '小行星带矿工', full = FULL_MAX, starter = {
         {item = 'space-platform-starter-pack', count = 1},
     }, unlock = {{pack = 'space-science-pack', level = 100}}, rewards = {
-        {pack = 'space-science-pack',   item = 'asteroid-collector',          groups = 5},
-        {pack = 'space-science-pack',   item = 'crusher',                     groups = 5},
+        {pack = 'space-science-pack',   item = 'asteroid-collector',          groups = 20},
+        {pack = 'space-science-pack',   item = 'crusher',                     groups = 20},
     }},
 
     -- 宇航·四星开拓者：起始科技 = 各星球发现科技；starter/rewards/recipes 待填。
@@ -779,6 +789,13 @@ end
 -- 当前生效的职业表（读 storage；未初始化则退回默认常量兜底）。
 function M.all()
     return storage.classes or DEFAULT_CLASSES
+end
+
+-- techs 条目归一化：'科技名'（恒解锁）或 {'科技名', chance = 0~1}（每轮按概率解锁）。
+-- 返回 科技名, 解锁概率（缺省 1）。所有遍历 techs 的地方统一经此取名，避免各处自判类型。
+function M.tech_entry(t)
+    if type(t) == 'table' then return t[1], t.chance or 1 end
+    return t, 1
 end
 
 -- 按 key 找职业定义（遍历当前表；职业数少、不缓存，确保 /c 改后即时生效）。

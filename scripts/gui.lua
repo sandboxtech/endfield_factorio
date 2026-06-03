@@ -271,14 +271,22 @@ function M.show_classes(player)
         if def.techs and #def.techs > 0 then
             r_unlock[#r_unlock + 1] = {'wn.class-tip-tech'}   -- 区域标题（纯标签，无参数）
             for _, t in ipairs(def.techs) do
-                local proto = prototypes.technology[t]
-                r_unlock[#r_unlock + 1] = {'', '\n[technology=' .. t .. '] ', proto and proto.localised_name or t}
+                local tname, chance = classes.tech_entry(t)   -- 条目可为 '名' 或 {'名', chance=}
+                local proto = tname and prototypes.technology[tname]
+                local line = {'', '\n[technology=' .. (tname or '?') .. '] ', proto and proto.localised_name or tname or '?'}
+                if chance < 1 then line[#line + 1] = {'wn.class-tip-tech-chance', math.floor(chance * 100 + 0.5)} end   -- 概率解锁的科技：名后标注 %
+                r_unlock[#r_unlock + 1] = line
             end
         end
         if def.recipes and #def.recipes > 0 then
-            local recipelist = {}
-            for _, rc in ipairs(def.recipes) do recipelist[#recipelist + 1] = '[recipe=' .. rc .. ']' end
-            r_unlock[#r_unlock + 1] = {'wn.class-tip-recipe', table.concat(recipelist, ' ')}
+            r_unlock[#r_unlock + 1] = {'wn.class-tip-recipe'}   -- 区域标题（纯标签，无参数）
+            for _, rc in ipairs(def.recipes) do
+                local rname, chance = classes.tech_entry(rc)   -- 配方条目与 techs 同格式：'名' 或 {'名', chance=}
+                local proto = rname and prototypes.recipe[rname]
+                local line = {'', '\n[recipe=' .. (rname or '?') .. '] ', proto and proto.localised_name or rname or '?'}
+                if chance < 1 then line[#line + 1] = {'wn.class-tip-tech-chance', math.floor(chance * 100 + 0.5)} end   -- 概率解锁标注 %（与科技共用同一词条）
+                r_unlock[#r_unlock + 1] = line
+            end
         end
         if #r_unlock > 0 then regions[#regions + 1] = r_unlock end
         -- 区域② 白送物品：每物品一行 "+N [img]"。总个数 = count 个，或 groups 组 × 堆叠（默认 1 组）。
