@@ -294,7 +294,7 @@ function M.show_classes(player)
         for _, r in ipairs(def.rewards or {}) do
             local proto = prototypes.item[r.item]
             local total = r.count or (((proto and proto.stack_size) or 1) * (r.groups or 1))   -- 满级最多给多少个(M)：有 count 按个数(与 respawn_gifts 发放口径一致)，否则 堆叠×groups
-            local full = def.full or CLASS_MAX_LEVEL                              -- 满级线
+            local full = r.full or def.full or CLASS_MAX_LEVEL                    -- 满级线：每条 reward 的 full 可覆盖职业 full（与发放口径一致）
             local lv = math.min(classes.pack_level(player, r.pack), full)        -- 玩家该瓶当前等级(封顶 full)
             local current = math.floor(total * lv / full)                        -- 当前能拿到的数量(yyy，与 respawn_gifts 发放公式一致)
             local g = util.gcd(full, total)                                       -- 约分 满级线:满级总数 → 每 P 级得 Q 个

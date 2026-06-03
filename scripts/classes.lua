@@ -13,6 +13,8 @@
 --   starter  无条件初始物品列表：每条 {item=物品, count=个数 或 groups=组数}；count 个 > groups 组 > 默认 1 组。
 --   rewards  经验奖励列表：每条 {pack=瓶, item=物品, groups=满配额组数}；按该瓶等级线性发，
 --            个数 = floor(堆叠 × groups × min(瓶等级, full) / full)。pack 按物品在科技树的解锁层级配。
+--            可选 full=：单条 reward 自带 full 则覆盖职业 full（仅算这一条），nil 则继承职业 full。
+--            用于让同职业里某些奖励满得更快/更慢，互不影响。满级配额(stack×groups)不变，只改逼近速度。
 --   unlock   解锁条件(可选)：每条 {pack=瓶, level=级}，需全满足；无则人人可选。
 --   techs    职业【专属科技】(可选，数组)：只要存在选了该职业的玩家(含离线)，开局把这些科技标记已研究(reset 调 M.active_class_unlocks)。
 --            如 techs = {'logistics', 'automation-2'}。
@@ -203,15 +205,14 @@ local DEFAULT_CLASSES = {
         -- {item = 'electric-mining-drill', groups = 1},
         -- {item = 'big-mining-drill', groups = 1},
     }, rewards = {
-        {pack = 'automation-science-pack',     item = 'electric-mining-drill', groups = 20},
+        {pack = 'automation-science-pack',     item = 'electric-mining-drill', groups = 40},
         {pack = 'metallurgic-science-pack', item = 'big-mining-drill', groups = 2},
     }},
 
     {key = 'smelter', techs = {'advanced-material-processing', 'advanced-material-processing-2'}, name = '煅烧工人', full = FULL_MID, starter = {
         {item = 'stone-furnace', groups = 6},
     }, rewards = {
-        {pack = 'automation-science-pack', item = 'stone-furnace',       groups = 20},
-        {pack = 'logistic-science-pack', item = 'steel-furnace',       groups = 5},
+        {pack = 'logistic-science-pack', item = 'steel-furnace',       groups = 40},
         {pack = 'chemical-science-pack', item = 'electric-furnace',   groups = 2},
     }},
 
@@ -279,22 +280,22 @@ local DEFAULT_CLASSES = {
         {item = 'quality-module', groups = 1},
     }, unlock = {{pack = 'electromagnetic-science-pack', level = 10}}, rewards = {
         {pack = 'chemical-science-pack',        item = 'quality-module',     groups = 10},   -- 蓝：1级
-        {pack = 'space-science-pack',           item = 'quality-module-2',   groups = 5},   -- 白：2级
-        {pack = 'electromagnetic-science-pack', item = 'quality-module-3',   groups = 2},   -- 粉：3级(电浆星)
+        {pack = 'space-science-pack',           item = 'quality-module-2',   groups = 10},   -- 白：2级
+        {pack = 'electromagnetic-science-pack', item = 'quality-module-3',   groups = 10},   -- 粉：3级(电浆星)
     }},
     {key = 'speedman', techs = {'speed-module'}, name = '速度大师', full = FULL_MAX, starter = {
         {item = 'speed-module', groups = 1},
     }, unlock = {{pack = 'metallurgic-science-pack', level = 10}}, rewards = {
         {pack = 'chemical-science-pack',    item = 'speed-module',     groups = 10},   -- 蓝：1级
-        {pack = 'space-science-pack',       item = 'speed-module-2',   groups = 5},   -- 白：2级
-        {pack = 'metallurgic-science-pack', item = 'speed-module-3',   groups = 2},   -- 橙：3级(火山)
+        {pack = 'space-science-pack',       item = 'speed-module-2',   groups = 10},   -- 白：2级
+        {pack = 'metallurgic-science-pack', item = 'speed-module-3',   groups = 10},   -- 橙：3级(火山)
     }},
     {key = 'efficiencyman', techs = {'efficiency-module'}, name = '节能大师', full = FULL_MAX, starter = {
         {item = 'efficiency-module', groups = 1},
     }, unlock = {{pack = 'agricultural-science-pack', level = 10}}, rewards = {
         {pack = 'chemical-science-pack',     item = 'efficiency-module',     groups = 10},   -- 蓝：1级
-        {pack = 'space-science-pack',        item = 'efficiency-module-2',   groups = 5},   -- 白：2级
-        {pack = 'agricultural-science-pack', item = 'efficiency-module-3',   groups = 2},   -- 草：3级(Gleba)
+        {pack = 'space-science-pack',        item = 'efficiency-module-2',   groups = 10},   -- 白：2级
+        {pack = 'agricultural-science-pack', item = 'efficiency-module-3',   groups = 10},   -- 草：3级(Gleba)
     }},
     {key = 'productivityman', techs = {'productivity-module'}, name = '产能大师', full = FULL_MAX, starter = {
         {item = 'productivity-module', groups = 1},
