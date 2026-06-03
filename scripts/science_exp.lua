@@ -34,9 +34,25 @@ end
 -- 跃迁结算：统计【在线】玩家背包里科技瓶 → 瓶经验累加进 storage.exp（按瓶名，各品质合并）。
 -- 不移除瓶子，跃迁本就清空背包。只有自动跃迁会调用（无提前结算）。必须在背包被清空之前调用。
 -- 返回本轮各瓶获得经验 {瓶名=经验}；离线/无背包返回 nil。
+-- 取玩家的【本体角色实体】，不经过 player 的 controller：
+--   · 正常控制时 = player.character；
+--   · 玩家切到【地图/遥控视角 map/remote view】时 player.character 变 nil（角色未 attach 当前 controller），
+--     但本体角色被引擎 associate 到该玩家 → 从 get_associated_characters 取回。
+-- 这样不管玩家在什么视角，只要角色还在(活着)就能拿到背包；真·无角色(死亡)才返回 nil。
+local function body_character(player)
+    if not player then return nil end
+    if player.character and player.character.valid then return player.character end
+    for _, c in pairs(player.get_associated_characters()) do
+        if c.valid then return c end
+    end
+    return nil
+end
+
 function M.collect(player)
     if not player.connected then return nil end
-    local inventory = player.get_inventory(defines.inventory.character_main)
+    local character = body_character(player)
+    if not character then return nil end                                       -- 真·无角色(死亡等)不收，正常
+    local inventory = character.get_inventory(defines.inventory.character_main)
     if not inventory then return nil end
 
     local player_exp = M.player_exp(player, true)
@@ -50,7 +66,9 @@ end
 -- 预览：若现在跃迁，背包里的科技瓶各能换多少经验（按瓶汇总，不写入 storage、不打印）。
 -- 返回 { [瓶名] = 经验, ... }，只含 >0 的项；与 M.collect 同一算法（sum_packs）。
 function M.preview(player)
-    local inventory = player and player.get_inventory(defines.inventory.character_main)
+    -- 同 collect：取本体角色（含地图/遥控视角的玩家），从角色实体取背包。
+    local character = body_character(player)
+    local inventory = character and character.get_inventory(defines.inventory.character_main)
     if not inventory then return {} end
     return sum_packs(inventory)
 end
