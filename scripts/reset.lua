@@ -226,23 +226,39 @@ function M.reset()
     -- 职业【专属科技】：若存在选了某职业的玩家（含离线），解锁该职业配置的 tech（每职业 0~1 个，见 classes.lua 的 tech 字段）。
     -- 职业【专属解锁】：按职业逐个应用 techs(标记已研究)/recipes(force 级 enabled)，并【全服广播】哪个职业解锁了什么。
     -- 职业【专属解锁】：有该职业玩家则开局解锁其 techs/recipes（不广播）。找不到的名字向管理员告警。
+    --
+    -- 无限/多级【职业科技】跨跃迁【幂等重算】，不再随跃迁次数/玩家自研无限涨：
+    --   1) 先扫【所有职业定义】(不只在场)，把它们指向的无限科技统一压回基准 1 级(=未研究)；
+    --      这样玩家自研出的高级、以及相关职业全员退出的情形，都会在跃迁时回落到 1。
+    --   2) 再按【在场】职业人数累加（同一无限科技可被多个职业指向，如 research-productivity 同属
+    --      挂机大师+天文专家，故先收集到 class_infinite_lvl、最后统一【设级】，避免边算边写互相覆盖）。
+    -- class_tech_stack 开 = 1 + 各相关职业人数之和（每个选该职业的玩家各 +1 级）；关 = 固定第一级(level=2)，不随人数变。
+    local class_infinite_lvl = {}
+    for _, def in ipairs(classes.all()) do
+        for _, t in ipairs(def.techs or {}) do
+            local tech = force.technologies[t]
+            if tech then
+                local proto = tech.prototype
+                if proto.level and proto.max_level and proto.level < proto.max_level then
+                    class_infinite_lvl[t] = 1   -- 基准：1 级代表未研究
+                end
+            end
+        end
+    end
     for _, u in ipairs(classes.active_class_unlocks()) do
         for _, t in ipairs(u.techs) do
             local tech = force.technologies[t]
             if not tech then
                 admin_warn('职业 ' .. u.key .. ' 配置的科技不存在：' .. t)
-            elseif not tech.researched then
-                local proto = tech.prototype
-                -- 无限/多级科技：开关 storage.class_tech_stack 控制多职业指向同一科技的行为。普通单级用 researched。
-                if proto.level and proto.max_level and proto.level < proto.max_level then
-                    -- 无限/多级科技：科技进度【跨跃迁保留】，必须【幂等设级】而非累加，否则每跃迁都 +人数级、无限涨（bug）。
-                    -- 目标级：class_tech_stack 开 = 1+人数级（每个选该职业的玩家各 1 级）、关 = 固定第一级(level=2)。
-                    -- 用 max 取大：不累加、也不把玩家自己研究到的更高级降下来。封顶 max_level。
-                    local target = storage.class_tech_stack and (1 + u.count) or 2
-                    tech.level = math.min(proto.max_level, math.max(tech.level, target))
+            elseif class_infinite_lvl[t] then
+                -- 无限/多级科技：开 = 累加在场人数；关 = 固定首级 2（多职业指向也不叠）
+                if storage.class_tech_stack then
+                    class_infinite_lvl[t] = class_infinite_lvl[t] + u.count
                 else
-                    tech.researched = true
+                    class_infinite_lvl[t] = 2
                 end
+            elseif not tech.researched then
+                tech.researched = true
             end
         end
         for _, rc in ipairs(u.recipes) do
@@ -250,6 +266,12 @@ function M.reset()
             if recipe then recipe.enabled = true
             else admin_warn('职业 ' .. u.key .. ' 配置的配方不存在：' .. rc) end
         end
+    end
+    -- 统一【设级】(直接赋值、非取大)：把无限职业科技无条件归位到算出的目标级，封顶 max_level。
+    -- 直接赋值才能在跃迁时把上一轮残留的高级压下来；只有这里有权降级，别处不动 force 研究。
+    for t, lvl in pairs(class_infinite_lvl) do
+        local tech = force.technologies[t]
+        tech.level = math.min(tech.prototype.max_level, lvl)
     end
 
     -- （科技世界已并入事件世界：tech 现作为事件类型之一，由 surface.lua 的事件世界 roll 按星球抽中、

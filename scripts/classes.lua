@@ -249,11 +249,11 @@ local DEFAULT_CLASSES = {
         {item = 'oil-refinery', groups = 1},
         {item = 'chemical-plant', groups = 1},
     }, unlock = {{pack = 'logistic-science-pack', level = 10}}, rewards = {
-        {pack = 'logistic-science-pack',   item = 'pumpjack',       groups = 10},   -- 绿：抽油机
-        {pack = 'chemical-science-pack',   item = 'oil-refinery',   groups = 10},   -- 蓝：炼油厂
-        {pack = 'space-science-pack',   item = 'chemical-plant', groups = 10},   -- 蓝：化工厂
-        {pack = 'agricultural-science-pack',   item = 'biochamber', groups = 2},   -- 蓝：化工厂
-        {pack = 'cryogenic-science-pack',   item = 'cryogenic-plant', groups = 2},   -- 蓝：化工厂
+        {pack = 'logistic-science-pack',   item = 'pumpjack',       groups = 10}, 
+        {pack = 'logistic-science-pack',   item = 'oil-refinery',   groups = 10}, 
+        {pack = 'logistic-science-pack',   item = 'chemical-plant', groups = 10}, 
+        {pack = 'agricultural-science-pack',   item = 'biochamber', groups = 2}, 
+        {pack = 'cryogenic-science-pack',   item = 'cryogenic-plant', groups = 2}, 
     }},
 
     {key = 'moduler', techs = {'modules'}, name = '插件工人', full = FULL_MAX, starter = {
@@ -624,22 +624,20 @@ local DEFAULT_CLASSES = {
         {item = 'artillery-turret', count = 1},
         {item = 'artillery-shell', count = 10},
     }, unlock = {{pack = 'metallurgic-science-pack', level = 100}}, rewards = {
-        {pack = 'military-science-pack', item = 'artillery-shell',  groups = 30},
-        {pack = 'metallurgic-science-pack',  item = 'artillery-wagon',  groups = 2}, 
-        {pack = 'metallurgic-science-pack', item = 'artillery-turret', groups = 10},
+        {pack = 'military-science-pack', item = 'artillery-shell',  groups = 40},
+        {pack = 'metallurgic-science-pack',  item = 'artillery-wagon',  groups = 1}, 
+        {pack = 'metallurgic-science-pack', item = 'artillery-turret', groups = 1},
     }},
     {key = 'teslatrooper', techs = {'tesla-weapons'}, name = '杨永信', full = FULL_MAX, starter = {
         {item = 'teslagun', count = 1},
-        {item = 'tesla-ammo', count = 20},
     }, unlock = {{pack = 'electromagnetic-science-pack', level = 100}}, rewards = {
         {pack = 'electromagnetic-science-pack', item = 'teslagun',   groups = 1},
         {pack = 'electromagnetic-science-pack', item = 'tesla-ammo',   groups = 10},
         {pack = 'electromagnetic-science-pack', item = 'tesla-turret', groups = 10},
     }},
     {key = 'railgunner', techs = {'railgun'}, name = '御坂美琴', full = FULL_MAX, starter = {
-        {item = 'railgun', count = 1},
         {item = 'railgun-ammo', count = 1},
-    }, unlock = {{pack = 'cryogenic-science-pack', level = 1000}}, rewards = {
+    }, unlock = {{pack = 'cryogenic-science-pack', level = 500}}, rewards = {
         -- {pack = 'cryogenic-science-pack', item = 'railgun', groups = 1},
         {pack = 'cryogenic-science-pack', item = 'railgun-ammo',   groups = 20},   -- stack10：1组=10发
         {pack = 'cryogenic-science-pack', item = 'railgun-turret', groups = 2},

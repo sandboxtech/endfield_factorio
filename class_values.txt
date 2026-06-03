@@ -64,19 +64,19 @@ speedman            MAX      3,370     525,414    248,078∞
 efficiencyman       MAX      3,370     525,414    123,163∞
 productivityman     MAX      3,370     525,414    519,723∞
 farmer              MAX        146     482,846           0
-teslatrooper        MAX      2,620     430,848     898,882
+teslatrooper        MAX        351     428,579     898,882
 captain             MAX      5,475     355,290      17,604
-railgunner          MAX      3,353     348,917   1,516,380
+railgunner          MAX         35     345,599   1,516,380
 moduler             MAX      4,376     323,461         682
 roboticist          MAX      2,200     261,225      14,199
 forester            MAX        346     151,346       2,148
 asteroidminer       MAX      5,475     135,170     527,188
-artillerist         MAX      3,246     129,802     386,290
 rocketeer           MAX      1,063      55,455       3,310
 mecharmor           MAX     54,012      54,012   2,996,275
 spidertron          MAX     53,425      53,425     687,022
 astronomer          MAX          0      42,985    859,101∞
 biologist           MAX          0      37,194    122,822∞
+artillerist         MAX      3,246      26,836     386,290
 aquilo              MAX      3,453       3,453   2,401,707
 banker              MAX          0       1,200           0
 afker               MAX          7           7    859,101∞
@@ -307,16 +307,16 @@ afker               MAX          7           7    859,101∞
     初始: agricultural-tower=106、yumako-seed=20、jellynut-seed=20
     奖励: overgrowth-yumako-soil=215,900、overgrowth-jellynut-soil=215,900、artificial-yumako-soil=25,450、artificial-jellynut-soil=25,450
 
-【teslatrooper 杨永信】 初始物品=2,620  满级物品=430,848  科技=898,882  techs=['tesla-weapons']
-    初始: tesla-ammo=2,269、teslagun=351
+【teslatrooper 杨永信】 初始物品=351  满级物品=428,579  科技=898,882  techs=['tesla-weapons']
+    初始: teslagun=351
     奖励: tesla-turret=313,031、tesla-ammo=113,443、teslagun=1,754
 
 【captain 船长】 初始物品=5,475  满级物品=355,290  科技=17,604  techs=['space-platform-thruster']
     初始: space-platform-starter-pack=5,475
     奖励: space-platform-foundation=132,600、cargo-bay=130,079、thruster=87,136
 
-【railgunner 御坂美琴】 初始物品=3,353  满级物品=348,917  科技=1,516,380  techs=['railgun']
-    初始: railgun=3,318、railgun-ammo=35
+【railgunner 御坂美琴】 初始物品=35  满级物品=345,599  科技=1,516,380  techs=['railgun']
+    初始: railgun-ammo=35
     奖励: railgun-turret=338,619、railgun-ammo=6,945
 
 【moduler 插件工人】 初始物品=4,376  满级物品=323,461  科技=682  techs=['modules']
@@ -334,10 +334,6 @@ afker               MAX          7           7    859,101∞
 【asteroidminer 小行星带矿工】 初始物品=5,475  满级物品=135,170  科技=527,188  techs=['advanced-asteroid-processing']
     初始: space-platform-starter-pack=5,475
     奖励: asteroid-collector=71,823、crusher=57,872
-
-【artillerist 李云龙】 初始物品=3,246  满级物品=129,802  科技=386,290  techs=['artillery']
-    初始: artillery-shell=2,121、artillery-turret=1,125
-    奖励: artillery-turret=112,473、artillery-wagon=7,721、artillery-shell=6,362
 
 【rocketeer 胖子发射器】 初始物品=1,063  满级物品=55,455  科技=3,310  techs=['rocketry']
     初始: rocket=1,044、rocket-launcher=19
@@ -359,6 +355,10 @@ afker               MAX          7           7    859,101∞
     初始: （无）
     奖励: agricultural-tower=21,179、biochamber=16,015
 
+【artillerist 李云龙】 初始物品=3,246  满级物品=26,836  科技=386,290  techs=['artillery']
+    初始: artillery-shell=2,121、artillery-turret=1,125
+    奖励: artillery-turret=11,247、artillery-shell=8,483、artillery-wagon=3,860
+
 【aquilo 冰原开拓者】 初始物品=3,453  满级物品=3,453  科技=2,401,707  techs=['planet-discovery-aquilo', 'heating-tower', 'lithium-processing', 'cryogenic-plant']
     初始: cryogenic-plant=2,960、heating-tower=493
     奖励: （无）
@@ -372,7 +372,7 @@ afker               MAX          7           7    859,101∞
     奖励: （无）
 
 ━━━━━━━━━━━━ 三、复检 ━━━━━━━━━━━━
-初始物品  中位=1,952  范围 0 ~ 54,012（应大致相当）
+初始物品  中位=1,784  范围 0 ~ 54,012（应大致相当）
 LOW 满级物品  中位=12,412  范围 2,395 ~ 126,295
 MID 满级物品  中位=77,257  范围 186 ~ 930,432
 MAX 满级物品  中位=323,461  范围 7 ~ 1,500,677
@@ -408,6 +408,7 @@ MAX 满级物品  中位=323,461  范围 7 ~ 1,500,677
   astronomer         MAX  初始=        0  科技=859,101∞  主因 （无）
   afker              MAX  初始=        7  科技=859,101∞  主因 logistic-science-pack=5
   hunter             MID  初始=       20  科技=63,723  主因 rocket-launcher=19
+  railgunner         MAX  初始=       35  科技=1,516,380  主因 railgun-ammo=35
   loaderman          MID  初始=       43  科技=34,522  主因 loader=43
   herder             MID  初始=       81  科技=63,723  主因 biochamber=80
   farmer             MAX  初始=      146  科技=0  主因 agricultural-tower=106
@@ -418,8 +419,7 @@ MAX 满级物品  中位=323,461  范围 7 ~ 1,500,677
   gridman            MID  初始=      287  科技=4,159  主因 small-electric-pole=189
   inventor           LOW  初始=      319  科技=682  主因 lab=319
   forester           MAX  初始=      346  科技=2,148  主因 wood=200
-  tanker             MID  初始=      480  科技=13,543  主因 tank=480
-  energytrader       LOW  初始=      500  科技=182,630  主因 coal=500
+  teslatrooper       MAX  初始=      351  科技=898,882  主因 teslagun=351
 
 ──── 满级物品排名 · 前 20（最高，含 MID/LOW 越级）────
   nuclearman         MAX  满级= 1,500,677  科技=26,726  主因 nuclear-reactor=671,917
@@ -433,9 +433,9 @@ MAX 满级物品  中位=323,461  范围 7 ~ 1,500,677
   efficiencyman      MAX  满级=   525,414  科技=123,163∞  主因 efficiency-module-3=316,572
   productivityman    MAX  满级=   525,414  科技=519,723∞  主因 productivity-module-3=316,572
   farmer             MAX  满级=   482,846  科技=0  主因 overgrowth-yumako-soil=215,900
-  teslatrooper       MAX  满级=   430,848  科技=898,882  主因 tesla-turret=313,031
+  teslatrooper       MAX  满级=   428,579  科技=898,882  主因 tesla-turret=313,031
   captain            MAX  满级=   355,290  科技=17,604  主因 space-platform-foundation=132,600
-  railgunner         MAX  满级=   348,917  科技=1,516,380  主因 railgun-turret=338,619
+  railgunner         MAX  满级=   345,599  科技=1,516,380  主因 railgun-turret=338,619
   moduler            MAX  满级=   323,461  科技=682  主因 speed-module-2=68,707
   roboticist         MAX  满级=   261,225  科技=14,199  主因 logistic-robot=82,349
   laserdefense       MID  满级=   231,645  科技=5,417  主因 personal-laser-defense-equipment=215,484
