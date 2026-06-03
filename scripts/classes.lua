@@ -194,7 +194,7 @@ local DEFAULT_CLASSES = {
 
     {section = '生产'},   -- 分区标题（无 key，职业窗口里渲染成粗体小标题）
 
-    {key = 'miner', techs = {'electric-mining-drill', 'mining-productivity-4'}, name = '采矿工人', full = FULL_MID, starter = {
+    {key = 'miner', techs = {'electric-mining-drill', 'mining-productivity-3'}, name = '采矿工人', full = FULL_MID, starter = {
         {item = 'burner-mining-drill', groups = 2},
     }, rewards = {
         {pack = 'automation-science-pack',     item = 'electric-mining-drill', groups = 20, full = FULL_LOW},

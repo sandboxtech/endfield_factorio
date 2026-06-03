@@ -232,11 +232,10 @@ function M.ensure_defaults()
     -- 【无限产能科技经验】集合 {科技名 = true}：研究完这些【真·无限】科技时，每完成一级给【全体在线玩家】
     --   各 +1 经验，存进 storage.exp[玩家名][科技名]（与科技瓶经验同一张表、不同键，故不污染 12 瓶面板）。
     --   研究产能越高、刷得越快 → 这类经验涨得越多（挂机大师等高产能职业受益）。缺失才补 → 保留 /c 增删。
-    --   注意：采矿无限级是 mining-productivity-4（前三级有限），不是 -1/-2/-3。
     --   热改：/c storage.prod_exp_techs['steel-plate-productivity'] = true   删：…= nil
     storage.prod_exp_techs = storage.prod_exp_techs or {
         ['research-productivity']             = true,
-        ['mining-productivity-4']             = true,
+        ['mining-productivity-3']             = true,
         ['asteroid-productivity']             = true,
         ['low-density-structure-productivity'] = true,
         ['plastic-bar-productivity']          = true,

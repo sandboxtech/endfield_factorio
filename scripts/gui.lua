@@ -234,10 +234,10 @@ end
 
 -- 弹出【职业】窗口（HUD 独立按钮）：每个职业一个按钮，标出当前/预约职业、悬停说明专精瓶。
 -- 点击经 tick.on_gui_click（tags.wn_class）路由到 commands.set_class。同时只能一种职业。
--- 标记规则（格式：signal 职业图标 职业名 signal）：
+-- 标记规则（格式：左signal 职业图标 职业名 右signal，左右可不同）：
 --   · 当前职业 == 预约职业：两侧 [signal-mining]，名字 acid 色（已生效、无变更）。
---   · 不一致：当前职业两侧 [signal-output]、红色（本世界生效中、即将换走）；
---             预约职业两侧 [signal-input]、蓝色（下次跃迁换上）。
+--   · 不一致：当前职业 [signal-output]…[signal-deny]、红色（本世界生效中、即将换走）；
+--             预约职业 [signal-input]…[signal-check]、蓝色（下次跃迁换上）。
 function M.show_classes(player)
     if not player then return end
     local cur = classes.current_key(player)    -- 当前职业（本世界生效）
@@ -331,16 +331,17 @@ function M.show_classes(player)
             end
             node[#node + 1] = p
         end
-        -- 按钮文案：当前/预约职业按规则加信号+染色；普通职业沿用 class-pick（图标+名）。
-        local sig, col
-        if def.key == cur and def.key == res then sig, col = 'signal-mining', 'acid'   -- 已生效、无变更
-        elseif def.key == cur then sig, col = 'signal-output', 'red'                    -- 当前(即将换走)
-        elseif def.key == res then sig, col = 'signal-input', 'blue'                    -- 预约(下次换上)
+        -- 按钮文案：当前/预约职业按规则加信号+染色；普通职业沿用 class-pick（图标+名）。左右信号可不同。
+        local sigl, sigr, col
+        if def.key == cur and def.key == res then sigl, sigr, col = 'signal-mining', 'signal-mining', 'acid'   -- 已生效、无变更
+        elseif def.key == cur then sigl, sigr, col = 'signal-output', 'signal-deny', 'red'                      -- 当前(即将换走)
+        elseif def.key == res then sigl, sigr, col = 'signal-input', 'signal-check', 'blue'                     -- 预约(下次换上)
         end
         local caption
-        if sig then
-            local s = '[virtual-signal=' .. sig .. ']'   -- signal 职业图标 [色]职业名[/色] signal
-            caption = {'', s .. ' ' .. starter_img .. ' [color=' .. col .. ']', name_loc, '[/color] ' .. s}
+        if sigl then
+            -- 左signal 职业图标 [色]职业名[/色] 右signal
+            caption = {'', '[virtual-signal=' .. sigl .. '] ' .. starter_img .. ' [color=' .. col .. ']', name_loc,
+                       '[/color] [virtual-signal=' .. sigr .. ']'}
         else
             caption = {'wn.class-pick', name_loc, starter_img}
         end

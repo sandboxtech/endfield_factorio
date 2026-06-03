@@ -119,17 +119,18 @@ function M.kill_player(player)
     player.character.die()
 end
 
--- ── 蓝图权限：跃迁满 BLUEPRINT_WARPS 次（warps 统计）才解锁【蓝图库 + 导入蓝图字符串】────────
--- 用 permission group 实现：未达次数(或新玩家)放进 'no_blueprint' 受限组，禁掉进库/取库/导入字符串等动作；
+-- ── 蓝图权限：跃迁满 BLUEPRINT_WARPS 次（warps 统计）才解锁【蓝图库 + 导入蓝图字符串 + 红图(拆除规划器)】──
+-- 用 permission group 实现：未达次数(或新玩家)放进 'no_blueprint' 受限组，禁掉进库/取库/导入字符串/拆除框选等动作；
 -- 达标后(及管理员)放回 'Default' 组。本地框选创建、使用自己手上的蓝图仍允许。
 -- 注意：手上【已持有】的蓝图去放 ghost 走的是普通建造动作，服务端无法在此单独拦截，这点挡不住。
-local BLUEPRINT_WARPS = 2   -- 解锁蓝图所需的跃迁次数
+local BLUEPRINT_WARPS = 2   -- 解锁蓝图/红图所需的跃迁次数
 local BLUEPRINT_BLOCKED = {
     'open_blueprint_library_gui',   -- 打开蓝图库
     'grab_blueprint_record',        -- 从库里取出蓝图到手
     'import_blueprint',             -- 导入蓝图（进库）
     'import_blueprint_string',      -- 粘贴蓝图字符串
     'import_blueprints_filtered',   -- 过滤导入
+    'deconstruct',                  -- 红图(拆除规划器)框选标记拆除；手动采矿不受影响
 }
 -- 取（缺则建）受限组并重设禁用动作（幂等）。permission group 持久存档，create 重复会返回 nil，故 get 优先。
 local function blueprint_locked_group()
