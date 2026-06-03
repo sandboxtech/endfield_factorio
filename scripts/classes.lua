@@ -310,7 +310,7 @@ local DEFAULT_CLASSES = {
     {key = 'electrician', techs = {'steam-power'}, name = '热能工人', full = FULL_MID, starter = {
         {item = 'boiler', groups = 1},
         {item = 'steam-engine', groups = 1},
-    }, unlock = {{pack = 'logistic-science-pack', level = 10}}, rewards = {
+    }, rewards = {
         {pack = 'automation-science-pack', item = 'boiler',      groups = 1},   -- 红：蒸汽机
         {pack = 'logistic-science-pack', item = 'steam-engine',      groups = 10},   -- 红：蒸汽机
         {pack = 'chemical-science-pack',   item = 'steam-turbine',    groups = 10},   -- 蓝：蒸汽涡轮机(高级)
@@ -321,7 +321,7 @@ local DEFAULT_CLASSES = {
     {key = 'greentech', techs = {'solar-energy', 'electric-energy-accumulators'}, name = '光能工人', full = FULL_MID, starter = {
         {item = 'solar-panel', groups = 1},
         {item = 'accumulator', groups = 1},
-    }, unlock = {{pack = 'logistic-science-pack', level = 10}}, rewards = {
+    }, rewards = {
         {pack = 'logistic-science-pack',        item = 'solar-panel',         groups = 10},  -- 绿：太阳能板
         {pack = 'chemical-science-pack',      item = 'accumulator',         groups = 10},   -- 紫：蓄电器
         --
@@ -330,7 +330,7 @@ local DEFAULT_CLASSES = {
     }},
     {key = 'nuclearman', techs = {'nuclear-power'}, name = '核能工人', full = FULL_MAX, starter = {
         {item = 'centrifuge', count = 2},
-    }, unlock = {{pack = 'chemical-science-pack', level = 100}}, rewards = {
+    }, rewards = {
         {pack = 'chemical-science-pack',   item = 'centrifuge',        groups = 5},   -- 蓝：离心机
         {pack = 'chemical-science-pack',   item = 'nuclear-reactor',        groups = 5},   -- 蓝：离心机
         {pack = 'chemical-science-pack',   item = 'uranium-fuel-cell',        groups = 5},   -- 蓝：离心机
@@ -380,7 +380,7 @@ local DEFAULT_CLASSES = {
 
     {key = 'loaderman', techs = {'logistics-3'}, name = '装卸工人', full = FULL_MID, starter = {
         {item = 'loader', count = 1},
-    }, unlock = {{pack = 'logistic-science-pack', level = 10}}, rewards = {
+    }, rewards = {
         {pack = 'logistic-science-pack',    item = 'loader',         groups = 10},   -- 绿：装卸机
         {pack = 'logistic-science-pack',    item = 'fast-loader',    groups = 5},   -- 绿：快速装卸机
         {pack = 'production-science-pack',  item = 'express-loader', groups = 2},   -- 紫：极速装卸机
@@ -418,14 +418,14 @@ local DEFAULT_CLASSES = {
         {item = 'cargo-wagon', groups = 1},
         {item = 'fluid-wagon', groups = 1},
         {item = 'rail', groups = 1},
-    }, unlock = {{pack = 'logistic-science-pack', level = 10}}, rewards = {
+    }, rewards = {
         {pack = 'logistic-science-pack',   item = 'rail',              groups = 20},   -- 绿：铁轨
         {pack = 'logistic-science-pack',   item = 'train-stop',        groups = 1},    -- 绿：火车站
         {pack = 'logistic-science-pack',   item = 'rail-signal',       groups = 1},    -- 绿：铁路信号
         {pack = 'logistic-science-pack',   item = 'rail-chain-signal', groups = 1},    -- 绿：链式信号
     }},
 
-    {key = 'roboticist', techs = {'robotics', 'construction-robotics', 'logistic-robotics'}, name = '机械师', full = FULL_MAX, starter = {
+    {key = 'roboticist', techs = {'robotics', 'construction-robotics', 'logistic-robotics'}, name = '机械师', full = FULL_MID, starter = {
         {item = 'roboport', count = 1},
         {item = 'storage-chest', count = 1}, 
         {item = 'construction-robot', count = 10},
