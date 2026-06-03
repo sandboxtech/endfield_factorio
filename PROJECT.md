@@ -163,7 +163,7 @@ on_entity_died（world_fx 经总线）: 玩家建筑被虫毁 -> 按 replicant_c
 来源：开局 `floor(√在线分钟)`（= 人物等级，每轮首次复活发放）+（罕见 coinfall 事件）+（消灭虫巢原地爆少量）。**不再每分钟发 +1 金币**。用途：母星金币市场买普通装备零件。
 装备是个人增益，不替代"建工厂"核心循环。
 
-## 星星（挂机时长货币，`commands.lua` 的 `show_star`/`claim_charge`/`give_star`）
+## 星星（随时间恢复货币，`commands.lua` 的 `show_star`/`claim_charge`/`give_star`）
 
 与金币独立的第二种货币：**1 星星 = 1 分钟游戏时间**，离线也在攒（惰性计算：`storage.charge[名]`=上次结算 tick，待领封顶 `charge_max_hours`(默认30h)）。HUD【星星】按钮（人物等级 < `star_unlock_level`(默认20，≈在线6.7h) 时置灰、悬停提示等级解锁；投票按钮同理用 `vote_unlock_level` 默认10）窗口看余额 + 充能进度条 + 领取；满 1 颗才能领整颗（`claim_charge`，保留不足 1 颗的余数），`/givestar <玩家> <数量>` 转给他人（独立冷却）。余额存 `storage.star[名]`（内部按 tick、恒为分钟整数倍）。**注意：星星目前只能攒/领/转，尚无消费用途**（待补，见 TODO）。
 
