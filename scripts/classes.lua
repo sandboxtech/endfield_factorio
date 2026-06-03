@@ -469,7 +469,6 @@ local DEFAULT_CLASSES = {
         'foundry', 
         'big-mining-drill', 
         'tungsten-steel', 
-        'metallurgic-science-pack'
     }, recipes = {}, name = '火山开拓者', full = FULL_MID, starter = {
         {item = 'big-mining-drill', count = 1},
         {item = 'foundry', count = 1},
@@ -482,7 +481,6 @@ local DEFAULT_CLASSES = {
         'recycling',
         'holmium-processing', 
         'electromagnetic-plant', 
-        'electromagnetic-science-pack'
     }, recipes = {}, name = '废土开拓者', full = FULL_MID, starter = {
         {item = 'recycler', count = 1},
         {item = 'electromagnetic-plant', count = 1},
@@ -501,7 +499,6 @@ local DEFAULT_CLASSES = {
         'bacteria-cultivation', 
         'artificial-soil', 
         'biochamber', 
-        'agricultural-science-pack', 
     'biter-egg-handling'}, recipes = {}, name = '雨林开拓者', full = FULL_MID, starter = {
         {item = 'agricultural-tower', count = 1},
         {item = 'biochamber', count = 1},
@@ -514,7 +511,6 @@ local DEFAULT_CLASSES = {
         'heating-tower', 
         'lithium-processing', 
         'cryogenic-plant', 
-        'cryogenic-science-pack'
     }, recipes = {}, name = '冰原开拓者', full = FULL_MAX, starter = {
         {item = 'cryogenic-plant', count = 1},
         {item = 'heating-tower', count = 1},

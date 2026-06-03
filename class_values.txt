@@ -253,7 +253,7 @@ afker               MAX          7           7    859,101∞
     初始: land-mine=997
     奖励: land-mine=19,936
 
-【fulgora 废土开拓者】 初始物品=6,532  满级物品=6,532  科技=35,208  techs=['planet-discovery-fulgora', 'recycling', 'holmium-processing', 'electromagnetic-plant', 'electromagnetic-science-pack']
+【fulgora 废土开拓者】 初始物品=6,532  满级物品=6,532  科技=35,208  techs=['planet-discovery-fulgora', 'recycling', 'holmium-processing', 'electromagnetic-plant']
     初始: electromagnetic-plant=5,777、recycler=755
     奖励: （无）
 
@@ -261,11 +261,11 @@ afker               MAX          7           7    859,101∞
     初始: biochamber=1,602
     奖励: yumako-mash=1,000、jelly=1,000、yumako=500、jellynut=500
 
-【vulcanus 火山开拓者】 初始物品=3,674  满级物品=3,674  科技=35,208  techs=['planet-discovery-vulcanus', 'calcite-processing', 'tungsten-carbide', 'foundry', 'big-mining-drill', 'tungsten-steel', 'metallurgic-science-pack']
+【vulcanus 火山开拓者】 初始物品=3,674  满级物品=3,674  科技=35,208  techs=['planet-discovery-vulcanus', 'calcite-processing', 'tungsten-carbide', 'foundry', 'big-mining-drill', 'tungsten-steel']
     初始: foundry=2,588、big-mining-drill=1,086
     奖励: （无）
 
-【gleba 雨林开拓者】 初始物品=186  满级物品=186  科技=35,208  techs=['planet-discovery-gleba', 'heating-tower', 'agriculture', 'yumako', 'jellynut', 'bioflux', 'bioflux-processing', 'bacteria-cultivation', 'artificial-soil', 'biochamber', 'agricultural-science-pack', 'biter-egg-handling']
+【gleba 雨林开拓者】 初始物品=186  满级物品=186  科技=35,208  techs=['planet-discovery-gleba', 'heating-tower', 'agriculture', 'yumako', 'jellynut', 'bioflux', 'bioflux-processing', 'bacteria-cultivation', 'artificial-soil', 'biochamber', 'biter-egg-handling']
     初始: agricultural-tower=106、biochamber=80
     奖励: （无）
 
@@ -359,7 +359,7 @@ afker               MAX          7           7    859,101∞
     初始: （无）
     奖励: agricultural-tower=21,179、biochamber=16,015
 
-【aquilo 冰原开拓者】 初始物品=3,453  满级物品=3,453  科技=2,401,707  techs=['planet-discovery-aquilo', 'heating-tower', 'lithium-processing', 'cryogenic-plant', 'cryogenic-science-pack']
+【aquilo 冰原开拓者】 初始物品=3,453  满级物品=3,453  科技=2,401,707  techs=['planet-discovery-aquilo', 'heating-tower', 'lithium-processing', 'cryogenic-plant']
     初始: cryogenic-plant=2,960、heating-tower=493
     奖励: （无）
 
@@ -469,9 +469,9 @@ MAX 满级物品  中位=323,461  范围 7 ~ 1,500,677
   LOW  civilian           满级=   2,395  科技=0  techs=无
   LOW  artist             满级=   3,069  科技=682  techs=['circuit-network']
   LOW  fisher             满级=   3,180  科技=4,775  techs=['fish-breeding']
-  MID  gleba              满级=     186  科技=35,208  techs=['planet-discovery-gleba', 'heating-tower', 'agriculture', 'yumako', 'jellynut', 'bioflux', 'bioflux-processing', 'bacteria-cultivation', 'artificial-soil', 'biochamber', 'agricultural-science-pack', 'biter-egg-handling']
-  MID  vulcanus           满级=   3,674  科技=35,208  techs=['planet-discovery-vulcanus', 'calcite-processing', 'tungsten-carbide', 'foundry', 'big-mining-drill', 'tungsten-steel', 'metallurgic-science-pack']
+  MID  gleba              满级=     186  科技=35,208  techs=['planet-discovery-gleba', 'heating-tower', 'agriculture', 'yumako', 'jellynut', 'bioflux', 'bioflux-processing', 'bacteria-cultivation', 'artificial-soil', 'biochamber', 'biter-egg-handling']
+  MID  vulcanus           满级=   3,674  科技=35,208  techs=['planet-discovery-vulcanus', 'calcite-processing', 'tungsten-carbide', 'foundry', 'big-mining-drill', 'tungsten-steel']
   MID  chef               满级=   4,602  科技=0  techs=['bioflux', 'bioflux-processing', 'jellynut', 'yumako']
   MAX  afker              满级=       7  科技=859,101∞  techs=['research-productivity']
   MAX  banker             满级=   1,200  科技=0  techs=无
-  MAX  aquilo             满级=   3,453  科技=2,401,707  techs=['planet-discovery-aquilo', 'heating-tower', 'lithium-processing', 'cryogenic-plant', 'cryogenic-science-pack']
+  MAX  aquilo             满级=   3,453  科技=2,401,707  techs=['planet-discovery-aquilo', 'heating-tower', 'lithium-processing', 'cryogenic-plant']
