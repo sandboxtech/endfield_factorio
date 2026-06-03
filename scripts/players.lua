@@ -32,6 +32,24 @@ function M.print_exp(target, viewer)
     end
 end
 
+-- 无限产能/武器科技经验（storage.prod_exp_techs 配置的科技，研究每升一级给全体在线 +1，存 storage.exp）。
+-- 只列【已获得(>0)】的，未刷到的不显示，避免十几项全 0 刷屏；按科技名排序保证多人/多次查看顺序稳定。
+-- 复用 exp_total_for_pack（按 key 取值，与瓶名无关）；科技真名取自原型 localised_name。
+function M.print_prod_exp(target, viewer)
+    local names = {}
+    for name in pairs(storage.prod_exp_techs or {}) do
+        if passives.exp_total_for_pack(target.index, name) > 0 then names[#names + 1] = name end
+    end
+    if #names == 0 then return end
+    table.sort(names)
+    viewer.print({'wn.prod-exp-header'})
+    for _, name in ipairs(names) do
+        local proto = prototypes.technology[name]
+        viewer.print({'wn.prod-exp-detail', name, proto and proto.localised_name or name,
+                      math.floor(passives.exp_total_for_pack(target.index, name))})
+    end
+end
+
 -- 个人数据（供【在线玩家】窗口看自己/他人）。【按段输出，调整顺序只需上下移动整段、互不影响】：
 --   ① 人物等级(在线分钟/开局金币) → ② 三能力(手搓/移动/采矿拆除) → ③ 12 瓶经验 → ④ 6 项战绩(放最后)。
 function M.print_status(target, viewer)
@@ -49,11 +67,15 @@ function M.print_status(target, viewer)
         viewer.print({ab.locale, math.floor(val), math.floor(math.sqrt(val)),
                       math.floor((1 + passives.skill_factor(target.index, ab)) * 100 + 0.5)})
     end
+    -- 额外生命值（随阵亡数对数增长）：__1__ = +HP(=100×log10(阵亡+1))，__2__ = 阵亡数
+    viewer.print({'wn.ability-health', math.floor(passives.health_bonus(target.index) + 0.5), s('death_count')})
     blank()
 
     -- ③ 12 种科技瓶经验
     M.print_exp(target, viewer)
     blank()
+    -- ③b 无限产能/武器科技经验（只列已获得的；空则整段不输出）
+    M.print_prod_exp(target, viewer)
     blank()
 
     -- ④ 6 项战绩（纯纪录、无功能）放最后

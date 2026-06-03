@@ -58,12 +58,22 @@ local function apply_one(player, ab)
     if c then ab.apply(c, M.skill_factor(player.index, ab)) end
 end
 
+-- 额外生命值：随【真实死亡数 death_count】对数增长 = 100×log10(死亡数+1)。
+-- 0 死 = +0、9 死 = +100、99 死 = +200、999 死 = +300…复用 player_stats 的 death_count，不新增统计。
+-- 施加为角色实体的 character_health_bonus（绝对加血，非百分比），与三速度技能一样随 M.apply 在
+-- 新建/复活/跃迁换角色后重设（新角色 bonus 默认 0）。只加上限、不主动回血，避免反复送死刷血。
+local HEALTH_PER_DECADE = 100   -- 死亡数每翻 10 倍 → 额外生命值 +此值
+function M.health_bonus(player_index)
+    return HEALTH_PER_DECADE * math.log(M.get_stat(player_index, 'death_count') + 1) / LOG10
+end
+
 -- 重算并施加全部技能（新建/复活/跃迁后角色换新需调用）。
 function M.apply(player)
     if not player then return end
     local c = science_exp.body_character(player)   -- 含 map/remote view：从 associated 角色取回，遥控视角下也能重设 modifier
     if not c then return end
     for _, ab in ipairs(M.abilities) do ab.apply(c, M.skill_factor(player.index, ab)) end
+    c.character_health_bonus = M.health_bonus(player.index)   -- 额外生命值：100×log10(死亡数+1)
 end
 
 -- ---------------------------------------------------------------------------
