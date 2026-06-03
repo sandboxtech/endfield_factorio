@@ -25,6 +25,7 @@ oreman              LOW      1,200       3,801      18,408
 fisher              LOW        180       3,180       4,775
 artist              LOW        181       3,069         682
 civilian            LOW        160       2,395           0
+philosopher         LOW         27          75     284,359
 powergear           MID     39,100     930,432         682
 roboportgear        MID     13,280     778,018       1,670
 laserdefense        MID     16,161     231,645       5,417
@@ -79,11 +80,11 @@ biologist           MAX          0      37,194    122,822∞
 artillerist         MAX      3,246      26,836     386,290
 aquilo              MAX      3,453       3,453   2,401,707
 banker              MAX          0       1,200           0
-afker               MAX          7           7    859,101∞
+afker               MAX          5           5    859,101∞
 
-━━━━━━━━━━━━ 二、LOW 档明细（16个，满级中位 12,412）━━━━━━━━━━━━
+━━━━━━━━━━━━ 二、LOW 档明细（17个，满级中位 9,886）━━━━━━━━━━━━
 
-【civilengineer 土木工人】 初始物品=2,049  满级物品=126,295  科技=1,363  techs=['cliff-explosives']
+【civilengineer 建筑师】 初始物品=2,049  满级物品=126,295  科技=1,363  techs=['cliff-explosives']
     初始: cliff-explosives=2,049
     奖励: foundation=78,240、refined-concrete=32,906、concrete=11,100、stone-brick=2,000
 
@@ -143,9 +144,13 @@ afker               MAX          7           7    859,101∞
     初始: small-lamp=176、constant-combinator=5
     奖励: constant-combinator=1,201、small-lamp=882、programmable-speaker=667、display-panel=138
 
-【civilian 出租司机】 初始物品=160  满级物品=2,395  科技=0  techs=无
+【civilian 核能出租司机】 初始物品=160  满级物品=2,395  科技=0  techs=无
     初始: car=84、nuclear-fuel=74、automation-science-pack=2
     奖励: nuclear-fuel=745、nuclear-fuel=745、nuclear-fuel=745
+
+【philosopher 哲学家】 初始物品=27  满级物品=75  科技=284,359  techs=['biolab']
+    初始: chemical-science-pack=27
+    奖励: logistic-science-pack=48
 
 ━━━━━━━━━━━━ 二、MID 档明细（30个，满级中位 77,257）━━━━━━━━━━━━
 
@@ -363,19 +368,19 @@ afker               MAX          7           7    859,101∞
     初始: cryogenic-plant=2,960、heating-tower=493
     奖励: （无）
 
-【banker 银行家】 初始物品=0  满级物品=1,200  科技=0  techs=无
+【banker 大资本家】 初始物品=0  满级物品=1,200  科技=0  techs=无
     初始: （无）
     奖励: coin=100、coin=100、coin=100、coin=100、coin=100、coin=100、coin=100、coin=100、coin=100、coin=100、coin=100、coin=100
 
-【afker 挂机大师】 初始物品=7  满级物品=7  科技=859,101∞  techs=['research-productivity']
-    初始: logistic-science-pack=5、automation-science-pack=2
+【afker 挂机大师】 初始物品=5  满级物品=5  科技=859,101∞  techs=['research-productivity']
+    初始: logistic-science-pack=5
     奖励: （无）
 
 ━━━━━━━━━━━━ 三、复检 ━━━━━━━━━━━━
-初始物品  中位=1,784  范围 0 ~ 54,012（应大致相当）
-LOW 满级物品  中位=12,412  范围 2,395 ~ 126,295
+初始物品  中位=1,693  范围 0 ~ 54,012（应大致相当）
+LOW 满级物品  中位=9,886  范围 75 ~ 126,295
 MID 满级物品  中位=77,257  范围 186 ~ 930,432
-MAX 满级物品  中位=323,461  范围 7 ~ 1,500,677
+MAX 满级物品  中位=323,461  范围 5 ~ 1,500,677
 
 ──── 初始物品排名 · 前 20（最高，最该削平）────
   mecharmor          MAX  初始=   54,012  科技=2,996,275  主因 mech-armor=54,012
@@ -406,8 +411,9 @@ MAX 满级物品  中位=323,461  范围 7 ~ 1,500,677
   biologist          MAX  初始=        0  科技=122,822∞  主因 （无）
   physicist          MAX  初始=        0  科技=133,592∞  主因 （无）
   astronomer         MAX  初始=        0  科技=859,101∞  主因 （无）
-  afker              MAX  初始=        7  科技=859,101∞  主因 logistic-science-pack=5
+  afker              MAX  初始=        5  科技=859,101∞  主因 logistic-science-pack=5
   hunter             MID  初始=       20  科技=63,723  主因 rocket-launcher=19
+  philosopher        LOW  初始=       27  科技=284,359  主因 chemical-science-pack=27
   railgunner         MAX  初始=       35  科技=1,516,380  主因 railgun-ammo=35
   loaderman          MID  初始=       43  科技=34,522  主因 loader=43
   herder             MID  初始=       81  科技=63,723  主因 biochamber=80
@@ -419,7 +425,6 @@ MAX 满级物品  中位=323,461  范围 7 ~ 1,500,677
   gridman            MID  初始=      287  科技=4,159  主因 small-electric-pole=189
   inventor           LOW  初始=      319  科技=682  主因 lab=319
   forester           MAX  初始=      346  科技=2,148  主因 wood=200
-  teslatrooper       MAX  初始=      351  科技=898,882  主因 teslagun=351
 
 ──── 满级物品排名 · 前 20（最高，含 MID/LOW 越级）────
   nuclearman         MAX  满级= 1,500,677  科技=26,726  主因 nuclear-reactor=671,917
@@ -444,7 +449,8 @@ MAX 满级物品  中位=323,461  范围 7 ~ 1,500,677
   artisan            MID  满级=   199,349  科技=293  主因 assembling-machine-3=170,726
 
 ──── 满级物品排名 · 后 20（最低，最差，最可能需补强）────
-  afker              MAX  满级=         7  科技=859,101∞  主因 （无）
+  afker              MAX  满级=         5  科技=859,101∞  主因 （无）
+  philosopher        LOW  满级=        75  科技=284,359  主因 logistic-science-pack=48
   gleba              MID  满级=       186  科技=35,208  主因 （无）
   banker             MAX  满级=     1,200  科技=0  主因 coin=100
   civilian           LOW  满级=     2,395  科技=0  主因 nuclear-fuel=745
@@ -463,15 +469,14 @@ MAX 满级物品  中位=323,461  范围 7 ~ 1,500,677
   energytrader       LOW  满级=    14,972  科技=182,630  主因 rocket-fuel=7,350
   plumber            LOW  满级=    18,093  科技=341  主因 storage-tank=8,825
   minelayer          MID  满级=    20,933  科技=2,758  主因 land-mine=19,936
-  toolbelt           MID  满级=    21,467  科技=12,887  主因 toolbelt-equipment=19,515
 
 各档档内最差（满级物品最低 3）：
+  LOW  philosopher        满级=      75  科技=284,359  techs=['biolab']
   LOW  civilian           满级=   2,395  科技=0  techs=无
   LOW  artist             满级=   3,069  科技=682  techs=['circuit-network']
-  LOW  fisher             满级=   3,180  科技=4,775  techs=['fish-breeding']
   MID  gleba              满级=     186  科技=35,208  techs=['planet-discovery-gleba', 'heating-tower', 'agriculture', 'yumako', 'jellynut', 'bioflux', 'bioflux-processing', 'bacteria-cultivation', 'artificial-soil', 'biochamber', 'biter-egg-handling']
   MID  vulcanus           满级=   3,674  科技=35,208  techs=['planet-discovery-vulcanus', 'calcite-processing', 'tungsten-carbide', 'foundry', 'big-mining-drill', 'tungsten-steel']
   MID  chef               满级=   4,602  科技=0  techs=['bioflux', 'bioflux-processing', 'jellynut', 'yumako']
-  MAX  afker              满级=       7  科技=859,101∞  techs=['research-productivity']
+  MAX  afker              满级=       5  科技=859,101∞  techs=['research-productivity']
   MAX  banker             满级=   1,200  科技=0  techs=无
   MAX  aquilo             满级=   3,453  科技=2,401,707  techs=['planet-discovery-aquilo', 'heating-tower', 'lithium-processing', 'cryogenic-plant']
