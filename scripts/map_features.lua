@@ -135,15 +135,21 @@ local DEFAULT_LOOT = {
         'scrap',  'carbon',  'wood',  'raw-fish',  'ice',  'spoilage',                          -- 其它原料（spoilage 不腐烂、可作化学燃料）
     }},
     -- 材料/中间品
+    -- 材料：原料/铸锭/板材/燃料/化工（回收机回收【得自身】的基础材料）
     {cat = 'material',   items = {
         'iron-plate',  'copper-plate',  'steel-plate',  'plastic-bar',  'stone-brick',  -- 基础板材
+        'sulfur',  'concrete',  'refined-concrete',                                     -- 化工/铺地
+        'rocket-fuel',  'solid-fuel',  'nuclear-fuel',                                  -- 燃料
+        'uranium-235',  'uranium-238',                                                  -- 核材料
+        'tungsten-carbide',  'tungsten-plate',  'holmium-plate',  
+        'lithium-plate',  'carbon-fiber',  'superconductor',  'supercapacitor',  -- 星球特产材料
+        'uranium-fuel-cell',  'depleted-uranium-fuel-cell',  'fusion-power-cell',   -- 燃料棒/动力电池(组装)
+    }},
+    -- 产品：制造中间件（回收【成零件/成分】而非自身）——齿轮/线缆/电路/引擎/框架/燃料棒等
+    {cat = 'product',    items = {
         'iron-gear-wheel',  'copper-cable',  'iron-stick',  'engine-unit',  'electric-engine-unit',  -- 基础中间件
         'electronic-circuit',  'advanced-circuit',  'processing-unit',  'quantum-processor',  -- 电路
-        'flying-robot-frame',  'low-density-structure',  'battery',  'explosives',  'sulfur',  -- 高级中间件
-        'rocket-fuel',  'solid-fuel',  'nuclear-fuel',                                -- 燃料
-        'uranium-235',  'uranium-238',  'uranium-fuel-cell',  'depleted-uranium-fuel-cell',  'fusion-power-cell',  -- 核
-        'tungsten-carbide',  'tungsten-plate',  'holmium-plate',  'lithium-plate',  'carbon-fiber',  'superconductor',  'supercapacitor',  -- 星球特产材料
-        'concrete',  'refined-concrete',   'landfill',  -- 铺地
+        'flying-robot-frame',  'low-density-structure',  'battery',  'explosives',           -- 高级中间件
     }},
     -- trash 类（当前为桶装液体）：从 material 拆出单独成类，方便各箱型(尤其永续箱)单独配权重。仅这 10 种有桶（base 8 + 草星 fluoroketone 冷热 2；lava/氨/molten 等 auto_barrel=false 无桶）。
     {cat = 'trash',      items = {
@@ -153,6 +159,7 @@ local DEFAULT_LOOT = {
         'lubricant-barrel',  'sulfuric-acid-barrel', 'fluoroketone-hot-barrel', 'fluoroketone-cold-barrel',
         'jellynut-seed',  'yumako-seed',  'tree-seed',                                  -- 原 gleba 类并入：种子
         'artificial-jellynut-soil',  'artificial-yumako-soil',  'overgrowth-jellynut-soil',  'overgrowth-yumako-soil',  -- 原 gleba 类并入：土壤
+        'landfill',  -- 铺地
     }},
     -- 物流(带/臂/管/箱/轨/机器人)
     {cat = 'logistics',  items = {
@@ -162,7 +169,8 @@ local DEFAULT_LOOT = {
         'loader',  'fast-loader',  'express-loader', 'turbo-loader',                                   -- 装卸器
         'inserter',  'burner-inserter',  'long-handed-inserter',  'fast-inserter',  'bulk-inserter',  'stack-inserter',  -- 机械臂
         'pipe',  'pipe-to-ground',  'pump',  'offshore-pump',  'storage-tank',          -- 管道/流体
-        'wooden-chest',  'iron-chest',  'steel-chest',  'active-provider-chest',  'passive-provider-chest',  'storage-chest',  'buffer-chest',  'requester-chest',  -- 箱
+        'wooden-chest',  'iron-chest',  'steel-chest',  'active-provider-chest',  
+        'passive-provider-chest',  'storage-chest',  'buffer-chest',  'requester-chest',  -- 箱
         'construction-robot',  'logistic-robot',  'roboport',  'repair-pack',            -- 机器人
         'rail',  'rail-signal',  'rail-chain-signal',  'rail-ramp',  'rail-support',  
         'train-stop',  'locomotive',  'cargo-wagon',  'fluid-wagon',  -- 铁路
@@ -187,7 +195,8 @@ local DEFAULT_LOOT = {
         'burner-mining-drill',  'electric-mining-drill',  'big-mining-drill',  'pumpjack',  -- 采矿
         'oil-refinery',  'chemical-plant',  'centrifuge',  'crusher',                   -- 化工/处理
         'lab',  'biolab',  'beacon',                                                    -- 实验室/信标
-        'foundry',  'recycler',  'electromagnetic-plant',  'cryogenic-plant',  'biochamber',  'agricultural-tower',  -- 星球特产机器
+        'foundry',  'recycler',  'electromagnetic-plant',  
+        'cryogenic-plant',  'biochamber',  'agricultural-tower',  -- 星球特产机器
         'rocket-silo',                                                                  -- 火箭发射井
     }},
     -- 模块
@@ -247,6 +256,18 @@ local DEFAULT_LOOT = {
     -- 各箱型默认权重 0；用 /c storage.loot_weights.perp.perpetual = N 让永续箱开始刷本类。
     {cat = 'perpetual',  items = {
         -- 在此填想让永续箱专属无限刷的物品，例如 'iron-plate', 'copper-plate', 'iron-ore',
+        'iron-ore',  'copper-ore',  'uranium-ore',  'tungsten-ore',  'holmium-ore',   -- 金属矿
+        'coal',  'stone',  'calcite',  'lithium',                                      -- 非金属/化工矿
+        'scrap',  'carbon',  'wood', 'spoilage',                          -- 其它原料（spoilage 不腐烂、可作化学燃料）
+        'iron-plate',  'copper-plate',  'steel-plate',  'plastic-bar',  'stone-brick',  -- 基础板材
+        'sulfur',  'concrete',  'refined-concrete',                                     -- 化工/铺地
+        'rocket-fuel',  'solid-fuel',  'nuclear-fuel',                                  -- 燃料
+        'uranium-235',  'uranium-238',                                                  -- 核材料
+        'tungsten-carbide',  'tungsten-plate',  'holmium-plate',  
+        'lithium-plate',  'carbon-fiber',  'superconductor',  'supercapacitor',  -- 星球特产材料
+        'iron-gear-wheel',  'copper-cable',  'iron-stick',  'engine-unit',  'electric-engine-unit',  -- 基础中间件
+        'electronic-circuit',  'advanced-circuit',  'processing-unit',  'quantum-processor',  -- 电路
+        'flying-robot-frame',  'low-density-structure',  'battery',  'explosives',           -- 高级中间件
     }},
 }
 
@@ -256,31 +277,31 @@ local DEFAULT_LOOT = {
 local DEFAULT_LOOT_WEIGHTS = {
     -- 钢箱 = 材料箱：基础材料/原料 + 大概率普通科技瓶。普通品质、常见、装得多。
     material = {
-        raw = 350, material = 800, logistics = 150,  circuit = 10,  power = 20,
-        production = 0,  module = 30,  military = 20,  equipment = 10,  science = 0,
+        raw = 100, material = 300, product = 400, logistics = 100,  circuit = 10,  power = 20,
+        production = 1,  module = 30,  military = 20,  equipment = 10,  science = 1,
         space = 10,  treasure = 1,
-        trash = 0,  perpetual = 0,   -- 新类默认 0：钢箱不单独出桶/永续专属（按需 /c 调）
+        trash = 30,  perpetual = 1, 
     },
     -- 铁箱 = 设备箱：实用设备/机器为主，含载具/太空件，少量科技瓶。普通品质、中等数量。
     equipment = {
-        raw = 10,  material = 50,  logistics = 350,  circuit = 80,  power = 140,
-        production = 300,  module = 150,  military = 120,  equipment = 100,  science = 1,
-        space = 15,  treasure = 1,
-        trash = 0,  perpetual = 0,
+        raw = 10,  material = 100,  product = 300,  logistics = 450,  circuit = 10,  power = 20,
+        production = 50,  module = 100,  military = 100,  equipment = 100,  science = 1,
+        space = 20,  treasure = 2,
+        trash = 1,  perpetual = 1,
     },
     -- 永续(无底)箱：基础材料/矿物为主。注意 science>0 = 无限科技瓶(很强，慎调)。
     perp = {
-        raw = 90,  material = 120,  logistics = 15,  circuit = 1,  power = 5,
-        production = 3,  module = 5,  military = 1,  equipment = 1,  science = 0,
-        space = 1,  treasure = 0,
-        trash = 0,  perpetual = 0,   -- 永续箱专属调参口：把 trash / perpetual 调 >0 即让无底箱无限刷桶/专属类
+        raw = 90,  material = 500,  product = 550,  logistics = 50,  circuit = 1,  power = 50,
+        production = 20,  module = 10,  military = 10,  equipment = 5,  science = 0,
+        space = 5,  treasure = 1,
+        trash = 0,  perpetual = 500,
     },
     -- 木箱 = 宝箱：只出精选顶级池 treasure 类（其余类 0）。想让普通箱也偶尔出顶级货，把对应箱型的 treasure 调 >0 即可。
     treasure = {
-        raw = 1,  material = 1,  logistics = 1,  circuit = 1,  power = 1,
-        production = 1,  module = 1,  military = 0,  equipment = 15,  science = 1,
+        raw = 1,  material = 1,  product = 1,  logistics = 1,  circuit = 1,  power = 1,
+        production = 1,  module = 1,  military = 1,  equipment = 15,  science = 1,
         space = 1,  treasure = 100,
-        trash = 0,  perpetual = 0,
+        trash = 0,  perpetual = 1,
     },
 }
 

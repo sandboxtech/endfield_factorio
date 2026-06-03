@@ -677,12 +677,12 @@ local DEFAULT_CLASSES = {
         {pack = 'utility-science-pack',  item = 'personal-roboport-mk2-equipment', count = 20, full = FULL_MAX},
     }},
     {key = 'exoskeleton', techs = {'exoskeleton-equipment'}, name = '快递员', full = FULL_MID, starter = {   -- 全是外骨骼
-        {item = 'exoskeleton-equipment', count = 3},
+        {item = 'exoskeleton-equipment', count = 2},
     }, rewards = {
         {pack = 'chemical-science-pack', item = 'exoskeleton-equipment', groups = 5},
     }},
     {key = 'toolbelt', techs = {'toolbelt-equipment'}, name = '吃货', full = FULL_MID, starter = {   -- 全是工具腰带
-        {item = 'toolbelt-equipment', count = 10},
+        {item = 'toolbelt-equipment', count = 1},
     }, rewards = {
         {pack = 'logistic-science-pack', item = 'toolbelt-equipment', groups = 5},
     }},
