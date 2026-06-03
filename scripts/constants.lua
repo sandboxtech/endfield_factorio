@@ -77,7 +77,8 @@ function M.ensure_defaults()
     for _, k in ipairs({'radius', 'radius_of', 'tree_remap', 'prob_tree_remap', 'schema_version',
                         'prob_danger', 'danger_density', 'danger_theme', 'wreck_density',
                         'loot_density_outpost', 'loot_density_perp', 'encounter_perp', 'encounter_empty',
-                        'enemy_death_push_minutes', 'vote_unlock_level', 'star_unlock_level'}) do   -- *_unlock_level 废弃：投票/星星功能不再设等级门槛
+                        'enemy_death_push_minutes', 'vote_unlock_level', 'star_unlock_level',   -- *_unlock_level 废弃：投票/星星功能不再设等级门槛
+                        'thunder_chance'}) do   -- thunder_chance 废弃：雷暴概率改为 tick.lua 内固定常量 THUNDER_CHANCE，不再热改/不进 diff
         storage[k] = nil
     end
     -- travel_chance 曾是标量、现改为【按星球的表】；旧标量会让 tc[星球] 索引数字崩服 → 非表一律清掉，由下方按星球重建。
@@ -179,7 +180,6 @@ function M.ensure_defaults()
         enemy_size_mul = 1,               -- 敌人巢穴 size 全局倍率：在 spread 浮动结果上再乘（>1 团更大、<1 更小）
 
         roboport_limit = 10000,           -- 单个机器人网络最多 roboport 数，超出则摧毁刚放的并退还
-        thunder_chance = 1 / 36000,       -- 雷暴星球每玩家每 tick 被闪电直击概率（期望约 10 分钟一次）
     }
     M.scalar_defaults = d   -- 暴露标量默认值（供 /config 命令对比当前 storage 与默认）
     for k, v in pairs(d) do
