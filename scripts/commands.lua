@@ -410,7 +410,7 @@ function M.show_stats(player)
         local lv = respawn_gifts.coin_reward(passives.get_stat(p.index, 'online_minutes'))
         local stars = math.floor(((storage.star or {})[p.name] or 0) / constants.min_to_tick)
         local planet = players.respawn_surface_name(p)   -- 出生星球（space-location 图标名）
-        local def = classes.def_of(p)
+        local def = classes.current_def(p)   -- 显示【当前】职业（本世界生效），非预约/下次
         -- 职业名三层兜底：locale 词条 → storage.class_names 热改 → def.name 中文默认。
         local cname = def and classes.text_loc('wn.class-name-' .. def.key, (storage.class_names or {})[def.key], def.name or def.key) or ''
         buttons[#buttons + 1] = {name = 'wn_stats_view_' .. p.index,   -- 名称 语言 星球 职业 等级 星星

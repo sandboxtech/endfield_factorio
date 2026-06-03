@@ -40,10 +40,10 @@ local DEFAULT_CLASSES = {
     -- 默认职业。
     {section = '市民'}, 
 
-    {key = 'civilian', name = '核能出租司机', full = FULL_LOW, starter = {
+    {key = 'civilian', name = '市民', full = FULL_LOW, starter = {
+        {item = 'automation-science-pack',   count = 1},
         {item = 'car', count = 1},
         {item = 'nuclear-fuel', groups = 1},
-        {item = 'automation-science-pack',   count = 1},
     }, rewards = {
         {pack = 'automation-science-pack', item = 'nuclear-fuel',   groups = 10},
         {pack = 'space-science-pack', item = 'nuclear-fuel',   groups = 10},
@@ -59,13 +59,13 @@ local DEFAULT_CLASSES = {
     {key = 'philosopher', techs = {'biolab'}, name = '哲学大师', full = FULL_LOW, starter = {
         {item = 'chemical-science-pack',   count = 1},
     }, rewards = {
-        {pack = 'logistic-science-pack', item = 'logistic-science-pack',   count=10},
+        {pack = 'logistic-science-pack', item = 'automation-science-pack',   count=10},
     }},
 
     {key = 'artist', techs = {'circuit-network'}, name = '艺术大师', full = FULL_LOW, starter = {
         {item = 'small-lamp', groups = 1},
         {item = 'constant-combinator', count = 1},
-    }, rewards = {
+    }, unlock = {{pack = 'logistic-science-pack', level = 100}}, rewards = {
         {pack = 'automation-science-pack',    item = 'constant-combinator',  groups = 5},   -- 绿：常量运算器(配色信号)
         {pack = 'logistic-science-pack',  item = 'small-lamp',           groups = 5},  -- 红：小灯(像素画)
         {pack = 'logistic-science-pack',    item = 'display-panel',        groups = 5},  -- 绿：显示屏
@@ -76,7 +76,7 @@ local DEFAULT_CLASSES = {
         {item = 'selector-combinator', groups = 1},
         {item = 'arithmetic-combinator', groups = 1},
         {item = 'decider-combinator', groups = 1},
-    }, rewards = {
+    }, unlock = {{pack = 'logistic-science-pack', level = 100}}, rewards = {
         {pack = 'automation-science-pack',  item = 'constant-combinator',   groups = 5},  -- 紫：常量运算器
         {pack = 'logistic-science-pack',   item = 'decider-combinator',    groups = 5},  -- 绿：判断运算器
         {pack = 'logistic-science-pack',   item = 'arithmetic-combinator', groups = 5},  -- 绿：算术运算器
@@ -241,7 +241,7 @@ local DEFAULT_CLASSES = {
         {pack = 'electromagnetic-science-pack', item = 'copper-cable',                 groups = 10},
         {pack = 'promethium-science-pack', item = 'copper-cable',                 groups = 10},
     }},
-    {key = 'recyclerman', techs = {'recycling'}, name = '回收工人', full = FULL_LOW, starter = {
+    {key = 'recyclerman', techs = {'recycling', 'epic-quality', 'legendary-quality'}, name = '回收工人', full = FULL_LOW, starter = {
         {item = 'recycler', count = 5},
     }, unlock = {{pack = 'electromagnetic-science-pack', level = 10}}, rewards = {
         {pack = 'automation-science-pack', item = 'scrap',                 groups = 10},
@@ -274,28 +274,28 @@ local DEFAULT_CLASSES = {
         {pack = 'agricultural-science-pack', item = 'efficiency-module-2', groups = 2},
     }},
 
-    {key = 'qualityman', techs = {'quality-module', 'processing-unit-productivity'}, name = '品质大师', full = FULL_MAX, starter = {
+    {key = 'qualityman', techs = {'quality-module'}, name = '品质大师', full = FULL_MAX, starter = {
         {item = 'quality-module', groups = 1},
     }, unlock = {{pack = 'electromagnetic-science-pack', level = 10}}, rewards = {
         {pack = 'chemical-science-pack',        item = 'quality-module',     groups = 10},   -- 蓝：1级
         {pack = 'space-science-pack',           item = 'quality-module-2',   groups = 5},   -- 白：2级
         {pack = 'electromagnetic-science-pack', item = 'quality-module-3',   groups = 2},   -- 粉：3级(电浆星)
     }},
-    {key = 'speedman', techs = {'speed-module', 'low-density-structure-productivity'}, name = '速度大师', full = FULL_MAX, starter = {
+    {key = 'speedman', techs = {'speed-module'}, name = '速度大师', full = FULL_MAX, starter = {
         {item = 'speed-module', groups = 1},
     }, unlock = {{pack = 'metallurgic-science-pack', level = 10}}, rewards = {
         {pack = 'chemical-science-pack',    item = 'speed-module',     groups = 10},   -- 蓝：1级
         {pack = 'space-science-pack',       item = 'speed-module-2',   groups = 5},   -- 白：2级
         {pack = 'metallurgic-science-pack', item = 'speed-module-3',   groups = 2},   -- 橙：3级(火山)
     }},
-    {key = 'efficiencyman', techs = {'efficiency-module', 'rocket-fuel-productivity'}, name = '节能大师', full = FULL_MAX, starter = {
+    {key = 'efficiencyman', techs = {'efficiency-module'}, name = '节能大师', full = FULL_MAX, starter = {
         {item = 'efficiency-module', groups = 1},
     }, unlock = {{pack = 'agricultural-science-pack', level = 10}}, rewards = {
         {pack = 'chemical-science-pack',     item = 'efficiency-module',     groups = 10},   -- 蓝：1级
         {pack = 'space-science-pack',        item = 'efficiency-module-2',   groups = 5},   -- 白：2级
         {pack = 'agricultural-science-pack', item = 'efficiency-module-3',   groups = 2},   -- 草：3级(Gleba)
     }},
-    {key = 'productivityman', techs = {'productivity-module', 'processing-unit-productivity'}, name = '产能大师', full = FULL_MAX, starter = {
+    {key = 'productivityman', techs = {'productivity-module'}, name = '产能大师', full = FULL_MAX, starter = {
         {item = 'productivity-module', groups = 1},
     }, unlock = {{pack = 'cryogenic-science-pack', level = 10}}, rewards = {
         {pack = 'chemical-science-pack',  item = 'productivity-module',     groups = 10},   -- 蓝：1级
@@ -442,22 +442,6 @@ local DEFAULT_CLASSES = {
     }},
 
     {section = '航天'},
-
-    {key = 'TODO', techs = {'processing-unit-productivity'}, name = '飞船控制大师', full = FULL_MAX, starter = {
-        {item = 'processing-unit', groups = 1},
-    }, unlock = {{pack = 'electromagnetic-science-pack', level = 10}}, rewards = {
-
-    }},
-    {key = 'TODO', techs = {'low-density-structure-productivity'}, name = '飞船结构大师', full = FULL_MAX, starter = {
-        {item = 'low-density-structure', groups = 1},
-    }, unlock = {{pack = 'metallurgic-science-pack', level = 10}}, rewards = {
-
-    }},
-    {key = 'TODO', techs = {'rocket-fuel-productivity'}, name = '飞船燃料大师', full = FULL_MAX, starter = {
-        {item = 'rocket-fuel', groups = 1},
-    }, unlock = {{pack = 'agricultural-science-pack', level = 10}}, rewards = {
-)
-    }},
 
     {key = 'TODO', techs = {'rocket-silo'}, name = '发射专家', full = FULL_MID, starter = {
         {item = 'rocket-part', count = 1},
@@ -814,9 +798,24 @@ function M.def_for_key(key)
     return nil
 end
 
--- 玩家当前选择的职业 key（未选 → 默认职业 civilian）。
+-- 玩家【预约】职业 key（storage.player_class，下次跃迁/下次开局生效；未选 → 默认职业 civilian）。
+-- 历史名 selected_key 保留：它一直就是"玩家选的、待生效"的职业，现明确语义为【预约】。
 function M.selected_key(player)
     return player and ((storage.player_class or {})[player.name] or M.DEFAULT)
+end
+
+-- 玩家【当前】职业 key（storage.player_class_current，本世界实际生效的职业；未落定 → 默认 civilian）。
+-- 在【发放起手装备】时由 commit_current 落定（装备按预约职业发，故当前职业 = 那一刻的预约职业）。
+function M.current_key(player)
+    return player and ((storage.player_class_current or {})[player.name] or M.DEFAULT)
+end
+
+-- 把【预约】职业落定为【当前】职业：发起手装备时调用（见 respawn_gifts.on_first_respawn）。
+-- 覆盖所有"进入本世界"的情形：跃迁后复活、开局直接进、后进服首次拥有角色——都在发装备那一刻落定。
+function M.commit_current(player)
+    if not player then return end
+    storage.player_class_current = storage.player_class_current or {}
+    storage.player_class_current[player.name] = M.selected_key(player)
 end
 
 -- 职业【专属解锁】明细：返回当前【有玩家选用、且配了 techs/recipes】的职业列表，
@@ -837,9 +836,15 @@ function M.active_class_unlocks()
     return out
 end
 
--- 玩家当前职业定义（一定返回一个，兜底默认职业 civilian）。
+-- 玩家【预约】职业定义（下次生效，一定返回一个，兜底默认职业 civilian）。
+-- 发起手装备(respawn_gifts)按此发 → 决定本世界的当前职业。
 function M.def_of(player)
     return M.def_for_key(M.selected_key(player)) or M.def_for_key(M.DEFAULT)
+end
+
+-- 玩家【当前】职业定义（本世界实际生效，一定返回一个，兜底默认）。玩家列表显示用。
+function M.current_def(player)
+    return M.def_for_key(M.current_key(player)) or M.def_for_key(M.DEFAULT)
 end
 
 -- 玩家某瓶当前等级（= floor√经验，封顶 MAX_LEVEL=10万，与 respawn_gifts.pack_level 一致）。

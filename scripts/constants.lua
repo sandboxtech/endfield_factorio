@@ -261,8 +261,13 @@ function M.ensure_defaults()
     for _, key in ipairs({'width_of', 'height_of', 'shape_of', 'exp', 'player_stats', 'platform_age',
                           'ground_tint', 'tile_remap', 'event_world', 'loot_style', 'members',
                           'last_respawn_run', 'move_pos', 'bad_items', 'bad_entities', 'gen_debug', 'warp_vote', 'warp_vote_cost',
-                          'obstacle_remap', 'fluid_remap', 'last_leaderboard', 'market_run', 'respawn_surface', 'chat_bubble', 'enemy_floor', 'action_cd', 'travel_open', 'event_period_min', 'charge', 'star', 'player_class', 'class_cd', 'travel_cd', 'vote_cd'}) do
+                          'obstacle_remap', 'fluid_remap', 'last_leaderboard', 'market_run', 'respawn_surface', 'chat_bubble', 'enemy_floor', 'action_cd', 'travel_open', 'event_period_min', 'charge', 'star', 'player_class', 'player_class_current', 'class_cd', 'travel_cd', 'vote_cd'}) do
         storage[key] = storage[key] or {}
+    end
+    -- 迁移：首次引入 player_class_current（当前职业）时，用现有 player_class（预约职业）作为初始当前职业，
+    -- 否则老存档进行中的世界里所有人当前职业会显示成默认 civilian，直到下次发装备才落定。仅当当前表为空才播种(幂等)。
+    if not next(storage.player_class_current) and next(storage.player_class) then
+        for name, key in pairs(storage.player_class) do storage.player_class_current[name] = key end
     end
     -- world_fx 全局开关（默认开；/c storage.world_fx.xxx=false 单独禁用某事件驱动效果）。
     -- 加新 fx 时在此列表补上同名键，并在 world_fx.lua register 对应逻辑。

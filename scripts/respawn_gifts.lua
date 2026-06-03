@@ -93,6 +93,7 @@ end
 -- 玩家在本世界（storage.run）首次拥有 character 时调用：发护甲 + 主格物品清单，并把背包格数设到刚好装下。
 function M.on_first_respawn(player)
     if not player or not player.character then return end
+    classes.commit_current(player)   -- 本世界首次发装备 = 预约职业正式生效 → 落定为【当前】职业（装备也按预约职业发）
     give_starter_armor(player)
     local main = player.get_inventory(defines.inventory.character_main)
     if not main then return end
