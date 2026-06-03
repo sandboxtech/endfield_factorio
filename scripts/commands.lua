@@ -14,8 +14,6 @@ local util = require('scripts.util')
 
 local M = {}   -- 导出给 HUD 按钮复用（gui 点击经 tick 路由到这里）
 
--- （require_admin 已随 /exp_clear 一并移除：现有管理操作改用 player.admin 内联校验。）
-
 -- 任何自定义指令被使用时，公告给【所有在线玩家】：谁用了什么指令（含参数）。
 -- 控制台调用（无 player_index）不公告。
 local function announce_command(command)
@@ -94,16 +92,7 @@ function M.admin_gen(player)
     gui.show_popup(player, {'wn.gen-debug-header', storage.run or 0}, lines)
 end
 
--- （/fixstats、/xiufutongji 已移除：玩家统计字段补齐改为对线上老档跑一次性 /c 脚本，代码里不再常驻。）
-
--- （/countdown、/daojishi、/life 已移除：顶部 HUD 常驻显示跃迁倒计时，无需再用命令查询。）
-
 -- （玩家加入时由 players.lua 的 on_player_joined_game → gui.show_intro 弹场景简介。）
-
--- （/inspect /查看 指令已移除：顶部"角色面板"按钮(科技瓶经验) + "查看他人能力"列表等价；
---   个人能力/统计在【状态】按钮窗口。print_exp / print_status 由 M.show_panel / M.show_stats 调用。）
-
--- （/exp_clear 已移除：清空所有人瓶子经验改用控制台 /c storage.exp = {}。）
 
 -- 全部迁移/默认补齐的【单一入口】：标量与必需表(constants.ensure_defaults) + 职业表(classes.ensure) + 战利品权重(map_features.ensure_loot)。
 -- on_init / on_configuration_changed / /config 红按钮 / /ensureall 命令统一走它 → 三个 ensure 不再各处散调、不会漏跑。三者各自幂等。
@@ -184,8 +173,6 @@ function M.admin_diff(player)
     table.insert(lines, 1, '已跑 ensure_all；已改 [color=acid]' .. changed .. '[/color] 项（高亮），共 ' .. #keys .. ' 项：')
     gui.show_popup(player, '参数：当前值 vs 默认值', lines)
 end
-
--- （/tutorial /教程 指令已移除：顶部"玩法"按钮等价。gui.show_tutorial 仍由该按钮调用。）
 
 -- 以下原"控制台指令"(预览/排行/自杀/前往星球)已【改为教程弹窗里的按钮】，指令注册移除；
 -- 核心逻辑抽成 M.* 供按钮点击调用（tick.on_gui_click → 这里）。
@@ -273,8 +260,6 @@ function M.travel(player, planet)
     game.print({'wn.travel-notice', player.name, planet})
 end
 
--- （/settle、/jiesuan 已移除：只有【自动跃迁】才结算科技瓶经验，不再支持提前手动结算。）
-
 -- 自杀脱困：死后在当前星球留尸、回复活星球(默认母星)复活（见 players.lua kill_player）。
 function M.do_suicide(player)
     if not player or not player.character then return end
@@ -350,8 +335,6 @@ local function warp_vote_eval()
     end
 end
 
--- （/warp /yueqian /跃迁 /tingliu /停留 投票指令已移除：顶部 ✓跃迁 / ✗停留 按钮等价，经 M.cast_warp_vote 投票。）
-
 -- /member <玩家名>（/huiyuan 同功能）：授予会员资格。仅会员/管理员可用。
 local function member_grant_cmd(command)
     local _, target, sink = member_cmd_targets(command)
@@ -395,8 +378,6 @@ add_command('kickout', {'wn.kickout-help'}, member_kick_cmd)
 -- 所有命令统一【只用英文名】，不再注册中文/拼音别名。
 
 -- ── 供 HUD 按钮调用（gui 点击经 tick.on_gui_click 路由到这里）──────────────────
--- （show_panel / show_player_list 已删：瓶子经验已合并进【在线玩家】数据页，不再单独成窗。）
-
 -- 弹出【统计】窗口（HUD 独立按钮）：列出所有在线玩家（名字 + 等级 + 职业），点某人看其详细统计。
 function M.show_stats(player)
     if not player then return end

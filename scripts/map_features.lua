@@ -133,7 +133,6 @@ local DEFAULT_LOOT = {
         'iron-ore',  'copper-ore',  'uranium-ore',  'tungsten-ore',  'holmium-ore',   -- 金属矿
         'coal',  'stone',  'calcite',  'lithium',                                      -- 非金属/化工矿
         'scrap',  'carbon',  'wood',  'raw-fish',  'ice',  'spoilage',                          -- 其它原料（spoilage 不腐烂、可作化学燃料）
-        -- 'carbonic-asteroid-chunk', 'metallic-asteroid-chunk',  'oxide-asteroid-chunk',  'promethium-asteroid-chunk',
     }},
     -- 材料/中间品
     {cat = 'material',   items = {
@@ -144,9 +143,16 @@ local DEFAULT_LOOT = {
         'rocket-fuel',  'solid-fuel',  'nuclear-fuel',                                -- 燃料
         'uranium-235',  'uranium-238',  'uranium-fuel-cell',  'depleted-uranium-fuel-cell',  'fusion-power-cell',  -- 核
         'tungsten-carbide',  'tungsten-plate',  'holmium-plate',  'lithium-plate',  'carbon-fiber',  'superconductor',  'supercapacitor',  -- 星球特产材料
-        'concrete',  'refined-concrete',  'hazard-concrete',  'refined-hazard-concrete',  'landfill',  -- 铺地
+        'concrete',  'refined-concrete',   'landfill',  -- 铺地
+    }},
+    -- trash 类（当前为桶装液体）：从 material 拆出单独成类，方便各箱型(尤其永续箱)单独配权重。仅这 10 种有桶（base 8 + 草星 fluoroketone 冷热 2；lava/氨/molten 等 auto_barrel=false 无桶）。
+    {cat = 'trash',      items = {
+        'carbonic-asteroid-chunk', 'metallic-asteroid-chunk',  'oxide-asteroid-chunk',  'promethium-asteroid-chunk',
+        'hazard-concrete',  'refined-hazard-concrete',
         'barrel', 'water-barrel', 'crude-oil-barrel',  'heavy-oil-barrel',  'light-oil-barrel',  'petroleum-gas-barrel',
-        'lubricant-barrel',  'sulfuric-acid-barrel', 'fluoroketone-hot-barrel', 'fluoroketone-cold-barrel',                                                                       -- 桶装液体（仅这 9 种有桶：base 7 种 + 草星 fluoroketone 冷热 2 种；lava/氨/molten 等 auto_barrel=false 无桶）
+        'lubricant-barrel',  'sulfuric-acid-barrel', 'fluoroketone-hot-barrel', 'fluoroketone-cold-barrel',
+        'jellynut-seed',  'yumako-seed',  'tree-seed',                                  -- 原 gleba 类并入：种子
+        'artificial-jellynut-soil',  'artificial-yumako-soil',  'overgrowth-jellynut-soil',  'overgrowth-yumako-soil',  -- 原 gleba 类并入：土壤
     }},
     -- 物流(带/臂/管/箱/轨/机器人)
     {cat = 'logistics',  items = {
@@ -158,7 +164,8 @@ local DEFAULT_LOOT = {
         'pipe',  'pipe-to-ground',  'pump',  'offshore-pump',  'storage-tank',          -- 管道/流体
         'wooden-chest',  'iron-chest',  'steel-chest',  'active-provider-chest',  'passive-provider-chest',  'storage-chest',  'buffer-chest',  'requester-chest',  -- 箱
         'construction-robot',  'logistic-robot',  'roboport',  'repair-pack',            -- 机器人
-        'rail',  'rail-signal',  'rail-chain-signal',  'rail-ramp',  'rail-support',  'train-stop',  'locomotive',  'cargo-wagon',  'fluid-wagon',  -- 铁路
+        'rail',  'rail-signal',  'rail-chain-signal',  'rail-ramp',  'rail-support',  
+        'train-stop',  'locomotive',  'cargo-wagon',  'fluid-wagon',  -- 铁路
     }},
     -- 电路信号
     {cat = 'circuit',    items = {
@@ -216,11 +223,6 @@ local DEFAULT_LOOT = {
         'production-science-pack',  'utility-science-pack',  'space-science-pack',      -- 紫/黄/白
         'metallurgic-science-pack',  'electromagnetic-science-pack',  'cryogenic-science-pack',  'promethium-science-pack',  -- 星球科技瓶
     }},
-    -- 生物/农业（已删蛋与一切可腐物，只留不腐烂的种子/土壤）
-    {cat = 'gleba',      items = {
-        'jellynut-seed',  'yumako-seed',  'tree-seed',                                  -- 种子
-        'artificial-jellynut-soil',  'artificial-yumako-soil',  'overgrowth-jellynut-soil',  'overgrowth-yumako-soil',  -- 土壤
-    }},
     -- 太空/平台
     {cat = 'space',      items = {
         'space-platform-starter-pack', 'rocket-part',                                 -- 平台起步包
@@ -241,6 +243,11 @@ local DEFAULT_LOOT = {
         'railgun', 'railgun-ammo', 'railgun-turret', 'atomic-bomb',                     -- 顶级武器/弹药
         'artillery-turret', 'nuclear-reactor', 'toolbelt-equipment',
     }},
+    -- 永续箱【专属】类：想让无底箱单独无限刷的物品填这里（默认空，安全：空类直接跳过、不会崩）。
+    -- 各箱型默认权重 0；用 /c storage.loot_weights.perp.perpetual = N 让永续箱开始刷本类。
+    {cat = 'perpetual',  items = {
+        -- 在此填想让永续箱专属无限刷的物品，例如 'iron-plate', 'copper-plate', 'iron-ore',
+    }},
 }
 
 -- 各【按外观区分】的箱子对 LOOT 各【类】的权重：先按权重选类、再类内等概率选物品。
@@ -251,25 +258,29 @@ local DEFAULT_LOOT_WEIGHTS = {
     material = {
         raw = 350, material = 800, logistics = 150,  circuit = 10,  power = 20,
         production = 0,  module = 30,  military = 20,  equipment = 10,  science = 0,
-        gleba = 10,  space = 10,  treasure = 1,
+        space = 10,  treasure = 1,
+        trash = 0,  perpetual = 0,   -- 新类默认 0：钢箱不单独出桶/永续专属（按需 /c 调）
     },
     -- 铁箱 = 设备箱：实用设备/机器为主，含载具/太空件，少量科技瓶。普通品质、中等数量。
     equipment = {
         raw = 10,  material = 50,  logistics = 350,  circuit = 80,  power = 140,
         production = 300,  module = 150,  military = 120,  equipment = 100,  science = 1,
-        gleba = 40,  space = 15,  treasure = 1,
+        space = 15,  treasure = 1,
+        trash = 0,  perpetual = 0,
     },
     -- 永续(无底)箱：基础材料/矿物为主。注意 science>0 = 无限科技瓶(很强，慎调)。
     perp = {
         raw = 90,  material = 120,  logistics = 15,  circuit = 1,  power = 5,
         production = 3,  module = 5,  military = 1,  equipment = 1,  science = 0,
-        gleba = 1,  space = 1,  treasure = 0,
+        space = 1,  treasure = 0,
+        trash = 0,  perpetual = 0,   -- 永续箱专属调参口：把 trash / perpetual 调 >0 即让无底箱无限刷桶/专属类
     },
     -- 木箱 = 宝箱：只出精选顶级池 treasure 类（其余类 0）。想让普通箱也偶尔出顶级货，把对应箱型的 treasure 调 >0 即可。
     treasure = {
         raw = 1,  material = 1,  logistics = 1,  circuit = 1,  power = 1,
         production = 1,  module = 1,  military = 0,  equipment = 15,  science = 1,
-        gleba = 1,  space = 1,  treasure = 100,
+        space = 1,  treasure = 100,
+        trash = 0,  perpetual = 0,
     },
 }
 
@@ -943,7 +954,7 @@ local function theme_trees(surface, lt)
     local gray_target  = noise.hash01(gseed * 4.7)   -- 本轮枯灰目标 0~1
     local base_color   = noise.hash01(gseed * 2.2)   -- 本轮基色
     local color_spread = noise.hash01(gseed * 5.3)   -- 颜色随位置变化幅度：0=单一 ↔ 1=多样（连续）
-    local trees = surface.find_entities_filtered{area = {{lt.x, lt.y}, {lt.x + 32, lt.y + 32}}, type = 'tree'}
+    local trees = surface.find_entities_filtered{area = {{lt.x, lt.y}, {lt.x + 32, lt.y + 32}}, type = 'tree', limit = 512}   -- limit 封顶：超密树林区块只染前 512 棵，防单 tick 拖长（纯表现）
     for _, t in pairs(trees) do
         if t.valid then
             local gmax = t.tree_gray_stage_index_max
@@ -1037,7 +1048,7 @@ local function feature_entity_remap(surface, lt)
     local pool = obstacles_pool()
     if #pool == 0 then return end
     local seed, thr = rm.seed, rm.threshold or 0
-    for _, e in pairs(surface.find_entities_filtered{area = {{lt.x, lt.y}, {lt.x + 32, lt.y + 32}}, type = {'tree', 'simple-entity'}}) do
+    for _, e in pairs(surface.find_entities_filtered{area = {{lt.x, lt.y}, {lt.x + 32, lt.y + 32}}, type = {'tree', 'simple-entity'}, limit = 512}) do
         if e.valid then
             local p = e.position
             -- 无 seed(旧格式) → 全替换；有 seed → 仅噪声大团内替换（成片斑块，多半小、极少大）
@@ -1080,7 +1091,7 @@ local function feature_fluid_remap(surface, lt)
     -- find 直接空返回，省去扫数百个矿石实体 + 每个跑 yields_fluid（名字命中即喷口、产物本就含流体，无需再判）。
     local pool = fluids_pool()
     if #pool == 0 then return end
-    for _, e in pairs(surface.find_entities_filtered{area = {{lt.x, lt.y}, {lt.x + 32, lt.y + 32}}, name = pool}) do
+    for _, e in pairs(surface.find_entities_filtered{area = {{lt.x, lt.y}, {lt.x + 32, lt.y + 32}}, name = pool, limit = 512}) do
         if e.valid then
             local pos = e.position
             local hit = rm.p and (math.random() < rm.p)

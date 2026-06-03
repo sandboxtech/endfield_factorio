@@ -236,6 +236,13 @@ end
 -- 等价于逐人独立判定但只 1 次 random：单玩家期望仍 36000 tick = 10 分钟一次；全局频率随人数线性增多。
 events.on(defines.events.on_tick, events.safe('thunder', function()
     if not storage.event_world then return end
+    -- 早返回：本轮没有任何【雷暴星球】时，绝大多数 tick 在此一句廉价退出，省掉每帧遍历在线玩家。
+    -- event_world 只有 ~星球数 个条目，这趟扫描远比遍历全体在线玩家便宜。
+    local has_thunder = false
+    for _, ev in pairs(storage.event_world) do
+        if ev == 'thunder' then has_thunder = true; break end
+    end
+    if not has_thunder then return end
     local victims = {}
     for _, player in pairs(game.connected_players) do
         if player.character and storage.event_world[player.surface.name] == 'thunder' then

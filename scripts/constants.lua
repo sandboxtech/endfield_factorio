@@ -55,7 +55,7 @@ local M = {
         tile_remap  = {base = 0.6,  exotic = 0.3},    -- 出现率 = base + exotic × knobs.exotic
         -- 源天然自限（find 只命中该星球实际存在的障碍），目标跨类/跨星球 → 概率可放高，不会误伤。
         obstacle_remap = {base = 0.60},               -- 统一障碍互换世界出现率（树/石/遗迹/冰山/叠层岩跨类，噪声门控）
-        fluid_remap    = {base = 0.24},               -- 流体资源互换世界出现率（原油/锂卤水/氟喷口/硫酸喷泉 整星换成另一种喷口，小概率）
+        fluid_remap    = {base = 0},                  -- 流体资源互换世界【已禁用】(原 0.24)：base=0 → 该世界变体永不触发(对所有存档即时生效)。恢复改回 0.24。
         -- 出现率 = base；选中哪种事件按 weights 加权(缺省 1)，drones/tech 更低 → 无人机/科技世界更罕见
         event       = {base = 0.1, weights = {drones = 0.3, tech = 0.3}},
         -- tile 替换内部权重
