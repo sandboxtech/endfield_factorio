@@ -554,7 +554,7 @@ local DEFAULT_CLASSES = {
     {section = '战斗'},
     -- 分组换行：物流 ↔ 战斗
     -- ── 战斗组（弹药/手雷/核弹；练灰瓶 military，部分另练蓝瓶 chemical）──
-    {key = 'guard', techs = {'gun-turret', 'stone-wall', 'radar', 'laser-weapons-damage-7'}, name = '保安', full = FULL_MID, starter = {
+    {key = 'guard', techs = {'gun-turret', 'stone-wall', 'radar'}, name = '保安', full = FULL_MID, starter = {
         {item = 'stone-wall', groups = 10},
     }, rewards = {
         {pack = 'automation-science-pack', item = 'stone-wall',       groups = 20, full = FULL_LOW},
@@ -566,7 +566,7 @@ local DEFAULT_CLASSES = {
         {pack = 'chemical-science-pack',        item = 'laser-turret',        groups = 5, full = FULL_MAX},
         {pack = 'agricultural-science-pack', item = 'rocket-turret',        groups = 5, full = FULL_MAX},
     }},
-    {key = 'gunner', techs = {'military', 'physical-projectile-damage-7'}, name = '田明建', full = FULL_MID, starter = {
+    {key = 'gunner', techs = {'military'}, name = '田明建', full = FULL_MID, starter = {
         {item = 'submachine-gun', count = 1},
         {item = 'firearm-magazine', groups = 10},
     }, rewards = {
@@ -575,14 +575,14 @@ local DEFAULT_CLASSES = {
         {pack = 'utility-science-pack', item = 'uranium-rounds-magazine',  groups = 10, full = FULL_MAX},
     }},
 
-    {key = 'shotgunner', techs = {'military', 'physical-projectile-damage-7'}, name = '山上彻也', full = FULL_LOW, starter = {
+    {key = 'shotgunner', techs = {'military'}, name = '山上彻也', full = FULL_LOW, starter = {
         {item = 'combat-shotgun', count = 1},
         {item = 'shotgun-shell', groups = 10},
     }, rewards = {
         {pack = 'military-science-pack', item = 'shotgun-shell',          groups = 10, full = FULL_MID},
         {pack = 'utility-science-pack', item = 'piercing-shotgun-shell', groups = 10, full = FULL_MAX},
     }},
-    {key = 'bomber', techs = {'explosives', 'stronger-explosives-7'}, name = '拆迁队', full = FULL_MID, starter = {
+    {key = 'bomber', techs = {'explosives'}, name = '拆迁队', full = FULL_MID, starter = {
         {item = 'grenade', groups = 1},
     }, rewards = {
         {pack = 'military-science-pack', item = 'grenade',         groups = 5, full = FULL_LOW},
@@ -596,7 +596,7 @@ local DEFAULT_CLASSES = {
         {pack = 'utility-science-pack',  item = 'destroyer-capsule', groups = 1, full = FULL_MAX},
     }},
 
-    {key = 'minelayer', techs = {'land-mine', 'stronger-explosives-7'}, name = '雷神', full = FULL_MID, starter = {
+    {key = 'minelayer', techs = {'land-mine'}, name = '雷神', full = FULL_MID, starter = {
         {item = 'land-mine', count = 200},
     }, unlock = {{pack = 'military-science-pack', level = 100}}, rewards = {
         {pack = 'military-science-pack', item = 'land-mine', groups = 40},
@@ -611,7 +611,7 @@ local DEFAULT_CLASSES = {
         {pack = 'chemical-science-pack', item = 'explosive-cannon-shell', groups = 10, full = FULL_MID},
         {pack = 'utility-science-pack', item = 'uranium-cannon-shell',   groups = 10, full = FULL_MAX},
     }},
-    {key = 'rocketeer', techs = {'rocketry', 'stronger-explosives-7'}, name = '胖子发射器', full = FULL_MAX, starter = {
+    {key = 'rocketeer', techs = {'rocketry', 'explosive-rocketry', 'atomic-bomb'}, name = '胖子发射器', full = FULL_MAX, starter = {
         {item = 'rocket-launcher', count = 1},
         {item = 'rocket', count = 100},
     }, unlock = {{pack = 'chemical-science-pack', level = 100}}, rewards = {
@@ -620,7 +620,7 @@ local DEFAULT_CLASSES = {
         {pack = 'utility-science-pack',  item = 'atomic-bomb',          groups = 2, full = FULL_MAX},
         --
     }},
-    {key = 'artillerist', techs = {'artillery', 'artillery-shell-damage-1'}, name = '李云龙', full = FULL_MAX, starter = {
+    {key = 'artillerist', techs = {'artillery'}, name = '李云龙', full = FULL_MAX, starter = {
         {item = 'artillery-turret', count = 1},
         {item = 'artillery-shell', count = 10},
     }, unlock = {{pack = 'metallurgic-science-pack', level = 100}}, rewards = {
@@ -628,7 +628,7 @@ local DEFAULT_CLASSES = {
         {pack = 'metallurgic-science-pack',  item = 'artillery-wagon',  groups = 1, full = FULL_MAX},
         {pack = 'metallurgic-science-pack', item = 'artillery-turret', groups = 1, full = FULL_MAX},
     }},
-    {key = 'teslatrooper', techs = {'tesla-weapons', 'electric-weapons-damage-4'}, name = '杨永信', full = FULL_MAX, starter = {
+    {key = 'teslatrooper', techs = {'tesla-weapons'}, name = '杨永信', full = FULL_MAX, starter = {
         {item = 'teslagun', count = 1},
     }, unlock = {{pack = 'electromagnetic-science-pack', level = 100}}, rewards = {
         {pack = 'electromagnetic-science-pack', item = 'tesla-ammo',   groups = 10, full = FULL_MID},

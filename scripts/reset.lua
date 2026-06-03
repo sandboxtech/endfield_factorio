@@ -228,11 +228,12 @@ function M.reset()
     -- 职业【专属解锁】：有该职业玩家则开局解锁其 techs/recipes（不广播）。找不到的名字向管理员告警。
     --
     -- 无限/多级【职业科技】跨跃迁【幂等重算】，不再随跃迁次数/玩家自研无限涨：
-    --   1) 先扫【所有职业定义】(不只在场)，把它们指向的无限科技统一压回基准 1 级(=未研究)；
-    --      这样玩家自研出的高级、以及相关职业全员退出的情形，都会在跃迁时回落到 1。
+    --   1) 先扫【所有职业定义】(不只在场)，把它们指向的无限科技统一压回【科技自身最低级 proto.level】(=未研究 floor)；
+    --      这样玩家自研出的高级、以及相关职业全员退出的情形，都会在跃迁时回落到该科技最低级。
     --   2) 再按【在场】职业人数累加（同一无限科技可被多个职业指向，如 research-productivity 同属
     --      挂机大师+天文专家，故先收集到 class_infinite_lvl、最后统一【设级】，避免边算边写互相覆盖）。
-    -- class_tech_stack 开 = 1 + 各相关职业人数之和（每个选该职业的玩家各 +1 级）；关 = 固定第一级(level=2)，不随人数变。
+    -- class_tech_stack 开 = 最低级 + 各相关职业人数之和（每个选该职业的玩家各 +1 级）；关 = 最低级 + 1（固定首研级，不随人数变）。
+    -- 【关键】floor 一律用 proto.level，不能写死 1/2：物理伤害等科技最低级是 7，设更低引擎报错崩档。
     local class_infinite_lvl = {}
     for _, def in ipairs(classes.all()) do
         for _, t in ipairs(def.techs or {}) do
@@ -240,7 +241,7 @@ function M.reset()
             if tech then
                 local proto = tech.prototype
                 if proto.level and proto.max_level and proto.level < proto.max_level then
-                    class_infinite_lvl[t] = 1   -- 基准：1 级代表未研究
+                    class_infinite_lvl[t] = proto.level   -- 基准=科技自身最低级(未研究 floor)。不能写死 1：如 physical-projectile-damage-7 最低 7 级，设更低会被引擎拒绝→进游戏崩
                 end
             end
         end
@@ -251,11 +252,11 @@ function M.reset()
             if not tech then
                 admin_warn('职业 ' .. u.key .. ' 配置的科技不存在：' .. t)
             elseif class_infinite_lvl[t] then
-                -- 无限/多级科技：开 = 累加在场人数；关 = 固定首级 2（多职业指向也不叠）
+                -- 无限/多级科技：开 = 最低级 + 在场人数；关 = 最低级 + 1（固定首研级，多职业指向也不叠）
                 if storage.class_tech_stack then
                     class_infinite_lvl[t] = class_infinite_lvl[t] + u.count
                 else
-                    class_infinite_lvl[t] = 2
+                    class_infinite_lvl[t] = tech.prototype.level + 1
                 end
             elseif not tech.researched then
                 tech.researched = true
