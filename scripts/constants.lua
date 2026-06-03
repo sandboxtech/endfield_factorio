@@ -77,7 +77,7 @@ function M.ensure_defaults()
     for _, k in ipairs({'radius', 'radius_of', 'tree_remap', 'prob_tree_remap', 'schema_version',
                         'prob_danger', 'danger_density', 'danger_theme', 'wreck_density',
                         'loot_density_outpost', 'loot_density_perp', 'encounter_perp', 'encounter_empty',
-                        'enemy_death_push_minutes'}) do
+                        'enemy_death_push_minutes', 'vote_unlock_level', 'star_unlock_level'}) do   -- *_unlock_level 废弃：投票/星星功能不再设等级门槛
         storage[k] = nil
     end
     -- travel_chance 曾是标量、现改为【按星球的表】；旧标量会让 tc[星球] 索引数字崩服 → 非表一律清掉，由下方按星球重建。
@@ -162,8 +162,11 @@ function M.ensure_defaults()
         travel_enabled = true,           -- 前往星球【总开关】（默认开）。关闭：/c storage.travel_enabled=false。开启后每轮每个外星球还要各自过 travel_chance。
         action_cd_minutes = 3,            -- 投票+传送共享冷却（分钟），防止玩家频繁刷动作
         charge_max_hours = 30,            -- 星星充能上限（游戏内小时）：随游戏时间累积、封顶此值（1 星星=1 分钟=3600 tick；满充=30h=1800 星星）
-        star_unlock_level = 20,           -- 显示【星星按钮及其窗口】所需的人物等级(=floor√在线分钟)；20 级≈在线 6.7 小时(400 分钟)，低于此不显示星星按钮
-        vote_unlock_level = 10,           -- 显示【提前跃迁/停留投票】两个按钮所需的人物等级(=floor√在线分钟)；10 级=在线 100 分钟
+        -- 星星消费（投跃迁/停留票、买延长）：均在【星星窗口】里花。可 /c 热改。
+        star_vote_cost = 100,             -- 投一次跃迁/停留票花的星星数
+        star_extend_cost = 100,           -- 花星星给本世界倒计时延长一次的星星数
+        star_extend_minutes = 10,         -- 每次延长加的分钟
+        star_extend_cap = 60,             -- 每星系（run）花星星延长的累计上限（分钟），达到后按钮禁用
         class_cd_minutes = 0.5,           -- 切换职业的冷却（分钟）：纯防刷消息，切换本就要下次跃迁才生效
         grant_trigger_techs = false,      -- 开局是否赠送所有【触发科技】（捕获虫巢/扔物入太空那类）。默认关；开：/c storage.grant_trigger_techs=true
         unlock_all_planets = true,        -- 开局是否自动解锁所有星球【传送点】（可前往，但不点亮 planet-discovery 发现科技）。关：/c storage.unlock_all_planets=false

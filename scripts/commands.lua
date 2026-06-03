@@ -409,26 +409,40 @@ function M.show_stats_of(player, target)
     gui.show_popup(player, {'wn.stats-of-header', target.name}, sink.lines, btns)
 end
 
--- 弹出【星星】窗口（HUD 独立按钮）：星星余额（所有等级都显示）+ 充能进度条 + 领取按钮（仅达 star_unlock_level）。
+-- 弹出【星星】窗口（HUD 独立按钮）：星星余额 + 充能进度条 + 领取按钮 + 消费按钮（投票/延长）。所有人可用，无等级门槛。
 -- 原先嵌在角色面板里，现单独成窗。领取走 wn_claim_star（tick 路由 → M.claim_charge）。
 function M.show_star(player)
     if not player then return end
-    local lines = {{'wn.star-help'}, ''}                            -- 顶部自带说明 + 空行
     local bal = math.floor(((storage.star or {})[player.name] or 0) / constants.min_to_tick)
-    lines[#lines + 1] = {'wn.panel-star', bal}                      -- 星星余额（整数）
-    local bottom_buttons = {}
-    if M.star_unlocked(player) then
-        local pend = M.charge_pending(player)
-        local maxt = (storage.charge_max_hours or 30) * constants.hour_to_tick
-        local frac = (maxt > 0) and (pend / maxt) or 0
-        lines[#lines + 1] = {'wn.panel-star-charge',
-            players.progress_bar(frac),
-            math.floor(pend / constants.min_to_tick),                         -- 当前可领整数星星
-            math.floor(maxt / constants.min_to_tick)}                         -- 能领的最大值（=满充星星数）
-        if pend >= constants.min_to_tick then   -- 攒够至少 1 颗(3600 tick)才显示领取按钮，不足 1 颗只显示进度条
-            bottom_buttons[#bottom_buttons + 1] = {name = 'wn_claim_star', caption = {'wn.act-claim-star'}}
-        end
-    end
+    local pend = M.charge_pending(player)
+    local maxt = (storage.charge_max_hours or 30) * constants.hour_to_tick
+    local claimable = math.floor(pend / constants.min_to_tick)   -- 可领整数颗
+    local maxstars = math.floor(maxt / constants.min_to_tick)    -- 满充颗数
+    -- 进度按【整数颗】算（不按 tick）：可领 <1 颗时 claimable=0 → frac=0 → progress_bar 第一格暗，不再被零头点亮。
+    local frac = (maxstars > 0) and (claimable / maxstars) or 0
+    local vc = storage.star_vote_cost or 100
+    local ec, em = storage.star_extend_cost or 100, storage.star_extend_minutes or 10
+    local cap, used = storage.star_extend_cap or 60, storage.star_extend_used or 0
+    -- 说明区：show_popup 顶部 lines（通用说明，花费说明已移到花费区）。
+    local lines = {{'wn.star-help'}}
+    -- 星星区 + 花费区放 bottom_buttons（label 做文本、button 做按钮）：区首行默认 top_pad=16 与上一区换行，区内 top_pad 小=紧凑。
+    local bottom_buttons = {
+        -- ── 星星区（当前星星 / 进度条 / 领取按钮）──
+        {label = true, plain = true, caption = {'wn.panel-star', bal}},                  -- 当前星星（区首行 → 与说明区换行）
+        {label = true, plain = true, top_pad = 2, caption = {'wn.panel-star-charge',
+            players.progress_bar(frac), claimable, maxstars}},                           -- 进度条 + 可领 X/Y（紧跟）
+        {name = 'wn_claim_star', caption = {'wn.act-claim-star'},                         -- 领取按钮（领不了置灰，tooltip 说明）
+            enabled = pend >= constants.min_to_tick,
+            tooltip = (pend < constants.min_to_tick) and {'wn.star-none-yet'} or nil},
+        -- ── 花费区（花费说明 + 投跃迁/停留/延长）──
+        {label = true, caption = {'wn.star-spend-help'}},                                -- 花费说明（区首行 → 与星星区换行）
+        {name = 'wn_btn_warp',   caption = {'wn.star-btn-warp', vc},
+            enabled = bal >= vc, tooltip = {'wn.star-btn-warp-tip', vc}},
+        {name = 'wn_btn_stay',   caption = {'wn.star-btn-stay', vc},
+            enabled = bal >= vc, tooltip = {'wn.star-btn-stay-tip', vc}},
+        {name = 'wn_act_extend', caption = {'wn.star-btn-extend', em, ec},
+            enabled = (bal >= ec) and (used < cap), tooltip = {'wn.star-btn-extend-tip', em, ec, used, cap}},
+    }
     gui.show_popup(player, {'wn.star-title'}, lines, nil, false, bottom_buttons)
 end
 
@@ -474,13 +488,27 @@ end
 local STAR = nil   -- = constants.min_to_tick，下方惰性取（避免顶层依赖顺序问题）
 local function star_tick() STAR = STAR or constants.min_to_tick; return STAR end
 
+-- 当前整数颗星星余额（storage.star 内部存 tick，1 颗 = min_to_tick）。
+local function star_balance(player)
+    return math.floor(((storage.star or {})[player.name] or 0) / star_tick())
+end
+M.star_balance = star_balance   -- 导出：星星窗口按钮显示花费 / 判断禁用
+
+-- 扣 cost 颗星星：余额够则扣、返回 true；不足返回 false（不扣，调用方负责提示）。
+local function spend_stars(player, cost)
+    storage.star = storage.star or {}
+    if star_balance(player) < cost then return false end
+    storage.star[player.name] = (storage.star[player.name] or 0) - cost * star_tick()
+    return true
+end
+
 -- 人物等级 = floor(√在线分钟)（= 开局金币 coin_reward）。
 local function player_level(player)
     return respawn_gifts.coin_reward(passives.get_stat(player.index, 'online_minutes'))
 end
--- 是否已解锁充能进度条 + 领取按钮（达到 star_unlock_level，默认 0=人人解锁）。
+-- 星星功能对所有人开放（star_unlock_level 已废弃，不再设等级门槛）。保留函数名供各调用点兜底。
 function M.star_unlocked(player)
-    return player and player_level(player) >= (storage.star_unlock_level or 0)
+    return player ~= nil
 end
 
 function M.charge_pending(player)   -- 返回 待领 tick（封顶 charge_max_hours 小时）
@@ -537,12 +565,38 @@ end)
 -- 投跃迁票（vote='agree'/'oppose'，等同 /跃迁 /停留）并结算广播。
 function M.cast_warp_vote(player, vote)
     if not player then return end
-    if on_cooldown(player, 'vote_cd', 'wn.cd-vote') then return end   -- 投票跃迁/停留独立冷却
+    if on_cooldown(player, 'vote_cd', 'wn.cd-vote') then return end   -- 投票冷却（被拒不扣星星）
+    local cost = storage.star_vote_cost or 100
+    if not spend_stars(player, cost) then player.print({'wn.star-need', cost}); return end   -- 星星不足：不投、不占冷却
     storage.warp_vote = storage.warp_vote or {}
     storage.warp_vote[player.name] = vote
     mark_action(player, 'vote_cd')
     game.print({vote == 'agree' and 'wn.warp-vote-cast-agree' or 'wn.warp-vote-cast-oppose', player.name})
     warp_vote_eval()
+end
+
+-- 花星星给【本世界】倒计时延长 star_extend_minutes 分钟。每星系累计上限 star_extend_cap，达上限按钮禁用。
+-- 若处于投票提前状态(warp_vote_delta 非 nil)，把这次延长并入投票缩减量（同 research.lua 研发加时），倒计时仍钳 target。
+function M.buy_warp_extend(player)
+    if not player then return end
+    local cap = storage.star_extend_cap or 60
+    storage.star_extend_used = storage.star_extend_used or 0
+    if storage.star_extend_used >= cap then player.print({'wn.warp-extend-cap', cap}); return end
+    local cost = storage.star_extend_cost or 100
+    if not spend_stars(player, cost) then player.print({'wn.star-need', cost}); return end
+    local add_min = storage.star_extend_minutes or 10
+    storage.star_extend_used = storage.star_extend_used + add_min
+    storage.warp_hours = (storage.warp_hours or ((storage.warp_initial_minutes or 10) / 60)) + add_min / 60
+    if storage.warp_vote_delta ~= nil then
+        local last = game.tick - (storage.run_start_tick or game.tick)
+        local target = (storage.warp_vote_target_minutes or 5) * constants.min_to_tick
+        local new_hours = (last + target) / constants.hour_to_tick
+        storage.warp_vote_delta = storage.warp_vote_delta + (storage.warp_hours - new_hours)
+        storage.warp_hours = new_hours
+    end
+    game.print({'wn.warp-extend-star', player.name, add_min, storage.star_extend_used, cap})
+    gui.refresh_countdown()
+    M.show_star(player)   -- 刷新星星窗口（余额 / 已延长 / 倒计时）
 end
 
 return M

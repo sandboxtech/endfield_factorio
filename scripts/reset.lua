@@ -260,6 +260,7 @@ function M.reset()
     storage.warp_hours = (storage.warp_initial_minutes or 10) / 60
     storage.warp_vote = {}        -- 新世界清空跃迁投票（上一世界的同意/反对作废）
     storage.warp_vote_delta = nil -- 投票缩减量作废（warp_hours 已重置，无可恢复）
+    storage.star_extend_used = 0  -- 新世界花星星延长额度清零（每星系上限 star_extend_cap）
 
     -- 本轮【能否前往各外星球】独立滚定：母星恒开，其余 4 星各自按 storage.travel_chance[星球](默认 1.0=恒开，由 ensure_defaults 补齐) 概率开放。
     -- 仅 travel_enabled 总开关开启时这套才生效（见 commands.travel / gui 按钮）。

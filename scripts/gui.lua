@@ -37,7 +37,7 @@ end
 -- 渲染单个玩家的 HUD。
 function M.player_gui(player)
     player.gui.top.clear()
-    local lvl = player_level(player)   -- 用于按等级显隐（星星按钮仅 star_unlock_level 级以上显示）
+    local lvl = player_level(player)   -- 供按钮 min_level 等级门槛判断（目前无按钮设 min_level，保留机制备用）
 
     -- HUD 按钮【放最前】：位置固定，不会被后面变长的世界标签挤动。点击由 tick.on_gui_click 路由。
     --   玩法&指令（弹窗）  |间隔|  角色面板 / 跃迁(投同意✓) / 停留(投反对✗)。
@@ -50,11 +50,8 @@ function M.player_gui(player)
         -- 个人组：科技瓶经验 / 统计 / 职业 / 星星。
         {name = 'wn_btn_stats',    sprite = 'entity/character',                 tip = {'', {'wn.btn-stats-title'}, '\n', {'wn.stats-btn-tip'}}},
         {name = 'wn_btn_class',    sprite = 'virtual-signal/signal-mining',     tip = {'', {'wn.btn-class-title'}, '\n', {'wn.class-help'}}},
-        {name = 'wn_btn_star',     sprite = 'virtual-signal/signal-star',       tip = {'', {'wn.btn-star-title'}, '\n', {'wn.star-help'}}, min_level = storage.star_unlock_level or 0},
-        {spacer = true},
-        -- 跃迁规则组：跃迁投票 / 停留投票（放一起，都是对"是否提前跃迁"投票）。
-        {name = 'wn_btn_warp',     sprite = 'virtual-signal/signal-trash-bin',  tip = {'wn.btn-warp-tip'},  min_level = storage.vote_unlock_level or 10},
-        {name = 'wn_btn_stay',     sprite = 'virtual-signal/signal-white-flag', tip = {'wn.btn-stay-tip'}, min_level = storage.vote_unlock_level or 10},
+        {name = 'wn_btn_star',     sprite = 'virtual-signal/signal-star',       tip = {'', {'wn.btn-star-title'}, '\n', {'wn.star-help'}}},
+        -- 跃迁/停留投票 + 花星星延长 已移入【星星窗口】（见 commands.show_star），HUD 不再单独放这些按钮。
     }) do
         if b.spacer then
             player.gui.top.add{type = 'empty-widget'}.style.width = 12   -- 玩法 与 操作组 之间的间隔
@@ -146,8 +143,8 @@ function M.show_popup(player, title, lines, buttons, buttons_at_bottom, bottom_b
         for _, b in ipairs(list) do
             if b.label then
                 local l = pane.add{type = 'label', caption = b.caption}
-                l.style.font = 'default-bold'
-                l.style.top_margin = 16   -- 分组标题上方留更大空行（travel / 出生星球 等组之间更分明）
+                if not b.plain then l.style.font = 'default-bold' end   -- plain=true：数据行不加粗（区内文本用）
+                l.style.top_margin = b.top_pad or 16   -- 默认 16=区/组之间换行；top_pad 小=区内紧凑
             elseif b.newrow then
                 -- 空职业/分隔占位：加一条分隔线 + 开新 table，后面按钮另起一组。单列也画线（如在线玩家列表"查看自己"与其他人之间）。
                 pane.add{type = 'line'}

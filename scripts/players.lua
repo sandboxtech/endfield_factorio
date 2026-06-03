@@ -278,12 +278,9 @@ script.on_event(defines.events.on_player_joined_game, function(event)
     -- 名册变了，刷新所有人 HUD（自然包含自己）
     gui.players_gui()
 
-    -- 星星提醒：达 star_unlock_level 级 且 待领 ≥ 20 小时（接近满充）→ 上线时提示领取，免得溢出浪费。
-    local star_lv = respawn_gifts.coin_reward(passives.get_stat(player.index, 'online_minutes'))
-    if star_lv >= (storage.star_unlock_level or 0) then
-        local pend = math.min(game.tick - storage.charge[player.name], (storage.charge_max_hours or 30) * constants.hour_to_tick)
-        if pend >= 20 * constants.hour_to_tick then player.print({'wn.star-remind'}) end
-    end
+    -- 星星提醒：待领 ≥ 20 小时（接近满充）→ 上线时提示领取，免得溢出浪费（star_unlock_level 已废弃，人人提醒）。
+    local pend = math.min(game.tick - storage.charge[player.name], (storage.charge_max_hours or 30) * constants.hour_to_tick)
+    if pend >= 20 * constants.hour_to_tick then player.print({'wn.star-remind'}) end
 
     local welcome
     if player.online_time > 0 then
