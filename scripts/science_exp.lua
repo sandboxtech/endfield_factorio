@@ -47,6 +47,7 @@ local function body_character(player)
     end
     return nil
 end
+M.body_character = body_character   -- 导出：passives 等模块复用同一"本体角色"取法（含 map/remote view，不经 player.controller）
 
 function M.collect(player)
     if not player.connected then return nil end

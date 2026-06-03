@@ -34,13 +34,15 @@ end
 local function pct(f) return string.format('%+d%%', math.floor(f * 100 + 0.5)) end
 
 -- 3 个技能（手搓/移动/挖矿）。factor(stat) → 修正系数。★ to_zero 越大升级越慢。
+-- apply 入参 c 是【角色实体】(body_character 取，含 map/remote view)，不是 player：
+-- 这些 modifier 在 character 实体上同样可写，遥控/地图视角下 player.character 为 nil 时仍能施加。
 M.abilities = {
     {locale = 'wn.ability-crafting', stat = 'craft_count',  factor = speed_curve(5000),
-     apply = function(p, f) p.character_crafting_speed_modifier = f end, fmt = pct},
+     apply = function(c, f) c.character_crafting_speed_modifier = f end, fmt = pct},
     {locale = 'wn.ability-running',  stat = 'move_distance', factor = speed_curve(100000), cap = 1.0,
-     apply = function(p, f) p.character_running_speed_modifier = f end, fmt = pct},
+     apply = function(c, f) c.character_running_speed_modifier = f end, fmt = pct},
     {locale = 'wn.ability-mining',   stat = 'mining_count',  factor = speed_curve(5000),
-     apply = function(p, f) p.character_mining_speed_modifier = f end, fmt = pct},
+     apply = function(c, f) c.character_mining_speed_modifier = f end, fmt = pct},
 }
 
 -- 某玩家某技能当前的修正系数 f。cap 存在则封顶（移动速度封 +100%，避免走路过快）。
@@ -51,13 +53,17 @@ function M.skill_factor(player_index, ab)
 end
 
 local function apply_one(player, ab)
-    if player and player.character then ab.apply(player, M.skill_factor(player.index, ab)) end
+    if not player then return end
+    local c = science_exp.body_character(player)   -- 本体角色实体(含 map/remote view)，不依赖 player.character
+    if c then ab.apply(c, M.skill_factor(player.index, ab)) end
 end
 
 -- 重算并施加全部技能（新建/复活/跃迁后角色换新需调用）。
 function M.apply(player)
-    if not player or not player.character then return end
-    for _, ab in ipairs(M.abilities) do ab.apply(player, M.skill_factor(player.index, ab)) end
+    if not player then return end
+    local c = science_exp.body_character(player)   -- 含 map/remote view：从 associated 角色取回，遥控视角下也能重设 modifier
+    if not c then return end
+    for _, ab in ipairs(M.abilities) do ab.apply(c, M.skill_factor(player.index, ab)) end
 end
 
 -- ---------------------------------------------------------------------------
@@ -83,12 +89,15 @@ end)
 -- 移动：on_player_changed_position 走路时每 tick 触发；累加位移，过滤瞬移/换面/载具。
 script.on_event(defines.events.on_player_changed_position, function(e)
     local p = game.get_player(e.player_index)
-    if not (p and p.character) then return end
+    -- 取本体角色实体：map/remote(遥控/地图)视角下 player.character 为 nil，从 associated 取回；真·无角色(死亡)才跳过。
+    -- 必须用角色实体的 position/surface/vehicle：遥控视角下 p.position 是镜头位置、p.surface 是观察面，会把移动算错。
+    local char = science_exp.body_character(p)
+    if not char then return end
     storage.move_pos = storage.move_pos or {}
-    local pos, si = p.position, p.surface.index
+    local pos, si = char.position, char.surface.index
     local a = storage.move_pos[p.index]
     if a and a.si == si then
-        if not p.vehicle then
+        if not char.vehicle then
             -- 曼哈顿距离 |dx|+|dy|，免开方。阈值 50 过滤跃迁/复活远距瞬移（换 surface 已被 si 过滤）。
             local d = math.abs(pos.x - a.x) + math.abs(pos.y - a.y)
             if d < MOVE_MAX_STEP then
@@ -99,7 +108,7 @@ script.on_event(defines.events.on_player_changed_position, function(e)
                 local f = ab.factor(s.move_distance)
                 if ab.cap and f > ab.cap then f = ab.cap end
                 if not a.f or f - a.f >= 0.001 then
-                    ab.apply(p, f)
+                    ab.apply(char, f)   -- 施加到角色实体：遥控视角下 player.character 为 nil 无法写 modifier
                     a.f = f
                 end
             end
