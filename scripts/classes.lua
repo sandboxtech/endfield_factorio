@@ -132,7 +132,7 @@ local DEFAULT_CLASSES = {
         {item = 'copper-ore', groups = 6},
         {item = 'stone', groups = 6},
         {item = 'coal', groups = 6},
-    }, unlock = {{pack = 'automation-science-pack', level = 10}}, rewards = {
+    }, unlock = {{pack = 'automation-science-pack', level = 1}}, rewards = {
         -- {pack = 'automation-science-pack',      item = 'iron-ore',     groups = 1},   -- 红：铁矿
         -- {pack = 'logistic-science-pack',        item = 'copper-ore',   groups = 1},   -- 绿：铜矿
         -- {pack = 'military-science-pack',        item = 'coal',         groups = 1},   -- 灰：煤
@@ -202,14 +202,14 @@ local DEFAULT_CLASSES = {
         {item = 'burner-mining-drill', groups = 2},
         -- {item = 'electric-mining-drill', groups = 1},
         -- {item = 'big-mining-drill', groups = 1},
-    }, unlock = {{pack = 'automation-science-pack', level = 10}}, rewards = {
+    }, rewards = {
         {pack = 'automation-science-pack',     item = 'electric-mining-drill', groups = 20},
         {pack = 'metallurgic-science-pack', item = 'big-mining-drill', groups = 2},
     }},
 
     {key = 'smelter', techs = {'advanced-material-processing', 'advanced-material-processing-2'}, name = '煅烧工人', full = FULL_MID, starter = {
         {item = 'stone-furnace', groups = 6},
-    }, unlock = {{pack = 'automation-science-pack', level = 10}}, rewards = {
+    }, rewards = {
         {pack = 'automation-science-pack', item = 'stone-furnace',       groups = 20},
         {pack = 'logistic-science-pack', item = 'steel-furnace',       groups = 5},
         {pack = 'chemical-science-pack', item = 'electric-furnace',   groups = 2},
@@ -219,10 +219,22 @@ local DEFAULT_CLASSES = {
         {item = 'assembling-machine-1', groups = 1},
         -- {item = 'assembling-machine-2', groups = 1},
         -- {item = 'assembling-machine-3', groups = 1},
-    }, unlock = {{pack = 'automation-science-pack', level = 10}}, rewards = {
+    }, rewards = {
         {pack = 'automation-science-pack', item = 'assembling-machine-1', groups = 10},
         {pack = 'logistic-science-pack',   item = 'assembling-machine-2', groups = 10},
         {pack = 'production-science-pack', item = 'assembling-machine-3', groups = 10},
+    }},
+
+    {key = 'oilman', techs = {'oil-gathering', 'oil-processing', 'advanced-oil-processing'}, name = '石化工人', full = FULL_LOW, starter = {
+        {item = 'pumpjack', groups = 1},
+        {item = 'oil-refinery', groups = 1},
+        {item = 'chemical-plant', groups = 1},
+    }, unlock = {{pack = 'logistic-science-pack', level = 10}}, rewards = {
+        {pack = 'logistic-science-pack',   item = 'pumpjack',       groups = 10}, 
+        {pack = 'logistic-science-pack',   item = 'oil-refinery',   groups = 10}, 
+        {pack = 'logistic-science-pack',   item = 'chemical-plant', groups = 10}, 
+        {pack = 'agricultural-science-pack',   item = 'biochamber', groups = 2}, 
+        {pack = 'cryogenic-science-pack',   item = 'cryogenic-plant', groups = 2}, 
     }},
 
     {key = 'foundryman', techs = {'foundry'}, name = '冶金工人', full = FULL_LOW, starter = {
@@ -248,17 +260,6 @@ local DEFAULT_CLASSES = {
         {pack = 'space-science-pack', item = 'scrap',                 groups = 10},
         {pack = 'electromagnetic-science-pack', item = 'scrap',                 groups = 10},
         {pack = 'promethium-science-pack', item = 'scrap',                 groups = 10},
-    }},
-    {key = 'oilman', techs = {'oil-gathering', 'oil-processing', 'advanced-oil-processing'}, name = '石化工人', full = FULL_LOW, starter = {
-        {item = 'pumpjack', groups = 1},
-        {item = 'oil-refinery', groups = 1},
-        {item = 'chemical-plant', groups = 1},
-    }, unlock = {{pack = 'logistic-science-pack', level = 10}}, rewards = {
-        {pack = 'logistic-science-pack',   item = 'pumpjack',       groups = 10}, 
-        {pack = 'logistic-science-pack',   item = 'oil-refinery',   groups = 10}, 
-        {pack = 'logistic-science-pack',   item = 'chemical-plant', groups = 10}, 
-        {pack = 'agricultural-science-pack',   item = 'biochamber', groups = 2}, 
-        {pack = 'cryogenic-science-pack',   item = 'cryogenic-plant', groups = 2}, 
     }},
 
     {key = 'moduler', techs = {'modules'}, name = '插件工人', full = FULL_MID, starter = {
