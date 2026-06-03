@@ -83,6 +83,10 @@ function M.print_status(target, viewer)
     viewer.print({'wn.stat-nest',     s('nest_count')})
     viewer.print({'wn.stat-death',    s('death_count')})
     viewer.print({'wn.stat-warps',    s('warps')})
+    -- 拜访世界总次数 + 5 星球开局细分（顺序同 constants.PLANETS：母星/火山/草星/电浆/极地）
+    viewer.print({'wn.stat-visit', s('visit_total'),
+                  s('visit_nauvis'), s('visit_vulcanus'), s('visit_gleba'),
+                  s('visit_fulgora'), s('visit_aquilo')})
     viewer.print({'wn.stat-research', s('research')})
     viewer.print({'wn.stat-key',      s('key_research')})
 end
@@ -157,6 +161,11 @@ local function try_gift_first_in_world(player)
     storage.last_respawn_run = storage.last_respawn_run or {}
     if storage.last_respawn_run[player.index] == storage.run then return end
     storage.last_respawn_run[player.index] = storage.run
+    -- 拜访世界统计：本世界首次发放起手装备 = 本玩家首次"来到"这个世界（含开局直接领、跃迁后复活领、
+    -- 以及【后进服】首次拥有角色领），比"跃迁时只数在线玩家"更全更准。按开局所在星球(出生星球)细分，
+    -- 同时记一次总次数（总数与 5 星球各自计数都在此 +1，互不相加）。
+    -- 用 M.respawn_surface_name：局部 respawn_surface_name 在本函数之后才定义，此处引用不到。
+    player_stats.bump_visit(player.index, M.respawn_surface_name(player))
     respawn_gifts.on_first_respawn(player)
 end
 

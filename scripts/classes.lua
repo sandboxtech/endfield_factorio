@@ -40,7 +40,7 @@ local DEFAULT_CLASSES = {
     -- 默认职业。
     {section = '市民'}, 
 
-    {key = 'civilian', name = '出租司机', full = FULL_LOW, starter = {
+    {key = 'civilian', name = '核能出租司机', full = FULL_LOW, starter = {
         {item = 'car', count = 1},
         {item = 'nuclear-fuel', groups = 1},
         {item = 'automation-science-pack',   count = 1},
@@ -51,17 +51,16 @@ local DEFAULT_CLASSES = {
     }},
 
     {key = 'afker', techs = {'research-productivity'}, name = '挂机大师', full = FULL_MAX, starter = {
-        {item = 'automation-science-pack',   count = 1},
         {item = 'logistic-science-pack',   count = 1},
     }, rewards = {
         
     }},
 
-    -- {key = 'philosopher', techs = {'biolab'}, name = '哲学家', full = FULL_MAX, starter = {
-        
-    -- }, rewards = {
-    --     {pack = 'automation-science-pack', item = 'automation-science-pack',   count=100},
-    -- }},
+    {key = 'philosopher', techs = {'biolab'}, name = '哲学家', full = FULL_LOW, starter = {
+        {item = 'chemical-science-pack',   count = 1},
+    }, rewards = {
+        {pack = 'logistic-science-pack', item = 'logistic-science-pack',   count=10},
+    }},
 
     {key = 'artist', techs = {'circuit-network'}, name = '艺术家', full = FULL_LOW, starter = {
         {item = 'small-lamp', groups = 1},
@@ -92,7 +91,7 @@ local DEFAULT_CLASSES = {
         {pack = 'promethium-science-pack', item = 'lab',                 groups = 10},
     }},
 
-    {key = 'civilengineer', techs = {'cliff-explosives'}, name = '土木工人', full = FULL_LOW, starter = {
+    {key = 'civilengineer', techs = {'cliff-explosives'}, name = '建筑师', full = FULL_LOW, starter = {
         {item = 'cliff-explosives', groups = 1},
     }, unlock = {{pack = 'automation-science-pack', level = 10}}, rewards = {
         {pack = 'automation-science-pack', item = 'stone-brick',                 groups = 10},
@@ -101,7 +100,7 @@ local DEFAULT_CLASSES = {
         {pack = 'promethium-science-pack', item = 'foundation',                 groups = 10},
     }},
 
-    {key = 'banker', name = '银行家', full = FULL_MAX, starter = {
+    {key = 'banker', name = '大资本家', full = FULL_MAX, starter = {
 
     }, unlock = {{pack = 'automation-science-pack', level = 1000}}, rewards = {
         {pack = 'automation-science-pack', item = 'coin',   count = 100},

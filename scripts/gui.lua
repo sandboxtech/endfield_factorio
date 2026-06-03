@@ -222,6 +222,12 @@ function M.show_actions(player)
             enabled = met,
             tooltip = met and {'wn.act-home-tip'} or {'wn.planet-need-pack', '[img=item/' .. pack .. ']', req, cur}}
     end
+    -- 功能菜单所有【可点按钮】统一【最小宽】→ 等宽对齐加宽（短的撑到此宽、长的随内容/面板再伸展，
+    -- 复用 add_buttons 的 min_width 分支：minimal_width + horizontally_stretchable）。label/分隔无 name 不受影响。
+    local ACTIONS_BTN_MIN_W = 260
+    for _, b in ipairs(buttons) do
+        if b.name then b.min_width = ACTIONS_BTN_MIN_W end
+    end
     -- 顶部放与按钮 tooltip 同一段简介（buttons_at_bottom=true → 说明在上、操作按钮在下）。
     M.show_popup(player, {'wn.actions-title'}, {{'wn.actions-help'}, ''}, buttons, true)
 end

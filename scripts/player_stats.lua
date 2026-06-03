@@ -13,7 +13,11 @@
 --   warps           在线时经历的跃迁次数
 --   research        在线时完成的科技研究次数
 --   key_research    在线时完成的关键科技（科技瓶/延长跃迁时间）次数
+--   visit_total     拜访世界【总次数】：每次发放起手装备(本世界首次拥有角色)记一次，见 players。
+--   visit_<星球>    在该星球【开局】的次数（按出生星球细分）。总数与各星球计数发放时各自 +1，互不相加。
 -- 数据跨跃迁保留（终身累积）。
+
+local constants = require('scripts.constants')
 
 local M = {}
 
@@ -28,7 +32,18 @@ local DEFAULTS = {
     warps          = 0,
     research       = 0,
     key_research   = 0,
+    -- 拜访世界：总次数 + 5 星球开局细分（发放装备时各自 +1，不靠相加）
+    visit_total    = 0,
+    visit_nauvis   = 0,
+    visit_vulcanus = 0,
+    visit_gleba    = 0,
+    visit_fulgora  = 0,
+    visit_aquilo   = 0,
 }
+
+-- 星球名 → 开局统计键，按 constants.PLANETS 静态构建（不依赖玩家记录是否已有该字段，老档也正确）。
+local VISIT_KEYS = {}
+for _, p in ipairs(constants.PLANETS) do VISIT_KEYS[p] = 'visit_' .. p end
 
 -- 统计按【玩家名】存储：名字跨 index 稳定，被删玩家用同名回归即自动继承，删玩家时无需动 storage。
 -- storage.player_stats 由 constants.ensure_defaults 保证存在（on_init/on_configuration_changed）。
@@ -53,6 +68,13 @@ function M.bump(player_index, key, n)
     local s = M.get(player_index)
     s[key] = (s[key] or 0) + (n or 1)
     return s[key]
+end
+
+-- 拜访世界：发放起手装备时调用，总次数 + 该星球开局数【各 +1】（不相加，独立计数）。
+-- planet 非标准星球名时细分归入母星兜底，但总数照常 +1。
+function M.bump_visit(player_index, planet)
+    M.bump(player_index, 'visit_total')
+    return M.bump(player_index, VISIT_KEYS[planet] or VISIT_KEYS.nauvis)
 end
 
 -- 所有在线玩家某统计项 +1：用于世界级事件（跃迁/研究）按"在线即记一次"分摊给每个在线玩家。
