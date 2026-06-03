@@ -249,15 +249,15 @@ local DEFAULT_LOOT = {
 local DEFAULT_LOOT_WEIGHTS = {
     -- 钢箱 = 材料箱：基础材料/原料 + 大概率普通科技瓶。普通品质、常见、装得多。
     material = {
-        raw = 35, material = 80, logistics = 15,  circuit = 1,  power = 2,
-        production = 0,  module = 3,  military = 2,  equipment = 1,  science = 0,
-        gleba = 1,  space = 1,  treasure = 0,
+        raw = 350, material = 800, logistics = 150,  circuit = 10,  power = 20,
+        production = 0,  module = 30,  military = 20,  equipment = 10,  science = 0,
+        gleba = 10,  space = 10,  treasure = 1,
     },
     -- 铁箱 = 设备箱：实用设备/机器为主，含载具/太空件，少量科技瓶。普通品质、中等数量。
     equipment = {
-        raw = 1,  material = 5,  logistics = 35,  circuit = 8,  power = 14,
-        production = 30,  module = 15,  military = 12,  equipment = 10,  science = 0,
-        gleba = 4,  space = 15,  treasure = 0,
+        raw = 10,  material = 50,  logistics = 350,  circuit = 80,  power = 140,
+        production = 300,  module = 150,  military = 120,  equipment = 100,  science = 1,
+        gleba = 40,  space = 15,  treasure = 1,
     },
     -- 永续(无底)箱：基础材料/矿物为主。注意 science>0 = 无限科技瓶(很强，慎调)。
     perp = {
@@ -267,9 +267,9 @@ local DEFAULT_LOOT_WEIGHTS = {
     },
     -- 木箱 = 宝箱：只出精选顶级池 treasure 类（其余类 0）。想让普通箱也偶尔出顶级货，把对应箱型的 treasure 调 >0 即可。
     treasure = {
-        raw = 0,  material = 0,  logistics = 0,  circuit = 0,  power = 0,
-        production = 0,  module = 0,  military = 0,  equipment = 0,  science = 0,
-        gleba = 0,  space = 0,  treasure = 100,
+        raw = 1,  material = 1,  logistics = 1,  circuit = 1,  power = 1,
+        production = 1,  module = 1,  military = 0,  equipment = 15,  science = 1,
+        gleba = 1,  space = 1,  treasure = 100,
     },
 }
 

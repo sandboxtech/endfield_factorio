@@ -73,7 +73,7 @@ function M.reset()
     storage.run_start_tick = game.tick
 
     -- 飞船老化：storage.platform_age[idx] 记录该平台已经历的跃迁次数。每次跃迁 +1。
-    -- 在船名前打【剩余命数 + 心】前缀(如 [item=parameter-4][virtual-signal=signal-heart] = 还剩 4 条命)，
+    -- 在船名前打【剩余命数 + 心】前缀(如 [img=item/parameter-4][img=virtual-signal/signal-heart] = 还剩 4 条命)，
     -- 直观且只占一格；已有旧前缀(命数/心，或老存档遗留的骷髅串)则先剥掉再换新。
     -- 命数 = lifetime - age + 1（在世恒 ≥1）；age 超过 lifetime 即摧毁。（默认值见 constants.ensure_defaults）
     for _, space_platform in pairs(game.forces.player.platforms) do
