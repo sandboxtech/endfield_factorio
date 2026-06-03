@@ -63,4 +63,21 @@ function M.mostly_normal()
     return M.readable(2 ^ ((math.random() - math.random()) * 0.6))
 end
 
+-- 二项分布采样：n 次独立试验、每次成功率 p，返回成功数（"每件物品独立 p 概率获得"时的获得件数 ~ B(n,p)）。
+-- np 与 n(1-p) 都 ≥10 时用正态近似 + Box-Muller（O(1)，两次 random）；否则逐次掷（此时期望偏小或 n 小，仅跃迁发装备时调用，开销可接受）。
+function M.binomial(n, p)
+    if n <= 0 or p <= 0 then return 0 end
+    if p >= 1 then return n end
+    local mu = n * p
+    if mu < 10 or (n - mu) < 10 then
+        local k = 0
+        for _ = 1, n do if math.random() < p then k = k + 1 end end
+        return k
+    end
+    local z = math.sqrt(-2 * math.log(1 - math.random())) * math.cos(2 * math.pi * math.random())   -- 1-random() ∈ (0,1]：避免 log(0)
+    local k = math.floor(mu + math.sqrt(mu * (1 - p)) * z + 0.5)
+    if k < 0 then return 0 elseif k > n then return n end
+    return k
+end
+
 return M

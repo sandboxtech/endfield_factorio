@@ -237,7 +237,7 @@ function M.reset()
     local class_infinite_lvl = {}
     for _, def in ipairs(classes.all()) do
         for _, t in ipairs(def.techs or {}) do
-            local tname = classes.tech_entry(t)   -- 条目可为 '名' 或 {'名', chance=}：基准重置不看概率，所有候选都压回 floor
+            local tname = classes.tech_entry(t)   -- 条目可为 '名' 或 {'名', p=}：基准重置不看概率，所有候选都压回 floor
             local tech = tname and force.technologies[tname]
             if tech then
                 local proto = tech.prototype
@@ -249,51 +249,52 @@ function M.reset()
     end
     for _, u in ipairs(classes.active_class_unlocks()) do
         -- 概率掷点【结果通报】：发给该职业的所有在线玩家（按预约职业=本轮生效职业匹配）。
-        -- 懒求值：本职业没有任何 chance<1 条目就不扫玩家列表。本段跑在"杀玩家"之后，不会被死亡刷屏顶掉。
+        -- 懒求值：本职业没有任何 p<1 条目就不扫玩家列表。本段跑在"杀玩家"之后，不会被死亡刷屏顶掉。
         local recips
-        local function roll_notify(hit, icon, lname)
+        local function roll_notify(msg)
             if recips == nil then
                 recips = {}
-                for _, p in pairs(game.connected_players) do
-                    if (storage.player_class or {})[p.name] == u.key then recips[#recips + 1] = p end
+                for _, pl in pairs(game.connected_players) do
+                    if (storage.player_class or {})[pl.name] == u.key then recips[#recips + 1] = pl end
                 end
             end
-            for _, p in ipairs(recips) do
-                p.print({hit and 'wn.class-roll-hit' or 'wn.class-roll-miss', icon, lname})
-            end
+            for _, pl in ipairs(recips) do pl.print(msg) end
         end
         for _, t in ipairs(u.techs) do
-            local tname, chance = classes.tech_entry(t)
+            local tname, p = classes.tech_entry(t)
             local tech = tname and force.technologies[tname]
             if not tech then
                 admin_warn('职业 ' .. u.key .. ' 配置的科技不存在：' .. tostring(tname))
+            elseif class_infinite_lvl[tname] and storage.class_tech_stack then
+                -- 无限科技【叠级模式】：每个选该职业的玩家独立掷 p、各自 +1 级 → 实加级数 ~ B(人数, p)（与初始物品同口径）。
+                local add = (p >= 1) and u.count or util.binomial(u.count, p)
+                class_infinite_lvl[tname] = class_infinite_lvl[tname] + add
+                if p < 1 then
+                    roll_notify({add > 0 and 'wn.class-roll-hit-levels' or 'wn.class-roll-miss',
+                                 '[technology=' .. tname .. ']', tech.localised_name, add})
+                end
             else
-                -- 概率解锁：每个选该职业的玩家独立掷 p，任一命中即解锁 → 有效概率 1-(1-p)^人数；chance 缺省 1=恒中。
-                local hit = chance >= 1 or math.random() < (1 - (1 - chance) ^ u.count)
+                -- 有限科技 / 无限科技【固定首级模式】：整体掷一次，任一玩家命中即解锁 → 有效概率 1-(1-p)^人数；p 缺省 1=恒中。
+                local hit = p >= 1 or math.random() < (1 - (1 - p) ^ u.count)
                 if hit then
                     if class_infinite_lvl[tname] then
-                        -- 无限/多级科技：开 = 最低级 + 在场人数；关 = 最低级 + 1（固定首研级，多职业指向也不叠）。未中停留在 floor。
-                        if storage.class_tech_stack then
-                            class_infinite_lvl[tname] = class_infinite_lvl[tname] + u.count
-                        else
-                            class_infinite_lvl[tname] = tech.prototype.level + 1
-                        end
+                        class_infinite_lvl[tname] = tech.prototype.level + 1   -- stack 关：固定首研级（多职业指向也不叠）
                     elseif not tech.researched then
                         tech.researched = true
                     end
                 end
-                if chance < 1 then roll_notify(hit, '[technology=' .. tname .. ']', tech.localised_name) end
+                if p < 1 then roll_notify({hit and 'wn.class-roll-hit' or 'wn.class-roll-miss', '[technology=' .. tname .. ']', tech.localised_name}) end
             end
         end
         for _, rc in ipairs(u.recipes) do
-            local rname, chance = classes.tech_entry(rc)   -- 配方条目与 techs 同格式：'名' 或 {'名', chance=}
+            local rname, p = classes.tech_entry(rc)   -- 配方条目与 techs 同格式：'名' 或 {'名', p=}
             local recipe = rname and force.recipes[rname]
             if not recipe then
                 admin_warn('职业 ' .. u.key .. ' 配置的配方不存在：' .. tostring(rname))
             else
-                local hit = chance >= 1 or math.random() < (1 - (1 - chance) ^ u.count)   -- 同 techs：有效概率 1-(1-p)^人数
+                local hit = p >= 1 or math.random() < (1 - (1 - p) ^ u.count)   -- 同有限科技：任一玩家命中即解锁 = 1-(1-p)^人数
                 if hit then recipe.enabled = true end
-                if chance < 1 then roll_notify(hit, '[recipe=' .. rname .. ']', recipe.localised_name) end
+                if p < 1 then roll_notify({hit and 'wn.class-roll-hit' or 'wn.class-roll-miss', '[recipe=' .. rname .. ']', recipe.localised_name}) end
             end
         end
     end

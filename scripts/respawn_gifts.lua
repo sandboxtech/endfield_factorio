@@ -8,6 +8,7 @@
 local passives = require('scripts.passives')
 local classes = require('scripts.classes')
 local constants = require('scripts.constants')
+local util = require('scripts.util')
 
 local M = {}
 
@@ -48,16 +49,23 @@ function M.gift_list(player)
     for _, it in ipairs(M.starter_inventory) do add(it.name, it.count) end
     add('coin', M.coin_reward(passives.get_stat(player.index, 'online_minutes')))
     if def then
-        for _, s in ipairs(def.starter or {}) do add(s.item, s.count or (stack_size(s.item) * (s.groups or 1))) end   -- 前者无条件：有 count 按个数，否则 groups 组(默认 1 组=1 堆叠)
-        -- 后者（可多条 → 多瓶职业）：各按对应瓶等级线性发。职业级满级线 def.full：该职业每种瓶练到 full 级，
+        -- starter 无条件：有 count 按个数，否则 groups 组(默认 1 组=1 堆叠)。可选 p：每件独立 p 概率获得 → 实发 ~ B(总数, p)。
+        for _, s in ipairs(def.starter or {}) do
+            local total = s.count or (stack_size(s.item) * (s.groups or 1))
+            if (s.p or 1) < 1 then total = util.binomial(total, s.p) end
+            add(s.item, total)
+        end
+        -- rewards（可多条 → 多瓶职业）：各按对应瓶等级线性发。职业级满级线 def.full：该职业每种瓶练到 full 级，
         -- 即拿满该条【满级配额】——是这个职业的“完美追求”目标。满级配额 = count 个 或 堆叠×groups 组(默认 1 组)。
-        -- 个数 = floor(满级配额 × min(瓶等级,full) / full)【向下取整】：full 越小越快满。
+        -- 个数 = floor(满级配额 × min(瓶等级,full) / full)【向下取整】：full 越小越快满。可选 p 同 starter（按应发数二项采样）。
         local class_full = def.full or M.MAX_LEVEL
         for _, r in ipairs(def.rewards or {}) do
             local full = r.full or class_full   -- 每条 reward 可带自己的 full 覆盖职业 full（nil 则继承职业），单独控制该条满级速度
             local lv = math.min(M.pack_level(passives.exp_total_for_pack(player.index, r.pack)), full)
             local cap = r.count or (stack_size(r.item) * (r.groups or 1))   -- 满级配额：有 count 按个数，否则 堆叠×groups
-            add(r.item, math.floor(cap * lv / full))
+            local cnt = math.floor(cap * lv / full)
+            if (r.p or 1) < 1 then cnt = util.binomial(cnt, r.p) end
+            add(r.item, cnt)
         end
     end
     return list

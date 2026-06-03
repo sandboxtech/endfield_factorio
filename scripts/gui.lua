@@ -271,30 +271,33 @@ function M.show_classes(player)
         if def.techs and #def.techs > 0 then
             r_unlock[#r_unlock + 1] = {'wn.class-tip-tech'}   -- 区域标题（纯标签，无参数）
             for _, t in ipairs(def.techs) do
-                local tname, chance = classes.tech_entry(t)   -- 条目可为 '名' 或 {'名', chance=}
+                local tname, p = classes.tech_entry(t)   -- 条目可为 '名' 或 {'名', p=}
                 local proto = tname and prototypes.technology[tname]
                 local line = {'', '\n[technology=' .. (tname or '?') .. '] ', proto and proto.localised_name or tname or '?'}
-                if chance < 1 then line[#line + 1] = {'wn.class-tip-tech-chance', math.floor(chance * 100 + 0.5)} end   -- 概率解锁的科技：名后标注 %
+                if p < 1 then line[#line + 1] = {'wn.class-tip-tech-chance', math.floor(p * 100 + 0.5)} end   -- 概率解锁的科技：名后标注 %
                 r_unlock[#r_unlock + 1] = line
             end
         end
         if def.recipes and #def.recipes > 0 then
             r_unlock[#r_unlock + 1] = {'wn.class-tip-recipe'}   -- 区域标题（纯标签，无参数）
             for _, rc in ipairs(def.recipes) do
-                local rname, chance = classes.tech_entry(rc)   -- 配方条目与 techs 同格式：'名' 或 {'名', chance=}
+                local rname, p = classes.tech_entry(rc)   -- 配方条目与 techs 同格式：'名' 或 {'名', p=}
                 local proto = rname and prototypes.recipe[rname]
                 local line = {'', '\n[recipe=' .. (rname or '?') .. '] ', proto and proto.localised_name or rname or '?'}
-                if chance < 1 then line[#line + 1] = {'wn.class-tip-tech-chance', math.floor(chance * 100 + 0.5)} end   -- 概率解锁标注 %（与科技共用同一词条）
+                if p < 1 then line[#line + 1] = {'wn.class-tip-tech-chance', math.floor(p * 100 + 0.5)} end   -- 概率解锁标注 %（与科技共用同一词条）
                 r_unlock[#r_unlock + 1] = line
             end
         end
         if #r_unlock > 0 then regions[#regions + 1] = r_unlock end
         -- 区域② 白送物品：每物品一行 "+N [img]"。总个数 = count 个，或 groups 组 × 堆叠（默认 1 组）。
+        -- 可选 p<1 时物品是随机的（每件独立 p 概率，实发 ~ B(总数,p)），行尾标注"每件 %"。
         local r_starter = {}
         for _, s in ipairs(def.starter or {}) do
             local proto = prototypes.item[s.item]
             local total = s.count or (((proto and proto.stack_size) or 1) * (s.groups or 1))
-            r_starter[#r_starter + 1] = {'wn.class-tip-head', total, '[img=item/' .. s.item .. ']'}
+            local line = {'wn.class-tip-head', total, '[img=item/' .. s.item .. ']'}
+            if (s.p or 1) < 1 then line = {'', line, {'wn.class-tip-item-p', math.floor(s.p * 100 + 0.5)}} end
+            r_starter[#r_starter + 1] = line
         end
         if #r_starter > 0 then regions[#regions + 1] = r_starter end
         -- 区域③ 满级奖励：每条 "每 P 级得 Q 个 [物品] 当前/满级"。
@@ -306,13 +309,15 @@ function M.show_classes(player)
             local lv = math.min(classes.pack_level(player, r.pack), full)        -- 玩家该瓶当前等级(封顶 full)
             local current = math.floor(total * lv / full)                        -- 当前能拿到的数量(yyy，与 respawn_gifts 发放公式一致)
             local g = util.gcd(full, total)                                       -- 约分 满级线:满级总数 → 每 P 级得 Q 个
-            r_reward[#r_reward + 1] = {'wn.class-tip-reward',
+            local line = {'wn.class-tip-reward',
                 '[img=item/' .. r.pack .. ']',       -- 瓶图标(等级来源)
                 math.floor(full / g),                -- P：每多少级得一批
                 math.floor(total / g),               -- Q：每批给多少个
                 '[img=item/' .. r.item .. ']',       -- 物品图标
                 current,                             -- __5__ yyy：当前等级能拿到的数量(动态)
                 total}                               -- __6__ xxx：满级最多(不变)
+            if (r.p or 1) < 1 then line = {'', line, {'wn.class-tip-item-p', math.floor(r.p * 100 + 0.5)}} end   -- 随机物品：行尾标注"每件 %"
+            r_reward[#r_reward + 1] = line
         end
         if #r_reward > 0 then regions[#regions + 1] = r_reward end
         -- 区域④ 解锁条件（需全部满足）：需求瓶/等级 + 当前等级。
