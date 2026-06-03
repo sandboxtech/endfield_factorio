@@ -230,6 +230,31 @@ function M.ensure_defaults()
         ['oil-gathering']  = 'oil-processing',         -- 原油采集 → 原油加工
         ['captivity']      = 'biter-egg-handling',     -- 捕获 → 虫卵处理（SA）
     }
+    -- 【无限产能科技经验】集合 {科技名 = true}：研究完这些【真·无限】科技时，每完成一级给【全体在线玩家】
+    --   各 +1 经验，存进 storage.exp[玩家名][科技名]（与科技瓶经验同一张表、不同键，故不污染 12 瓶面板）。
+    --   研究产能越高、刷得越快 → 这类经验涨得越多（挂机大师等高产能职业受益）。缺失才补 → 保留 /c 增删。
+    --   注意：采矿无限级是 mining-productivity-4（前三级有限），不是 -1/-2/-3。
+    --   热改：/c storage.prod_exp_techs['steel-plate-productivity'] = true   删：…= nil
+    storage.prod_exp_techs = storage.prod_exp_techs or {
+        ['research-productivity']             = true,
+        ['mining-productivity-4']             = true,
+        ['asteroid-productivity']             = true,
+        ['low-density-structure-productivity'] = true,
+        ['plastic-bar-productivity']          = true,
+        ['processing-unit-productivity']      = true,
+        ['rocket-fuel-productivity']          = true,
+        ['rocket-part-productivity']          = true,
+        ['scrap-recycling-productivity']      = true,
+        ['steel-plate-productivity']          = true,
+        -- 武器【伤害】无限科技（射程/射速类不计入；要加自行 /c）：
+        ['physical-projectile-damage-7']      = true,   -- 实弹
+        ['laser-weapons-damage-7']            = true,   -- 激光
+        ['electric-weapons-damage-4']         = true,   -- 电磁/特斯拉
+        ['stronger-explosives-7']             = true,   -- 爆炸物
+        ['refined-flammables-7']              = true,   -- 火焰
+        ['artillery-shell-damage-1']          = true,   -- 火炮弹
+        ['railgun-damage-1']                  = true,   -- 电磁炮
+    }
     -- 必需表（累积数据 / 每星球状态 / 运行时缓存），缺失则建空表。
     -- 这是所有 storage 表的【唯一出生地】，各模块不再各自 `storage.x = storage.x or {}`，统一在此补齐。
     for _, key in ipairs({'width_of', 'height_of', 'shape_of', 'exp', 'player_stats', 'platform_age',

@@ -1,6 +1,7 @@
 local constants = require('scripts.constants')
 local util = require('scripts.util')
 local player_stats = require('scripts.player_stats')
+local science_exp = require('scripts.science_exp')
 local gui = require('scripts.gui')
 
 -- 研究完成时：给在线玩家各记一次研究；若该科技名以 -science-pack 结尾（关键科技），额外记一次并把本轮跃迁倒计时延长一段（分钟数按 warp_extend_minutes 各瓶配置，缺省 warp_extend_default_minutes；含 SA 的 trigger 解锁瓶）。
@@ -12,6 +13,15 @@ script.on_event(defines.events.on_research_finished, function(event)
     player_stats.bump_connected('research')   -- 在线玩家各记一次"研究完成"
 
     local research = event.research
+
+    -- 【无限产能科技经验】：完成 storage.prod_exp_techs 里的科技时（每升一级触发一次）→ 全体在线玩家各 +1，
+    -- 记进 storage.exp[玩家名][科技名]（与科技瓶经验同表、不同键）。研究产能越高、升级越快 → 这类经验涨得越多。
+    if (storage.prod_exp_techs or {})[research.name] then
+        for _, player in pairs(game.connected_players) do
+            local pexp = science_exp.player_exp(player, true)
+            pexp[research.name] = (pexp[research.name] or 0) + 1
+        end
+    end
 
     -- 研究【连带自动解锁】：研完源科技 → 自动研究映射表里的目标科技（storage.auto_research，可 /c 热改）。
     -- 目标科技存在且未研究才设；by_script 触发的二次 on_research_finished 会被本函数开头的 by_script 挡掉，不递归。
