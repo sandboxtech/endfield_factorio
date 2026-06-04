@@ -571,8 +571,8 @@ local function chunk_rng(left_top, offset)
     return noise.hash01(left_top.x * 0.1234 + left_top.y * 0.3717 + offset * 1.7 + (storage.run or 0) * 0.011)
 end
 
--- 六类遭遇【每区块基础频率】（世界密度=1 时的上限）。常→稀：空据点 > 钢(材料) > 铁(设备) > 木(宝箱) ≈ 永续箱 ≈ 传说建筑。
-local ENCOUNTER_BASE = {material = 0.03, equipment = 0.015, treasure = 0.0075, perpetual = 0.0075, empty = 0.08, machine = 0.0075}
+-- 六类遭遇【每区块基础频率】（世界密度=1 时的上限）。常→稀：空据点 > 钢(材料) > 铁(设备) > 木(宝箱) ≈ 永续箱 > 传说建筑。
+local ENCOUNTER_BASE = {material = 0.03, equipment = 0.015, treasure = 0.0075, perpetual = 0.0075, empty = 0.08, machine = 0.0015}
 
 -- 本世界本类遭遇的【每区块实际出现概率】，五类【统一口径】：
 --   世界密度(surface.lua 滚的 random^2，每星每类独立) × 基础频率 ENCOUNTER_BASE × 全局乘数 storage.loot_density × 该类乘数 storage.loot_density_<类型>。
@@ -1018,7 +1018,7 @@ local function place_encounter(surface, lt)
                 machine = place_bonus_machine(surface, center, floor)
                 if not machine then return end   -- 必铺后仍放不下（罕见）→ 本遭遇放弃
             elseif e.kind ~= 'empty' then
-                for _ = 1, math.floor((1 + 4 * math.random() ^ (storage.chest_count_pow or 2) * riches_mul)) do
+                for _ = 1, math.floor((1 + 11 * math.random() ^ (storage.chest_count_pow or 3) * riches_mul)) do
                     local c = place_reward_chest(surface, center, e.kind, floor, pave)
                     if c then chests[#chests + 1] = c end
                 end
