@@ -1,6 +1,7 @@
 -- 角色被动技能：边玩边练，动作即时升级。
 --   手搓 → 手搓速度；移动(步行) → 移动速度；采矿/拆除 → 挖矿速度。
--- 曲线自带 -50% 下限：对应统计为 0 时该项 -50%，做动作累计后爬升、超过原版。
+-- 手搓/挖矿曲线自带 -50% 下限：对应统计为 0 时该项 -50%，做动作累计后爬升、超过原版。
+-- 移动速度例外：基础即 100% 原版速度（0 起步），加成减半、封顶 +50%（见 run_curve）。
 -- 科技瓶经验由 science_exp 累积，不驱动这些技能。
 -- 本模块独占 on_player_crafted_item / on_player_mined_entity / on_player_changed_position
 -- （player_stats 不再注册这些，避免双重注册互相覆盖）。
@@ -25,10 +26,16 @@ function M.get_stat(player_index, stat_name)
     return player_stats.get(player_index)[stat_name] or 0
 end
 
--- 速度技能曲线：stat=0 → -0.5（-50%）；stat=to_zero → 0（原版）；之后继续 log 缓升。
+-- 速度技能曲线（手搓/挖矿用）：stat=0 → -0.5（-50%）；stat=to_zero → 0（原版）；之后继续 log 缓升。
 -- f = -0.5 + 0.5×log10(1 + 9×stat/to_zero)。to_zero 越大升级越慢。
 local function speed_curve(to_zero)
     return function(stat) return -0.5 + 0.5 * math.log(1 + 9 * stat / to_zero) / LOG10 end
+end
+
+-- 移动速度专用曲线：基础 = 100% 原版速度（stat=0 → 0，不再 -50% 起步），加成大幅缩水。
+-- f = 0.1×log10(1 + 9×stat/to_zero)：stat=to_zero → +10%；封顶 +50%（cap）。
+local function run_curve(to_zero)
+    return function(stat) return 0.1 * math.log(1 + 9 * stat / to_zero) / LOG10 end
 end
 
 local function pct(f) return string.format('%+d%%', math.floor(f * 100 + 0.5)) end
@@ -39,7 +46,7 @@ local function pct(f) return string.format('%+d%%', math.floor(f * 100 + 0.5)) e
 M.abilities = {
     {locale = 'wn.ability-crafting', stat = 'craft_count',  factor = speed_curve(5000),
      apply = function(c, f) c.character_crafting_speed_modifier = f end, fmt = pct},
-    {locale = 'wn.ability-running',  stat = 'move_distance', factor = speed_curve(100000), cap = 1.0,
+    {locale = 'wn.ability-running',  stat = 'move_distance', factor = run_curve(100000), cap = 0.5,
      apply = function(c, f) c.character_running_speed_modifier = f end, fmt = pct},
     {locale = 'wn.ability-mining',   stat = 'mining_count',  factor = speed_curve(5000),
      apply = function(c, f) c.character_mining_speed_modifier = f end, fmt = pct},

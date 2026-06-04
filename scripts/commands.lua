@@ -398,7 +398,12 @@ function M.show_stats(player)
         {name = 'wn_stats_view_self', caption = {'wn.stats-view-self'}, tags = {wn_stats_view = player.name}, min_width = STATS_BTN_MIN_W},  -- 最上方：查看自己（name 固定唯一，避免与列表里自己那项重名崩溃；路由靠 tags）
         {newrow = true},   -- 分隔线：自己 / 其他在线玩家
     }
-    for _, p in pairs(game.connected_players) do
+    -- 按【本次在线时长】从长到短排（session_join=本次上线 tick，越小在线越久；老档无记录视作 0=排最前）。
+    local plist = {}
+    for _, p in pairs(game.connected_players) do plist[#plist + 1] = p end
+    local sj = storage.session_join or {}
+    table.sort(plist, function(a, b) return (sj[a.name] or 0) < (sj[b.name] or 0) end)
+    for _, p in ipairs(plist) do
         local lv = respawn_gifts.coin_reward(passives.get_stat(p.index, 'online_minutes'))
         local stars = math.floor(((storage.star or {})[p.name] or 0) / constants.min_to_tick)
         local planet = players.respawn_surface_name(p)   -- 出生星球（space-location 图标名）
@@ -409,7 +414,7 @@ function M.show_stats(player)
             caption = {'wn.stats-entry', p.name, p.locale, planet, cname, lv, stars}, tags = {wn_stats_view = p.name},
             min_width = STATS_BTN_MIN_W}
     end
-    gui.show_popup(player, {'wn.stats-title'}, {}, buttons, nil, nil, 4)   -- 4 列平铺成更宽的表
+    gui.show_popup(player, {'wn.stats-title', #game.connected_players}, {}, buttons, nil, nil, 4)   -- 4 列平铺成更宽的表；标题带在线人数
 end
 
 -- 看某玩家的详细统计（顶部说明 + 人物等级 + 三能力 + 6 项战绩）；底部【返回】回到玩家列表。

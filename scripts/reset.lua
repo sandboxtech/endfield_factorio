@@ -398,7 +398,9 @@ function M.reset()
     end
 
     -- 本世界"玩家消灭虫巢获随机科技"的概率
-    storage.nest_tech_chance = 0.001 + math.random() * 0.009
+    -- 本世界"杀虫巢得科技"概率：在 [nest_tech_chance_min, max] 内随机滚定（范围可 /config 查看、/c 热改）。
+    local ntc_min, ntc_max = storage.nest_tech_chance_min or 0.001, storage.nest_tech_chance_max or 0.01
+    storage.nest_tech_chance = ntc_min + math.random() * math.max(0, ntc_max - ntc_min)
 
     game.map_settings.enemy_expansion.enabled = false
     game.map_settings.pollution.enabled = true

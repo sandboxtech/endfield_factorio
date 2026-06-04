@@ -123,7 +123,7 @@ end
 -- 用 permission group 实现：未达次数(或新玩家)放进 'no_blueprint' 受限组，禁掉进库/取库/导入字符串/拆除框选等动作；
 -- 达标后(及管理员)放回 'Default' 组。本地框选创建、使用自己手上的蓝图仍允许。
 -- 注意：手上【已持有】的蓝图去放 ghost 走的是普通建造动作，服务端无法在此单独拦截，这点挡不住。
-local BLUEPRINT_WARPS = 2   -- 解锁蓝图/红图所需的跃迁次数
+local BLUEPRINT_WARPS = 1   -- 解锁蓝图/红图所需的跃迁次数（默认值；运行时以 storage.blueprint_warps 优先，可 /c 热改）
 local BLUEPRINT_BLOCKED = {
     'open_blueprint_library_gui',   -- 打开蓝图库
     'grab_blueprint_record',        -- 从库里取出蓝图到手
@@ -148,7 +148,7 @@ end
 local function update_blueprint_perm(player)
     if not (player and player.valid) then return end
     local unlocked = player.admin or (storage.members or {})[player.name]
-                     or passives.get_stat(player.index, 'warps') >= BLUEPRINT_WARPS
+                     or passives.get_stat(player.index, 'warps') >= (storage.blueprint_warps or BLUEPRINT_WARPS)
     local g = unlocked and game.permissions.get_group('Default') or blueprint_locked_group()
     if g then player.permission_group = g end
 end
@@ -310,6 +310,8 @@ script.on_event(defines.events.on_player_joined_game, function(event)
     -- 星星充能基准：首次见到该玩家时锚定为当前 tick（之后随游戏时间累积；不重置已有值）。
     storage.charge = storage.charge or {}
     storage.charge[player.name] = storage.charge[player.name] or game.tick
+    storage.session_join = storage.session_join or {}
+    storage.session_join[player.name] = game.tick   -- 本次上线时刻（在线玩家列表按本次在线时长排序用；重连覆盖）
     update_blueprint_perm(player)   -- 重连时按当前 warps 重新判定蓝图权限
     -- 名册变了，刷新所有人 HUD（自然包含自己）
     gui.players_gui()

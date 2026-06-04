@@ -95,6 +95,9 @@ function M.ensure_defaults()
         prob_event = 1,                   -- 事件世界出现概率乘数
         replicant_chance = 0.5,           -- 复制虫：玩家建筑被虫破坏时，按此概率原地冒新虫（全局，world_fx 开关另控）
         nest_coin = 6,                    -- 杀死虫巢掉落的金币数（开关：0=不掉金币）。可 /c storage.nest_coin=N 热改
+        -- 玩家方杀虫巢触发"获得随机科技"的概率：每轮 reset 在 [min,max] 内随机滚定本世界值（存 storage.nest_tech_chance）。
+        nest_tech_chance_min = 0.001,     -- 下限（0.1%）。两值设相等=固定概率；都设 0=关闭
+        nest_tech_chance_max = 0.01,      -- 上限（1%）
         enemy_dmg_max = 12,               -- 敌人武器伤害上限倍率：每种伤害类型各自独立随机加成 [0, 此值]，线性递减分布（12=最高+1200%，越高越罕见）
         enemy_evo_max = 1,                -- 敌人进化度上限：每局随机 evo = min(1, 此值×(1-√r))，线性递减（>1 把分布推向高进化、更多猛虫；<1 压低上限）
         -- 战利品密度：全局乘数 × 各类乘数（相乘共同影响）。默认全 1，可 /c 单独热改：2 更多、0.5 更少、0 不刷。
@@ -151,6 +154,7 @@ function M.ensure_defaults()
         platform_warp_mode = 'stay',      -- 跃迁时飞船去向：'stay'=停留原地继续跑；'home'=瞬移回母星轨道并暂停；'random'=各自随机挑一个星球轨道停靠并暂停
         chat_bubble_enabled = false,      -- 玩家聊天头顶冒对话气泡（默认关）。开：/c storage.chat_bubble_enabled=true
         player_cleanup_hours = 32,        -- 跃迁时清理多少小时没上线的玩家对象（释放蓝图/快捷键等存档膨胀；经验/统计按名字存，不丢）
+        blueprint_warps = 1,              -- 解锁蓝图库/导入/红图所需的跃迁次数（0=进服即解锁；会员/管理员恒解锁不看此值）
     }
     M.scalar_defaults = d   -- 暴露标量默认值（供 /config 命令对比当前 storage 与默认）
     for k, v in pairs(d) do
@@ -158,7 +162,7 @@ function M.ensure_defaults()
     end
     -- 据点【箱子遭遇】出现率的每星球乘数（material/equipment/treasure/perpetual 四类一起乘，【不含】空据点）。
     -- 热改示例：/c storage.loot_planet_mul.gleba = 5
-    storage.loot_planet_mul = storage.loot_planet_mul or {nauvis = 1, vulcanus = 1, fulgora = 2, gleba = 3, aquilo = 4}
+    storage.loot_planet_mul = storage.loot_planet_mul or {nauvis = 1, vulcanus = 1, fulgora = 3, gleba = 3, aquilo = 3}
     -- 各科技瓶【解锁延长跃迁的分钟数】。缺失才补 → 保留管理员 /c 的调整，并自动纳入将来新增的瓶。
     -- 热改示例：/c storage.warp_extend_minutes['cryogenic-science-pack'] = 90
     storage.warp_extend_minutes = storage.warp_extend_minutes or {}
@@ -233,7 +237,7 @@ function M.ensure_defaults()
     for _, key in ipairs({'width_of', 'height_of', 'shape_of', 'exp', 'player_stats', 'platform_age',
                           'ground_tint', 'tile_remap', 'event_world', 'loot_style', 'members',
                           'last_respawn_run', 'move_pos', 'bad_items', 'bad_entities', 'gen_debug', 'warp_vote', 'warp_vote_cost',
-                          'obstacle_remap', 'fluid_remap', 'last_leaderboard', 'market_run', 'respawn_surface', 'chat_bubble', 'enemy_floor', 'action_cd', 'travel_open', 'event_period_min', 'charge', 'star', 'player_class', 'player_class_current', 'class_cd', 'travel_cd', 'vote_cd'}) do
+                          'obstacle_remap', 'fluid_remap', 'last_leaderboard', 'market_run', 'respawn_surface', 'chat_bubble', 'enemy_floor', 'action_cd', 'travel_open', 'event_period_min', 'charge', 'star', 'player_class', 'player_class_current', 'class_cd', 'travel_cd', 'vote_cd', 'session_join'}) do
         storage[key] = storage[key] or {}
     end
     -- world_fx 全局开关（默认开；/c storage.world_fx.xxx=false 单独禁用某事件驱动效果）。

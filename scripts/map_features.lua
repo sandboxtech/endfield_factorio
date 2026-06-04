@@ -578,7 +578,6 @@ local ENCOUNTER_BASE = {material = 0.03, equipment = 0.015, treasure = 0.0075, p
 local function encounter_chance(surface, kind)
     local style = storage.loot_style and storage.loot_style[surface.name]
     local wd = (style and style[kind]) or 0.3
-    -- 箱子遭遇(非 empty)再乘【每星球】乘数 storage.loot_planet_mul（默认 nauvis/vulcanus 1、fulgora 2、gleba 3、aquilo 4；
     -- 事件世界/平台等不在表里 → 1）。空据点(纯敌人)不乘。
     local pm = (kind ~= 'empty') and storage.loot_planet_mul and storage.loot_planet_mul[surface.name] or 1
     return wd * ENCOUNTER_BASE[kind] * (storage.loot_density or 1) * (storage['loot_density_' .. kind] or 1) * pm
