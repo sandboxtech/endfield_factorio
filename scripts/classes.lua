@@ -969,13 +969,19 @@ function M.commit_current(player)
     storage.player_class_current[player.name] = M.selected_key(player)
 end
 
--- 职业【专属解锁】明细：返回当前【有玩家选用、且配了 techs/recipes】的职业列表，
---   每项 {key=, name=, techs={...}, recipes={...}}。谁选了职业看 storage.player_class（持久，含离线）。
+-- 职业【专属解锁】明细：返回当前【有在线玩家选用、且配了 techs/recipes】的职业列表，
+--   每项 {key=, name=, techs={...}, recipes={...}}。
 -- reset 据此开局解锁科技/配方【并按职业广播】"什么职业解锁了什么" → 故按职业分组、不在此处去重。
 function M.active_class_unlocks()
-    -- 按职业 key 统计【选了该职业的玩家人数】(player_class 按玩家名存，含离线)。
+    -- 按职业 key 统计【跃迁此刻在线】且预约了该职业的玩家人数（预约职业 = 本轮生效职业，
+    -- 与 reset 的掷点通报同一匹配口径）。【只数在线】：无限科技按人数叠级（class_tech_stack），
+    -- 若按 player_class 名单累计（含离线/已流失玩家，按名字存、从不清理），等级会随服务器生涯单调爬升。
+    -- 离线成员回归后，下次跃迁自然重新计入；职业预约(player_class)本身不清，回归仍是原职业。
     local count = {}
-    for _, key in pairs(storage.player_class or {}) do count[key] = (count[key] or 0) + 1 end
+    for _, pl in pairs(game.connected_players) do
+        local key = (storage.player_class or {})[pl.name]
+        if key then count[key] = (count[key] or 0) + 1 end
+    end
     local out = {}
     for _, def in ipairs(M.all()) do
         local has = (def.techs and #def.techs > 0) or (def.recipes and #def.recipes > 0)

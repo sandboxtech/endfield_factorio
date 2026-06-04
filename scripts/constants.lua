@@ -86,6 +86,8 @@ function M.ensure_defaults()
         radius_max = 1536,                -- 真实半径上限
         planet_eccentricity = 0.2,        -- 星球椭圆离心系数(原 0.35)：越小越圆，0=全圆。实际 ecc=(rand-rand)×此值，长短轴比最大 (1+e):(1-e)
         edge_noise_start = 0.8,           -- 星球边界噪声起作用的归一化半径：小于它必为陆地(噪声权重 0)，向 1 线性升满 → 内侧不再有虚空噪声洞（调小=洞可更深入，0=旧行为；接近 1=近纯椭圆）
+        spawn_offset_pow = 2,             -- 出生点偏离星球中心的非线性指数 B：归一化距离 = spawn_offset_max×random^B。越大越贴中心；1=线性；<1 偏向外缘
+        spawn_offset_max = 0.5,           -- 出生点偏离星球中心的最大归一化距离（实际还会钳到 edge_noise_start−0.05 以内，保证出生必踩陆地）
         -- 悬崖随机化（surface.random_cliff_mgs，nauvis/vulcanus/fulgora/gleba）：大概率正常微浮动，偏向简单。
         cliff_easy_chance = 0.35,         -- 【稀崖世界】概率：行距×1~3 + 连续度×0.2~1（缺口多更好走）。0=关
         cliff_hard_chance = 0.1,          -- 【密崖世界】概率：行距×0.6~1 + 连续度×1~1.15（温和上限）。0=关
@@ -99,7 +101,7 @@ function M.ensure_defaults()
         day_shape_chance = 0.25,          -- 昼夜占比重塑概率：命中时白天占比在 20%~80% 随机（原版 50%），暮光对称收放；未命中回原版
         territory_cull_max = 0.5,         -- 领地删除率上限 A：每轮删除率 p = A×random^B，新领地生成时按 p 掷骰删除（连巨虫）。0=关
         territory_cull_pow = 2,           -- 领地删除率指数 B：越大 p 越偏 0（大概率几乎不删、小概率删近 A）
-        platform_lifetime = 10,
+        platform_lifetime = 30,
         difficulty = 1,
         debug = true,                     -- 向管理员打印每次世界生成的属性
         prob_ground_tint = 2,             -- 染地世界出现概率乘数（0=关）

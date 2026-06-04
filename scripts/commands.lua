@@ -101,7 +101,8 @@ function M.admin_gen(player)
         if type(entry) == 'table' then for _, l in ipairs(entry) do lines[#lines + 1] = l end end
     end
     if #lines == 0 then lines[1] = {'wn.gen-debug-none'} end
-    gui.show_popup(player, {'wn.gen-debug-header', storage.run or 0}, lines)
+    -- 加宽到 680：资源/气候等单行信息密，380 宽逐行折行很难读
+    gui.show_popup(player, {'wn.gen-debug-header', storage.run or 0}, lines, nil, nil, nil, nil, 680)
 end
 
 -- （玩家加入时由 players.lua 的 on_player_joined_game → gui.show_intro 弹场景简介。）

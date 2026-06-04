@@ -115,7 +115,8 @@ M.POPUP_CLOSE_NAME = POPUP_NAME .. '_close'
 -- buttons_at_bottom：true 时 buttons 放在文本行【之后】（用于教程末尾的"其它按钮"），否则放最前（用于面板导航）。
 -- bottom_buttons（可选）：与 buttons_at_bottom 无关，永远渲染在【所有文本行之后】。用于"顶部导航按钮 + 底部操作按钮"两段式布局
 --   （如角色面板：顶部"查看他人能力"，底部"领取星星"）。
-function M.show_popup(player, title, lines, buttons, buttons_at_bottom, bottom_buttons, columns)
+-- min_width（可选）：滚动区最小宽度，默认 380。宽内容窗口（/gen 生成摘要）传更大值避免逐行折行。
+function M.show_popup(player, title, lines, buttons, buttons_at_bottom, bottom_buttons, columns, min_width)
     if not (player and player.valid) then return end
     local screen = player.gui.screen
     if screen[POPUP_NAME] then screen[POPUP_NAME].destroy() end   -- 重开即替换
@@ -135,7 +136,7 @@ function M.show_popup(player, title, lines, buttons, buttons_at_bottom, bottom_b
     local pane = frame.add{type = 'scroll-pane', direction = 'vertical'}
     -- 高度上限随屏幕自适应：屏幕逻辑高度(物理/缩放) 减标题栏+边距，下限保底 460。长内容(职业面板)更高，短内容仍自适应。
     pane.style.maximal_height = math.max(460, math.floor(player.display_resolution.height / player.display_scale) - 200)
-    pane.style.minimal_width = 380
+    pane.style.minimal_width = min_width or 380
     local function add_buttons(list, cols)
         if not list then return end
         -- cols>1 时按钮放进 table 多列平铺；label 始终单独成行（加到 pane，不进网格）。

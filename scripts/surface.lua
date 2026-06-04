@@ -16,71 +16,97 @@ local function debug_print(msg)
     end
 end
 
+-- autoplace 控制名 → 中文短名（/gen 摘要显示用；不在表内回退原名）。
+local CTRL_CN = {
+    ['iron-ore'] = '铁', ['copper-ore'] = '铜', ['stone'] = '石', ['coal'] = '煤',
+    ['uranium-ore'] = '铀', ['crude-oil'] = '油', ['water'] = '水', ['trees'] = '树',
+    ['rocks'] = '岩', ['enemy-base'] = '虫巢', ['nauvis_cliff'] = '悬崖',
+    ['vulcanus_coal'] = '煤', ['calcite'] = '方解石', ['sulfuric_acid_geyser'] = '硫酸泉',
+    ['tungsten_ore'] = '钨', ['vulcanus_volcanism'] = '火山',
+    ['scrap'] = '废料', ['fulgora_islands'] = '岛屿', ['fulgora_cliff'] = '悬崖',
+    ['gleba_stone'] = '石', ['gleba_water'] = '水', ['gleba_cliff'] = '悬崖',
+    ['gleba_plants'] = '植被', ['gleba_enemy_base'] = '虫巢',
+    ['lithium_brine'] = '锂卤水', ['fluorine_vent'] = '氟喷口', ['aquilo_crude_oil'] = '油',
+}
+local function cn(name) return CTRL_CN[name] or name end
+
 -- 资源档位：丰度/面积/频率各抽一个 1..9 的随机整数 N，乘数 = 1.3^(N-中心) × 全局倍率：
 --   丰度 = 1.3^(N-7) × richness_multiplier；面积 = 1.3^(N-6) × size_multiplier；频率 = 1.3^(N-5) × frequency_multiplier。
 -- 底数用 1.3（不是 2）→ 浮动温和（约 0.27~2.9 倍），避免极端的巨型矿区。
 -- 全局倍率：richness=4（矿更富）、size=frequency=1（大小/数量正常）。
 -- specialty_mult：地方特产额外降低【丰度】（只乘丰度，不动面积/频率）。
+-- 返回 debug 短串"名 丰N面N频N"（档位 1..9，5≈中位），由调用方拼成一行进 /gen。
 local function set_resource(name, mgs, specialty_mult)
     local nr, ns, nf = math.random(1, 9), math.random(1, 9), math.random(1, 9)
     local ac = mgs.autoplace_controls[name]
     ac.richness  = 3 ^ (nr - 7) * storage.richness_multiplier * (specialty_mult or 1)
     ac.size      = 1.5 ^ (ns - 6) * storage.size_multiplier
     ac.frequency = 1.3 ^ (nf - 5) * storage.frequency_multiplier
+    return string.format('%s 丰%d面%d频%d', cn(name), nr, ns, nf)
 end
 
--- 自然要素（水/悬崖/火山/岛屿）。
-local function random_nature_mgs(mgs, name, value)
+-- 自然要素（水/悬崖/火山/岛屿）。dbg_add 可选：传入则上报"自然"类一行。
+local function random_nature_mgs(mgs, name, value, dbg_add)
     if not value then value = 3 end
     local ac = mgs.autoplace_controls[name]
     if not ac then return end
     ac.frequency = util.random_exp(value)
     ac.size      = util.random_exp(value)
     ac.richness  = util.random_exp(value)
+    if dbg_add then dbg_add('自然', string.format('%s 频×%.2f 团×%.2f 量×%.2f', cn(name), ac.frequency, ac.size, ac.richness)) end
 end
 
 -- 水域：frequency/size 保底 0.5，避免 random_exp 抽到极小值（可低至 0.125）导致"缺水世界"。
-local function random_water_mgs(mgs, name, value)
+local function random_water_mgs(mgs, name, value, dbg_add)
     if not value then value = 3 end
     local ac = mgs.autoplace_controls[name]
     if not ac then return end
     ac.frequency = math.max(0.5, util.random_exp(value) + 0.25)
     ac.size      = math.max(0.5, util.random_exp(value))
     ac.richness  = util.random_exp(value) + 0.25
+    if dbg_add then dbg_add('水域', string.format('%s 频×%.2f 团×%.2f 量×%.2f', cn(name), ac.frequency, ac.size, ac.richness)) end
 end
 
 -- 影响难度/节奏的要素（敌人巢穴）：frequency/size 用对数三角分布（值域 [1/spread, spread]，峰在 1）
 -- 拉大世界间虫量差异（有的几乎无虫、有的虫海）；richness 仍 mostly_normal 只小幅浮动。
-local function balance_mgs(mgs, name)
+local function balance_mgs(mgs, name, dbg_add)
     local fsp = storage.enemy_freq_spread or 4   -- frequency 浮动幅度：值域 [1/fsp, fsp]
     local ssp = storage.enemy_size_spread or 4   -- size 浮动幅度：值域 [1/ssp, ssp]
-    mgs.autoplace_controls[name].richness = util.mostly_normal()
-    mgs.autoplace_controls[name].frequency = util.log_tri(fsp) * (storage.enemy_freq_mul or 1)
-    mgs.autoplace_controls[name].size = util.log_tri(ssp) * (storage.enemy_size_mul or 1)
+    local ac = mgs.autoplace_controls[name]
+    ac.richness = util.mostly_normal()
+    ac.frequency = util.log_tri(fsp) * (storage.enemy_freq_mul or 1)
+    ac.size = util.log_tri(ssp) * (storage.enemy_size_mul or 1)
+    if dbg_add then dbg_add('敌巢', string.format('%s 频×%.2f 团×%.2f', cn(name), ac.frequency, ac.size)) end
 end
 
 -- 树/石/植被等纯地貌：本轮密度由整局气质 mood∈[0,1] 连续决定；个体规模走"多半小、偶尔大"曲线
 -- （立方把规模压向小，避免到处大团）。这是【调原生 autoplace】让原生自己长，不是手动 stamp → 排布天然。
-local function nature_by_knob(mgs, name, mood)
+local function nature_by_knob(mgs, name, mood, dbg_add)
     local ac = mgs.autoplace_controls[name]
     if not ac then return end
     ac.frequency = 0.6 + mood * 1.4   -- 下限抬高 → 低繁茂世界也不至于太秃
     ac.size      = 0.3 + mood * 0.6 + (math.random() ^ 3) * 1.3
     ac.richness  = 0.6 + math.random() * 0.8
+    if dbg_add then dbg_add('自然', string.format('%s 频×%.2f 团×%.2f 量×%.2f', cn(name), ac.frequency, ac.size, ac.richness)) end
 end
 
 -- 用命名噪声输入的【偏置】修改原生气候（2.0 干净杠杆：常量数字串即可，运行时无法编译公式）。
 -- 整颗星偏湿/干/冷/热，原生生成器据此自然长出对应草/沙/树/水比例，是"修改原生"而非"覆盖"。
 -- 偏置多半接近 0(≈原版)、偶尔明显 → 寻常世界居多、剧变世界罕见。值必须是字符串。
-local function bias_climate(mgs, knobs)
+local function bias_climate(mgs, knobs, dbg_add)
     mgs.property_expression_names = mgs.property_expression_names or {}
     local pen = mgs.property_expression_names
     local function tri() return math.random() - math.random() end   -- ∈(-1,1)，偏中间
     -- 干湿整体偏湿（基线 +0.12）：多半略湿润，几乎不会强偏干 → 不再"湿度经常太低/满地荒漠"。
-    pen['control:moisture:bias']      = tostring(0.12 + (knobs.verdancy - 0.5) * 0.4)
-    pen['control:aux:bias']           = tostring(tri() * 0.35)                   -- 副维：沙/红沙调色
-    pen['control:temperature:bias']   = tostring(tri() * 12)                     -- 温度：±~12°C 改变生物群系
-    pen['control:moisture:frequency'] = tostring(0.6 + math.random() * 0.9)      -- 生物群系斑块大小(连续)
+    local mb = 0.12 + (knobs.verdancy - 0.5) * 0.4
+    local ab = tri() * 0.35                  -- 副维：沙/红沙调色
+    local tb = tri() * 12                    -- 温度：±~12°C 改变生物群系
+    local mf = 0.6 + math.random() * 0.9     -- 生物群系斑块大小(连续)
+    pen['control:moisture:bias']      = tostring(mb)
+    pen['control:aux:bias']           = tostring(ab)
+    pen['control:temperature:bias']   = tostring(tb)
+    pen['control:moisture:frequency'] = tostring(mf)
+    if dbg_add then dbg_add('气候', string.format('湿%+.2f 副维%+.2f 温%+.0f° 斑块×%.2f', mb, ab, tb, mf)) end
 end
 
 -- "染地世界"调色板：在地面层盖半透明染色精灵，不改地块本身
@@ -394,6 +420,15 @@ script.on_event(defines.events.on_surface_cleared, events.safe('surface_cleared'
     local mgs = surface.map_gen_settings
     mgs.seed = math.random(1, 4294967295)
 
+    -- gen debug【分组】收集（定义在 handler 最前，昼夜/形状/资源各段才都能上报）：按类别归组
+    -- （order 记首次出现序，bycat 存每类多条），供 /gen 弹窗分段显示。渲染时按固定类目顺序排（见下方摘要）。
+    local dbg = {order = {}, bycat = {}}
+    local function dbg_add(cat, text)
+        local g = dbg.bycat[cat]
+        if not g then g = {}; dbg.bycat[cat] = g; dbg.order[#dbg.order + 1] = cat end
+        g[#g + 1] = text
+    end
+
     -- 星球昼夜与气候
     surface.always_day = false
     surface.freeze_daytime = false
@@ -434,9 +469,14 @@ script.on_event(defines.events.on_surface_cleared, events.safe('surface_cleared'
     if not polar and math.random(1, 10) == 1 then
         surface.freeze_daytime = true
         surface.daytime = 0      -- 永昼
+        dbg_add('昼夜', '永昼')
     elseif not polar and math.random(1, 6) == 1 then
         surface.freeze_daytime = true
         surface.daytime = 0.56   -- 永夜
+        dbg_add('昼夜', '永夜')
+    end
+    if surface.solar_power_multiplier < 0.9 or surface.solar_power_multiplier > 1.1 then
+        dbg_add('昼夜', string.format('太阳能×%.2f', surface.solar_power_multiplier))
     end
 
     -- 刷新星球【形状】：基准半径 r → 旋转椭圆（长轴 a、短轴 b、旋转角 angle）+ 噪声粗糙边缘 + 偏心中心。
@@ -454,9 +494,12 @@ script.on_event(defines.events.on_surface_cleared, events.safe('surface_cleared'
     local rough = 0.1 + math.random() ^ 2 * 0.35
     -- 碎度 jag ∈ [0,1] 连续(random^2.5 → 大概率小=平滑、小概率接近 1=很碎，之间平滑过渡)：控制叠加的高频海岸细节占比。
     local jag = math.random() ^ 2.5
-    -- 出生点(地图原点 0,0)不在椭圆正中心：取落在【0.5×椭圆】内的偏移 d，椭圆中心 C = 原点 − d。
-    -- 半径 t 线性 [0,0.5] → 点密度自然偏中心(大概率靠中心、小概率到内椭圆边缘)；spawn 归一化距离 ≤0.5 必是陆地、不会出生在虚空。
-    local t = 0.5 * math.random()
+    -- 出生点(地图原点 0,0)不在椭圆正中心：取落在【omax×椭圆】内的偏移 d，椭圆中心 C = 原点 − d。
+    -- 半径 t = omax×random^B 非线性(B=storage.spawn_offset_pow，默认 2)：B 越大越贴中心；B=1 退回线性；B<1 偏向外缘。
+    -- omax=storage.spawn_offset_max(默认 0.5)，并钳到 edge_noise_start−0.05 以内 → 偏移再大 spawn 也必踩陆地
+    -- (边界噪声只在 edge_noise_start 之外起作用，见 on_chunk_generated)，不会出生在虚空。
+    local omax = math.max(0, math.min(storage.spawn_offset_max or 0.5, (storage.edge_noise_start or 0.8) - 0.05))
+    local t = omax * math.random() ^ (storage.spawn_offset_pow or 2)
     local phi = math.random() * 2 * math.pi
     local su, sv = t * a * math.cos(phi), t * b * math.sin(phi)   -- 主轴系偏移
     local ca, sa = math.cos(angle), math.sin(angle)
@@ -469,24 +512,18 @@ script.on_event(defines.events.on_surface_cleared, events.safe('surface_cleared'
     storage.height_of[surface.name] = b                                              -- 短轴半轴
     storage.shape_of[surface.name] = {rough = rough, seed = math.random(1, 1000000), jag = jag, -- 边缘噪声/碎度
                                       angle = angle, cx = cx, cy = cy}               -- 旋转角 + 偏心中心
-    -- mapgen 区域要罩住【偏心 + 旋转 + 粗糙】后的整椭圆：最远延伸 ≈ a×(1.5+rough)（|偏移|≤0.5a）。
-    local reach = math.ceil(a * (1.5 + rough))
+    -- mapgen 区域要罩住【偏心 + 旋转 + 粗糙】后的整椭圆：最远延伸 ≈ a×(1+omax+rough)（|偏移|≤omax×a）。
+    local reach = math.ceil(a * (1 + omax + rough))
     mgs.width = reach * 2 + 64
     mgs.height = reach * 2 + 64
     mgs.starting_area = 1 + 2 * util.random_exp(2)
 
     -- 本轮整局气质（繁茂/岩石/危险/富庶/异物），与 map_features 共用同一套确定性旋钮 → 全局气质一致。
     local knobs = map_features.knobs()
+    dbg_add('气质', string.format('繁茂%.2f 岩石%.2f 富庶%.2f 危险%.2f 异物%.2f',
+        knobs.verdancy, knobs.rockiness, knobs.riches, knobs.danger, knobs.exotic))
 
     -- 各"世界变体"出现概率都乘以一个 storage 常量(默认 1，可游戏内 /c storage.prob_xxx=N 动态调)。
-    -- gen debug【分组】收集：按类别归组（order 记首次出现序，bycat 存每类多条），
-    -- 供 /gen 弹窗分段显示 + 实时一行汇总。每类可含多条（如 tile 替换多条规则）。
-    local dbg = {order = {}, bycat = {}}
-    local function dbg_add(cat, text)
-        local g = dbg.bycat[cat]
-        if not g then g = {}; dbg.bycat[cat] = g; dbg.order[#dbg.order + 1] = cat end
-        g[#g + 1] = text
-    end
 
     -- 染地世界：小概率出现（诡异世界更可能）。出现时 alpha 走立方曲线 → 大概率温和淡染、
     -- 小概率浓重。先清掉本表面上一轮的染色精灵，再决定本轮是否/如何染。
@@ -595,10 +632,11 @@ script.on_event(defines.events.on_surface_cleared, events.safe('surface_cleared'
         perpetual = math.random() ^ 2,   -- 永续箱遭遇
         empty     = math.random() ^ 2,   -- 空据点遭遇(纯敌人)
     }
-    -- debug 摘要：五类遭遇各自的本世界密度[0,1]。
+    -- debug 摘要：五类遭遇各自的本世界密度（占各自上限的百分比）。
     local ls = storage.loot_style[surface.name]
-    dbg_add('遭遇', string.format('material=%.2f equip=%.2f treasure=%.2f perp=%.2f empty=%.2f',
-        ls.material, ls.equipment, ls.treasure, ls.perpetual, ls.empty))
+    dbg_add('遭遇', string.format('材料%d%% 装备%d%% 宝箱%d%% 永续%d%% 空据%d%%',
+        ls.material * 100 + 0.5, ls.equipment * 100 + 0.5, ls.treasure * 100 + 0.5,
+        ls.perpetual * 100 + 0.5, ls.empty * 100 + 0.5))
 
     -- （飞船残骸 wreck_density 滚定已移除：残骸改由 map_features.feat_outpost 在据点处非线性生成。）
 
@@ -662,34 +700,12 @@ script.on_event(defines.events.on_surface_cleared, events.safe('surface_cleared'
         surface.daytime_parameters = {dusk = bdp.dusk, evening = bdp.evening, morning = bdp.morning, dawn = bdp.dawn}
     end
 
-    -- 悬崖/巨虫领地随机化（须在下方生成摘要定稿之前，dbg_add 才进 /gen 弹窗）：
-    -- 两者都自带门控（CLIFF_BASE 有该星球 / territory units 非空 → 实际只有 Vulcanus），平台已在前面 return。
+    -- 悬崖/巨虫领地随机化：两者都自带门控（CLIFF_BASE 有该星球 / territory units 非空 → 实际只有 Vulcanus），
+    -- 平台已在前面 return。
     random_cliff_mgs(mgs, surface.name, dbg_add)
     random_territory_mgs(mgs, surface.name, dbg_add)
 
-    -- 本表面生成摘要：【始终】缓存进 storage.gen_debug[星球]（与 storage.debug 无关），供 /gen 弹窗查看。
-    -- 缓存为【多行数组】：首行 = 星球+半径+气质旋钮；其后每个变体各占一行（缩进）→ 窗口里逐行换行，不再逗号挤一行。
-    local sh = (storage.shape_of or {})[surface.name] or {}   -- 老存档兜底：索引 nil 表会先崩
-    local head = string.format('%s %dx%d rough=%.2f  verdancy=%.2f rockiness=%.2f riches=%.2f danger=%.2f exotic=%.2f',
-        surface.name, (storage.width_of or {})[surface.name] or 0, (storage.height_of or {})[surface.name] or 0, sh.rough or 0,
-        knobs.verdancy, knobs.rockiness, knobs.riches, knobs.danger, knobs.exotic)
-    local glines = {head}
-    if #dbg.order == 0 then
-        glines[#glines + 1] = '  （普通，无变体）'
-    else
-        for _, cat in ipairs(dbg.order) do
-            local items = dbg.bycat[cat]
-            if #items == 1 then
-                glines[#glines + 1] = '  ' .. cat .. '：' .. items[1]
-            else
-                glines[#glines + 1] = '  ' .. cat .. '：'   -- 多条（如多条 tile 替换规则）分行列出
-                for _, it in ipairs(items) do glines[#glines + 1] = '      └ ' .. it end
-            end
-        end
-    end
-    storage.gen_debug[surface.name] = glines
-
-    -- 生成摘要【不再实时刷屏】给管理员；随时用 /gen 弹窗查看（已缓存进 storage.gen_debug）。
+    -- 生成摘要【不再实时刷屏】给管理员；随时用 /gen 弹窗查看（缓存进 storage.gen_debug，见下方 cfg 块之后）。
     -- 仅在 debug 模式下把无效 tile 名【一次性】提示管理员（拼错预警；INVALID_REPORTED 保证整局只报一次）。
     if storage.debug and not INVALID_REPORTED and #INVALID_TILES > 0 then
         INVALID_REPORTED = true
@@ -699,17 +715,45 @@ script.on_event(defines.events.on_surface_cleared, events.safe('surface_cleared'
     -- 按 PLANET_GEN 配置生成各星球资源/自然/气候（飞船平台等不在表内 → 跳过）。
     local cfg = PLANET_GEN[surface.name]
     if cfg then
-        if cfg.peaceful then surface.peaceful_mode = math.random(1, constants.balance.peaceful_one_in) == 1 end
-        for _, res in ipairs(cfg.res or {}) do set_resource(res, mgs) end
-        for _, sp in ipairs(cfg.specialty or {}) do
-            set_resource(sp[1], mgs, storage.local_specialty_multiplier * sp[2])
+        if cfg.peaceful then
+            surface.peaceful_mode = math.random(1, constants.balance.peaceful_one_in) == 1
+            if surface.peaceful_mode then dbg_add('敌巢', '宁和模式（虫不主动攻击）') end
         end
-        for _, w in ipairs(cfg.water or {}) do random_water_mgs(mgs, w) end
-        for _, n in ipairs(cfg.nature or {}) do random_nature_mgs(mgs, n) end
-        for _, kn in ipairs(cfg.knob or {}) do nature_by_knob(mgs, kn[1], knobs[kn[2]]) end
-        for _, b in ipairs(cfg.balance or {}) do balance_mgs(mgs, b) end
-        if cfg.climate then bias_climate(mgs, knobs) end
+        local res_dbg = {}   -- 各资源档位短串拼一行（多种资源 │ 分隔，比逐条分行紧凑）
+        for _, res in ipairs(cfg.res or {}) do res_dbg[#res_dbg + 1] = set_resource(res, mgs) end
+        for _, sp in ipairs(cfg.specialty or {}) do
+            res_dbg[#res_dbg + 1] = set_resource(sp[1], mgs, storage.local_specialty_multiplier * sp[2])
+        end
+        if #res_dbg > 0 then dbg_add('资源', table.concat(res_dbg, ' │ ')) end
+        for _, w in ipairs(cfg.water or {}) do random_water_mgs(mgs, w, nil, dbg_add) end
+        for _, n in ipairs(cfg.nature or {}) do random_nature_mgs(mgs, n, nil, dbg_add) end
+        for _, kn in ipairs(cfg.knob or {}) do nature_by_knob(mgs, kn[1], knobs[kn[2]], dbg_add) end
+        for _, b in ipairs(cfg.balance or {}) do balance_mgs(mgs, b, dbg_add) end
+        if cfg.climate then bias_climate(mgs, knobs, dbg_add) end
     end
+
+    -- 本表面生成摘要：【始终】缓存进 storage.gen_debug[星球]（与 storage.debug 无关），供 /gen 弹窗查看。
+    -- 放在 handler 末尾 = 所有随机段（昼夜/形状/变体/资源/气候/悬崖/巨虫）都已上报完。
+    -- 多行数组：首行 = 星球 + 半轴尺寸 + 形状参数；其后每类一行（多条的分行缩进），类目按固定顺序排。
+    local head = string.format('%s %d×%d  粗糙%.2f 离心%.2f 碎度%.2f 起始区×%.1f',
+        surface.name, a, b, rough, ecc, jag, mgs.starting_area)
+    local glines = {head}
+    local CAT_ORDER = {'气质', '昼夜', '气候', '资源', '水域', '自然', '敌巢', '悬崖', '巨虫',
+                       '遭遇', '染地', '地表', '障碍', '喷口', '事件'}
+    local cats, seen = {}, {}
+    for _, c in ipairs(CAT_ORDER) do if dbg.bycat[c] then cats[#cats + 1] = c; seen[c] = true end end
+    for _, c in ipairs(dbg.order) do if not seen[c] then cats[#cats + 1] = c end end   -- 新类目兜底：按首次出现序排在最后
+    if #cats == 0 then glines[#glines + 1] = '  （普通，无变体）' end
+    for _, cat in ipairs(cats) do
+        local items = dbg.bycat[cat]
+        if #items == 1 then
+            glines[#glines + 1] = '  ' .. cat .. '：' .. items[1]
+        else
+            glines[#glines + 1] = '  ' .. cat .. '：'   -- 多条（如多条 tile 替换规则）分行列出
+            for _, it in ipairs(items) do glines[#glines + 1] = '      └ ' .. it end
+        end
+    end
+    storage.gen_debug[surface.name] = glines
 
     surface.map_gen_settings = mgs
     -- 市场不在这里放（出生区块此刻尚未生成）：改由下方 on_chunk_generated 在出生区块自然生成时惰性放置，
