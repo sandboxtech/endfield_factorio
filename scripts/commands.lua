@@ -163,7 +163,7 @@ add_admin_command('delrecipe', '管理员：从开局解锁清单移除配方 /d
 
 -- 参数 diff（合并了原 /ensuredefaults + /config）：先跑一次 M.ensure_all（补默认/必需表/职业表/战利品权重 + 清废弃键/修类型，
 -- 迁移），再弹窗对比【当前 storage】与【默认值】、改过的高亮。仅标量常量(constants.scalar_defaults)；
--- 表型(travel_chance/event_types…)不在此列。只弹给本人、不公告。
+-- 表型(travel_chance/loot_planet_mul…)不在此列。只弹给本人、不公告。
 function M.admin_diff(player)
     if not (player and player.admin) then return end
     M.ensure_all()

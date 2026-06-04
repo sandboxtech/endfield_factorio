@@ -56,8 +56,6 @@ local M = {
         -- 源天然自限（find 只命中该星球实际存在的障碍），目标跨类/跨星球 → 概率可放高，不会误伤。
         obstacle_remap = {base = 0.60},               -- 统一障碍互换世界出现率（树/石/遗迹/冰山/叠层岩跨类，噪声门控）
         fluid_remap    = {base = 0},                  -- 流体资源互换世界【已禁用】(原 0.24)：base=0 → 该世界变体永不触发(对所有存档即时生效)。恢复改回 0.24。
-        -- 出现率 = base；选中哪种事件按 weights 加权(缺省 1)，drones/tech 更低 → 无人机/科技世界更罕见
-        event       = {base = 0.1, weights = {drones = 0.3, tech = 0.3}},
         -- tile 替换内部权重
         tile_mask_all      = 0.45,   -- mask 取 all(整片) 的概率，否则 noise/tree/rock/ore
         tile_to_exotic     = 0.3,    -- noise mask 下目标取 exotic(岩浆/油海/氨海/虚空) 的概率（全星统一，母星不额外加成）
@@ -109,7 +107,6 @@ function M.ensure_defaults()
         prob_tile_remap = 3,              -- tile 替换世界
         prob_obstacle_remap = 1,          -- 障碍换障碍世界（0=关）
         prob_fluid_remap = 1,             -- 流体资源互换世界（0=关）
-        prob_event = 1,                   -- 事件世界出现概率乘数
         replicant_chance = 0.5,           -- 复制虫：玩家建筑被虫破坏时，按此概率原地冒新虫（全局，world_fx 开关另控）
         nest_coin = 6,                    -- 杀死虫巢掉落的金币数（开关：0=不掉金币）。可 /c storage.nest_coin=N 热改
         -- 玩家方杀虫巢触发"获得随机科技"的概率：每轮 reset 在 [min,max] 内随机滚定本世界值（存 storage.nest_tech_chance）。
@@ -138,11 +135,6 @@ function M.ensure_defaults()
         -- 世界荣誉榜（reset 跃迁结算记录、功能菜单查看）：
         hall_of_fame_enabled   = true,     -- 总开关：false=不再记录新世界、功能菜单隐藏荣誉榜按钮（已有记录保留不删）
         hall_of_fame_max       = 30,       -- 最大保留条数（按全员带走经验排序，超出裁掉队尾）
-        event_chance = 0.5,               -- 每分钟【全服】发生一次世界事件的固定概率（与人数无关；命中后随机挑 1 名玩家）
-        -- 科技世界(事件世界的一种)：每次从所有科技随机抽一个
-        tech_world_lose_chance = 0.125,    -- 抽中【已研究】科技时，失去它的概率
-        tech_world_gain_chance = 0.1,      -- 抽中【未研究】科技时，研究它的概率（调低：免费解锁科技更少）
-        event_intensity = 1,              -- 每分钟事件的落点数
         tile_remap_rules = 6,             -- tile 替换世界最多几条规则
         -- 跃迁计时（全部可 /c storage.xxx 热改、持久、多人同步）：
         warp_initial_minutes = 30,        -- 每轮开局跃迁倒计时（分钟）
@@ -257,9 +249,9 @@ function M.ensure_defaults()
     -- 必需表（累积数据 / 每星球状态 / 运行时缓存），缺失则建空表。
     -- 这是所有 storage 表的【唯一出生地】，各模块不再各自 `storage.x = storage.x or {}`，统一在此补齐。
     for _, key in ipairs({'width_of', 'height_of', 'shape_of', 'exp', 'player_stats', 'platform_age',
-                          'ground_tint', 'tile_remap', 'event_world', 'loot_style', 'members',
+                          'ground_tint', 'tile_remap', 'loot_style', 'members',
                           'last_respawn_run', 'move_pos', 'bad_items', 'bad_entities', 'gen_debug', 'warp_vote', 'warp_vote_cost',
-                          'obstacle_remap', 'fluid_remap', 'last_leaderboard', 'market_run', 'respawn_surface', 'chat_bubble', 'enemy_floor', 'action_cd', 'travel_open', 'event_period_min', 'charge', 'star', 'player_class', 'player_class_current', 'class_cd', 'travel_cd', 'vote_cd', 'session_join',
+                          'obstacle_remap', 'fluid_remap', 'last_leaderboard', 'market_run', 'respawn_surface', 'chat_bubble', 'enemy_floor', 'action_cd', 'travel_open', 'charge', 'star', 'player_class', 'player_class_current', 'class_cd', 'travel_cd', 'vote_cd', 'session_join',
                           -- 补登记（原先散落在各模块 or {} 自建；标量和有专属 ensure 的键不在此列——classes/loot/loot_weights/market_prices 由各自 ensure 用 `or` 初始化，先建空表会让它们永不填充）：
                           'enemy_floor2', 'outposts', 'outpost_of', 'pending_chest_tags', 'bad_loot_cats', 'respawn_home', 'class_names',
                           'hall_of_fame', 'base_ticks_per_day', 'base_daytime_params', 'territory_cull', 'loot_noise'}) do
@@ -270,20 +262,6 @@ function M.ensure_defaults()
     storage.world_fx = storage.world_fx or {}
     for _, fx in ipairs({'replicant'}) do
         if storage.world_fx[fx] == nil then storage.world_fx[fx] = true end
-    end
-    -- 每分钟"事件世界"各类型开关（false=不再被滚到/触发）。运行时也可 /c storage.event_types.xxx=true/false。
-    -- 默认值存 storage.event_defaults，可运行时 /c storage.event_defaults.xxx=true/false 改【初始启用状态】，
-    -- 之后新播种的键按改后默认生效（已播种的当前世界开关仍走 event_types）。coinfall(金币雨) 默认禁用。
-    storage.event_types = storage.event_types or {}
-    storage.event_defaults = storage.event_defaults or {}
-    local builtin_event_defaults = {
-        raid = false, meteor = false, supply = true, coinfall = false,
-        drones = true, barrage = true, tech = true}
-    for et, on in pairs(builtin_event_defaults) do
-        if storage.event_defaults[et] == nil then storage.event_defaults[et] = on end
-    end
-    for et, on in pairs(storage.event_defaults) do
-        if storage.event_types[et] == nil then storage.event_types[et] = on end
     end
 end
 

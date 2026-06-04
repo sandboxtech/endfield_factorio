@@ -668,35 +668,6 @@ script.on_event(defines.events.on_surface_cleared, events.safe('surface_cleared'
     end
 
 
-    -- 事件世界：每分钟触发一种事件（独立于危险度，奖励/危险皆有）。详见 tick.lua run_world_events。
-    --   raid 空降虫 / meteor 矿石陨石雨 / supply 物资空投 / coinfall 金币雨 / drones 无人机来袭 / barrage 重炮落点 / tech 科技 / thunder 雷暴。
-    --   注：thunder(雷暴星球)不走每分钟机制，由 tick.lua 的独立 on_tick 每 tick 小概率对该星球玩家直接劈闪电。
-    storage.event_world[surface.name] = nil
-    if math.random() < constants.balance.event.base * prob('event') then
-        -- 只从【已启用】的事件类型里【按权重】滚（false 排除；权重见 balance.event.weights，缺省 1，drones 更低 → 更罕见）
-        local weights = constants.balance.event.weights or {}
-        local pool, total = {}, 0
-        for _, et in ipairs({'raid', 'meteor', 'supply', 'coinfall', 'drones', 'barrage', 'tech', 'thunder'}) do
-            if (storage.event_types or {})[et] ~= false then   -- nil/true 启用，仅显式 false 排除（整表 =nil 也安全，不崩）
-                local w = weights[et] or 1
-                pool[#pool + 1] = {et = et, w = w}
-                total = total + w
-            end
-        end
-        if total > 0 then
-            local r, acc = math.random() * total, 0
-            for _, e in ipairs(pool) do
-                acc = acc + e.w
-                if r <= acc then
-                    storage.event_world[surface.name] = e.et
-                    if e.et == 'thunder' then storage.thunder_run = storage.run end   -- O(1) 标记：tick 的雷暴 handler 免每帧扫表
-                    dbg_add('事件', e.et)
-                    break
-                end
-            end
-        end
-    end
-
     -- 战利品风格：四类箱子(钢=材料/铁=设备/木=宝箱/永续)各自【独立】的本世界密度，分布 = random()^2：
     -- 大概率低密度(箱子少)、小概率高密度(遍地)，四者互不相关。箱子外观=内容含义已固定，不再随机选箱体。
     -- 据点地砖：本星本轮从【人造地砖】滚两种——enemy_floor 普通据点用、enemy_floor2 永续据点专用（取不同的一种以作区分）。
@@ -829,7 +800,7 @@ script.on_event(defines.events.on_surface_cleared, events.safe('surface_cleared'
         surface.name, a, b, rough, ecc, jag, mgs.starting_area)
     local glines = {head}
     local CAT_ORDER = {'气质', '昼夜', '气候', '资源', '水域', '自然', '敌巢', '悬崖', '巨虫',
-                       '遭遇', '染地', '地表', '障碍', '喷口', '事件'}
+                       '遭遇', '染地', '地表', '障碍', '喷口'}
     local cats, seen = {}, {}
     for _, c in ipairs(CAT_ORDER) do if dbg.bycat[c] then cats[#cats + 1] = c; seen[c] = true end end
     for _, c in ipairs(dbg.order) do if not seen[c] then cats[#cats + 1] = c end end   -- 新类目兜底：按首次出现序排在最后

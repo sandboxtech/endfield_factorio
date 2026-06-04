@@ -330,9 +330,6 @@ function M.reset()
         tech.level = math.min(tech.prototype.max_level, lvl)
     end
 
-    -- （科技世界已并入事件世界：tech 现作为事件类型之一，由 surface.lua 的事件世界 roll 按星球抽中、
-    --   tick.lua 的 run_world_events 按事件机制每分钟触发，不再这里单独全局 roll。）
-
     -- 跃迁倒计时重置为初始值（storage.warp_initial_minutes 分钟，可 /c 热改）；研究科技瓶科技按
     -- storage.warp_extend_minutes 各自延长。内部以小时记账，故 /60。
     storage.warp_hours = (storage.warp_initial_minutes or 10) / 60
