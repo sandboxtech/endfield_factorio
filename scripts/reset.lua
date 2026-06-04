@@ -115,10 +115,11 @@ function M.reset()
     storage.last_leaderboard = summaries
     storage.last_leaderboard_run = storage.run - 1   -- 这份排行属于【刚结束的那个世界】(run 上面已 +1，故 -1)
 
-    -- 清理长期不活跃玩家（3 天没上线）：删除其玩家对象，释放蓝图/快捷键等存档膨胀。
+    -- 清理长期不活跃玩家（storage.player_cleanup_hours 小时没上线，默认 32，可 /c 热改）：
+    -- 删除其玩家对象，释放蓝图/快捷键等存档膨胀。
     -- 经验/统计按【名字】存储（player_stats / science_exp），删玩家不动这些数据；
     -- 玩家用同名回归时自动继承。
-    local INACTIVE_TICKS = 3 * 86400 * 60   -- 3 天（1 天 = 86400 秒 × 60 tick）
+    local INACTIVE_TICKS = (storage.player_cleanup_hours or 32) * constants.hour_to_tick
     local stale = {}
     for _, player in pairs(game.players) do
         if not player.connected and (game.tick - player.last_online) > INACTIVE_TICKS then

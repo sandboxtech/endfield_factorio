@@ -253,11 +253,11 @@ function M.travel(player, planet)
     local gmet, _, gcur, greq = classes.planet_gate(player, planet)   -- 星球瓶门槛（服务端校验，防绕过灰按钮）
     if not gmet then player.print({'wn.planet-locked-msg', planet, greq, gcur}); return end
     if not (storage.travel_open and storage.travel_open[planet]) then
-        player.print({'wn.travel-fail-closed', planet, math.floor(((storage.travel_chance or {})[planet] or 0.5) * 100)})
+        player.print({'wn.travel-fail-closed', util.planet_name(planet), math.floor(((storage.travel_chance or {})[planet] or 0.5) * 100)})
         return
     end
     if not player.character then player.print({'wn.travel-no-char'}); return end
-    if not game.surfaces[planet] then player.print({'wn.travel-not-generated', planet}); return end
+    if not game.surfaces[planet] then player.print({'wn.travel-not-generated', util.planet_name(planet)}); return end
     if not travel_inventories_empty(player) then
         player.print({'wn.travel-clear-first'})
         return
@@ -267,7 +267,7 @@ function M.travel(player, planet)
     storage.respawn_surface = storage.respawn_surface or {}   -- 老存档兜底：ensure_defaults 没补到也不崩
     storage.respawn_surface[player.name] = planet   -- 前往后，该星球成为默认复活星球
     mark_action(player, 'travel_cd')
-    game.print({'wn.travel-notice', player.name, planet})
+    game.print({'wn.travel-notice', player.name, planet, util.planet_name(planet)})
 end
 
 -- 自杀脱困：死后在当前星球留尸、回复活星球(默认母星)复活（见 players.lua kill_player）。
@@ -351,6 +351,7 @@ local function member_grant_cmd(command)
     if not target then return end
     if is_member(target) then sink.print({'wn.member-already', target.name}); return end
     storage.members[target.name] = true
+    players.update_blueprint_perm(target)   -- 会员直通蓝图/红图：授予即解锁，不等跃迁次数
     game.print({'wn.member-granted', target.name})
 end
 
@@ -365,6 +366,7 @@ local function member_revoke_cmd(command)
     storage.members = storage.members or {}
     if not storage.members[target.name] then sink.print({'wn.member-not', target.name}); return end
     storage.members[target.name] = nil
+    players.update_blueprint_perm(target)   -- 撤销会员后按跃迁次数重新判定蓝图权限
     game.print({'wn.member-revoked', target.name})
 end
 
@@ -470,7 +472,7 @@ function M.set_home_planet(player, planet)
     if not gmet then player.print({'wn.planet-locked-msg', planet, greq, gcur}); return end
     storage.respawn_surface = storage.respawn_surface or {}
     storage.respawn_surface[player.name] = planet
-    player.print({'wn.home-set', planet})
+    player.print({'wn.home-set', planet, util.planet_name(planet)})
     gui.show_actions(player)   -- 重开功能弹窗 → 当前出生星球按钮标 ✓
 end
 

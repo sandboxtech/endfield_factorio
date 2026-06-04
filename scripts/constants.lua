@@ -149,6 +149,8 @@ function M.ensure_defaults()
 
         roboport_limit = 10000,           -- 单个机器人网络最多 roboport 数，超出则摧毁刚放的并退还
         platform_warp_mode = 'stay',      -- 跃迁时飞船去向：'stay'=停留原地继续跑；'home'=瞬移回母星轨道并暂停；'random'=各自随机挑一个星球轨道停靠并暂停
+        chat_bubble_enabled = false,      -- 玩家聊天头顶冒对话气泡（默认关）。开：/c storage.chat_bubble_enabled=true
+        player_cleanup_hours = 32,        -- 跃迁时清理多少小时没上线的玩家对象（释放蓝图/快捷键等存档膨胀；经验/统计按名字存，不丢）
     }
     M.scalar_defaults = d   -- 暴露标量默认值（供 /config 命令对比当前 storage 与默认）
     for k, v in pairs(d) do

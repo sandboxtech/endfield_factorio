@@ -3,6 +3,13 @@ local constants = require('scripts.constants')
 
 local M = {}
 
+-- 星球的【本地化名】(localised string)：按每个玩家自己的语言显示官方译名（中文=新地星/祝融星/句芒星/雷神星/玄冥星）。
+-- 用作 wn.* 消息的【文本】参数；[img=space-location/x] 图标参数仍须传内部名。原型缺失兜底内部名。
+function M.planet_name(planet)
+    local p = game.planets and game.planets[planet]
+    return p and p.prototype.localised_name or planet
+end
+
 -- 剩余 ticks → (整数小时, 整数分钟)；负数按 0。倒计时统一显示"X 小时 Y 分钟"，不要小数小时。
 function M.hm(ticks)
     local t = math.max(0, ticks)

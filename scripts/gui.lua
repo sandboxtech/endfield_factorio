@@ -207,7 +207,7 @@ function M.show_actions(player)
             if not met then tip = {'wn.planet-need-pack', '[img=item/' .. pack .. ']', req, cur}   -- 瓶不够：显示需求
             elseif open[p] then tip = {'wn.act-travel-tip'}
             else tip = {'wn.travel-closed', math.floor((tc[p] or 0.5) * 100)} end
-            buttons[#buttons + 1] = {name = 'wn_act_travel_' .. p, caption = {'wn.act-travel', p}, tags = {wn_travel = p},
+            buttons[#buttons + 1] = {name = 'wn_act_travel_' .. p, caption = {'wn.act-travel', p, util.planet_name(p)}, tags = {wn_travel = p},
                 enabled = (open[p] or false) and met,   -- 需本轮开放【且】瓶达标
                 tooltip = tip}
         end
@@ -218,7 +218,7 @@ function M.show_actions(player)
     for _, p in ipairs(constants.PLANETS) do
         local met, pack, cur, req = classes.planet_gate(player, p)   -- 出生星球同样要瓶门槛
         buttons[#buttons + 1] = {name = 'wn_act_home_' .. p,
-            caption = {p == home and 'wn.act-home-cur' or 'wn.act-home', p}, tags = {wn_home = p},
+            caption = {p == home and 'wn.act-home-cur' or 'wn.act-home', p, util.planet_name(p)}, tags = {wn_home = p},
             enabled = met,
             tooltip = met and {'wn.act-home-tip'} or {'wn.planet-need-pack', '[img=item/' .. pack .. ']', req, cur}}
     end

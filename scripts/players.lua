@@ -144,10 +144,11 @@ local function blueprint_locked_group()
     return g
 end
 
--- 按玩家 warps 把其分到 受限组 / Default 组。管理员永不受限。
+-- 按玩家 warps 把其分到 受限组 / Default 组。管理员永不受限；【会员】(storage.members) 直接解锁，无需跃迁次数。
 local function update_blueprint_perm(player)
     if not (player and player.valid) then return end
-    local unlocked = player.admin or passives.get_stat(player.index, 'warps') >= BLUEPRINT_WARPS
+    local unlocked = player.admin or (storage.members or {})[player.name]
+                     or passives.get_stat(player.index, 'warps') >= BLUEPRINT_WARPS
     local g = unlocked and game.permissions.get_group('Default') or blueprint_locked_group()
     if g then player.permission_group = g end
 end
@@ -330,8 +331,10 @@ end)
 
 -- 玩家聊天 → 头顶冒【对话气泡】，跟随角色、约 10 秒后自动淡出（compi-speech-bubble 的 lifetime 处理，无需手动定时）。
 -- 连发会先销毁上一个气泡，避免叠加。无角色(旁观/未生成)不冒。文本截断防刷屏。
+-- 开关 storage.chat_bubble_enabled（默认 false 关闭，可 /c 热改）。
 local CHAT_BUBBLE_TICKS = 600   -- 气泡寿命（10 秒 = 600 tick）
 script.on_event(defines.events.on_console_chat, events.safe('chat_bubble', function(event)
+    if not storage.chat_bubble_enabled then return end
     if not (event.player_index and event.message) then return end
     local player = game.get_player(event.player_index)
     local char = player and player.character
