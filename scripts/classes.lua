@@ -848,7 +848,7 @@ local DEFAULT_CLASSES = {
         {pack = 'promethium-science-pack', item = 'bioflux',     groups = 10},
     }},
     {key = 'herder', recipes = {   -- 由原 techs 转换而来(科技自带的解锁配方)
-        'pentapod-egg', 'nutrients-from-bioflux',
+        'pentapod-egg', 'nutrients-from-bioflux', 'biochamber'
     }, name = '牧民', full = FULL_MID, starter = {
         {item = 'pentapod-egg', count = 1},
         {item = 'biochamber', count = 1},
@@ -858,6 +858,7 @@ local DEFAULT_CLASSES = {
 
     {key = 'fisher', recipes = {   -- 由原 techs 转换而来(科技自带的解锁配方)
         'fish-breeding', 'nutrients-from-fish',
+        'copper-bacteria-cultivation', 'iron-bacteria-cultivation',
     }, name = '渔夫', full = FULL_LOW, starter = {
         {item = 'raw-fish', groups = 1},
         {item = 'biochamber', count = 1},
@@ -865,7 +866,10 @@ local DEFAULT_CLASSES = {
         {pack = 'space-science-pack', item = 'raw-fish',  groups = 10},
         {pack = 'agricultural-science-pack', item = 'raw-fish',  groups = 10},
         {pack = 'promethium-science-pack', item = 'raw-fish',  groups = 10},
+        {pack = 'agricultural-science-pack', item = 'iron-bacteria',  groups = 2},
+        {pack = 'agricultural-science-pack', item = 'copper-bacteria',  groups = 2},
     }},
+
     {key = 'farmer', recipes = {   -- 由原 techs 转换而来(科技自带的解锁配方)
         'agricultural-tower', 'nutrients-from-spoilage', 'jellynut-processing', 'yumako-processing',
     }, name = '农民', full = FULL_MID, starter = {
@@ -900,16 +904,15 @@ local DEFAULT_CLASSES = {
         {pack = 'agricultural-science-pack', item = 'jellynut',  groups = 10},
         {pack = 'agricultural-science-pack', item = 'jelly',     groups = 10},
     }},
-    {key = 'pharmacist', recipes = {   -- 由原 techs 转换而来(科技自带的解锁配方)
-        'nutrients-from-bioflux', 'copper-bacteria-cultivation', 'iron-bacteria-cultivation',
-    }, name = '培养员', full = FULL_MID, starter = {
-        {item = 'biochamber', groups = 1},
-    }, unlock = {{pack = 'agricultural-science-pack', level = 100}}, rewards = {
-        {pack = 'agricultural-science-pack', item = 'iron-bacteria',  groups = 2},
-        {pack = 'agricultural-science-pack', item = 'copper-bacteria',  groups = 2},
-        {pack = 'agricultural-science-pack', item = 'bioflux',     groups = 40},
-    }},
-
+    -- {key = 'pharmacist', recipes = {   -- 由原 techs 转换而来(科技自带的解锁配方)
+    --     'nutrients-from-bioflux', 'copper-bacteria-cultivation', 'iron-bacteria-cultivation',
+    -- }, name = '培养员', full = FULL_MID, starter = {
+    --     {item = 'biochamber', groups = 1},
+    -- }, unlock = {{pack = 'agricultural-science-pack', level = 100}}, rewards = {
+    --     {pack = 'agricultural-science-pack', item = 'iron-bacteria',  groups = 2},
+    --     {pack = 'agricultural-science-pack', item = 'copper-bacteria',  groups = 2},
+    --     {pack = 'agricultural-science-pack', item = 'bioflux',     groups = 40},
+    -- }},
 }
 
 -- 纯数据深拷贝（DEFAULT_CLASSES 无函数/元表，递归即可）。

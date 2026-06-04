@@ -257,6 +257,75 @@ local function pick_target(src, mask)
     return rand_tile(pick_natural_class(src.class))
 end
 
+-- 各星球悬崖【基线】（抄自原版 planet-map-gen.lua，2.0.76 核实；aquilo 无悬崖不在表内）。
+-- 每轮以"基线×倍率"【绝对值】写入 cliff_settings，不在上一轮结果上累乘（否则逐轮复利跑飞）。
+-- 只动 cliff_elevation_interval(行距，反比于 GUI 频率) 和 richness(连续度)；
+-- name/control/cliff_elevation_0/cliff_smoothing 不碰（fulgora 的 elevation_0=80 与海岸线耦合，smoothing=0 是悬崖正确放置的前提）。
+local CLIFF_BASE = {
+    nauvis   = {interval = 40,  richness = 1},      -- interval/richness 原型未显式给 → 引擎默认 40 / 1
+    vulcanus = {interval = 120, richness = 1},      -- 注意：vulcanus 悬崖没有 autoplace control，这是它唯一的悬崖杠杆
+    fulgora  = {interval = 40,  richness = 0.95},
+    gleba    = {interval = 60,  richness = 0.80},
+}
+
+-- 悬崖随机化：大概率正常微浮动，偏向简单（稀疏=行距拉大+连续度打折→缺口多好走），小概率温和加密。
+-- 概率 storage 可调：cliff_easy_chance(默认 0.35)/cliff_hard_chance(默认 0.1)，0=该分支不出现。
+local function random_cliff_mgs(mgs, sname, dbg_add)
+    local base = CLIFF_BASE[sname]
+    local cs = base and mgs.cliff_settings
+    if not cs then return end
+    local r = math.random()
+    local imul, rmul, tag
+    if r < (storage.cliff_easy_chance or 0.35) then
+        imul = 1 + math.random() * 2          -- 行距 ×1~3（崖排更稀）
+        rmul = 0.2 + math.random() * 0.8      -- 连续度 ×0.2~1（缺口更多）
+        tag = '稀'
+    elseif r < (storage.cliff_easy_chance or 0.35) + (storage.cliff_hard_chance or 0.1) then
+        imul = 0.6 + math.random() * 0.4      -- 行距 ×0.6~1（崖排略密）
+        rmul = 1 + math.random() * 0.15       -- 连续度 ×1~1.15（温和上限，不会离谱难）
+        tag = '密'
+    else
+        imul = 0.85 + math.random() * 0.3     -- 正常 ±15% 微浮动
+        rmul = 0.9 + math.random() * 0.2
+    end
+    cs.cliff_elevation_interval = base.interval * imul
+    cs.richness = base.richness * rmul
+    if tag then dbg_add('悬崖', string.format('%s 行距×%.2f 连续度×%.2f', tag, imul, rmul)) end
+end
+
+-- 巨虫领地随机化（territory_settings.units 非空才生效 → 实际只有 Vulcanus）：
+-- 大概率原版三档，其余全是【偏简单】变体（从不更难）。概率 storage 可调（见 ensure_defaults）。
+-- 机制（2.0.76 prototype 文档核实）：minimum_territory_size=低于此区块数的领地直接删除（设超大=全图无巨虫，纯数字最安全）；
+-- territory_variation_expression 的结果会被 clamp 进 units 数组下标 → 缩短 units 即封顶巨虫档次。
+local function random_territory_mgs(mgs, sname, dbg_add)
+    local ts = mgs.territory_settings
+    if not (ts and ts.units and #ts.units > 0) then return end
+    -- 每轮先回到原版基线（units 子集化/巨大 minimum 是破坏性修改，读到的是上一轮的结果）
+    ts.units = {'small-demolisher', 'medium-demolisher', 'big-demolisher'}
+    -- 领地门槛：每轮在 [10, storage.min_territory_size] 均匀随机（原版 10；不足门槛区块数的领地被引擎删除 → 门槛越高巨虫越稀）。
+    ts.minimum_territory_size = math.random(10, math.max(10, storage.min_territory_size or 120))
+    -- 领地【删除率】：每轮 p = territory_cull_max × random^territory_cull_pow（默认 0.5×r²，偏 0：大概率几乎不删、
+    -- 小概率删近半），存进 storage.territory_cull[星球]，on_territory_created 按 p 对每个新领地掷骰删除（连巨虫一起）。
+    storage.territory_cull = storage.territory_cull or {}   -- 老存档兜底
+    local cull = (storage.territory_cull_max or 0.5) * math.random() ^ (storage.territory_cull_pow or 2)
+    storage.territory_cull[sname] = cull
+    dbg_add('巨虫', string.format('领地门槛=%d 删除率=%.0f%%', ts.minimum_territory_size, cull * 100))
+    local r = math.random()
+    local none_c  = storage.demolisher_none_chance or 0.15
+    local small_c = storage.demolisher_small_chance or 0.2
+    local mid_c   = storage.demolisher_mid_chance or 0.15
+    if r < none_c then
+        ts.minimum_territory_size = 4294967295   -- 所有领地都小于它 → 全删 → 无巨虫
+        dbg_add('巨虫', '无')
+    elseif r < none_c + small_c then
+        ts.units = {'small-demolisher'}          -- variation 自动 clamp → 全图只刷小型
+        dbg_add('巨虫', '仅小型')
+    elseif r < none_c + small_c + mid_c then
+        ts.units = {'small-demolisher', 'medium-demolisher'}
+        dbg_add('巨虫', '小+中')
+    end
+end
+
 -- 各星球【资源/自然/气候】声明式配置（替代原先每星球一段 if 链）。逐字段含义：
 --   res       普通资源名列表（用全局倍率，set_resource 默认 specialty_mult=1）
 --   specialty {资源名, 额外丰度系数}：丰度再乘 local_specialty_multiplier × 系数（地方特产压低）
@@ -563,6 +632,41 @@ script.on_event(defines.events.on_surface_cleared, events.safe('surface_cleared'
         dbg_add('喷口', rule.p and string.format('p=%.2f', rule.p) or 'noise')
     end
 
+    -- 昼夜随机化（每次世界生成都执行；基线首次读到时缓存原版值，每轮【绝对值】写入，不逐轮复利）：
+    -- ① 昼夜长短：ticks_per_day = 基线 × A^(t³)，t∈(-1,1) 均匀，A=storage.day_len_spread(默认 8)。
+    --    t³ 强烈偏 0 → 大概率 ≈1×(一半世界在 ±30% 内)，小概率逼近 A 或 1/A(约 7% 超 5×/快于 1/5)。
+    storage.base_ticks_per_day = storage.base_ticks_per_day or {}   -- 老存档兜底
+    local btpd = storage.base_ticks_per_day[surface.name] or surface.ticks_per_day
+    storage.base_ticks_per_day[surface.name] = btpd
+    local dt = math.random() * 2 - 1
+    local dmul = (storage.day_len_spread or 8) ^ (dt * dt * dt)
+    surface.ticks_per_day = math.max(60, math.floor(btpd * dmul + 0.5))
+    if dmul > 1.5 or dmul < 1 / 1.5 then dbg_add('昼夜', string.format('一天长度 ×%.2f', dmul)) end
+    -- ② 昼夜占比：小概率(storage.day_shape_chance，默认 0.25)重塑 daytime_parameters——
+    --    白天半宽 hd∈[0.1,0.4](原版 0.25) → 白天占比 20%~80%；暮光占夜侧 40%~90%(原版 80%)，对称构造，
+    --    天然满足引擎的严格顺序校验 dusk<evening<morning<dawn。必须整表一次写入(改返回表的单字段无效)。
+    --    未命中则回写基线——上一轮可能改过，必须每轮归位。
+    storage.base_daytime_params = storage.base_daytime_params or {}   -- 老存档兜底
+    local bdp = storage.base_daytime_params[surface.name]
+    if not bdp then
+        local p = surface.daytime_parameters
+        bdp = {dusk = p.dusk, evening = p.evening, morning = p.morning, dawn = p.dawn}
+        storage.base_daytime_params[surface.name] = bdp
+    end
+    if math.random() < (storage.day_shape_chance or 0.25) then
+        local hd = 0.1 + math.random() * 0.3
+        local ev = hd + (0.5 - hd) * (0.4 + math.random() * 0.5)
+        surface.daytime_parameters = {dusk = hd, evening = ev, morning = 1 - ev, dawn = 1 - hd}
+        dbg_add('昼夜', string.format('白天占比 %.0f%%', hd * 200))
+    else
+        surface.daytime_parameters = {dusk = bdp.dusk, evening = bdp.evening, morning = bdp.morning, dawn = bdp.dawn}
+    end
+
+    -- 悬崖/巨虫领地随机化（须在下方生成摘要定稿之前，dbg_add 才进 /gen 弹窗）：
+    -- 两者都自带门控（CLIFF_BASE 有该星球 / territory units 非空 → 实际只有 Vulcanus），平台已在前面 return。
+    random_cliff_mgs(mgs, surface.name, dbg_add)
+    random_territory_mgs(mgs, surface.name, dbg_add)
+
     -- 本表面生成摘要：【始终】缓存进 storage.gen_debug[星球]（与 storage.debug 无关），供 /gen 弹窗查看。
     -- 缓存为【多行数组】：首行 = 星球+半径+气质旋钮；其后每个变体各占一行（缩进）→ 窗口里逐行换行，不再逗号挤一行。
     local sh = (storage.shape_of or {})[surface.name] or {}   -- 老存档兜底：索引 nil 表会先崩
@@ -611,6 +715,16 @@ script.on_event(defines.events.on_surface_cleared, events.safe('surface_cleared'
     -- 市场不在这里放（出生区块此刻尚未生成）：改由下方 on_chunk_generated 在出生区块自然生成时惰性放置，
     -- 避免强制生成区块。chart 同理改到出生区块生成后（见 on_chunk_generated 母星分支）。
     -- 初始世界(on_init 首轮)的出生区块是场景预生成的、不会自然重生 → 首轮无市场，这是预期行为、不补。
+end))
+
+-- 巨虫领地生成时按本轮删除率掷骰删除（destroy 连守卫巨虫一起删）：
+-- 删除率 storage.territory_cull[星球] 由 random_territory_mgs 每轮滚定（默认 0.5×random²，偏 0）；
+-- 表/值缺失（老存档、首轮未滚定、非 Vulcanus）→ 不删，行为同原版。
+script.on_event(defines.events.on_territory_created, events.safe('territory_created', function(event)
+    local t = event.territory
+    if not (t and t.valid) then return end
+    local p = storage.territory_cull and storage.territory_cull[t.surface.name]
+    if p and math.random() < p then t.destroy() end
 end))
 
 -- 圆形地图：超出半径的格子全部铺成虚空。
