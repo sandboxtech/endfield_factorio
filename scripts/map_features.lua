@@ -514,24 +514,6 @@ local function spawn_perpetual_chest(surface, pos)
     return chest   -- 返回无限箱实体（供据点登记；与铁/钢/木箱一致）
 end
 
--- 给【非虫子类】敌人(炮塔/地雷等；排除 worm/虫巢/虫)脚下铺一小块【随机矩形】地砖 floor。
--- floor 由调用方决定（空据点传 nil=不铺；普通箱传本星地砖；永续传第二种地砖）。矩形大小随机、中心≈实体位置。
--- 实体在区块边缘时，跨到未生成相邻区块的那部分会被 set_tiles 静默丢弃（无所谓）。
-local function enemy_floor_patch(surface, ent, floor)
-    if not floor then return end                       -- 不传地砖 → 不铺（空据点）
-    if not (ent and ent.valid) then return end
-    -- 虫子类(虫巢/虫/沙虫) 与 地雷 都不铺（地雷铺了会暴露陷阱）。
-    if ent.type == 'unit-spawner' or ent.type == 'unit' or ent.type == 'land-mine'
-        or string.find(ent.name, 'worm', 1, true) then return end
-    local cx, cy = math.floor(ent.position.x), math.floor(ent.position.y)
-    local rw, rh = math.random(1, 3), math.random(1, 3)   -- 半宽/半高随机 → 矩形大小随机
-    local tiles = {}
-    for dx = -rw, rw do
-        for dy = -rh, rh do tiles[#tiles + 1] = {name = floor, position = {cx + dx, cy + dy}} end
-    end
-    surface.set_tiles(tiles)
-end
-
 -- 把炮塔弹药一次性【加满】：按 堆叠数 × 槽数 插入，多余自动丢弃。
 --   gun-turret 用 turret_ammo 槽、artillery-turret 用 artillery_turret_ammo 槽；ammo 为 nil 则跳过。
 -- count 省略=加满所有弹槽；指定则只塞该数量（如核弹少量）。
@@ -645,27 +627,18 @@ local function pave_for_placement(surface, pos, floor, half)
 end
 
 -- 据点奖励箱：按种类放一个箱并填充。material/equipment/treasure = 普通可拆箱(destructible=false 不受伤、仍可手拆收取)；perpetual = 无限箱。
--- pave=true(本据点命中强制铺地)：find 失败时先铺 floor 地砖再重试（仍失败则原地硬放，create 失败由下游兜住）。
-local function place_reward_chest(surface, pos, kind, floor, pave)
+-- 中心区已由 place_encounter 在箱组开工前【统一预铺一次】（省掉每箱重复 set_tiles）；
+-- 这里只留兜底救援：个别箱仍挤不下时小铺一次再重试（仍失败则原地硬放，create 失败由下游兜住）。
+local function place_reward_chest(surface, pos, kind, floor)
     if kind == 'perpetual' then
-        -- 永续箱反正要铺 7×7 氛围地（spawn_perpetual_chest 内）→ 先铺后找位，不依赖 pave 掷骰。
-        pave_for_placement(surface, pos, floor or (storage.enemy_floor2 and storage.enemy_floor2[surface.name]), 3)
         local p = surface.find_non_colliding_position('steel-chest', pos, 4, 1) or pos
         return spawn_perpetual_chest(surface, p)
     end
     local chest_name = (kind == 'equipment' and 'iron-chest') or (kind == 'treasure' and 'wooden-chest') or 'steel-chest'
-    local p
-    if floor then
-        -- 有地板的据点 → 必铺式：先铺 5×5 再找位（同永续箱），不依赖 pave 掷骰。
+    local p = surface.find_non_colliding_position(chest_name, pos, 4, 1)
+    if not p and floor then
         pave_for_placement(surface, pos, floor)
         p = surface.find_non_colliding_position(chest_name, pos, 4, 1) or pos
-    else
-        -- 无地板（理论上仅 enemy_floor 表缺该表面时）→ 保留救援式。
-        p = surface.find_non_colliding_position(chest_name, pos, 4, 1)
-        if not p and pave then
-            pave_for_placement(surface, pos, floor)
-            p = surface.find_non_colliding_position(chest_name, pos, 4, 1) or pos
-        end
     end
     if not p then return false end
     local chest = surface.create_entity{name = chest_name, force = 'player', position = p}
@@ -690,7 +663,7 @@ local BONUS_MACHINES = {
     'electric-furnace', 'assembling-machine-3', 'recycler', 'foundry',
     'electromagnetic-plant', 'cryogenic-plant', 'biolab',
 }
--- 给实体脚下铺据点地板：盖住碰撞盒 +1 圈（彩蛋建筑/插件塔用；守卫另有 enemy_floor_patch 随机小矩形）。
+-- 给实体脚下铺据点地板：盖住碰撞盒 +1 圈（彩蛋建筑/插件塔用；守卫的地板由必铺式预铺 5×5 提供）。
 local function pave_under(surface, ent, floor)
     if not (floor and prototypes.tile[floor] and ent and ent.valid) then return end
     local bb = ent.bounding_box
@@ -895,7 +868,6 @@ local function place_guards(surface, center, danger, floor, no_electric, pave, p
             end
             if gsp then
                 local e = surface.create_entity{name = name, force = 'enemy', position = gsp, direction = math.random(0, 3) * 4, quality = roll_quality(0.7)}
-                enemy_floor_patch(surface, e, floor)
                 if e then
                     if def.name ~= 'land-mine' then guards[#guards + 1] = e end   -- 地雷是被动陷阱、不计入"守卫全灭"
                     if def.electric and core and core.eei then
@@ -1016,8 +988,15 @@ local function place_encounter(surface, lt)
     local riches_mul = 0.5 + W.riches         -- 富庶世界箱更多（knob=0.5 时×1，范围约 0.5~1.5）
     local danger_mul = 0.5 + W.danger         -- 危险世界守卫更猛（同上）
 
+    -- 遭遇【空间聚簇】噪声：本世界一张低频噪声按区块调制所有遭遇出现率（amp 小≈均匀，大→敌占区/安全区成片；
+    -- 每区块只采样一次，6 类共用）。噪声均值 0 → 全图平均密度基本不变。
+    local nmul = 1
+    local ln = storage.loot_noise and storage.loot_noise[surface.name]
+    if ln and (ln.amp or 0) > 0.05 then
+        nmul = math.max(0, 1 + ln.amp * noise.fractal(noise.octaves.smooth, ccx, ccy, ln.seed))
+    end
     for _, e in ipairs(ENCOUNTERS) do
-        if math.random() <= encounter_chance(surface, e.kind) then   -- 命中此遭遇（用全局 RNG，不再坐标哈希 → 随运行状态/人数/时间变，每局每次不可预测）
+        if math.random() <= encounter_chance(surface, e.kind) * nmul then   -- 命中此遭遇（用全局 RNG，不再坐标哈希 → 随运行状态/人数/时间变，每局每次不可预测）
             -- 强制铺地掷骰（storage.outpost_pave_prob，默认 0.5）：现仅作用于【空据点】守卫的救援铺地；
             -- 有地板的据点（普通箱/永续/传说建筑）的箱/守卫/核心/建筑一律【必铺式】（先铺后放、失败回滚）。
             local pave = math.random() < (storage.outpost_pave_prob or 0.5)
@@ -1031,8 +1010,10 @@ local function place_encounter(surface, lt)
                 machine = place_bonus_machine(surface, center, floor)
                 if not machine then return end   -- 必铺后仍放不下（罕见）→ 本遭遇放弃
             elseif e.kind ~= 'empty' then
+                -- 整组箱子开工前【统一预铺一次】7×7（替代旧的每箱各铺：省 N−1 次 set_tiles）。
+                if floor then pave_for_placement(surface, center, floor, 3) end
                 for _ = 1, math.floor((1 + 11 * math.random() ^ (storage.chest_count_pow or 3) * riches_mul)) do
-                    local c = place_reward_chest(surface, center, e.kind, floor, pave)
+                    local c = place_reward_chest(surface, center, e.kind, floor)
                     if c then chests[#chests + 1] = c end
                 end
             end

@@ -261,7 +261,7 @@ function M.ensure_defaults()
                           'obstacle_remap', 'fluid_remap', 'last_leaderboard', 'market_run', 'respawn_surface', 'chat_bubble', 'enemy_floor', 'action_cd', 'travel_open', 'event_period_min', 'charge', 'star', 'player_class', 'player_class_current', 'class_cd', 'travel_cd', 'vote_cd', 'session_join',
                           -- 补登记（原先散落在各模块 or {} 自建；标量和有专属 ensure 的键不在此列——classes/loot/loot_weights/market_prices 由各自 ensure 用 `or` 初始化，先建空表会让它们永不填充）：
                           'enemy_floor2', 'outposts', 'outpost_of', 'pending_chest_tags', 'bad_loot_cats', 'respawn_home', 'class_names',
-                          'hall_of_fame', 'base_ticks_per_day', 'base_daytime_params', 'territory_cull'}) do
+                          'hall_of_fame', 'base_ticks_per_day', 'base_daytime_params', 'territory_cull', 'loot_noise'}) do
         storage[key] = storage[key] or {}
     end
     -- world_fx 全局开关（默认开；/c storage.world_fx.xxx=false 单独禁用某事件驱动效果）。

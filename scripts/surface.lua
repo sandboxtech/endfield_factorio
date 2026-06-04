@@ -500,16 +500,20 @@ script.on_event(defines.events.on_surface_cleared, events.safe('surface_cleared'
     -- ── 形状【统一距离场】连续参数：每项强度 = 上限 × random()³ → 大概率很小、小概率拉满
     --    （任意中间值/组合都合法 = 形状空间里的连续插值）。低于【跳过阈值】的强度直接归中性值，
     --    区块端按中性零开销跳过该项计算（见 on_chunk_generated）。──
-    -- 超椭圆指数 n = 2 + 三角³×2，钳 [1.3,4]：偏离强烈偏 0。|n−2|<0.15 视觉无差 → 吸附回 2（走 sqrt 快路径）。
-    local se_n = math.max(1.3, math.min(4, 2 + (math.random() - math.random()) ^ 3 * 2))
+    -- 超椭圆指数 n = 2 + 三角³（正侧×4 → 最高 6 近矩形；负侧×0.7 → 最低 1.3 菱形，无截断堆积）。
+    -- |n−2|<0.15 视觉无差 → 吸附回 2（走 sqrt 快路径）。
+    local t3 = (math.random() - math.random()) ^ 3
+    local se_n = 2 + (t3 > 0 and t3 * 4 or t3 * 0.7)
     if math.abs(se_n - 2) < 0.15 then se_n = 2 end
-    -- 花瓣振幅 pa = 0.25×r³（<0.02 跳过）：边界半径 ×(1 + pa·cos(pk·θ + pph)) → 三叶草/海星大陆。
-    local pa, pk, pph = 0.25 * math.random() ^ 3, 0, 0
+    -- 花瓣振幅 pa = 0.25×r³（<0.02 跳过）：边界半径 ×(1 + pa·cos(pk·θ + pph + 螺旋项))。
+    -- 瓣数 pk：1=蛋形偏心、2=花生/扁豆、3~7=花瓣海星；螺旋 sp(35% 附加)：相位随径向扭转 → 旋臂海岸。
+    local pa, pk, pph, sp = 0.25 * math.random() ^ 3, 0, 0, 0
     if pa < 0.02 then
         pa = 0
     else
-        pk = math.random(3, 7)                 -- 瓣数
+        pk = math.random(1, 7)
         pph = math.random() * 2 * math.pi
+        if math.random() < 0.35 then sp = 0.5 + math.random() * 1.5 end
     end
     -- 双叶融合：第二瓣半径 = 0.55×r³（<0.08 跳过=无第二瓣），中心距均匀 0.55~0.95；smin 平滑并入。
     local b2
@@ -538,6 +542,14 @@ script.on_event(defines.events.on_surface_cleared, events.safe('surface_cleared'
     -- 环礁内洞 = 0.45×r³，且洞缘必须离出生点留余量（≤ t−0.12，出生偏移小就成不了洞）；<0.05 跳过。
     local hole = math.min(0.45 * math.random() ^ 3, t - 0.12)
     if hole < 0.05 then hole = 0 end
+    -- 月牙缺口 = 0.5×r³ 半径的圆形【咬除】（<0.1 跳过）：中心压在边缘带、且离出生点留足余量 → 中心恒实心。
+    local bite
+    local br = 0.5 * math.random() ^ 3
+    if br >= 0.1 then
+        local bd = math.max(0.95, t + 0.15 + br) + math.random() * 0.15
+        local bpsi2 = math.random() * 2 * math.pi
+        bite = {u = math.cos(bpsi2) * bd, v = math.sin(bpsi2) * bd, r = br}
+    end
     -- 老存档兜底：ensure_defaults 没补到也不崩（索引 nil 表会先崩，必须在写入点保证表存在）。
     storage.width_of, storage.height_of, storage.shape_of =
         storage.width_of or {}, storage.height_of or {}, storage.shape_of or {}
@@ -545,14 +557,15 @@ script.on_event(defines.events.on_surface_cleared, events.safe('surface_cleared'
     storage.height_of[surface.name] = b                                              -- 短轴半轴
     storage.shape_of[surface.name] = {rough = rough, seed = math.random(1, 1000000), jag = jag, -- 边缘噪声/碎度
                                       angle = angle, cx = cx, cy = cy,               -- 旋转角 + 偏心中心
-                                      n = se_n, pa = pa, pk = pk, pph = pph,         -- 超椭圆 + 花瓣
-                                      b2 = b2, hole = hole, warp = warp, wseed = wseed}   -- 双叶/环礁/域扭曲
+                                      n = se_n, pa = pa, pk = pk, pph = pph, sp = sp, -- 超椭圆 + 花瓣/螺旋
+                                      b2 = b2, hole = hole, warp = warp, wseed = wseed, bite = bite}   -- 双叶/环礁/域扭曲/月牙
     -- /gen：形状变体一行（全中性=纯椭圆则不报）。
     local sparts = {}
     if se_n ~= 2 then sparts[#sparts + 1] = string.format('超椭圆n=%.1f', se_n) end
-    if pa > 0 then sparts[#sparts + 1] = string.format('花瓣%d×%.2f', pk, pa) end
+    if pa > 0 then sparts[#sparts + 1] = string.format('%s%d×%.2f', sp > 0 and '螺旋瓣' or '花瓣', pk, pa) end
     if b2 then sparts[#sparts + 1] = '双叶' end
     if hole > 0 then sparts[#sparts + 1] = string.format('环礁%.2f', hole) end
+    if bite then sparts[#sparts + 1] = string.format('月牙%.2f', bite.r) end
     if warp > 0 then sparts[#sparts + 1] = string.format('扭曲%.2f', warp) end
     if #sparts > 0 then dbg_add('形状', table.concat(sparts, ' ')) end
     -- mapgen 区域要罩住【偏心 + 旋转 + 粗糙 + 形状外扩】后的整体：
@@ -679,11 +692,16 @@ script.on_event(defines.events.on_surface_cleared, events.safe('surface_cleared'
         empty     = math.random() ^ 2,   -- 空据点遭遇(纯敌人)
         machine   = math.random() ^ 2,   -- 传说生产建筑据点
     }
+    -- 遭遇【空间聚簇】噪声：amp = random²×0.9（多半近均匀、偶尔强聚簇成"敌占区/安全区"）。
+    -- map_features.place_encounter 按区块中心采样低频噪声调制全部 6 类出现率。
+    storage.loot_noise = storage.loot_noise or {}   -- 老存档兜底
+    storage.loot_noise[surface.name] = {seed = math.random(1, 1000000), amp = math.random() ^ 2 * 0.9}
     -- debug 摘要：五类遭遇各自的本世界密度（占各自上限的百分比）。
     local ls = storage.loot_style[surface.name]
-    dbg_add('遭遇', string.format('材料%d%% 装备%d%% 宝箱%d%% 永续%d%% 空据%d%% 机器%d%%',
+    dbg_add('遭遇', string.format('材料%d%% 装备%d%% 宝箱%d%% 永续%d%% 空据%d%% 机器%d%% 聚簇±%d%%',
         ls.material * 100 + 0.5, ls.equipment * 100 + 0.5, ls.treasure * 100 + 0.5,
-        ls.perpetual * 100 + 0.5, ls.empty * 100 + 0.5, ls.machine * 100 + 0.5))
+        ls.perpetual * 100 + 0.5, ls.empty * 100 + 0.5, ls.machine * 100 + 0.5,
+        storage.loot_noise[surface.name].amp * 100 + 0.5))
 
     -- （飞船残骸 wreck_density 滚定已移除：残骸改由 map_features.feat_outpost 在据点处非线性生成。）
 
@@ -859,6 +877,8 @@ script.on_event(defines.events.on_chunk_generated, events.safe('chunk_generated'
     -- 统一距离场参数（缺省=中性值=纯椭圆，老存档自动退化为原行为）。
     local se_n = (sh and sh.n) or 2                              -- 超椭圆指数
     local pa, pk, pph = (sh and sh.pa) or 0, (sh and sh.pk) or 0, (sh and sh.pph) or 0   -- 花瓣
+    local sp = (sh and sh.sp) or 0                               -- 螺旋相位（花瓣的径向扭转）
+    local bite = sh and sh.bite                                  -- 月牙咬除 {u,v,r}（主轴系归一化）
     local b2 = sh and sh.b2                                      -- 双叶 {u,v,r}（主轴系归一化）
     local hole = (sh and sh.hole) or 0                           -- 环礁内洞半径（归一化）
     local warp, wseed = (sh and sh.warp) or 0, (sh and sh.wseed) or 0   -- 域扭曲
@@ -881,8 +901,17 @@ script.on_event(defines.events.on_chunk_generated, events.safe('chunk_generated'
     local ny = (ly <= cy and hy >= cy) and 0 or math.min(math.abs(ly - cy), math.abs(hy - cy))
     local far, near = fx * fx + fy * fy, nx * nx + ny * ny
 
-    if far <= (bmin * inner) ^ 2 and (hole == 0 or near >= (amax * hole * 1.35) ^ 2) then
-        -- 整块在内切圆内（且整块在内洞噪声带之外）→ 必为陆地，跳过
+    -- 月牙快判：整块离咬除圆足够远才允许"必为陆地"跳过（咬除圆世界坐标 + 保守半径）。
+    local bite_clear = true
+    if bite then
+        local bwx = cx + (bite.u * a) * ca - (bite.v * b) * sa
+        local bwy = cy + (bite.u * a) * sa + (bite.v * b) * ca
+        local bnx = (lx <= bwx and hx >= bwx) and 0 or math.min(math.abs(lx - bwx), math.abs(hx - bwx))
+        local bny = (ly <= bwy and hy >= bwy) and 0 or math.min(math.abs(ly - bwy), math.abs(hy - bwy))
+        bite_clear = (bnx * bnx + bny * bny) >= (amax * bite.r * (1 + rough)) ^ 2
+    end
+    if far <= (bmin * inner) ^ 2 and (hole == 0 or near >= (amax * hole * 1.35) ^ 2) and bite_clear then
+        -- 整块在内切圆内（且在内洞噪声带、月牙咬除圆之外）→ 必为陆地，跳过
     elseif near >= (amax * outer) ^ 2 then
         -- 整块在外接圆外 → 必在椭圆外，整块铺虚空 + 跳过所有细节（map_features/市场/tile替换 对纯虚空块无用；染地已在最前画过）。
         local tiles = {}
@@ -914,12 +943,17 @@ script.on_event(defines.events.on_chunk_generated, events.safe('chunk_generated'
                 local d
                 if se_n == 2 then d = math.sqrt(nu * nu + nv * nv)   -- 纯椭圆走 sqrt 快路径
                 else d = (math.abs(nu) ^ se_n + math.abs(nv) ^ se_n) ^ (1 / se_n) end   -- 超椭圆
-                if pa > 0 then d = d / (1 + pa * math.cos(pk * math.atan2(nv, nu) + pph)) end   -- 花瓣调制
+                if pa > 0 then d = d / (1 + pa * math.cos(pk * math.atan2(nv, nu) + pph + sp * d * 6.2832)) end   -- 花瓣调制（sp>0 时相位随径向扭转=螺旋）
                 if b2 then   -- 双叶：第二瓣圆形距离场，多项式 smin(k=0.25) 平滑并集
                     local du, dv = nu - b2.u, nv - b2.v
                     local d2 = math.sqrt(du * du + dv * dv) / b2.r
                     local hsm = math.max(0, 1 - math.abs(d - d2) / 0.25)
                     d = math.min(d, d2) - 0.0625 * hsm * hsm
+                end
+                if bite then   -- 月牙咬除：圆内强制虚空（SDF 取 max → 咬除边缘同样吃 rough 噪声）
+                    local du2, dv2 = nu - bite.u, nv - bite.v
+                    local db = math.sqrt(du2 * du2 + dv2 * dv2) / bite.r
+                    if 2 - db > d then d = 2 - db end
                 end
                 local void = false
                 if rough > 0.01 and d > nstart then   -- d ≤ nstart 必为陆地，噪声都不用算
