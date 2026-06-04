@@ -156,8 +156,12 @@ function M.show_popup(player, title, lines, buttons, buttons_at_bottom, bottom_b
                 if b.min_width then
                     btn.style.minimal_width = b.min_width                 -- 【最小宽】（可随内容/列宽伸展）：玩家列表用，像职业但允许加宽
                     btn.style.horizontally_stretchable = true
+                    btn.style.horizontal_align = 'left'   -- 列表按钮文字左对齐（图标/名字逐行对齐，好扫读）
+                    btn.style.left_padding = 12           -- 左侧留白，别贴着按钮边
                 elseif cols and cols > 1 then
-                    btn.style.width = 220   -- 网格按钮统一【固定】宽(非最小宽)：英文长短不一也强制对齐、加宽防截断
+                    btn.style.width = b.width or 220   -- 网格按钮统一【固定】宽(非最小宽)：英文长短不一也强制对齐、加宽防截断；b.width 可按钮级覆盖（职业 6 列用窄按钮）
+                    btn.style.horizontal_align = 'left'   -- 网格按钮（职业/前往星球等）同样左对齐
+                    btn.style.left_padding = 12           -- 左侧留白，别贴着按钮边
                 end
             end
         end
@@ -360,12 +364,12 @@ function M.show_classes(player)
         end
         -- 未解锁 → 按钮置灰(enabled=false，不可点)，但 tooltip 仍显示解锁条件。
         buttons[#buttons + 1] = {name = 'wn_act_class_' .. def.key,
-            caption = caption,
+            caption = caption, width = 180,   -- 6 列平铺用窄按钮（默认网格 220）
             tooltip = tip, enabled = classes.unlocked(player, def), tags = {wn_class = def.key}}
         end
     end
     -- 顶部自带说明（buttons_at_bottom=true → 说明在上、职业按钮在下）。
-    M.show_popup(player, {'wn.class-title'}, {{'wn.class-help'}}, buttons, true, nil, 3)   -- 职业按钮 3 列平铺
+    M.show_popup(player, {'wn.class-title'}, {{'wn.class-help'}}, buttons, true, nil, 6)   -- 职业按钮 6 列平铺
 end
 
 function M.close_popup(player)

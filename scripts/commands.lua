@@ -393,7 +393,7 @@ add_command('kickout', {'wn.kickout-help'}, member_kick_cmd)
 function M.show_stats(player)
     if not player then return end
     if #game.connected_players <= 1 then return M.show_stats_of(player, player) end   -- 只有自己在线：跳过列表，直接看自己的面板
-    local STATS_BTN_MIN_W = 360   -- 玩家条目按钮最小宽（像职业按钮，但用最小宽可随表伸展，整窗更宽更整齐）
+    local STATS_BTN_MIN_W = 240   -- 玩家条目按钮最小宽（像职业按钮，但用最小宽可随表伸展，整窗更宽更整齐；4 列后调窄，实际宽随内容伸展）
     local buttons = {
         {name = 'wn_stats_view_self', caption = {'wn.stats-view-self'}, tags = {wn_stats_view = player.name}, min_width = STATS_BTN_MIN_W},  -- 最上方：查看自己（name 固定唯一，避免与列表里自己那项重名崩溃；路由靠 tags）
         {newrow = true},   -- 分隔线：自己 / 其他在线玩家
@@ -409,7 +409,7 @@ function M.show_stats(player)
             caption = {'wn.stats-entry', p.name, p.locale, planet, cname, lv, stars}, tags = {wn_stats_view = p.name},
             min_width = STATS_BTN_MIN_W}
     end
-    gui.show_popup(player, {'wn.stats-title'}, {}, buttons, nil, nil, 2)   -- 2 列平铺成更宽的表
+    gui.show_popup(player, {'wn.stats-title'}, {}, buttons, nil, nil, 4)   -- 4 列平铺成更宽的表
 end
 
 -- 看某玩家的详细统计（顶部说明 + 人物等级 + 三能力 + 6 项战绩）；底部【返回】回到玩家列表。
@@ -572,7 +572,7 @@ function M.give_star(player, target_name, stars)
     game.print({'wn.star-given', player.name, n, target.name})
 end
 -- /givestar <玩家> <星星>：转星星给他人（用原始注册、不走公告包装；give_star 自身已全服广播）。
-commands.add_command('givestar', '把星星转给其他玩家：/givestar <玩家> <星星>', function(command)
+commands.add_command('givestar', {'wn.givestar-help'}, function(command)
     local player = command.player_index and game.get_player(command.player_index)
     if not player then return end
     local name, n = string.match(command.parameter or '', '^%s*(%S+)%s+(%S+)')

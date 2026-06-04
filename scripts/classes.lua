@@ -53,10 +53,9 @@ local DEFAULT_CLASSES = {
         {item = 'automation-science-pack',   count = 1},
         {item = 'car', count = 1},
         {item = 'nuclear-fuel', groups = 1},
+        {item = 'coin', count = 1},
     }, rewards = {
-        {pack = 'automation-science-pack', item = 'nuclear-fuel',   groups = 10, full = FULL_LOW},
-        {pack = 'space-science-pack', item = 'nuclear-fuel',   groups = 10, full = FULL_MAX},
-        {pack = 'promethium-science-pack', item = 'nuclear-fuel',   groups = 10, full = FULL_MAX},
+        {pack = 'automation-science-pack', item = 'coin',   count = 100, full = FULL_MID},
     }},
 
     {key = 'afker', techs = {
@@ -290,9 +289,9 @@ local DEFAULT_CLASSES = {
     {key = 'moduler', recipes = {   -- 由原 techs 转换而来(科技自带的解锁配方)
         'beacon',
     }, techs = {'modules'}, name = '插件工人', full = FULL_MID, starter = {
-        {item = 'beacon', count = 10},
-        {item = 'speed-module', count = 10},
-        {item = 'efficiency-module', count = 10},
+        {item = 'beacon', groups = 10},
+        {item = 'speed-module-2', groups = 1},
+        {item = 'efficiency-module-2', groups = 1},
     }, unlock = {{pack = 'production-science-pack', level = 10}}, rewards = {
         {pack = 'production-science-pack', item = 'beacon', groups = 10, full = FULL_LOW},
         {pack = 'space-science-pack', item = 'beacon', groups = 10, full = FULL_MID},
@@ -301,6 +300,7 @@ local DEFAULT_CLASSES = {
         {pack = 'metallurgic-science-pack',     item = 'speed-module-2', groups = 5, full = FULL_MID},
         {pack = 'electromagnetic-science-pack',     item = 'quality-module-2', groups = 5, full = FULL_MID},
         {pack = 'agricultural-science-pack', item = 'efficiency-module-2', groups = 5, full = FULL_MID},
+        {pack = 'cryogenic-science-pack', item = 'quality-module-2', groups = 5, full = FULL_MID},
     }},
 
     {key = 'qualityman', recipes = {   -- 由原 techs 转换而来(科技自带的解锁配方)
