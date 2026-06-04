@@ -848,13 +848,12 @@ local DEFAULT_CLASSES = {
         {pack = 'promethium-science-pack', item = 'bioflux',     groups = 10},
     }},
     {key = 'herder', recipes = {   -- 由原 techs 转换而来(科技自带的解锁配方)
-        'capture-robot-rocket', 'biter-egg', 'nutrients-from-biter-egg',
+        'pentapod-egg', 'nutrients-from-bioflux',
     }, name = '牧民', full = FULL_MID, starter = {
         {item = 'pentapod-egg', count = 1},
         {item = 'biochamber', count = 1},
     }, unlock = {{pack = 'agricultural-science-pack', level = 100}}, rewards = {
-        {pack = 'agricultural-science-pack', item = 'bioflux',     groups = 10},
-        {pack = 'agricultural-science-pack', item = 'capture-robot-rocket',     groups = 10},
+        {pack = 'agricultural-science-pack', item = 'bioflux',     groups = 40},
     }},
 
     {key = 'fisher', recipes = {   -- 由原 techs 转换而来(科技自带的解锁配方)
@@ -868,9 +867,8 @@ local DEFAULT_CLASSES = {
         {pack = 'promethium-science-pack', item = 'raw-fish',  groups = 10},
     }},
     {key = 'farmer', recipes = {   -- 由原 techs 转换而来(科技自带的解锁配方)
-        'agricultural-tower', 'nutrients-from-spoilage', 'jellynut-processing', 'iron-bacteria', 'yumako-processing',
-        'copper-bacteria',
-    }, name = '农民', full = FULL_MAX, starter = {
+        'agricultural-tower', 'nutrients-from-spoilage', 'jellynut-processing', 'yumako-processing',
+    }, name = '农民', full = FULL_MID, starter = {
         {item = 'yumako-seed', groups = 2},
         {item = 'jellynut-seed', groups = 2},
         {item = 'agricultural-tower', count = 1},
@@ -882,7 +880,7 @@ local DEFAULT_CLASSES = {
     }},
     {key = 'forester', recipes = {   -- 由原 techs 转换而来(科技自带的解锁配方)
         'wood-processing',
-    }, name = '护林员', full = FULL_MAX, starter = {
+    }, name = '护林员', full = FULL_MID, starter = {
         {item = 'wood', groups = 2},
         {item = 'tree-seed', groups = 2},
         {item = 'agricultural-tower', count = 1},
@@ -893,8 +891,7 @@ local DEFAULT_CLASSES = {
         {pack = 'promethium-science-pack', item = 'landfill',       groups = 10, full = FULL_MAX},
     }},
     {key = 'chef', recipes = {   -- 由原 techs 转换而来(科技自带的解锁配方)
-        'bioflux', 'nutrients-from-bioflux', 'bioplastic', 'rocket-fuel-from-jelly', 'biosulfur',
-        'biolubricant', 'jellynut-processing', 'iron-bacteria', 'yumako-processing', 'copper-bacteria',
+        'bioflux', 'nutrients-from-bioflux', 'nutrients-from-spoilage', 'jellynut-processing',  'yumako-processing', 
     }, name = '厨师', full = FULL_MID, starter = {
         {item = 'biochamber', groups = 1},
     }, unlock = {{pack = 'agricultural-science-pack', level = 100}}, rewards = {
@@ -904,7 +901,7 @@ local DEFAULT_CLASSES = {
         {pack = 'agricultural-science-pack', item = 'jelly',     groups = 10},
     }},
     {key = 'pharmacist', recipes = {   -- 由原 techs 转换而来(科技自带的解锁配方)
-        'copper-bacteria-cultivation', 'iron-bacteria-cultivation',
+        'nutrients-from-bioflux', 'copper-bacteria-cultivation', 'iron-bacteria-cultivation',
     }, name = '培养员', full = FULL_MID, starter = {
         {item = 'biochamber', groups = 1},
     }, unlock = {{pack = 'agricultural-science-pack', level = 100}}, rewards = {
