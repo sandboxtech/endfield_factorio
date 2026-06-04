@@ -629,7 +629,7 @@ script.on_event(defines.events.on_chunk_generated, events.safe('chunk_generated'
         }
     end
 
-    -- 椭圆 + 噪声边界：归一化椭圆距离 (px/rw)²+(py/rh)²，边界半径² = (1 + rough×噪声)²，超过即铺虚空。
+    -- 椭圆 + 噪声边界：归一化椭圆距离 d=√((u/a)²+(v/b)²)，边界半径 = 1 + rough×噪声×距离权重，超过即铺虚空。
     -- 老存档兜底：width_of/height_of/shape_of 可能尚未由 ensure_defaults 补齐（旧档继承会 nil）。
     -- 索引 nil 表会先崩→被 events.safe 的 pcall 吞掉→handler 中途夭折、后续 math.random 消耗不一致→desync。
     -- 故此处对【表】本身取兜底（`(t or {})[k]`），而非只对取值结果 `or`。
@@ -669,6 +669,10 @@ script.on_event(defines.events.on_chunk_generated, events.safe('chunk_generated'
         return
     else
         -- 跨边界：逐格判定，把点旋转回主轴系再算归一化椭圆距离 + 噪声扰动边缘（smooth 倍频，平滑海湾/半岛）。
+        -- 噪声权重随距离渐进：归一化距离 < edge_noise_start(默认 0.8) 时权重 0(必为陆地)，到 1 处线性升满，>1 恒满。
+        -- 效果：内侧不再被噪声打出虚空洞（洞只能出现在边界带内），外侧起伏/半岛保留原有幅度。
+        local nstart = storage.edge_noise_start or 0.8
+        local nspan = math.max(0.01, 1 - nstart)
         local tiles = {}
         for x = -1, 32 do
             for y = -1, 32 do
@@ -676,17 +680,18 @@ script.on_event(defines.events.on_chunk_generated, events.safe('chunk_generated'
                 local ddx, ddy = px - cx, py - cy
                 local u, v = ddx * ca + ddy * sa, -ddx * sa + ddy * ca   -- 旋转 −angle 回主轴系
                 local nu, nv = u / a, v / b
+                local d = math.sqrt(nu * nu + nv * nv)   -- 归一化椭圆距离
                 local edge = 1
-                if rough > 0.01 then
+                if rough > 0.01 and d > nstart then   -- d ≤ nstart 必为陆地，噪声都不用算
                     -- 海岸边缘用【低频主导】的 coast（大尺度平滑起伏），jag 细节走 coast_detail（比 fine 低频，碎而不锯齿）。
                     -- jag 连续插值：jag=0 纯平滑 ↔ jag=1 最碎；除以(1+jag)归一化保振幅。
                     local mix = noise.fractal(noise.octaves.coast, px, py, seed)
                     if jag > 0.02 then
                         mix = (mix + jag * noise.fractal(noise.octaves.coast_detail, px, py, seed + 777)) / (1 + jag)
                     end
-                    edge = 1 + rough * mix
+                    edge = 1 + rough * mix * math.min(1, (d - nstart) / nspan)
                 end
-                if nu * nu + nv * nv > edge * edge then
+                if d > edge then
                     tiles[#tiles + 1] = {name = 'empty-space', position = {x = px, y = py}}
                 end
             end

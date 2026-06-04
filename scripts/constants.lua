@@ -85,6 +85,7 @@ function M.ensure_defaults()
         radius_min = 256,                 -- 真实半径下限
         radius_max = 1536,                -- 真实半径上限
         planet_eccentricity = 0.2,        -- 星球椭圆离心系数(原 0.35)：越小越圆，0=全圆。实际 ecc=(rand-rand)×此值，长短轴比最大 (1+e):(1-e)
+        edge_noise_start = 0.8,           -- 星球边界噪声起作用的归一化半径：小于它必为陆地(噪声权重 0)，向 1 线性升满 → 内侧不再有虚空噪声洞（调小=洞可更深入，0=旧行为；接近 1=近纯椭圆）
         platform_lifetime = 10,
         difficulty = 1,
         debug = true,                     -- 向管理员打印每次世界生成的属性
@@ -116,6 +117,7 @@ function M.ensure_defaults()
         perpetual_destructible = false,    -- 可被摧毁（默认否；开了 fulgora 闪电/火炮会劈烂它）
         -- 据点战斗规则（map_features）：① 敌方炮塔击杀友军 → 给该据点炮塔补弹 + EEI 补电；② 据点炮塔全灭 → 连同 EEI+变电站一起摧毁。关：/c storage.outpost_combat=false
         outpost_combat         = true,
+        outpost_pave_prob      = 0.5,      -- 据点【强制铺地】概率：命中的据点，箱/守卫/变电站放不下时先铺对应地砖再硬放（水/熔岩/虚空旁不再缺斤短两）。0=关，1=全部强制
         event_chance = 0.5,               -- 每分钟【全服】发生一次世界事件的固定概率（与人数无关；命中后随机挑 1 名玩家）
         -- 科技世界(事件世界的一种)：每次从所有科技随机抽一个
         tech_world_lose_chance = 0.125,    -- 抽中【已研究】科技时，失去它的概率

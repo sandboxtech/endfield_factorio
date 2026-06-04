@@ -616,15 +616,36 @@ local function fill_treasure_chest(inv)
     end
 end
 
+-- 强制铺地：以 pos 为中心铺 (2half+1)² 的 floor 地砖（盖掉水/熔岩/虚空），给"放不下就先铺地硬放"用。
+-- floor 缺省/无效（如表里没配本星地砖）退回 PERP_FLOOR（危险品混凝土，base 必有）。
+local function pave_for_placement(surface, pos, floor, half)
+    if not (floor and prototypes.tile[floor]) then floor = PERP_FLOOR end
+    local cx, cy = math.floor(pos.x), math.floor(pos.y)
+    half = half or 2
+    local tiles = {}
+    for dx = -half, half do
+        for dy = -half, half do tiles[#tiles + 1] = {name = floor, position = {cx + dx, cy + dy}} end
+    end
+    surface.set_tiles(tiles)
+    return true
+end
+
 -- 据点奖励箱：按种类放一个箱并填充。material/equipment/treasure = 普通可拆箱(destructible=false 不受伤、仍可手拆收取)；perpetual = 无限箱。
-local function place_reward_chest(surface, pos, kind)
+-- pave=true(本据点命中强制铺地)：find 失败时先铺 floor 地砖再重试（仍失败则原地硬放，create 失败由下游兜住）。
+local function place_reward_chest(surface, pos, kind, floor, pave)
     if kind == 'perpetual' then
         local p = surface.find_non_colliding_position('steel-chest', pos, 4, 1)
+        if not p and pave and pave_for_placement(surface, pos, floor) then
+            p = surface.find_non_colliding_position('steel-chest', pos, 4, 1) or pos
+        end
         if p then return spawn_perpetual_chest(surface, p) end
         return false
     end
     local chest_name = (kind == 'equipment' and 'iron-chest') or (kind == 'treasure' and 'wooden-chest') or 'steel-chest'
     local p = surface.find_non_colliding_position(chest_name, pos, 4, 1)
+    if not p and pave and pave_for_placement(surface, pos, floor) then
+        p = surface.find_non_colliding_position(chest_name, pos, 4, 1) or pos
+    end
     if not p then return false end
     local chest = surface.create_entity{name = chest_name, force = 'neutral', position = p}
     if not chest then return false end
@@ -703,8 +724,11 @@ local TURRET_MAX_POWER = {
 -- 设计（由 place_guards 边放电炮边累加，见那里）：
 --   · 发电功率 power_production = Σ 各电炮【最大功率】(TURRET_MAX_POWER) → 所有炮同时全开火也够电。
 --   · 缓冲容量/初始电量 = Σ 各电炮【待机功率 drain】× STANDBY_HOURS 小时 → 纯待机正好这么久耗完。
-local function build_power_core(surface, center)
+local function build_power_core(surface, center, floor, pave)
     local sp = surface.find_non_colliding_position('substation', center, 5, 1)
+    if not sp and pave and pave_for_placement(surface, center, floor) then
+        sp = surface.find_non_colliding_position('substation', center, 5, 1) or center
+    end
     if not sp then return nil end
     -- legendary 品质 substation：供电范围更大 → 环上 6~11 格的电炮都能覆盖到、不会没电。
     local sub = surface.create_entity{name = 'substation', force = 'enemy', position = sp, quality = 'legendary'}
@@ -724,7 +748,10 @@ end
 -- 【统一放敌人逻辑】(所有遭遇共用，只是 danger 不同)：在 center 周围按 danger 放守卫塔 + 飞船残骸。
 --   danger(0~1+)：越大守卫越多越猛、残骸越多。每种炮塔各自【非线性】数量(大概率0、极小概率很多)，放在半径6~11 环上。
 --   电炮(electric)首次要放时才【惰性】建电网核心；建不出则本类电炮跳过。残骸 force=neutral、不铺人造地板。
-local function place_guards(surface, center, danger, floor, no_electric)
+--   pave=true(本据点命中强制铺地)：守卫/变电站 find 失败时先铺地砖再重试硬放（见 pave_for_placement）。
+local function place_guards(surface, center, danger, floor, no_electric, pave)
+    -- 强制铺地用的地砖：空据点 floor=nil 是故意不铺【氛围地】，但硬放仍需落脚点 → 退回本星普通据点地砖。
+    local pfloor = floor or (storage.enemy_floor or {})[surface.name]
     -- Fulgora：据点中心放一座避雷针(enemy force)。range_elongation=25 覆盖范围远超 6~11 格守卫环，
     -- 把闪电引到自己身上，保护周围敌方守卫塔/电网核心不被劈烂（永续箱已 destructible=false，本就免疫）。
     if surface.name == 'fulgora' then
@@ -741,7 +768,7 @@ local function place_guards(surface, center, danger, floor, no_electric)
         if not (no_electric and def.electric) then   -- 空据点：跳过电炮，连带不建 substation/EEI
         for _ = 1, nonlinear_count(tmax, 3) do
             if def.electric and not core then
-                if not core_tried then core, core_tried = build_power_core(surface, center), true end
+                if not core_tried then core, core_tried = build_power_core(surface, center, pfloor, pave), true end
                 if not core then break end                 -- 无电网 → 本类电炮全跳过
             end
             local anchor = (def.electric and core and core.sp) or center
@@ -749,6 +776,9 @@ local function place_guards(surface, center, danger, floor, no_electric)
             local ang, r = math.random() * 2 * math.pi, 6 + math.random() * 5
             local gp = {x = anchor.x + math.cos(ang) * r, y = anchor.y + math.sin(ang) * r}
             local gsp = surface.find_non_colliding_position(name, gp, 3, 1)
+            if not gsp and pave and pave_for_placement(surface, gp, pfloor) then
+                gsp = surface.find_non_colliding_position(name, gp, 3, 1) or gp
+            end
             if gsp then
                 local e = surface.create_entity{name = name, force = 'enemy', position = gsp, direction = math.random(0, 3) * 4, quality = roll_quality(0.7)}
                 enemy_floor_patch(surface, e, floor)
@@ -859,22 +889,26 @@ local function place_encounter(surface, lt)
 
     for _, e in ipairs(ENCOUNTERS) do
         if math.random() <= encounter_chance(surface, e.kind) then   -- 命中此遭遇（用全局 RNG，不再坐标哈希 → 随运行状态/人数/时间变，每局每次不可预测）
+            -- 强制铺地：每据点掷一次（storage.outpost_pave_prob，默认 0.5，可 /c 热改）。命中则箱/守卫/变电站
+            -- 放不下时先铺对应地砖再硬放 → 水面/熔岩/虚空旁的据点不再静默缺斤短两；未命中维持原"放不下就跳过"。
+            local pave = math.random() < (storage.outpost_pave_prob or 0.5)
+            -- 地砖按类型选——空据点不铺氛围地(硬放时退回本星地砖,见 place_guards)、永续用第二种、普通箱用本星地砖。
+            local floor
+            if e.kind == 'perpetual' then floor = (storage.enemy_floor2 or {})[surface.name]
+            elseif e.kind ~= 'empty' then floor = (storage.enemy_floor or {})[surface.name] end
             -- 奖励：非空据点放同类箱若干，数量 floor(1+4·random^pow·riches)；指数 pow=storage.chest_count_pow
             -- （默认 2，越大越偏向少箱，可 /c 热改），再乘本轮 riches 倍率（富庶世界更多）。
             local chests = {}
             if e.kind ~= 'empty' then
                 for _ = 1, math.floor((1 + 4 * math.random() ^ (storage.chest_count_pow or 2) * riches_mul)) do
-                    local c = place_reward_chest(surface, center, e.kind)
+                    local c = place_reward_chest(surface, center, e.kind, floor, pave)
                     if c then chests[#chests + 1] = c end
                 end
             end
-            -- 敌人：出生点 96 格内不放（保护新手）；地砖按类型选——空据点不铺、永续用第二种、普通箱用本星地砖。
+            -- 敌人：出生点 96 格内不放（保护新手）。
             local guards, core = {}, nil
             if not near_spawn then
-                local floor
-                if e.kind == 'perpetual' then floor = (storage.enemy_floor2 or {})[surface.name]
-                elseif e.kind ~= 'empty' then floor = (storage.enemy_floor or {})[surface.name] end
-                guards, core = place_guards(surface, center, e.danger * (0.4 + 0.6 * frac) * danger_mul, floor, e.kind == 'empty')   -- ×本轮 danger 倍率；空据点不放电炮
+                guards, core = place_guards(surface, center, e.danger * (0.4 + 0.6 * frac) * danger_mul, floor, e.kind == 'empty', pave)   -- ×本轮 danger 倍率；空据点不放电炮
                 guards = guards or {}
             end
             -- 登记据点【只要有守卫就登记，含空据点】：守卫全灭 → 摧毁电网核心(EEI+变电站)；箱子据点还解锁箱/公告/删标记。
