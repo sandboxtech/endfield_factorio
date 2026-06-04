@@ -618,55 +618,44 @@ end
 
 -- 强制铺地：以 pos 为中心铺 (2half+1)² 的 floor 地砖（盖掉水/熔岩/虚空），给"放不下就先铺地硬放"和"先铺后放"用。
 -- floor 缺省/无效（如表里没配本星地砖）退回 PERP_FLOOR（危险品混凝土，base 必有）。
--- 返回铺设前的【原 tile 快照】：放置最终仍失败时调 unpave 还原 → 不在海面/熔岩上留下空地板。
+-- 铺后放置仍可能失败（实体阻挡/跨未生成区块缺角），地板【不回滚】——快照还原成本高收益低，留块空地板无伤大雅。
 local function pave_for_placement(surface, pos, floor, half)
     if not (floor and prototypes.tile[floor]) then floor = PERP_FLOOR end
     local cx, cy = math.floor(pos.x), math.floor(pos.y)
     half = half or 2
-    local tiles, prev = {}, {}
+    local tiles = {}
     for dx = -half, half do
-        for dy = -half, half do
-            local x, y = cx + dx, cy + dy
-            local old = surface.get_tile(x, y)
-            if old and old.valid then prev[#prev + 1] = {name = old.name, position = {x, y}} end
-            tiles[#tiles + 1] = {name = floor, position = {x, y}}
-        end
+        for dy = -half, half do tiles[#tiles + 1] = {name = floor, position = {cx + dx, cy + dy}} end
     end
     surface.set_tiles(tiles)
-    return prev
-end
-local function unpave(surface, prev)   -- 还原 pave_for_placement 的快照（nil 安全）
-    if prev and #prev > 0 then surface.set_tiles(prev) end
 end
 
 -- 据点奖励箱：按种类放一个箱并填充。material/equipment/treasure = 普通可拆箱(destructible=false 不受伤、仍可手拆收取)；perpetual = 无限箱。
 -- pave=true(本据点命中强制铺地)：find 失败时先铺 floor 地砖再重试（仍失败则原地硬放，create 失败由下游兜住）。
 local function place_reward_chest(surface, pos, kind, floor, pave)
     if kind == 'perpetual' then
-        -- 永续箱反正要铺 7×7 氛围地（spawn_perpetual_chest 内）→ 先铺后找位，不依赖 pave 掷骰；失败回滚。
-        local prev = pave_for_placement(surface, pos, floor or (storage.enemy_floor2 and storage.enemy_floor2[surface.name]), 3)
+        -- 永续箱反正要铺 7×7 氛围地（spawn_perpetual_chest 内）→ 先铺后找位，不依赖 pave 掷骰。
+        pave_for_placement(surface, pos, floor or (storage.enemy_floor2 and storage.enemy_floor2[surface.name]), 3)
         local p = surface.find_non_colliding_position('steel-chest', pos, 4, 1) or pos
-        local c = spawn_perpetual_chest(surface, p)
-        if not c then unpave(surface, prev) end
-        return c
+        return spawn_perpetual_chest(surface, p)
     end
     local chest_name = (kind == 'equipment' and 'iron-chest') or (kind == 'treasure' and 'wooden-chest') or 'steel-chest'
-    local p, prev
+    local p
     if floor then
-        -- 有地板的据点 → 必铺式：先铺 5×5 再找位（同永续箱），失败回滚；不依赖 pave 掷骰。
-        prev = pave_for_placement(surface, pos, floor)
+        -- 有地板的据点 → 必铺式：先铺 5×5 再找位（同永续箱），不依赖 pave 掷骰。
+        pave_for_placement(surface, pos, floor)
         p = surface.find_non_colliding_position(chest_name, pos, 4, 1) or pos
     else
         -- 无地板（理论上仅 enemy_floor 表缺该表面时）→ 保留救援式。
         p = surface.find_non_colliding_position(chest_name, pos, 4, 1)
         if not p and pave then
-            prev = pave_for_placement(surface, pos, floor)
+            pave_for_placement(surface, pos, floor)
             p = surface.find_non_colliding_position(chest_name, pos, 4, 1) or pos
         end
     end
     if not p then return false end
     local chest = surface.create_entity{name = chest_name, force = 'player', position = p}
-    if not chest then unpave(surface, prev); return false end
+    if not chest then return false end
     chest.destructible = false   -- 不可摧毁（闪电/战斗误炸不掉内容）
     chest.operable = false       -- 不可打开 GUI → 玩家只能用机械臂抓取内容
     chest.minable_flag = false   -- 不可手拆（守卫全灭 unlock_chests 才翻开）
@@ -680,8 +669,9 @@ end
 
 -- 据点【传说生产建筑】彩蛋：player force 但 不可拆/不可开/不可摧毁 → 只能就地接电使用（可旋转、随机朝向；
 -- 配方玩家自行接电路网络设置，这里不配置）。塞满传说 3 级插件：biolab=产能，其余=品质/速度二选一；
--- 再随机把 0~2 个槽位(不超过槽数)换成传说节能 3。旁边再试放 0~3 个传说插件塔（各 2 个传说插件、同样锁死：
--- 机器放品质 → 塔恒节能 3(速度塔扣品质率)；否则每塔 80% 速度 3 / 20% 节能 3）。
+-- 主插件：biolab 恒产能 3；其余 速度:节能:品质 = 6:3:1。再随机把 0~2 个槽位(不超过槽数)换成传说节能 3。
+-- 旁边再试放 0~3 个传说插件塔（各 2 个传说插件、同样锁死：机器放品质 → 塔恒 2 节能 3(速度光环扣品质率)；
+-- 否则塔内 2 个节能 3 各自独立 80% 变速度 3）。
 local BONUS_MACHINES = {
     'electric-furnace', 'assembling-machine-3', 'recycler', 'foundry',
     'electromagnetic-plant', 'cryogenic-plant', 'biolab',
@@ -709,20 +699,25 @@ local function place_bonus_machine(surface, center, floor)
     -- 先铺后放：本建筑反正要铺据点地板 → 在目标点先 set_tiles 9×9（盖掉水/熔岩/虚空），再在其内找位，
     -- 成功率远高于"先找位、失败才救援铺地"（不依赖据点的 pave 掷骰）。
     local tp = {x = center.x + math.random(-3, 3), y = center.y + math.random(-3, 3)}
-    local prev = pave_for_placement(surface, tp, pf, 4)
+    pave_for_placement(surface, tp, pf, 4)
     local p = surface.find_non_colliding_position(name, tp, 4, 1)
-    if not p then unpave(surface, prev); return end
+    if not p then return end
     -- force=neutral：避免被闪电/流弹击中时给玩家弹"建筑受攻击"警报（三锁后功能不受影响，接电/电路照常）。
     local m = surface.create_entity{name = name, force = 'neutral', position = p,
                                     direction = math.random(0, 3) * 4, quality = 'legendary'}
-    if not m then unpave(surface, prev); return end
+    if not m then return end
     lock_fixture(m)
     pave_under(surface, m, pf)   -- 补齐占地 +1 圈（find 可能落到预铺区边缘）
     local inv = m.get_module_inventory()
     local mod   -- 主插件名（下方插件塔按它决定放速度还是节能）
     if inv and #inv > 0 then
-        mod = (name == 'biolab') and 'productivity-module-3'
-           or (math.random() < 0.5 and 'quality-module-3' or 'speed-module-3')
+        -- 主插件：biolab 恒产能；其余 速度:节能:品质 = 6:3:1（品质机器刻意稀有）。
+        if name == 'biolab' then
+            mod = 'productivity-module-3'
+        else
+            local r = math.random(10)
+            mod = r <= 6 and 'speed-module-3' or (r <= 9 and 'efficiency-module-3' or 'quality-module-3')
+        end
         inv.insert{name = mod, count = #inv, quality = 'legendary'}
         local n = math.min(math.random(0, 2), #inv)   -- 0~2 个槽位换成传说节能 3（0=不换；不超过槽数）
         if n > 0 then
@@ -731,23 +726,29 @@ local function place_bonus_machine(surface, center, floor)
         end
     end
     for _ = 1, math.random(0, 3) do
-        local ang, r = math.random() * 2 * math.pi, 4 + math.random() * 4
+        -- 贴身环：机器最大 5×5(半径2.5) + 塔 3×3(半径1.5) → 中心距 4 起步、上限 5.5，找位半径压到 2，
+        -- 保证落点在光环覆盖内（原 4~8+漂移 3 经常覆盖不到机器）。
+        local ang, r = math.random() * 2 * math.pi, 4 + math.random() * 1.5
         local bp0 = {x = p.x + math.cos(ang) * r, y = p.y + math.sin(ang) * r}
-        local bprev = pave_for_placement(surface, bp0, pf, 2)   -- 先铺 5×5 再找位（同建筑：必铺地板就先铺）
-        local bp = surface.find_non_colliding_position('beacon', bp0, 3, 1)
+        pave_for_placement(surface, bp0, pf, 2)   -- 先铺 5×5 再找位（同建筑：必铺地板就先铺）
+        local bp = surface.find_non_colliding_position('beacon', bp0, 2, 1)
         local b = bp and surface.create_entity{name = 'beacon', force = 'neutral', position = bp, quality = 'legendary'}
-        if not b then unpave(surface, bprev) end
         do
             if b then
                 lock_fixture(b)
                 pave_under(surface, b, pf)   -- 补齐占地 +1 圈
                 local bi = b.get_module_inventory()
                 if bi then
-                    -- 塔内插件：机器若放的【不是】品质插件 → 每塔 80% 放速度、20% 节能；
-                    -- 品质机器恒节能（速度塔会扣品质率，反而坑）。
-                    local bm = (mod ~= 'quality-module-3' and math.random() < 0.8)
-                               and 'speed-module-3' or 'efficiency-module-3'
-                    bi.insert{name = bm, count = 2, quality = 'legendary'}
+                    -- 塔内插件：机器若放的【不是】品质插件 → 2 个节能 3【各自独立】80% 变成速度 3
+                    -- （即每塔 64% 双速度 / 32% 一速一节 / 4% 双节能）；品质机器恒 2 节能（速度光环扣品质率）。
+                    if mod ~= 'quality-module-3' then
+                        for _ = 1, 2 do
+                            local bm = math.random() < 0.8 and 'speed-module-3' or 'efficiency-module-3'
+                            bi.insert{name = bm, count = 1, quality = 'legendary'}
+                        end
+                    else
+                        bi.insert{name = 'efficiency-module-3', count = 2, quality = 'legendary'}
+                    end
                 end
             end
         end
@@ -819,12 +820,12 @@ local TURRET_MAX_POWER = {
 --   · 发电功率 power_production = Σ 各电炮【最大功率】(TURRET_MAX_POWER) → 所有炮同时全开火也够电。
 --   · 缓冲容量/初始电量 = Σ 各电炮【待机功率 drain】× STANDBY_HOURS 小时 → 纯待机正好这么久耗完。
 local function build_power_core(surface, center, floor)
-    -- 必铺式：电网核心只出现在【有地板】的据点（空据点无电力）→ 先铺 5×5 再找位，失败回滚。
-    local prev = pave_for_placement(surface, center, floor)
+    -- 必铺式：电网核心只出现在【有地板】的据点（空据点无电力）→ 先铺 5×5 再找位。
+    pave_for_placement(surface, center, floor)
     local sp = surface.find_non_colliding_position('substation', center, 5, 1) or center
     -- legendary 品质 substation：供电范围更大 → 环上 6~11 格的电炮都能覆盖到、不会没电。
     local sub = surface.create_entity{name = 'substation', force = 'enemy', position = sp, quality = 'legendary'}
-    if not sub then unpave(surface, prev); return nil end
+    if not sub then return nil end
     if math.random() < (storage.enemy_invincible_chance or 1) then sub.destructible = false end   -- 概率无敌(电网核心,/c storage.enemy_invincible_chance 调)
     -- 隐形电源：hidden-electric-energy-interface（空图/无碰撞/不可选/不可见），直接放在变电站位置喂其电网。
     -- 玩家看不到电源实体，只见变电站（变电站负责供电范围，无隐形版、仍可见；要全隐形得改脚本供电）。
@@ -870,22 +871,21 @@ local function place_guards(surface, center, danger, floor, no_electric, pave, p
             local name = def.name or def.variants[math.random(#def.variants)]   -- variants(沙虫)随机取一档
             local ang, r = math.random() * 2 * math.pi, 6 + math.random() * 5
             local gp = {x = anchor.x + math.cos(ang) * r, y = anchor.y + math.sin(ang) * r}
-            local gsp, gprev
+            local gsp
             if floor then
-                -- 有地板的据点 → 必铺式：先铺 5×5 再找位，失败回滚。
-                gprev = pave_for_placement(surface, gp, floor)
+                -- 有地板的据点 → 必铺式：先铺 5×5 再找位。
+                pave_for_placement(surface, gp, floor)
                 gsp = surface.find_non_colliding_position(name, gp, 3, 1) or gp
             else
                 -- 空据点 → 救援式：pave 掷骰命中才铺（pfloor 兜底地砖）。
                 gsp = surface.find_non_colliding_position(name, gp, 3, 1)
                 if not gsp and pave then
-                    gprev = pave_for_placement(surface, gp, pfloor)
+                    pave_for_placement(surface, gp, pfloor)
                     gsp = surface.find_non_colliding_position(name, gp, 3, 1) or gp
                 end
             end
             if gsp then
                 local e = surface.create_entity{name = name, force = 'enemy', position = gsp, direction = math.random(0, 3) * 4, quality = roll_quality(0.7)}
-                if not e then unpave(surface, gprev) end
                 enemy_floor_patch(surface, e, floor)
                 if e then
                     if def.name ~= 'land-mine' then guards[#guards + 1] = e end   -- 地雷是被动陷阱、不计入"守卫全灭"
