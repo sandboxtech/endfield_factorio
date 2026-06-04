@@ -867,7 +867,7 @@ local function place_encounter(surface, lt)
             -- 奖励：非空据点放【1~16 个同类箱】，数量非线性 floor(1+15·random^6)，再乘本轮 riches 倍率（富庶世界更多）。
             local chests = {}
             if e.kind ~= 'empty' then
-                for _ = 1, math.floor((1 + 8 * math.random() ^ 6 * riches_mul)) do
+                for _ = 1, math.floor((1 + 4 * math.random() ^ 2 * riches_mul)) do
                     local c = place_reward_chest(surface, center, e.kind)
                     if c then chests[#chests + 1] = c end
                 end
@@ -930,8 +930,16 @@ script.on_event(defines.events.on_entity_died, events.safe('outpost_combat', fun
     local o = storage.outposts and storage.outposts[oid]
     if not o then return end
     -- 是否还有别的存活守卫？(排除正在死亡的 e；tile 替换等【非死亡移除】会让守卫 invalid，也算"没了"，避免计数卡住)
+    local left = 0
     for _, g in pairs(o.guards) do
-        if g.valid and g ~= e then return end   -- 还有守卫存活 → 不清空
+        if g.valid and g ~= e then left = left + 1 end
+    end
+    if left > 0 then
+        -- 还有守卫存活 → 不清空；向击杀玩家提示剩余守卫数（取不到玩家则静默：虫咬/环境/无主炮塔击杀）
+        local kn = killer_name(event.cause)
+        local kp = kn and game.get_player(kn)
+        if kp then kp.print({'wn.outpost-guards-left', left}) end
+        return
     end
     -- 全部守卫已死/失效 → 清空据点
     if o.kind ~= 'perpetual' then unlock_chests(o.chests) end   -- 永续箱不解锁；空据点 chests={} → no-op

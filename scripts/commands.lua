@@ -14,20 +14,37 @@ local util = require('scripts.util')
 
 local M = {}   -- 导出给 HUD 按钮复用（gui 点击经 tick 路由到这里）
 
+-- 命令文本 "/名 参数"（公告/回显共用）。
+local function cmd_text(command)
+    local what = '/' .. command.name
+    if command.parameter then what = what .. ' ' .. command.parameter end
+    return what
+end
+
 -- 任何自定义指令被使用时，公告给【所有在线玩家】：谁用了什么指令（含参数）。
 -- 控制台调用（无 player_index）不公告。
 local function announce_command(command)
     local player = command.player_index and game.get_player(command.player_index)
     if not player then return end
-    local what = '/' .. command.name
-    if command.parameter then what = what .. ' ' .. command.parameter end
-    game.print({'wn.cmd-used', player.name, what})
+    game.print({'wn.cmd-used', player.name, cmd_text(command)})
 end
 
 -- 用本函数代替 commands.add_command 注册：执行前先公告一条"谁用了什么"给全体玩家。
 local function add_command(name, help, fn)
     commands.add_command(name, help, function(command)
         announce_command(command)
+        fn(command)
+    end)
+end
+
+-- 【管理员命令】注册器，与 add_command 两点不同：
+--   1) 集中校验管理员（控制台调用无 player_index 视作管理员），非管理员拒绝并提示，不进 fn；
+--   2) "谁用了什么"只回显给执行者本人，【不】全服公告——管理操作的反馈不刷其他玩家的屏。
+local function add_admin_command(name, help, fn)
+    commands.add_command(name, help, function(command)
+        local player = command.player_index and game.get_player(command.player_index)
+        if player and not player.admin then player.print(constants.not_admin_text); return end
+        if player then player.print({'wn.cmd-used', player.name, cmd_text(command)}) end
         fn(command)
     end)
 end
@@ -66,14 +83,9 @@ local function member_cmd_targets(command)
     return actor, target, sink
 end
 
-add_command('reset', {'wn.run-reset-help'}, function(command)
-    if not command.player_index then return end
-    local player = game.get_player(command.player_index)
-    if not player or player.admin then
-        reset.reset()
-    else
-        player.print(constants.not_admin_text)
-    end
+add_admin_command('reset', {'wn.run-reset-help'}, function(command)
+    if not command.player_index then return end   -- 仍禁止控制台触发（防误触全服跃迁），与原行为一致
+    reset.reset()
 end)
 
 -- ── 管理员功能：改由【HUD 左上角红按钮】触发（仅管理员可见可点），不再注册为命令。───────────────
@@ -103,10 +115,9 @@ function M.ensure_all()
     market.ensure_prices()
 end
 
--- 手动跑全部 ensure（控制台或管理员）：补齐新增默认、迁移老存档、修类型。控制台调用(player_index 为 nil)视作管理员。
-add_command('ensureall', '补齐全部默认/迁移：标量+必需表+职业表+战利品权重', function(command)
+-- 手动跑全部 ensure（控制台或管理员）：补齐新增默认、迁移老存档、修类型。管理员校验在 add_admin_command 集中做。
+add_admin_command('ensureall', '补齐全部默认/迁移：标量+必需表+职业表+战利品权重', function(command)
     local player = command.player_index and game.get_player(command.player_index)
-    if player and not player.admin then player.print(constants.not_admin_text); return end
     M.ensure_all()
     ;(player or game).print('ensure_all 已执行：默认值/必需表/职业表/战利品权重均已补齐。')
 end)
@@ -114,10 +125,9 @@ end)
 -- ── 开局解锁白名单：管理员增删【初始科技 / 初始配方】（addtech/deltech/addrecipe/delrecipe）─────
 -- 直接 append / remove 到 storage.unlock_techs / unlock_recipes（reset 每轮据此标记科技已研究、启用配方）。
 -- 逐个校验原型是否存在(prototypes.technology / prototypes.recipe)，不存在的【跳过并报错】，不污染清单。
--- 仅管理员（控制台调用 player_index 为 nil 时视作管理员，与 ensureall 同口径）。改动【下次跃迁生效】。
+-- 仅管理员（add_admin_command 集中校验，控制台视作管理员）。改动【下次跃迁生效】。
 local function edit_unlock(command, kind, add)
     local player = command.player_index and game.get_player(command.player_index)
-    if player and not player.admin then player.print(constants.not_admin_text); return end
     local out     = player or game
     local is_tech = (kind == 'tech')
     local key     = is_tech and 'unlock_techs' or 'unlock_recipes'
@@ -145,10 +155,10 @@ local function edit_unlock(command, kind, add)
         end
     end
 end
-add_command('addtech',   '管理员：把科技加入开局解锁清单 /addtech <科技名...>',   function(c) edit_unlock(c, 'tech',   true)  end)
-add_command('deltech',   '管理员：从开局解锁清单移除科技 /deltech <科技名...>',   function(c) edit_unlock(c, 'tech',   false) end)
-add_command('addrecipe', '管理员：把配方加入开局解锁清单 /addrecipe <配方名...>', function(c) edit_unlock(c, 'recipe', true)  end)
-add_command('delrecipe', '管理员：从开局解锁清单移除配方 /delrecipe <配方名...>', function(c) edit_unlock(c, 'recipe', false) end)
+add_admin_command('addtech',   '管理员：把科技加入开局解锁清单 /addtech <科技名...>',   function(c) edit_unlock(c, 'tech',   true)  end)
+add_admin_command('deltech',   '管理员：从开局解锁清单移除科技 /deltech <科技名...>',   function(c) edit_unlock(c, 'tech',   false) end)
+add_admin_command('addrecipe', '管理员：把配方加入开局解锁清单 /addrecipe <配方名...>', function(c) edit_unlock(c, 'recipe', true)  end)
+add_admin_command('delrecipe', '管理员：从开局解锁清单移除配方 /delrecipe <配方名...>', function(c) edit_unlock(c, 'recipe', false) end)
 
 -- 参数 diff（合并了原 /ensuredefaults + /config）：先跑一次 M.ensure_all（补默认/必需表/职业表/战利品权重 + 清废弃键/修类型，
 -- 迁移），再弹窗对比【当前 storage】与【默认值】、改过的高亮。仅标量常量(constants.scalar_defaults)；
@@ -348,8 +358,7 @@ add_command('member', {'wn.member-help'}, member_grant_cmd)
 
 -- /unmember <玩家名>（/chehuiyuan 同功能）：撤销会员资格。【仅管理员】，可撤销任何会员。
 local function member_revoke_cmd(command)
-    local actor = command.player_index and game.get_player(command.player_index)
-    if actor and not actor.admin then actor.print(constants.not_admin_text); return end   -- 仅管理员可撤销
+    local actor = command.player_index and game.get_player(command.player_index)   -- 仅管理员可撤销（add_admin_command 集中校验）
     local sink = actor or game
     local target = resolve_target(command, sink)
     if not target then return end
@@ -359,7 +368,7 @@ local function member_revoke_cmd(command)
     game.print({'wn.member-revoked', target.name})
 end
 
-add_command('unmember', {'wn.unmember-help'}, member_revoke_cmd)
+add_admin_command('unmember', {'wn.unmember-help'}, member_revoke_cmd)
 
 -- /kickout <玩家名>（/tichu 同功能）：踢出一名【非会员】玩家。仅会员/管理员可用。不能踢自己/会员/管理员。
 local function member_kick_cmd(command)
