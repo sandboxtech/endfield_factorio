@@ -587,7 +587,10 @@ local ENCOUNTER_BASE = {material = 0.03, equipment = 0.015, treasure = 0.0075, p
 local function encounter_chance(surface, kind)
     local style = storage.loot_style and storage.loot_style[surface.name]
     local wd = (style and style[kind]) or 0.3
-    return wd * ENCOUNTER_BASE[kind] * (storage.loot_density or 1) * (storage['loot_density_' .. kind] or 1)
+    -- 箱子遭遇(非 empty)再乘【每星球】乘数 storage.loot_planet_mul（默认 nauvis/vulcanus 1、fulgora 2、gleba 3、aquilo 4；
+    -- 事件世界/平台等不在表里 → 1）。空据点(纯敌人)不乘。
+    local pm = (kind ~= 'empty') and storage.loot_planet_mul and storage.loot_planet_mul[surface.name] or 1
+    return wd * ENCOUNTER_BASE[kind] * (storage.loot_density or 1) * (storage['loot_density_' .. kind] or 1) * pm
 end
 
 -- 钢箱 = 材料箱填充：1~3 种材料、接近装满。高效填法：每种【一次性 insert 满堆叠×分到的格数】，整箱只需 1~3 次 insert。普通品质。
@@ -864,10 +867,11 @@ local function place_encounter(surface, lt)
 
     for _, e in ipairs(ENCOUNTERS) do
         if math.random() <= encounter_chance(surface, e.kind) then   -- 命中此遭遇（用全局 RNG，不再坐标哈希 → 随运行状态/人数/时间变，每局每次不可预测）
-            -- 奖励：非空据点放【1~16 个同类箱】，数量非线性 floor(1+15·random^6)，再乘本轮 riches 倍率（富庶世界更多）。
+            -- 奖励：非空据点放同类箱若干，数量 floor(1+4·random^pow·riches)；指数 pow=storage.chest_count_pow
+            -- （默认 2，越大越偏向少箱，可 /c 热改），再乘本轮 riches 倍率（富庶世界更多）。
             local chests = {}
             if e.kind ~= 'empty' then
-                for _ = 1, math.floor((1 + 4 * math.random() ^ 2 * riches_mul)) do
+                for _ = 1, math.floor((1 + 4 * math.random() ^ (storage.chest_count_pow or 2) * riches_mul)) do
                     local c = place_reward_chest(surface, center, e.kind)
                     if c then chests[#chests + 1] = c end
                 end

@@ -138,6 +138,7 @@ function M.ensure_defaults()
         loot_density_treasure  = 1,        -- 木箱（宝箱）
         loot_density_perpetual = 1,        -- 永续箱遭遇
         loot_density_empty     = 1,        -- 空据点遭遇（纯敌人）
+        chest_count_pow        = 2,        -- 据点奖励箱【数量】公式 floor(1+4·random^此值·riches) 的指数：越大越偏向少箱（1=接近均匀，2=默认，6=极偏 1 箱）
         chest_map_tags         = true,     -- 据点生成宝箱时，在中心打一个【该箱类型图标】的地图标签（无文本）。关：/c storage.chest_map_tags=false
         -- 永续箱（infinity-chest）三个属性，默认全 false=现状。/c storage.perpetual_xxx=true 开。
         perpetual_operable     = false,    -- 可打开 GUI/重配（默认否）
@@ -184,6 +185,13 @@ function M.ensure_defaults()
     M.scalar_defaults = d   -- 暴露标量默认值（供 /config 命令对比当前 storage 与默认）
     for k, v in pairs(d) do
         if storage[k] == nil then storage[k] = v end
+    end
+    -- 据点【箱子遭遇】出现率的每星球乘数（material/equipment/treasure/perpetual 四类一起乘，【不含】空据点）。
+    -- 缺失才补 → 保留 /c 调整。热改示例：/c storage.loot_planet_mul.gleba = 5
+    storage.loot_planet_mul = storage.loot_planet_mul or {}
+    local planet_mul = {nauvis = 1, vulcanus = 1, fulgora = 2, gleba = 3, aquilo = 4}
+    for p, m in pairs(planet_mul) do
+        if storage.loot_planet_mul[p] == nil then storage.loot_planet_mul[p] = m end
     end
     -- 各科技瓶【解锁延长跃迁的分钟数】。缺失才补 → 保留管理员 /c 的调整，并自动纳入将来新增的瓶。
     -- 热改示例：/c storage.warp_extend_minutes['cryogenic-science-pack'] = 90
