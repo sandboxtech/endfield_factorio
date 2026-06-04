@@ -79,7 +79,7 @@ function M.ensure_defaults()
     local d = {
         richness_multiplier = 8,          -- 矿更富（每格储量）· rail world：原 4 的 ×2
         size_multiplier = 4,              -- 矿脉更大 · rail world：原 1 的 ×4
-        frequency_multiplier = 1,       
+        frequency_multiplier = 1,
         local_specialty_multiplier = 0.25,
         radius_standard = 768,            -- 标准(基准)半径：每星球真实半径 = clamp(standard × random_exp(2), radius_min, radius_max)
         radius_min = 256,                 -- 真实半径下限

@@ -141,7 +141,7 @@ local DEFAULT_LOOT = {
         'sulfur',  'concrete',  'refined-concrete',                                     -- 化工/铺地
         'rocket-fuel',  'solid-fuel',  'nuclear-fuel',                                  -- 燃料
         'uranium-235',  'uranium-238',                                                  -- 核材料
-        'tungsten-carbide',  'tungsten-plate',  'holmium-plate',  
+        'tungsten-carbide',  'tungsten-plate',  'holmium-plate',
         'lithium-plate',  'carbon-fiber',  'superconductor',  'supercapacitor',  -- 星球特产材料
         'uranium-fuel-cell',  'depleted-uranium-fuel-cell',  'fusion-power-cell',   -- 燃料棒/动力电池(组装)
     }},
@@ -169,11 +169,11 @@ local DEFAULT_LOOT = {
         'loader',  'fast-loader',  'express-loader', 'turbo-loader',                                   -- 装卸器
         'inserter',  'burner-inserter',  'long-handed-inserter',  'fast-inserter',  'bulk-inserter',  'stack-inserter',  -- 机械臂
         'pipe',  'pipe-to-ground',  'pump',  'offshore-pump',  'storage-tank',          -- 管道/流体
-        'wooden-chest',  'iron-chest',  'steel-chest',  'active-provider-chest',  
+        'wooden-chest',  'iron-chest',  'steel-chest',  'active-provider-chest',
         'passive-provider-chest',  'storage-chest',  'buffer-chest',  'requester-chest',  -- 箱
-        -- 'construction-robot',  'logistic-robot',  
+        -- 'construction-robot',  'logistic-robot',
         'roboport',  'repair-pack',            -- 机器人
-        'rail',  'rail-signal',  'rail-chain-signal',  'rail-ramp',  'rail-support',  
+        'rail',  'rail-signal',  'rail-chain-signal',  'rail-ramp',  'rail-support',
         'train-stop',  'locomotive',  'cargo-wagon',  'fluid-wagon',  -- 铁路
     }},
     -- 电路信号
@@ -196,7 +196,7 @@ local DEFAULT_LOOT = {
         'burner-mining-drill',  'electric-mining-drill',  'big-mining-drill',  'pumpjack',  -- 采矿
         'oil-refinery',  'chemical-plant',  'centrifuge',  'crusher',                   -- 化工/处理
         'lab',  'biolab',  'beacon',                                                    -- 实验室/信标
-        'foundry',  'recycler',  'electromagnetic-plant',  
+        'foundry',  'recycler',  'electromagnetic-plant',
         'cryogenic-plant',  'biochamber',  'agricultural-tower',  -- 星球特产机器
         'rocket-silo',                                                                  -- 火箭发射井
     }},
@@ -265,7 +265,7 @@ local DEFAULT_LOOT = {
         'sulfur',  'concrete',  'refined-concrete',                                     -- 化工/铺地
         'rocket-fuel',  'solid-fuel',  'nuclear-fuel',                                  -- 燃料
         'uranium-235',  'uranium-238',                                                  -- 核材料
-        'tungsten-carbide',  'tungsten-plate',  'holmium-plate',  
+        'tungsten-carbide',  'tungsten-plate',  'holmium-plate',
         'lithium-plate',  'carbon-fiber',  'superconductor',  'supercapacitor',  -- 星球特产材料
         'iron-gear-wheel',  'copper-cable',  'iron-stick',  'engine-unit',  'electric-engine-unit',  -- 基础中间件
         'electronic-circuit',  'advanced-circuit',  'processing-unit',  'quantum-processor',  -- 电路
@@ -282,7 +282,7 @@ local DEFAULT_LOOT_WEIGHTS = {
         raw = 100, material = 300, product = 400, logistics = 100,  circuit = 10,  power = 20,
         production = 1,  module = 30,  military = 20,  equipment = 10,  science = 1,
         space = 10,  treasure = 1,
-        trash = 30,  perpetual = 1, 
+        trash = 30,  perpetual = 1,
     },
     -- 铁箱 = 设备箱：实用设备/机器为主，含载具/太空件，少量科技瓶。普通品质、中等数量。
     equipment = {
