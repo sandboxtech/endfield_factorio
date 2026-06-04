@@ -687,17 +687,26 @@ local DEFAULT_CLASSES = {
     -- 分组换行：物流 ↔ 战斗
     -- ── 战斗组（弹药/手雷/核弹；练灰瓶 military，部分另练蓝瓶 chemical）──
     {key = 'guard', recipes = {   -- 由原 techs 转换而来(科技自带的解锁配方)
-        'gun-turret', 'stone-wall', 'radar', 'laser-turret',
+         'stone-wall', 'radar', 'gun-turret', 'laser-turret', 'flamethrower-turret', 
     }, name = '保安', full = FULL_MID, starter = {
         {item = 'stone-wall', groups = 10},
     }, rewards = {
         {pack = 'automation-science-pack', item = 'radar',            groups = 1, full = FULL_LOW},
-        {pack = 'automation-science-pack',        item = 'gun-turret',          groups = 5, full = FULL_LOW},
         {pack = 'automation-science-pack', item = 'stone-wall',       groups = 20, full = FULL_LOW},
         {pack = 'logistic-science-pack', item = 'gate',             groups = 1, full = FULL_LOW},
-        {pack = 'military-science-pack',        item = 'flamethrower-turret', groups = 5, full = FULL_MID},
+        {pack = 'automation-science-pack',        item = 'gun-turret',          groups = 5, full = FULL_LOW},
         {pack = 'chemical-science-pack',        item = 'laser-turret',        groups = 5, full = FULL_MAX},
-        {pack = 'agricultural-science-pack', item = 'rocket-turret',        groups = 5, full = FULL_MAX},
+    }},
+    -- 保安拆分：火焰系单独成职业（手持喷火器 + 火焰塔 + 喷火油）。
+    {key = 'flametrooper', recipes = {
+        'flamethrower', 'flamethrower-ammo', 'flamethrower-turret',
+    }, name = '李梅', full = FULL_MID, starter = {
+        {item = 'flamethrower', count = 1},
+        {item = 'flamethrower-ammo', groups = 1},
+    }, rewards = {
+        {pack = 'military-science-pack', item = 'flamethrower-ammo',   groups = 10, full = FULL_LOW},
+        {pack = 'military-science-pack', item = 'flamethrower-turret', groups = 10, full = FULL_MID},
+        {pack = 'utility-science-pack',  item = 'flamethrower-turret', groups = 10, full = FULL_MAX},
     }},
     {key = 'gunner', recipes = {   -- 由原 techs 转换而来(科技自带的解锁配方)
         'submachine-gun',
@@ -720,23 +729,35 @@ local DEFAULT_CLASSES = {
         {item = 'combat-shotgun', count = 1},
         {item = 'shotgun-shell', groups = 10},
     }, rewards = {
-        {pack = 'military-science-pack', item = 'shotgun-shell',          groups = 10, full = FULL_MID},
-        {pack = 'utility-science-pack', item = 'piercing-shotgun-shell', groups = 10, full = FULL_MAX},
+        {pack = 'military-science-pack', item = 'shotgun-shell',          groups = 10, full = FULL_LOW},
+        {pack = 'utility-science-pack', item = 'piercing-shotgun-shell', groups = 10, full = FULL_MID},
     }},
-    {key = 'bomber', recipes = {   -- 由原 techs 转换而来(科技自带的解锁配方)
+    {key = 'grenadier', recipes = {
         'explosives',
     }, name = '拆迁队', full = FULL_MID, starter = {
         {item = 'grenade', groups = 1},
     }, rewards = {
-        {pack = 'military-science-pack', item = 'grenade',         groups = 5, full = FULL_LOW},
-        {pack = 'utility-science-pack',  item = 'cluster-grenade', groups = 5, full = FULL_MAX},
-        --
-        {pack = 'chemical-science-pack', item = 'poison-capsule',    groups = 5, full = FULL_LOW},
-        {pack = 'chemical-science-pack', item = 'slowdown-capsule',  groups = 5, full = FULL_MID},
-
-        {pack = 'military-science-pack',  item = 'defender-capsule', groups = 5, full = FULL_LOW},
-        {pack = 'chemical-science-pack',  item = 'distractor-capsule', groups = 2, full = FULL_MID},
-        {pack = 'utility-science-pack',  item = 'destroyer-capsule', groups = 1, full = FULL_MAX},
+        {pack = 'military-science-pack', item = 'grenade',         groups = 20, full = FULL_LOW},
+        {pack = 'utility-science-pack',  item = 'cluster-grenade', groups = 20, full = FULL_MID},
+    }},
+    {key = 'poisoner', recipes = {
+        'poison-capsule', 'slowdown-capsule',
+    }, name = '毒师', full = FULL_MID, starter = {
+        {item = 'poison-capsule', groups = 1},
+        {item = 'slowdown-capsule', groups = 1},
+    }, rewards = {
+        {pack = 'military-science-pack', item = 'poison-capsule',   groups = 10, full = FULL_LOW},
+        {pack = 'chemical-science-pack', item = 'slowdown-capsule', groups = 10, full = FULL_MID},
+        {pack = 'utility-science-pack',  item = 'poison-capsule',   groups = 10, full = FULL_MAX},
+    }},
+    {key = 'droner', recipes = {
+        'defender-capsule', {'distractor-capsule', p = 0.8}, {'destroyer-capsule', p = 0.5},
+    }, name = '神风', full = FULL_MID, starter = {
+        {item = 'defender-capsule', count = 20},
+    }, rewards = {
+        {pack = 'military-science-pack',  item = 'defender-capsule',   groups = 10, full = FULL_LOW},
+        {pack = 'chemical-science-pack',  item = 'distractor-capsule', groups = 10, full = FULL_MID},
+        {pack = 'utility-science-pack',   item = 'destroyer-capsule',  groups = 10, full = FULL_MAX},
     }},
 
     {key = 'minelayer', recipes = {   -- 由原 techs 转换而来(科技自带的解锁配方)
@@ -767,7 +788,8 @@ local DEFAULT_CLASSES = {
     }, unlock = {{pack = 'chemical-science-pack', level = 100}}, rewards = {
         {pack = 'military-science-pack', item = 'rocket',               groups = 10, full = FULL_LOW},
         {pack = 'chemical-science-pack', item = 'explosive-rocket',     groups = 10, full = FULL_MID},
-        {pack = 'utility-science-pack',  item = 'atomic-bomb',          groups = 2, full = FULL_MAX},
+        {pack = 'utility-science-pack',  item = 'atomic-bomb',          groups = 10, full = FULL_MAX},
+        {pack = 'agricultural-science-pack', item = 'rocket-turret',        groups = 10, full = FULL_MAX},
         --
     }},
     {key = 'artillerist', recipes = {   -- 由原 techs 转换而来(科技自带的解锁配方)
@@ -805,7 +827,7 @@ local DEFAULT_CLASSES = {
 
     }},
 
-    {key = 'mecharmor', recipes = {   -- 由原 techs 转换而来(科技自带的解锁配方)
+    {key = 'mechpilot', recipes = {   -- 由原 techs 转换而来(科技自带的解锁配方)
         'mech-armor',
     }, name = '变形金刚', full = FULL_MAX, starter = {   -- 终极机甲：粉瓶 1000 级解锁
         {item = 'mech-armor', count = 1},
