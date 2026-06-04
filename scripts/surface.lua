@@ -497,42 +497,45 @@ script.on_event(defines.events.on_surface_cleared, events.safe('surface_cleared'
     -- 碎度 jag ∈ [0,1] 连续(random^2.5 → 大概率小=平滑、小概率接近 1=很碎，之间平滑过渡)：控制叠加的高频海岸细节占比。
     local jag = math.random() ^ 2.5
 
-    -- ── 形状【统一距离场】连续参数：每项强度 = 上限 × random()³ → 大概率很小、小概率拉满
-    --    （任意中间值/组合都合法 = 形状空间里的连续插值）。低于【跳过阈值】的强度直接归中性值，
-    --    区块端按中性零开销跳过该项计算（见 on_chunk_generated）。──
-    -- 超椭圆指数 n = 2 + 三角³（正侧×4 → 最高 6 近矩形；负侧×0.7 → 最低 1.3 菱形，无截断堆积）。
+    -- ── 形状【统一距离场】连续参数：每项强度 = 上限 × random()【线性】→ 各档强度等概率，
+    --    变体常见且经常叠加（任意中间值/组合都合法 = 形状空间里的连续插值）。
+    --    低于【跳过阈值】的强度直接归中性值，区块端按中性零开销跳过该项计算（见 on_chunk_generated）。──
+    -- 超椭圆指数 n = 2 + 三角（线性，正侧×4 → 最高 6 近矩形；负侧×0.7 → 最低 1.3 菱形，无截断堆积）。
     -- |n−2|<0.15 视觉无差 → 吸附回 2（走 sqrt 快路径）。
     local tt = math.random() - math.random()
-    local t3 = tt * math.abs(tt)   -- 带符号平方（原立方改平方：偏 0 弱一档 → 变体更常见、更明显）
-    local se_n = 2 + (t3 > 0 and t3 * 4 or t3 * 0.7)
+    local se_n = 2 + (tt > 0 and tt * 4 or tt * 0.7)
     if math.abs(se_n - 2) < 0.15 then se_n = 2 end
-    -- 花瓣振幅 pa = 0.25×r³（<0.02 跳过）：边界半径 ×(1 + pa·cos(pk·θ + pph + 螺旋项))。
-    -- 瓣数 pk：1=蛋形偏心、2=花生/扁豆、3~7=花瓣海星；螺旋 sp(35% 附加)：相位随径向扭转 → 旋臂海岸。
-    local pa, pk, pph, sp = 0.25 * math.random() ^ 2, 0, 0, 0
-    if pa < 0.02 then
-        pa = 0
-    else
-        pk = math.random(1, 7)
-        pph = math.random() * 2 * math.pi
-        -- 螺旋是手性形状：旋向随机（恒正会让所有螺旋世界同向，镜像多样性减半）
-        if math.random() < 0.35 then sp = (0.5 + math.random() * 1.5) * (math.random() < 0.5 and 1 or -1) end
+    -- 角向谐波【最多 3 条独立叠加】：边界半径 ×(1 + Σ aᵢ·cos(kᵢθ + φᵢ))。单条 = 规则花瓣/蛋形(k=1)/花生(k=2)；
+    -- 多条不同 k 叠加 = 不规则瘤状轮廓（傅里叶描述子）。叠加近乎免费：三条共享同一次 atan2，只各多一个 cos。
+    local pa1, pk1, pph1 = 0.18 * math.random(), 0, 0
+    local pa2, pk2, pph2 = 0.12 * math.random(), 0, 0
+    local pa3, pk3, pph3 = 0.08 * math.random(), 0, 0
+    if pa1 < 0.02 then pa1 = 0 else pk1 = math.random(1, 7);  pph1 = math.random() * 2 * math.pi end
+    if pa2 < 0.02 then pa2 = 0 else pk2 = math.random(2, 9);  pph2 = math.random() * 2 * math.pi end
+    if pa3 < 0.02 then pa3 = 0 else pk3 = math.random(3, 11); pph3 = math.random() * 2 * math.pi end
+    local pa_total = pa1 + pa2 + pa3   -- ≤0.38：进 in/out_mul 界控与出生膨胀系数
+    -- 螺旋 sp（有谐波时 35% 附加，随机旋向=手性）：谐波相位随径向扭转 → 旋臂海岸。
+    local sp = 0
+    if pa_total > 0 and math.random() < 0.35 then sp = (0.5 + math.random() * 1.5) * (math.random() < 0.5 and 1 or -1) end
+    -- 多叶融合【最多 3 瓣独立叠加】：每瓣半径 = 0.5×random（<0.08 跳过），中心距 0.5~0.95；逐瓣 smin 平滑并入。
+    local blobs = {}
+    for _ = 1, 3 do
+        local r2 = 0.5 * math.random()
+        if r2 >= 0.08 then
+            local bd, bpsi = 0.5 + math.random() * 0.45, math.random() * 2 * math.pi
+            blobs[#blobs + 1] = {u = math.cos(bpsi) * bd, v = math.sin(bpsi) * bd, r = r2}
+        end
     end
-    -- 双叶融合：第二瓣半径 = 0.55×r³（<0.08 跳过=无第二瓣），中心距均匀 0.55~0.95；smin 平滑并入。
-    local b2
-    local b2r = 0.55 * math.random() ^ 2
-    if b2r >= 0.08 then
-        local bd, bpsi = 0.55 + math.random() * 0.4, math.random() * 2 * math.pi
-        b2 = {u = math.cos(bpsi) * bd, v = math.sin(bpsi) * bd, r = b2r}
-    end
-    -- 域扭曲 warp = 0.14×r³（<0.015 跳过）：归一化坐标加低频噪声位移 → 有机轮廓。
-    local warp, wseed = 0.14 * math.random() ^ 2, 0
+    if #blobs == 0 then blobs = nil end
+    -- 域扭曲 warp = 0.14×random（<0.015 跳过）：归一化坐标加低频噪声位移 → 有机轮廓。
+    local warp, wseed = 0.14 * math.random(), 0
     if warp < 0.015 then warp = 0 else wseed = math.random(1, 1000000) end
 
     -- 出生点(地图原点 0,0)不在椭圆正中心：取落在【omax×椭圆】内的偏移 d，椭圆中心 C = 原点 − d。
     -- 半径 t = omax×random^B 非线性(B=storage.spawn_offset_pow，默认 2)：B 越大越贴中心；B=1 退回线性；B<1 偏向外缘。
     -- omax=storage.spawn_offset_max(默认 0.5)，并按形状的【最坏膨胀系数】收紧（n<2 对角收缩、花瓣谷底、
     -- 扭曲位移都会把椭圆度量下的同一点推得更"靠外"），保证 spawn 处最终 d ≤ edge_noise_start−0.05 必为陆地。
-    local infl = (se_n < 2 and 2 ^ (1 / se_n - 0.5) or 1) / (1 - pa)
+    local infl = (se_n < 2 and 2 ^ (1 / se_n - 0.5) or 1) / (1 - pa_total)
     local omax = math.max(0, math.min(storage.spawn_offset_max or 0.5,
         ((storage.edge_noise_start or 0.8) - 0.05) / infl - warp))
     local t = omax * math.random() ^ (storage.spawn_offset_pow or 2)
@@ -542,9 +545,9 @@ script.on_event(defines.events.on_surface_cleared, events.safe('surface_cleared'
     local cx = -(su * ca - sv * sa)      -- 椭圆中心地图坐标（spawn 在原点 → C = −d）
     local cy = -(su * sa + sv * ca)
     -- （环礁分量已删除：它是唯一在中心挖洞的形状，与"中心实心"的要求根本冲突。）
-    -- 月牙缺口 = 0.5×r² 半径的圆形【咬除】（<0.1 跳过）：中心压在边缘带、且离出生点留足余量 → 中心恒实心。
+    -- 月牙缺口 = 0.5×random 半径的圆形【咬除】（<0.1 跳过）：中心压在边缘带、且离出生点留足余量 → 中心恒实心。
     local bite
-    local br = 0.5 * math.random() ^ 2
+    local br = 0.5 * math.random()
     if br >= 0.1 then
         local bd = math.max(0.95, t + 0.15 + br) + math.random() * 0.15
         local bpsi2 = math.random() * 2 * math.pi
@@ -557,21 +560,27 @@ script.on_event(defines.events.on_surface_cleared, events.safe('surface_cleared'
     storage.height_of[surface.name] = b                                              -- 短轴半轴
     storage.shape_of[surface.name] = {rough = rough, seed = math.random(1, 1000000), jag = jag, -- 边缘噪声/碎度
                                       angle = angle, cx = cx, cy = cy,               -- 旋转角 + 偏心中心
-                                      n = se_n, pa = pa, pk = pk, pph = pph, sp = sp, -- 超椭圆 + 花瓣/螺旋
-                                      b2 = b2, warp = warp, wseed = wseed, bite = bite}   -- 双叶/域扭曲/月牙
+                                      n = se_n, sp = sp,                               -- 超椭圆 + 螺旋
+                                      pa1 = pa1, pk1 = pk1, pph1 = pph1,               -- 角向谐波 ×3
+                                      pa2 = pa2, pk2 = pk2, pph2 = pph2,
+                                      pa3 = pa3, pk3 = pk3, pph3 = pph3,
+                                      blobs = blobs, warp = warp, wseed = wseed, bite = bite}   -- 多叶/域扭曲/月牙
     -- /gen：形状变体一行（全中性=纯椭圆则不报）。
     local sparts = {}
     if se_n ~= 2 then sparts[#sparts + 1] = string.format('超椭圆n=%.1f', se_n) end
-    if pa > 0 then sparts[#sparts + 1] = string.format('%s%d×%.2f', sp > 0 and '螺旋瓣' or '花瓣', pk, pa) end
-    if b2 then sparts[#sparts + 1] = '双叶' end
+    if pa_total > 0 then sparts[#sparts + 1] = string.format('%s谐波Σ%.2f', sp ~= 0 and '螺旋' or '', pa_total) end
+    if blobs then sparts[#sparts + 1] = '多叶×' .. #blobs end
     if bite then sparts[#sparts + 1] = string.format('月牙%.2f', bite.r) end
     if warp > 0 then sparts[#sparts + 1] = string.format('扭曲%.2f', warp) end
     if #sparts > 0 then dbg_add('形状', table.concat(sparts, ' ')) end
     -- mapgen 区域要罩住【偏心 + 旋转 + 粗糙 + 形状外扩】后的整体：
     -- 外扩系数 = max(超椭圆对角×(1+花瓣), 双叶中心距+半径) + 扭曲位移。
     local se_max = se_n > 2 and 2 ^ (0.5 - 1 / se_n) or 1
-    local out_norm = math.max(se_max * (1 + pa), b2 and (math.sqrt(b2.u * b2.u + b2.v * b2.v) + b2.r) or 0) + warp
-    local reach = math.ceil(a * (out_norm + omax + rough))
+    local out_norm = se_max * (1 + pa_total)
+    for _, bb in ipairs(blobs or {}) do
+        out_norm = math.max(out_norm, math.sqrt(bb.u * bb.u + bb.v * bb.v) + bb.r)
+    end
+    local reach = math.ceil(a * (out_norm + warp + omax + rough))
     mgs.width = reach * 2 + 64
     mgs.height = reach * 2 + 64
     mgs.starting_area = 1 + 2 * util.random_exp(2)
@@ -875,10 +884,13 @@ script.on_event(defines.events.on_chunk_generated, events.safe('chunk_generated'
     local jag = (sh and sh.jag) or 0   -- 碎度 [0,1]：叠加的高频海岸细节占比（连续插值）
     -- 统一距离场参数（缺省=中性值=纯椭圆，老存档自动退化为原行为）。
     local se_n = (sh and sh.n) or 2                              -- 超椭圆指数
-    local pa, pk, pph = (sh and sh.pa) or 0, (sh and sh.pk) or 0, (sh and sh.pph) or 0   -- 花瓣
-    local sp = (sh and sh.sp) or 0                               -- 螺旋相位（花瓣的径向扭转）
+    local pa1, pk1, pph1 = (sh and sh.pa1) or 0, (sh and sh.pk1) or 0, (sh and sh.pph1) or 0   -- 角向谐波 ×3
+    local pa2, pk2, pph2 = (sh and sh.pa2) or 0, (sh and sh.pk2) or 0, (sh and sh.pph2) or 0
+    local pa3, pk3, pph3 = (sh and sh.pa3) or 0, (sh and sh.pk3) or 0, (sh and sh.pph3) or 0
+    local pa_total = pa1 + pa2 + pa3
+    local sp = (sh and sh.sp) or 0                               -- 螺旋相位（谐波的径向扭转）
     local bite = sh and sh.bite                                  -- 月牙咬除 {u,v,r}（主轴系归一化）
-    local b2 = sh and sh.b2                                      -- 双叶 {u,v,r}（主轴系归一化）
+    local blobs = sh and sh.blobs                                -- 多叶 {{u,v,r},...}（主轴系归一化）
     local warp, wseed = (sh and sh.warp) or 0, (sh and sh.wseed) or 0   -- 域扭曲
     local ca, sa = math.cos(angle), math.sin(angle)   -- 把世界点旋转 −angle 回主轴系：u=dx*ca+dy*sa, v=−dx*sa+dy*ca
     local amax, bmin = math.max(a, b), math.min(a, b)  -- 外接圆 / 内切圆半径
@@ -890,8 +902,15 @@ script.on_event(defines.events.on_chunk_generated, events.safe('chunk_generated'
     -- 外界乘"形状最大外扩"（n>2 对角外凸、花瓣峰顶、双叶外缘、扭曲位移）。
     local se_min = se_n < 2 and 2 ^ (0.5 - 1 / se_n) or 1
     local se_max = se_n > 2 and 2 ^ (0.5 - 1 / se_n) or 1
-    local in_mul  = math.max(0, se_min * (1 - pa) - warp)
-    local out_mul = math.max(se_max * (1 + pa), b2 and (math.sqrt(b2.u * b2.u + b2.v * b2.v) + b2.r) or 0) + warp
+    local in_mul  = math.max(0, se_min * (1 - pa_total) - warp)
+    local out_mul = se_max * (1 + pa_total)
+    if blobs then
+        for i = 1, #blobs do
+            local bb = blobs[i]
+            out_mul = math.max(out_mul, math.sqrt(bb.u * bb.u + bb.v * bb.v) + bb.r)
+        end
+    end
+    out_mul = out_mul + warp
     local inner, outer = (1 - rough) * in_mul, (1 + rough) * out_mul
 
     -- chunk 级【圆近似】快速判定（旋转椭圆的内切/外接圆，保守）：到偏心中心 (cx,cy) 的欧氏距离。
@@ -930,7 +949,24 @@ script.on_event(defines.events.on_chunk_generated, events.safe('chunk_generated'
         -- 效果：内侧不再被噪声打出虚空洞（洞只能出现在边界带内），外侧起伏/半岛保留原有幅度。
         local nstart = storage.edge_noise_start or 0.8
         local nspan = math.max(0.01, 1 - nstart)
+        local outer_d = 1 + rough   -- 噪声所能外扩的极限边界：d 超过它噪声救不回 → 免噪声直判虚空
         local tiles = {}
+        -- 域扭曲【降采样】：噪声波长 ~167 格 >> 采样步长 4 格 → 每区块只采 10×10 网格点（200 次 fractal，
+        -- 对比逐格 2312 次），逐格双线性插值，视觉无差。两通道(u/v 位移)各一张网格。
+        local wgu, wgv
+        if warp > 0 then
+            wgu, wgv = {}, {}
+            for gy = 0, 9 do
+                local rowu, rowv = {}, {}
+                local wy = left_top.y - 1 + gy * 4
+                for gx = 0, 9 do
+                    local wx = left_top.x - 1 + gx * 4
+                    rowu[gx] = noise.fractal(noise.octaves.smooth, wx, wy, wseed)
+                    rowv[gx] = noise.fractal(noise.octaves.smooth, wx, wy, wseed + 333)
+                end
+                wgu[gy], wgv[gy] = rowu, rowv
+            end
+        end
         for x = -1, 32 do
             for y = -1, 32 do
                 local px, py = left_top.x + x, left_top.y + y
@@ -938,19 +974,34 @@ script.on_event(defines.events.on_chunk_generated, events.safe('chunk_generated'
                 local u, v = ddx * ca + ddy * sa, -ddx * sa + ddy * ca   -- 旋转 −angle 回主轴系
                 local nu, nv = u / a, v / b
                 -- ── 统一距离场：椭圆为中性基形，依次叠加 域扭曲/超椭圆/花瓣/双叶（参数中性时零开销跳过）──
-                if warp > 0 then   -- 域扭曲：归一化坐标加低频位移（smooth 倍频，大尺度有机变形）
-                    nu = nu + warp * noise.fractal(noise.octaves.smooth, px, py, wseed)
-                    nv = nv + warp * noise.fractal(noise.octaves.smooth, px, py, wseed + 333)
+                if warp > 0 then   -- 域扭曲：从降采样网格双线性插值取位移（见上，不再逐格调 fractal）
+                    local fx, fy = (x + 1) * 0.25, (y + 1) * 0.25
+                    local ix, iy = math.floor(fx), math.floor(fy)
+                    local tx, ty = fx - ix, fy - iy
+                    local r0, r1 = wgu[iy], wgu[iy + 1]
+                    nu = nu + warp * ((r0[ix] * (1 - tx) + r0[ix + 1] * tx) * (1 - ty) + (r1[ix] * (1 - tx) + r1[ix + 1] * tx) * ty)
+                    r0, r1 = wgv[iy], wgv[iy + 1]
+                    nv = nv + warp * ((r0[ix] * (1 - tx) + r0[ix + 1] * tx) * (1 - ty) + (r1[ix] * (1 - tx) + r1[ix + 1] * tx) * ty)
                 end
                 local d
                 if se_n == 2 then d = math.sqrt(nu * nu + nv * nv)   -- 纯椭圆走 sqrt 快路径
                 else d = (math.abs(nu) ^ se_n + math.abs(nv) ^ se_n) ^ (1 / se_n) end   -- 超椭圆
-                if pa > 0 then d = d / (1 + pa * math.cos(pk * math.atan2(nv, nu) + pph + sp * d * 6.2832)) end   -- 花瓣调制（sp>0 时相位随径向扭转=螺旋）
-                if b2 then   -- 双叶：第二瓣圆形距离场，多项式 smin(k=0.25) 平滑并集
-                    local du, dv = nu - b2.u, nv - b2.v
-                    local d2 = math.sqrt(du * du + dv * dv) / b2.r
-                    local hsm = math.max(0, 1 - math.abs(d - d2) / 0.25)
-                    d = math.min(d, d2) - 0.0625 * hsm * hsm
+                if pa_total > 0 then   -- 角向谐波叠加（共享一次 atan2；sp≠0 时相位随径向扭转=螺旋）
+                    local ang = math.atan2(nv, nu) + sp * d * 6.2832
+                    local mo = 1
+                    if pa1 > 0 then mo = mo + pa1 * math.cos(pk1 * ang + pph1) end
+                    if pa2 > 0 then mo = mo + pa2 * math.cos(pk2 * ang + pph2) end
+                    if pa3 > 0 then mo = mo + pa3 * math.cos(pk3 * ang + pph3) end
+                    d = d / mo
+                end
+                if blobs then   -- 多叶：逐瓣圆形距离场，多项式 smin(k=0.25) 平滑并集
+                    for i = 1, #blobs do
+                        local bb = blobs[i]
+                        local du, dv = nu - bb.u, nv - bb.v
+                        local d2 = math.sqrt(du * du + dv * dv) / bb.r
+                        local hsm = math.max(0, 1 - math.abs(d - d2) / 0.25)
+                        d = math.min(d, d2) - 0.0625 * hsm * hsm
+                    end
                 end
                 if bite then   -- 月牙咬除：圆内强制虚空（SDF 取 max → 咬除边缘同样吃 rough 噪声）
                     local du2, dv2 = nu - bite.u, nv - bite.v
@@ -958,7 +1009,9 @@ script.on_event(defines.events.on_chunk_generated, events.safe('chunk_generated'
                     if 2 - db > d then d = 2 - db end
                 end
                 local void = false
-                if rough > 0.01 and d > nstart then   -- d ≤ nstart 必为陆地，噪声都不用算
+                if d > outer_d then
+                    void = true   -- 超过噪声外扩极限：免噪声直判（肥保守壳层的主要省耗点）
+                elseif rough > 0.01 and d > nstart then   -- d ≤ nstart 必为陆地，噪声都不用算
                     -- 海岸边缘用【低频主导】的 coast（大尺度平滑起伏），jag 细节走 coast_detail（比 fine 低频，碎而不锯齿）。
                     -- jag 连续插值：jag=0 纯平滑 ↔ jag=1 最碎；除以(1+jag)归一化保振幅。
                     local mix = noise.fractal(noise.octaves.coast, px, py, seed)
