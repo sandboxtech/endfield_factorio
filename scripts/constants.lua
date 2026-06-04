@@ -276,7 +276,9 @@ function M.ensure_defaults()
     -- 每分钟"事件世界"各类型开关（false=不再被滚到/触发）。运行时也可 /c storage.event_types.xxx=true/false。
     -- 下表的值即各类型的【初始启用状态】：coinfall(金币雨) 默认禁用，按需改 true/false。
     storage.event_types = storage.event_types or {}
-    local event_defaults = {raid = true, meteor = true, supply = true, coinfall = true, drones = true, barrage = true, tech = true}
+    local event_defaults = {
+        raid = false, meteor = false, false = true, coinfall = false, 
+        drones = true, barrage = true, tech = true}
     for et, on in pairs(event_defaults) do
         if storage.event_types[et] == nil then storage.event_types[et] = on end
     end
