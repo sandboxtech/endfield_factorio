@@ -496,26 +496,70 @@ script.on_event(defines.events.on_surface_cleared, events.safe('surface_cleared'
     local rough = 0.1 + math.random() ^ 2 * 0.35
     -- 碎度 jag ∈ [0,1] 连续(random^2.5 → 大概率小=平滑、小概率接近 1=很碎，之间平滑过渡)：控制叠加的高频海岸细节占比。
     local jag = math.random() ^ 2.5
+
+    -- ── 形状【统一距离场】连续参数：每项强度 = 上限 × random()³ → 大概率很小、小概率拉满
+    --    （任意中间值/组合都合法 = 形状空间里的连续插值）。低于【跳过阈值】的强度直接归中性值，
+    --    区块端按中性零开销跳过该项计算（见 on_chunk_generated）。──
+    -- 超椭圆指数 n = 2 + 三角³×2，钳 [1.3,4]：偏离强烈偏 0。|n−2|<0.15 视觉无差 → 吸附回 2（走 sqrt 快路径）。
+    local se_n = math.max(1.3, math.min(4, 2 + (math.random() - math.random()) ^ 3 * 2))
+    if math.abs(se_n - 2) < 0.15 then se_n = 2 end
+    -- 花瓣振幅 pa = 0.25×r³（<0.02 跳过）：边界半径 ×(1 + pa·cos(pk·θ + pph)) → 三叶草/海星大陆。
+    local pa, pk, pph = 0.25 * math.random() ^ 3, 0, 0
+    if pa < 0.02 then
+        pa = 0
+    else
+        pk = math.random(3, 7)                 -- 瓣数
+        pph = math.random() * 2 * math.pi
+    end
+    -- 双叶融合：第二瓣半径 = 0.55×r³（<0.08 跳过=无第二瓣），中心距均匀 0.55~0.95；smin 平滑并入。
+    local b2
+    local b2r = 0.55 * math.random() ^ 3
+    if b2r >= 0.08 then
+        local bd, bpsi = 0.55 + math.random() * 0.4, math.random() * 2 * math.pi
+        b2 = {u = math.cos(bpsi) * bd, v = math.sin(bpsi) * bd, r = b2r}
+    end
+    -- 域扭曲 warp = 0.14×r³（<0.015 跳过）：归一化坐标加低频噪声位移 → 有机轮廓。
+    local warp, wseed = 0.14 * math.random() ^ 3, 0
+    if warp < 0.015 then warp = 0 else wseed = math.random(1, 1000000) end
+
     -- 出生点(地图原点 0,0)不在椭圆正中心：取落在【omax×椭圆】内的偏移 d，椭圆中心 C = 原点 − d。
     -- 半径 t = omax×random^B 非线性(B=storage.spawn_offset_pow，默认 2)：B 越大越贴中心；B=1 退回线性；B<1 偏向外缘。
-    -- omax=storage.spawn_offset_max(默认 0.5)，并钳到 edge_noise_start−0.05 以内 → 偏移再大 spawn 也必踩陆地
-    -- (边界噪声只在 edge_noise_start 之外起作用，见 on_chunk_generated)，不会出生在虚空。
-    local omax = math.max(0, math.min(storage.spawn_offset_max or 0.5, (storage.edge_noise_start or 0.8) - 0.05))
+    -- omax=storage.spawn_offset_max(默认 0.5)，并按形状的【最坏膨胀系数】收紧（n<2 对角收缩、花瓣谷底、
+    -- 扭曲位移都会把椭圆度量下的同一点推得更"靠外"），保证 spawn 处最终 d ≤ edge_noise_start−0.05 必为陆地。
+    local infl = (se_n < 2 and 2 ^ (1 / se_n - 0.5) or 1) / (1 - pa)
+    local omax = math.max(0, math.min(storage.spawn_offset_max or 0.5,
+        ((storage.edge_noise_start or 0.8) - 0.05) / infl - warp))
     local t = omax * math.random() ^ (storage.spawn_offset_pow or 2)
     local phi = math.random() * 2 * math.pi
     local su, sv = t * a * math.cos(phi), t * b * math.sin(phi)   -- 主轴系偏移
     local ca, sa = math.cos(angle), math.sin(angle)
     local cx = -(su * ca - sv * sa)      -- 椭圆中心地图坐标（spawn 在原点 → C = −d）
     local cy = -(su * sa + sv * ca)
+    -- 环礁内洞 = 0.45×r³，且洞缘必须离出生点留余量（≤ t−0.12，出生偏移小就成不了洞）；<0.05 跳过。
+    local hole = math.min(0.45 * math.random() ^ 3, t - 0.12)
+    if hole < 0.05 then hole = 0 end
     -- 老存档兜底：ensure_defaults 没补到也不崩（索引 nil 表会先崩，必须在写入点保证表存在）。
     storage.width_of, storage.height_of, storage.shape_of =
         storage.width_of or {}, storage.height_of or {}, storage.shape_of or {}
     storage.width_of[surface.name] = a                                               -- 长轴半轴
     storage.height_of[surface.name] = b                                              -- 短轴半轴
     storage.shape_of[surface.name] = {rough = rough, seed = math.random(1, 1000000), jag = jag, -- 边缘噪声/碎度
-                                      angle = angle, cx = cx, cy = cy}               -- 旋转角 + 偏心中心
-    -- mapgen 区域要罩住【偏心 + 旋转 + 粗糙】后的整椭圆：最远延伸 ≈ a×(1+omax+rough)（|偏移|≤omax×a）。
-    local reach = math.ceil(a * (1 + omax + rough))
+                                      angle = angle, cx = cx, cy = cy,               -- 旋转角 + 偏心中心
+                                      n = se_n, pa = pa, pk = pk, pph = pph,         -- 超椭圆 + 花瓣
+                                      b2 = b2, hole = hole, warp = warp, wseed = wseed}   -- 双叶/环礁/域扭曲
+    -- /gen：形状变体一行（全中性=纯椭圆则不报）。
+    local sparts = {}
+    if se_n ~= 2 then sparts[#sparts + 1] = string.format('超椭圆n=%.1f', se_n) end
+    if pa > 0 then sparts[#sparts + 1] = string.format('花瓣%d×%.2f', pk, pa) end
+    if b2 then sparts[#sparts + 1] = '双叶' end
+    if hole > 0 then sparts[#sparts + 1] = string.format('环礁%.2f', hole) end
+    if warp > 0 then sparts[#sparts + 1] = string.format('扭曲%.2f', warp) end
+    if #sparts > 0 then dbg_add('形状', table.concat(sparts, ' ')) end
+    -- mapgen 区域要罩住【偏心 + 旋转 + 粗糙 + 形状外扩】后的整体：
+    -- 外扩系数 = max(超椭圆对角×(1+花瓣), 双叶中心距+半径) + 扭曲位移。
+    local se_max = se_n > 2 and 2 ^ (0.5 - 1 / se_n) or 1
+    local out_norm = math.max(se_max * (1 + pa), b2 and (math.sqrt(b2.u * b2.u + b2.v * b2.v) + b2.r) or 0) + warp
+    local reach = math.ceil(a * (out_norm + omax + rough))
     mgs.width = reach * 2 + 64
     mgs.height = reach * 2 + 64
     mgs.starting_area = 1 + 2 * util.random_exp(2)
@@ -759,6 +803,14 @@ script.on_event(defines.events.on_surface_cleared, events.safe('surface_cleared'
     storage.gen_debug[surface.name] = glines
 
     surface.map_gen_settings = mgs
+
+    -- 地形测试钩子（/testgen 开启 storage.testgen_chart）：本星重生成参数就绪后立即全图勘探，
+    -- chart 会自动请求生成区块 → 打开地图直接看整体形状。范围 = mgs.width/2（恰罩住偏心+外扩+粗糙后的整体）。
+    if storage.testgen_chart then
+        local hw = math.ceil((mgs.width or 1024) / 2)
+        game.forces.player.chart(surface, {{-hw, -hw}, {hw, hw}})
+    end
+
     -- 市场不在这里放（出生区块此刻尚未生成）：改由下方 on_chunk_generated 在出生区块自然生成时惰性放置，
     -- 避免强制生成区块。chart 同理改到出生区块生成后（见 on_chunk_generated 母星分支）。
     -- 初始世界(on_init 首轮)的出生区块是场景预生成的、不会自然重生 → 首轮无市场，这是预期行为、不补。
@@ -790,7 +842,8 @@ script.on_event(defines.events.on_chunk_generated, events.safe('chunk_generated'
         }
     end
 
-    -- 椭圆 + 噪声边界：归一化椭圆距离 d=√((u/a)²+(v/b)²)，边界半径 = 1 + rough×噪声×距离权重，超过即铺虚空。
+    -- 统一距离场边界：椭圆基形 + 域扭曲/超椭圆/花瓣/双叶 连续叠加得归一化距离 d（中性参数=纯椭圆），
+    -- 边界半径 = 1 + rough×噪声×距离权重，d 超过即虚空；环礁世界另有内洞（d < hole×洞缘噪声 也虚空）。
     -- 老存档兜底：width_of/height_of/shape_of 可能尚未由 ensure_defaults 补齐（旧档继承会 nil）。
     -- 索引 nil 表会先崩→被 events.safe 的 pcall 吞掉→handler 中途夭折、后续 math.random 消耗不一致→desync。
     -- 故此处对【表】本身取兜底（`(t or {})[k]`），而非只对取值结果 `or`。
@@ -803,9 +856,21 @@ script.on_event(defines.events.on_chunk_generated, events.safe('chunk_generated'
     local cx = (sh and sh.cx) or 0
     local cy = (sh and sh.cy) or 0
     local jag = (sh and sh.jag) or 0   -- 碎度 [0,1]：叠加的高频海岸细节占比（连续插值）
+    -- 统一距离场参数（缺省=中性值=纯椭圆，老存档自动退化为原行为）。
+    local se_n = (sh and sh.n) or 2                              -- 超椭圆指数
+    local pa, pk, pph = (sh and sh.pa) or 0, (sh and sh.pk) or 0, (sh and sh.pph) or 0   -- 花瓣
+    local b2 = sh and sh.b2                                      -- 双叶 {u,v,r}（主轴系归一化）
+    local hole = (sh and sh.hole) or 0                           -- 环礁内洞半径（归一化）
+    local warp, wseed = (sh and sh.warp) or 0, (sh and sh.wseed) or 0   -- 域扭曲
     local ca, sa = math.cos(angle), math.sin(angle)   -- 把世界点旋转 −angle 回主轴系：u=dx*ca+dy*sa, v=−dx*sa+dy*ca
     local amax, bmin = math.max(a, b), math.min(a, b)  -- 外接圆 / 内切圆半径
-    local inner, outer = 1 - rough, 1 + rough
+    -- 圆近似快判的保守系数：内界乘"形状最小收缩"（n<2 对角收缩、花瓣谷底、扭曲位移），
+    -- 外界乘"形状最大外扩"（n>2 对角外凸、花瓣峰顶、双叶外缘、扭曲位移）。
+    local se_min = se_n < 2 and 2 ^ (0.5 - 1 / se_n) or 1
+    local se_max = se_n > 2 and 2 ^ (0.5 - 1 / se_n) or 1
+    local in_mul  = math.max(0, se_min * (1 - pa) - warp)
+    local out_mul = math.max(se_max * (1 + pa), b2 and (math.sqrt(b2.u * b2.u + b2.v * b2.v) + b2.r) or 0) + warp
+    local inner, outer = (1 - rough) * in_mul, (1 + rough) * out_mul
 
     -- chunk 级【圆近似】快速判定（旋转椭圆的内切/外接圆，保守）：到偏心中心 (cx,cy) 的欧氏距离。
     local lx, hx = left_top.x - 1, left_top.x + 32
@@ -816,8 +881,8 @@ script.on_event(defines.events.on_chunk_generated, events.safe('chunk_generated'
     local ny = (ly <= cy and hy >= cy) and 0 or math.min(math.abs(ly - cy), math.abs(hy - cy))
     local far, near = fx * fx + fy * fy, nx * nx + ny * ny
 
-    if far <= (bmin * inner) ^ 2 then
-        -- 整块在内切圆内 → 必在椭圆内，跳过
+    if far <= (bmin * inner) ^ 2 and (hole == 0 or near >= (amax * hole * 1.35) ^ 2) then
+        -- 整块在内切圆内（且整块在内洞噪声带之外）→ 必为陆地，跳过
     elseif near >= (amax * outer) ^ 2 then
         -- 整块在外接圆外 → 必在椭圆外，整块铺虚空 + 跳过所有细节（map_features/市场/tile替换 对纯虚空块无用；染地已在最前画过）。
         local tiles = {}
@@ -841,8 +906,22 @@ script.on_event(defines.events.on_chunk_generated, events.safe('chunk_generated'
                 local ddx, ddy = px - cx, py - cy
                 local u, v = ddx * ca + ddy * sa, -ddx * sa + ddy * ca   -- 旋转 −angle 回主轴系
                 local nu, nv = u / a, v / b
-                local d = math.sqrt(nu * nu + nv * nv)   -- 归一化椭圆距离
-                local edge = 1
+                -- ── 统一距离场：椭圆为中性基形，依次叠加 域扭曲/超椭圆/花瓣/双叶（参数中性时零开销跳过）──
+                if warp > 0 then   -- 域扭曲：归一化坐标加低频位移（smooth 倍频，大尺度有机变形）
+                    nu = nu + warp * noise.fractal(noise.octaves.smooth, px, py, wseed)
+                    nv = nv + warp * noise.fractal(noise.octaves.smooth, px, py, wseed + 333)
+                end
+                local d
+                if se_n == 2 then d = math.sqrt(nu * nu + nv * nv)   -- 纯椭圆走 sqrt 快路径
+                else d = (math.abs(nu) ^ se_n + math.abs(nv) ^ se_n) ^ (1 / se_n) end   -- 超椭圆
+                if pa > 0 then d = d / (1 + pa * math.cos(pk * math.atan2(nv, nu) + pph)) end   -- 花瓣调制
+                if b2 then   -- 双叶：第二瓣圆形距离场，多项式 smin(k=0.25) 平滑并集
+                    local du, dv = nu - b2.u, nv - b2.v
+                    local d2 = math.sqrt(du * du + dv * dv) / b2.r
+                    local hsm = math.max(0, 1 - math.abs(d - d2) / 0.25)
+                    d = math.min(d, d2) - 0.0625 * hsm * hsm
+                end
+                local void = false
                 if rough > 0.01 and d > nstart then   -- d ≤ nstart 必为陆地，噪声都不用算
                     -- 海岸边缘用【低频主导】的 coast（大尺度平滑起伏），jag 细节走 coast_detail（比 fine 低频，碎而不锯齿）。
                     -- jag 连续插值：jag=0 纯平滑 ↔ jag=1 最碎；除以(1+jag)归一化保振幅。
@@ -850,9 +929,16 @@ script.on_event(defines.events.on_chunk_generated, events.safe('chunk_generated'
                     if jag > 0.02 then
                         mix = (mix + jag * noise.fractal(noise.octaves.coast_detail, px, py, seed + 777)) / (1 + jag)
                     end
-                    edge = 1 + rough * mix * math.min(1, (d - nstart) / nspan)
+                    void = d > 1 + rough * mix * math.min(1, (d - nstart) / nspan)
+                else
+                    void = d > 1
                 end
-                if d > edge then
+                if not void and hole > 0 and d < hole * 1.35 then
+                    -- 环礁内洞：独立种子的海岸噪声、振幅减半（洞缘比外缘安静），洞内 d 很小必虚空。
+                    local mh = noise.fractal(noise.octaves.coast, px, py, seed + 999)
+                    void = d < hole * (1 + 0.5 * rough * mh)
+                end
+                if void then
                     tiles[#tiles + 1] = {name = 'empty-space', position = {x = px, y = py}}
                 end
             end

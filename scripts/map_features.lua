@@ -466,6 +466,14 @@ end
 -- 永续箱周围铺地砖的【兜底】类型（正常用本星敌人地砖 storage.enemy_floor[星球]，未设时退回此值）。
 local PERP_FLOOR = 'hazard-concrete-left'
 
+-- 三锁：不可拆/不可开/不可摧毁（旋转默认允许，不动）。彩蛋建筑/插件塔用；
+-- 敌方无敌实体（变电站/避雷针/永续墙）也统一用它——对敌方实体 minable/operable 本就无效，只是省一份心智负担。
+local function lock_fixture(e)
+    e.minable_flag = false
+    e.operable = false
+    e.destructible = false
+end
+
 -- 永续箱奖励（罕见）：随机一种物品无限供应。设为【不可打开/不可拆走、可摧毁】，
 -- 防止滥用又能就地用（接机械臂/传送带）。force=player（友方；不可开/不可拆/不可摧毁仍锁死）。
 -- 返回 true=成功放置（可继续放守卫），false=失败（已清理，不放守卫）。
@@ -499,7 +507,7 @@ local function spawn_perpetual_chest(surface, pos)
         for dy = -1, 1 do
             if not (dx == 0 and dy == 0) and math.random() < (storage.invincibility_rate or 0.5) then
                 local w = surface.create_entity{name = 'stone-wall', force = 'enemy', position = {cx + dx, cy + dy}}
-                if w then w.destructible = false end
+                if w then lock_fixture(w) end
             end
         end
     end
@@ -616,12 +624,18 @@ local function fill_treasure_chest(inv)
     end
 end
 
--- 强制铺地：以 pos 为中心铺 (2half+1)² 的 floor 地砖（盖掉水/熔岩/虚空），给"放不下就先铺地硬放"和"先铺后放"用。
+-- 【太空类】地块：星球外虚空/硬边界。据点的铺地跳过它们（不在太空上架地板），水/油海/岩浆则照铺。
+local SPACE_TILES = {['empty-space'] = true, ['out-of-map'] = true}
+
+-- 强制铺地：只采样【中心一格】快速决定要不要强制建设——中心是太空类 → 不铺直接返回（虚空保持虚空，
+-- 后续 find/create 在太空上自然失败、该实体跳过）；否则整片直接铺（盖掉水/熔岩，不逐格过滤）。
 -- floor 缺省/无效（如表里没配本星地砖）退回 PERP_FLOOR（危险品混凝土，base 必有）。
--- 铺后放置仍可能失败（实体阻挡/跨未生成区块缺角），地板【不回滚】——快照还原成本高收益低，留块空地板无伤大雅。
+-- 铺后放置仍可能失败（实体阻挡/跨未生成区块），地板【不回滚】；贴海岸的边缘格偶有几格悬空地板，可接受。
 local function pave_for_placement(surface, pos, floor, half)
-    if not (floor and prototypes.tile[floor]) then floor = PERP_FLOOR end
     local cx, cy = math.floor(pos.x), math.floor(pos.y)
+    local ct = surface.get_tile(cx, cy)
+    if ct and ct.valid and SPACE_TILES[ct.name] then return end   -- 太空：跳过强制建设（1 次采样，最快路径）
+    if not (floor and prototypes.tile[floor]) then floor = PERP_FLOOR end
     half = half or 2
     local tiles = {}
     for dx = -half, half do
@@ -676,11 +690,6 @@ local BONUS_MACHINES = {
     'electric-furnace', 'assembling-machine-3', 'recycler', 'foundry',
     'electromagnetic-plant', 'cryogenic-plant', 'biolab',
 }
-local function lock_fixture(e)   -- 三锁：不可拆/不可开/不可摧毁（旋转默认允许，不动）
-    e.minable_flag = false
-    e.operable = false
-    e.destructible = false
-end
 -- 给实体脚下铺据点地板：盖住碰撞盒 +1 圈（彩蛋建筑/插件塔用；守卫另有 enemy_floor_patch 随机小矩形）。
 local function pave_under(surface, ent, floor)
     if not (floor and prototypes.tile[floor] and ent and ent.valid) then return end
@@ -826,7 +835,7 @@ local function build_power_core(surface, center, floor)
     -- legendary 品质 substation：供电范围更大 → 环上 6~11 格的电炮都能覆盖到、不会没电。
     local sub = surface.create_entity{name = 'substation', force = 'enemy', position = sp, quality = 'legendary'}
     if not sub then return nil end
-    if math.random() < (storage.enemy_invincible_chance or 1) then sub.destructible = false end   -- 概率无敌(电网核心,/c storage.enemy_invincible_chance 调)
+    if math.random() < (storage.enemy_invincible_chance or 1) then lock_fixture(sub) end   -- 概率无敌(电网核心,/c storage.enemy_invincible_chance 调)
     -- 隐形电源：hidden-electric-energy-interface（空图/无碰撞/不可选/不可见），直接放在变电站位置喂其电网。
     -- 玩家看不到电源实体，只见变电站（变电站负责供电范围，无隐形版、仍可见；要全隐形得改脚本供电）。
     local eei = surface.create_entity{name = 'hidden-electric-energy-interface', force = 'enemy', position = sp}
@@ -853,7 +862,7 @@ local function place_guards(surface, center, danger, floor, no_electric, pave, p
         local lp = surface.find_non_colliding_position('lightning-collector', center, 6, 1)
         if lp then
             local lc = surface.create_entity{name = 'lightning-collector', force = 'enemy', position = lp}
-            if lc and math.random() < (storage.enemy_invincible_chance or 1) then lc.destructible = false end   -- 概率无敌(避雷针)
+            if lc and math.random() < (storage.enemy_invincible_chance or 1) then lock_fixture(lc) end   -- 概率无敌(避雷针)
             if lc then extras[#extras + 1] = lc end
         end
     end
@@ -999,6 +1008,10 @@ local function place_encounter(surface, lt)
     local frac = math.min(1, math.sqrt(d2) / R)
     local near_spawn = d2 < 96 * 96
     local center = {x = lt.x + math.random(6, 25) + 0.5, y = lt.y + math.random(6, 25) + 0.5}
+    -- 据点中心落在【太空类】地块（星球外虚空/硬边界，含 tile 替换造出的虚空斑）→ 整个据点跳过；
+    -- 水/油海/岩浆不拦（必铺式会铺地造陆）。跨边界区块由此不再把据点架到星球外。
+    local ct = surface.get_tile(math.floor(center.x), math.floor(center.y))
+    if ct and ct.valid and SPACE_TILES[ct.name] then return end
     local W = M.knobs()                       -- 本轮气质（缓存）：riches→箱数、danger→守卫规模
     local riches_mul = 0.5 + W.riches         -- 富庶世界箱更多（knob=0.5 时×1，范围约 0.5~1.5）
     local danger_mul = 0.5 + W.danger         -- 危险世界守卫更猛（同上）
