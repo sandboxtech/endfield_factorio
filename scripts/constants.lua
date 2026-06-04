@@ -274,12 +274,17 @@ function M.ensure_defaults()
         if storage.world_fx[fx] == nil then storage.world_fx[fx] = true end
     end
     -- 每分钟"事件世界"各类型开关（false=不再被滚到/触发）。运行时也可 /c storage.event_types.xxx=true/false。
-    -- 下表的值即各类型的【初始启用状态】：coinfall(金币雨) 默认禁用，按需改 true/false。
+    -- 默认值存 storage.event_defaults，可运行时 /c storage.event_defaults.xxx=true/false 改【初始启用状态】，
+    -- 之后新播种的键按改后默认生效（已播种的当前世界开关仍走 event_types）。coinfall(金币雨) 默认禁用。
     storage.event_types = storage.event_types or {}
-    local event_defaults = {
-        raid = false, meteor = false, false = true, coinfall = false, 
+    storage.event_defaults = storage.event_defaults or {}
+    local builtin_event_defaults = {
+        raid = false, meteor = false, supply = true, coinfall = false,
         drones = true, barrage = true, tech = true}
-    for et, on in pairs(event_defaults) do
+    for et, on in pairs(builtin_event_defaults) do
+        if storage.event_defaults[et] == nil then storage.event_defaults[et] = on end
+    end
+    for et, on in pairs(storage.event_defaults) do
         if storage.event_types[et] == nil then storage.event_types[et] = on end
     end
 end

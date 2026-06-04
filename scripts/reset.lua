@@ -178,6 +178,17 @@ function M.reset()
 
     -- 科技进度全部清零，不再保留无限科技 level
     force.reset()
+    -- 【关键】force.reset() 只把科技置回未研究、modifier 归零，【不会】退无限科技的 level：
+    -- 上一轮玩家自研/事件送的级数会残留（永生计划 health、采矿产能、伤害系…），跨跃迁越滚越高。
+    -- 故全量扫一遍多级科技压回自身最低级 proto.level（不能写死 1：physical-projectile-damage-7 最低 7 级）。
+    -- 之前只压职业表指向的科技（见下方 class_infinite_lvl），未被职业引用的无限科技全是漏网之鱼。
+    -- 必须放在所有开局解锁/职业发放之前：先全量归零，再按本轮配置重新加。
+    for _, tech in pairs(force.technologies) do
+        local proto = tech.prototype
+        if proto.level and proto.max_level and proto.level < proto.max_level and tech.level > proto.level then
+            tech.level = proto.level
+        end
+    end
     -- 清空生产/流体/击杀/建造统计（force.reset 只清科技+modifier、不含统计；2.0 起统计按表面分开）：
     -- 每个新世界的生产图表从 0 开始，不累积上一轮。遍历全部表面（含太空平台）。
     for _, surface in pairs(game.surfaces) do

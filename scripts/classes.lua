@@ -59,13 +59,17 @@ local DEFAULT_CLASSES = {
         {pack = 'promethium-science-pack', item = 'nuclear-fuel',   groups = 10, full = FULL_MAX},
     }},
 
-    {key = 'afker', techs = {'health'}, name = '挂机大师', full = FULL_MAX, starter = {
+    {key = 'afker', techs = {
+        {'health', p = 0.5},
+        {'research-productivity', p = 0.5},
+    }, name = '挂机大师', full = FULL_MAX, starter = {
         {item = 'logistic-science-pack',   count = 1},
     }, rewards = {
         
     }},
 
-    {key = 'philosopher', recipes = {   -- 由原 techs 转换而来(科技自带的解锁配方)
+    {key = 'philosopher',  techs = {
+    }, recipes = {   -- 由原 techs 转换而来(科技自带的解锁配方)
         {'biolab', p = 0.5},
     }, name = '哲学大师', full = FULL_LOW, starter = {
         {item = 'chemical-science-pack',   count = 1},
@@ -773,11 +777,11 @@ local DEFAULT_CLASSES = {
     {key = 'shielder', recipes = {   -- 由原 techs 转换而来(科技自带的解锁配方)
         'energy-shield-equipment',
         'energy-shield-mk2-equipment',
-    }, name = '肉盾', full = FULL_MID, starter = {   -- 全是盾
+    }, name = '肉盾', full = FULL_MAX, starter = {   -- 全是盾
         {item = 'energy-shield-equipment', count = 20},
     }, rewards = {
-        {pack = 'military-science-pack', item = 'energy-shield-equipment',     groups = 5, full = FULL_LOW},
-        {pack = 'utility-science-pack',  item = 'energy-shield-mk2-equipment', groups = 5, full = FULL_MAX},
+        {pack = 'military-science-pack', item = 'energy-shield-equipment',     groups = 20, full = FULL_LOW},
+        {pack = 'utility-science-pack',  item = 'energy-shield-mk2-equipment', groups = 20, full = FULL_MAX},
     }},
     {key = 'powergear', recipes = {   -- 由原 techs 转换而来(科技自带的解锁配方)
         'solar-panel-equipment',
@@ -786,7 +790,7 @@ local DEFAULT_CLASSES = {
         'battery-equipment', 
         'battery-mk2-equipment', 
         'battery-mk3-equipment',
-    }, name = '奶妈', full = FULL_MID, starter = {   -- 发电+储能装置
+    }, name = '奶妈', full = FULL_MAX, starter = {   -- 发电+储能装置
         {item = 'fission-reactor-equipment', count = 1},
     }, rewards = {
         {pack = 'logistic-science-pack',  item = 'solar-panel-equipment',     groups = 5, full = FULL_LOW},
@@ -799,7 +803,7 @@ local DEFAULT_CLASSES = {
     }},
     {key = 'laserdefense', recipes = {   -- 由原 techs 转换而来(科技自带的解锁配方)
         'personal-laser-defense-equipment',
-    }, name = '输出', full = FULL_MID, starter = {   -- 全是激光
+    }, name = '输出', full = FULL_MAX, starter = {   -- 全是激光
         {item = 'personal-laser-defense-equipment', count = 3},
     }, rewards = {
         {pack = 'military-science-pack', item = 'personal-laser-defense-equipment', groups = 2},
@@ -807,7 +811,7 @@ local DEFAULT_CLASSES = {
     {key = 'roboportgear', recipes = {   -- 由原 techs 转换而来(科技自带的解锁配方)
         'personal-roboport-equipment',
         'personal-roboport-mk2-equipment',
-    }, name = '辅助', full = FULL_MID, starter = {   -- 全是机器人
+    }, name = '辅助', full = FULL_MAX, starter = {   -- 全是机器人
         {item = 'personal-roboport-equipment', count = 5},
     }, rewards = {
         {pack = 'logistic-science-pack', item = 'construction-robot',            groups = 10, full = FULL_LOW},
@@ -816,17 +820,17 @@ local DEFAULT_CLASSES = {
     }},
     {key = 'exoskeleton', recipes = {   -- 由原 techs 转换而来(科技自带的解锁配方)
         'exoskeleton-equipment',
-    }, name = '快递员', full = FULL_MID, starter = {   -- 全是外骨骼
+    }, name = '快递员', full = FULL_MAX, starter = {   -- 全是外骨骼
         {item = 'exoskeleton-equipment', count = 2},
     }, rewards = {
-        {pack = 'chemical-science-pack', item = 'exoskeleton-equipment', groups = 5},
+        {pack = 'chemical-science-pack', item = 'exoskeleton-equipment', groups = 2},
     }},
     {key = 'toolbelt', recipes = {   -- 由原 techs 转换而来(科技自带的解锁配方)
         'toolbelt-equipment',
-    }, name = '吃货', full = FULL_MID, starter = {   -- 全是工具腰带
+    }, name = '吃货', full = FULL_MAX, starter = {   -- 全是工具腰带
         {item = 'toolbelt-equipment', count = 1},
     }, rewards = {
-        {pack = 'logistic-science-pack', item = 'toolbelt-equipment', groups = 5},
+        {pack = 'logistic-science-pack', item = 'toolbelt-equipment', groups = 2},
     }},
 
     {section = '农牧'},
