@@ -490,8 +490,8 @@ script.on_event(defines.events.on_surface_cleared, events.safe('surface_cleared'
     local ecc = (storage.planet_eccentricity or 0.2) * math.random() ^ 3
     local a = math.ceil(r * (1 + ecc))   -- 长轴半轴
     local b = math.ceil(r * (1 - ecc))   -- 短轴半轴
-    -- 主轴可任意旋转（0~π 覆盖所有朝向，π~2π 对称重复）。
-    local angle = math.random() * math.pi
+    -- 主轴任意旋转 0~2π（椭圆 D₂ 对称下 π~2π 与前半圈重复，但全圆更直白，也免得新增低对称分量时误踩半圆）。
+    local angle = math.random() * 2 * math.pi
     -- 边缘粗糙度 rough(归一化，边界半径 = 1 + rough×噪声)：下限 0.1 → 大多数世界【明显】有起伏(不再近完美椭圆)，多在 0.1~0.45。
     local rough = 0.1 + math.random() ^ 2 * 0.35
     -- 碎度 jag ∈ [0,1] 连续(random^2.5 → 大概率小=平滑、小概率接近 1=很碎，之间平滑过渡)：控制叠加的高频海岸细节占比。
@@ -502,28 +502,30 @@ script.on_event(defines.events.on_surface_cleared, events.safe('surface_cleared'
     --    区块端按中性零开销跳过该项计算（见 on_chunk_generated）。──
     -- 超椭圆指数 n = 2 + 三角³（正侧×4 → 最高 6 近矩形；负侧×0.7 → 最低 1.3 菱形，无截断堆积）。
     -- |n−2|<0.15 视觉无差 → 吸附回 2（走 sqrt 快路径）。
-    local t3 = (math.random() - math.random()) ^ 3
+    local tt = math.random() - math.random()
+    local t3 = tt * math.abs(tt)   -- 带符号平方（原立方改平方：偏 0 弱一档 → 变体更常见、更明显）
     local se_n = 2 + (t3 > 0 and t3 * 4 or t3 * 0.7)
     if math.abs(se_n - 2) < 0.15 then se_n = 2 end
     -- 花瓣振幅 pa = 0.25×r³（<0.02 跳过）：边界半径 ×(1 + pa·cos(pk·θ + pph + 螺旋项))。
     -- 瓣数 pk：1=蛋形偏心、2=花生/扁豆、3~7=花瓣海星；螺旋 sp(35% 附加)：相位随径向扭转 → 旋臂海岸。
-    local pa, pk, pph, sp = 0.25 * math.random() ^ 3, 0, 0, 0
+    local pa, pk, pph, sp = 0.25 * math.random() ^ 2, 0, 0, 0
     if pa < 0.02 then
         pa = 0
     else
         pk = math.random(1, 7)
         pph = math.random() * 2 * math.pi
-        if math.random() < 0.35 then sp = 0.5 + math.random() * 1.5 end
+        -- 螺旋是手性形状：旋向随机（恒正会让所有螺旋世界同向，镜像多样性减半）
+        if math.random() < 0.35 then sp = (0.5 + math.random() * 1.5) * (math.random() < 0.5 and 1 or -1) end
     end
     -- 双叶融合：第二瓣半径 = 0.55×r³（<0.08 跳过=无第二瓣），中心距均匀 0.55~0.95；smin 平滑并入。
     local b2
-    local b2r = 0.55 * math.random() ^ 3
+    local b2r = 0.55 * math.random() ^ 2
     if b2r >= 0.08 then
         local bd, bpsi = 0.55 + math.random() * 0.4, math.random() * 2 * math.pi
         b2 = {u = math.cos(bpsi) * bd, v = math.sin(bpsi) * bd, r = b2r}
     end
     -- 域扭曲 warp = 0.14×r³（<0.015 跳过）：归一化坐标加低频噪声位移 → 有机轮廓。
-    local warp, wseed = 0.14 * math.random() ^ 3, 0
+    local warp, wseed = 0.14 * math.random() ^ 2, 0
     if warp < 0.015 then warp = 0 else wseed = math.random(1, 1000000) end
 
     -- 出生点(地图原点 0,0)不在椭圆正中心：取落在【omax×椭圆】内的偏移 d，椭圆中心 C = 原点 − d。
@@ -539,12 +541,10 @@ script.on_event(defines.events.on_surface_cleared, events.safe('surface_cleared'
     local ca, sa = math.cos(angle), math.sin(angle)
     local cx = -(su * ca - sv * sa)      -- 椭圆中心地图坐标（spawn 在原点 → C = −d）
     local cy = -(su * sa + sv * ca)
-    -- 环礁内洞 = 0.45×r³，且洞缘必须离出生点留余量（≤ t−0.12，出生偏移小就成不了洞）；<0.05 跳过。
-    local hole = math.min(0.45 * math.random() ^ 3, t - 0.12)
-    if hole < 0.05 then hole = 0 end
-    -- 月牙缺口 = 0.5×r³ 半径的圆形【咬除】（<0.1 跳过）：中心压在边缘带、且离出生点留足余量 → 中心恒实心。
+    -- （环礁分量已删除：它是唯一在中心挖洞的形状，与"中心实心"的要求根本冲突。）
+    -- 月牙缺口 = 0.5×r² 半径的圆形【咬除】（<0.1 跳过）：中心压在边缘带、且离出生点留足余量 → 中心恒实心。
     local bite
-    local br = 0.5 * math.random() ^ 3
+    local br = 0.5 * math.random() ^ 2
     if br >= 0.1 then
         local bd = math.max(0.95, t + 0.15 + br) + math.random() * 0.15
         local bpsi2 = math.random() * 2 * math.pi
@@ -558,13 +558,12 @@ script.on_event(defines.events.on_surface_cleared, events.safe('surface_cleared'
     storage.shape_of[surface.name] = {rough = rough, seed = math.random(1, 1000000), jag = jag, -- 边缘噪声/碎度
                                       angle = angle, cx = cx, cy = cy,               -- 旋转角 + 偏心中心
                                       n = se_n, pa = pa, pk = pk, pph = pph, sp = sp, -- 超椭圆 + 花瓣/螺旋
-                                      b2 = b2, hole = hole, warp = warp, wseed = wseed, bite = bite}   -- 双叶/环礁/域扭曲/月牙
+                                      b2 = b2, warp = warp, wseed = wseed, bite = bite}   -- 双叶/域扭曲/月牙
     -- /gen：形状变体一行（全中性=纯椭圆则不报）。
     local sparts = {}
     if se_n ~= 2 then sparts[#sparts + 1] = string.format('超椭圆n=%.1f', se_n) end
     if pa > 0 then sparts[#sparts + 1] = string.format('%s%d×%.2f', sp > 0 and '螺旋瓣' or '花瓣', pk, pa) end
     if b2 then sparts[#sparts + 1] = '双叶' end
-    if hole > 0 then sparts[#sparts + 1] = string.format('环礁%.2f', hole) end
     if bite then sparts[#sparts + 1] = string.format('月牙%.2f', bite.r) end
     if warp > 0 then sparts[#sparts + 1] = string.format('扭曲%.2f', warp) end
     if #sparts > 0 then dbg_add('形状', table.concat(sparts, ' ')) end
@@ -861,7 +860,7 @@ script.on_event(defines.events.on_chunk_generated, events.safe('chunk_generated'
     end
 
     -- 统一距离场边界：椭圆基形 + 域扭曲/超椭圆/花瓣/双叶 连续叠加得归一化距离 d（中性参数=纯椭圆），
-    -- 边界半径 = 1 + rough×噪声×距离权重，d 超过即虚空；环礁世界另有内洞（d < hole×洞缘噪声 也虚空）。
+    -- 边界半径 = 1 + rough×噪声×距离权重，d 超过即虚空（中心恒实心：无任何分量会在内部挖洞）。
     -- 老存档兜底：width_of/height_of/shape_of 可能尚未由 ensure_defaults 补齐（旧档继承会 nil）。
     -- 索引 nil 表会先崩→被 events.safe 的 pcall 吞掉→handler 中途夭折、后续 math.random 消耗不一致→desync。
     -- 故此处对【表】本身取兜底（`(t or {})[k]`），而非只对取值结果 `or`。
@@ -880,10 +879,13 @@ script.on_event(defines.events.on_chunk_generated, events.safe('chunk_generated'
     local sp = (sh and sh.sp) or 0                               -- 螺旋相位（花瓣的径向扭转）
     local bite = sh and sh.bite                                  -- 月牙咬除 {u,v,r}（主轴系归一化）
     local b2 = sh and sh.b2                                      -- 双叶 {u,v,r}（主轴系归一化）
-    local hole = (sh and sh.hole) or 0                           -- 环礁内洞半径（归一化）
     local warp, wseed = (sh and sh.warp) or 0, (sh and sh.wseed) or 0   -- 域扭曲
     local ca, sa = math.cos(angle), math.sin(angle)   -- 把世界点旋转 −angle 回主轴系：u=dx*ca+dy*sa, v=−dx*sa+dy*ca
     local amax, bmin = math.max(a, b), math.min(a, b)  -- 外接圆 / 内切圆半径
+    -- 出生安全盘【硬保证】：以出生点(地图原点)为圆心、半短轴×spawn_safe_frac(默认 0.3) 为半径的圆盘内
+    -- 【绝不铺虚空】——不依赖月牙/扭曲/噪声各自的解析约束，逐格最后一道闸直接豁免。
+    -- （默认参数下盘缘归一化距离 ≤ omax+0.3 ≤ 0.8 = edge_noise_start，正常根本碰不到边界，此闸只防极端配置/组合。）
+    local safe_sq = ((storage.spawn_safe_frac or 0.3) * bmin) ^ 2
     -- 圆近似快判的保守系数：内界乘"形状最小收缩"（n<2 对角收缩、花瓣谷底、扭曲位移），
     -- 外界乘"形状最大外扩"（n>2 对角外凸、花瓣峰顶、双叶外缘、扭曲位移）。
     local se_min = se_n < 2 and 2 ^ (0.5 - 1 / se_n) or 1
@@ -910,8 +912,8 @@ script.on_event(defines.events.on_chunk_generated, events.safe('chunk_generated'
         local bny = (ly <= bwy and hy >= bwy) and 0 or math.min(math.abs(ly - bwy), math.abs(hy - bwy))
         bite_clear = (bnx * bnx + bny * bny) >= (amax * bite.r * (1 + rough)) ^ 2
     end
-    if far <= (bmin * inner) ^ 2 and (hole == 0 or near >= (amax * hole * 1.35) ^ 2) and bite_clear then
-        -- 整块在内切圆内（且在内洞噪声带、月牙咬除圆之外）→ 必为陆地，跳过
+    if far <= (bmin * inner) ^ 2 and bite_clear then
+        -- 整块在内切圆内（且在月牙咬除圆之外）→ 必为陆地，跳过
     elseif near >= (amax * outer) ^ 2 then
         -- 整块在外接圆外 → 必在椭圆外，整块铺虚空 + 跳过所有细节（map_features/市场/tile替换 对纯虚空块无用；染地已在最前画过）。
         local tiles = {}
@@ -967,12 +969,7 @@ script.on_event(defines.events.on_chunk_generated, events.safe('chunk_generated'
                 else
                     void = d > 1
                 end
-                if not void and hole > 0 and d < hole * 1.35 then
-                    -- 环礁内洞：独立种子的海岸噪声、振幅减半（洞缘比外缘安静），洞内 d 很小必虚空。
-                    local mh = noise.fractal(noise.octaves.coast, px, py, seed + 999)
-                    void = d < hole * (1 + 0.5 * rough * mh)
-                end
-                if void then
+                if void and px * px + py * py > safe_sq then   -- 出生安全盘内豁免（硬保证不被虚空覆盖）
                     tiles[#tiles + 1] = {name = 'empty-space', position = {x = px, y = py}}
                 end
             end

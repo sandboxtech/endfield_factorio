@@ -993,7 +993,8 @@ local function place_encounter(surface, lt)
     local nmul = 1
     local ln = storage.loot_noise and storage.loot_noise[surface.name]
     if ln and (ln.amp or 0) > 0.05 then
-        nmul = math.max(0, 1 + ln.amp * noise.fractal(noise.octaves.smooth, ccx, ccy, ln.seed))
+        -- 钳到 [0.3, 1.8]：最强聚簇下低谷也保留 30% 出现率、峰顶不超 1.8 倍 → 不会出现"整片无据点/全是据点"。
+        nmul = math.max(0.3, math.min(1.8, 1 + ln.amp * noise.fractal(noise.octaves.smooth, ccx, ccy, ln.seed)))
     end
     for _, e in ipairs(ENCOUNTERS) do
         if math.random() <= encounter_chance(surface, e.kind) * nmul then   -- 命中此遭遇（用全局 RNG，不再坐标哈希 → 随运行状态/人数/时间变，每局每次不可预测）

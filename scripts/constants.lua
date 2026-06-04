@@ -88,6 +88,7 @@ function M.ensure_defaults()
         edge_noise_start = 0.8,           -- 星球边界噪声起作用的归一化半径：小于它必为陆地(噪声权重 0)，向 1 线性升满 → 内侧不再有虚空噪声洞（调小=洞可更深入，0=旧行为；接近 1=近纯椭圆）
         spawn_offset_pow = 2,             -- 出生点偏离星球中心的非线性指数 B：归一化距离 = spawn_offset_max×random^B。越大越贴中心；1=线性；<1 偏向外缘
         spawn_offset_max = 0.5,           -- 出生点偏离星球中心的最大归一化距离（实际还会钳到 edge_noise_start−0.05 以内，保证出生必踩陆地）
+        spawn_safe_frac = 0.3,            -- 出生安全盘半径 = 半短轴×此值：盘内【绝不】铺虚空（环礁/月牙/扭曲/噪声全部豁免，硬保证）
         -- 悬崖随机化（surface.random_cliff_mgs，nauvis/vulcanus/fulgora/gleba）：大概率正常微浮动，偏向简单。
         cliff_easy_chance = 0.35,         -- 【稀崖世界】概率：行距×1~3 + 连续度×0.2~1（缺口多更好走）。0=关
         cliff_hard_chance = 0.1,          -- 【密崖世界】概率：行距×0.6~1 + 连续度×1~1.15（温和上限）。0=关
