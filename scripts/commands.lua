@@ -189,6 +189,18 @@ end
 -- 核心逻辑抽成 M.* 供按钮点击调用（tick.on_gui_click → 这里）。
 -- （"跃迁经验预览"按钮已删除：science_exp.preview 一并移除。）
 
+-- 世界荣誉榜：历史上【全员带走经验总量】最高的前 30 个世界（reset 每次跃迁结算时记录）。
+-- 天数 = 该世界结束时的 game.tick 换算成现实天（60 tick/秒 × 86400 秒/天 = 5184000 tick/天）。
+function M.show_halloffame(player)
+    if not player then return end
+    local lines = {}
+    for i, w in ipairs(storage.hall_of_fame or {}) do
+        lines[#lines + 1] = {'wn.hof-entry', i, w.run, string.format('%g', w.exp), string.format('%.1f', w.tick / 5184000)}
+    end
+    if #lines == 0 then lines[1] = {'wn.hof-none'} end
+    gui.show_popup(player, {'wn.hof-header'}, lines)
+end
+
 -- /lastrank（/paihang 同功能，中文别名 /排行）：查看【上一个世界】每人带走的科技瓶经验排行榜。
 -- 数据在跃迁时由 reset.lua 存进 storage.last_leaderboard（只保留上一个世界这一份，每次跃迁覆盖）。
 function M.show_lastrank(player)

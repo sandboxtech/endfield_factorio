@@ -191,26 +191,24 @@ local DEFAULT_CLASSES = {
         {pack = 'cryogenic-science-pack', item = 'processing-unit', groups = 2, full = FULL_MAX},
     }},
 
-    -- 机器
-    {key = 'machinetrader', name = '机器商人', full = FULL_LOW, starter = {
-        {item = 'coin', count = 10},
-        {item = 'assembling-machine-1', count = 10},
-        {item = 'steel-furnace', count = 10},
-        {item = 'electric-mining-drill', count = 10},
+    -- 军火
+    {key = 'armsdealer', name = '军火商人', full = FULL_LOW, starter = {
+        {item = 'firearm-magazine', count = 200},
+        {item = 'grenade', count = 50},
     }, unlock = {{pack = 'automation-science-pack', level = 10}}, rewards = {
-        {pack = 'automation-science-pack', item = 'assembling-machine-1',  groups = 2, full = FULL_LOW},
-        {pack = 'logistic-science-pack',   item = 'electric-mining-drill', groups = 2, full = FULL_LOW},
-        {pack = 'military-science-pack',   item = 'steel-furnace',         groups = 2, full = FULL_LOW},
-        {pack = 'chemical-science-pack',   item = 'assembling-machine-2',  groups = 2, full = FULL_MID},
-        {pack = 'production-science-pack', item = 'electric-furnace',      groups = 2, full = FULL_MID},
-        {pack = 'utility-science-pack',    item = 'assembling-machine-3',  groups = 2, full = FULL_MID},
-        {pack = 'space-science-pack',      item = 'oil-refinery',          groups = 2, full = FULL_MID},
+        {pack = 'automation-science-pack', item = 'firearm-magazine',         groups = 2, full = FULL_LOW},
+        {pack = 'logistic-science-pack',   item = 'piercing-rounds-magazine', groups = 2, full = FULL_LOW},
+        {pack = 'military-science-pack',   item = 'piercing-shotgun-shell',   groups = 2, full = FULL_LOW},
+        {pack = 'chemical-science-pack',   item = 'rocket',                   groups = 2, full = FULL_MID},
+        {pack = 'production-science-pack', item = 'explosive-cannon-shell',   groups = 2, full = FULL_MID},
+        {pack = 'utility-science-pack',    item = 'explosive-rocket',         groups = 2, full = FULL_MID},
+        {pack = 'space-science-pack',      item = 'uranium-rounds-magazine',  groups = 2, full = FULL_MID},
         --
-        {pack = 'metallurgic-science-pack',     item = 'foundry',               groups = 2, full = FULL_MAX},
-        {pack = 'electromagnetic-science-pack', item = 'electromagnetic-plant', groups = 2, full = FULL_MAX},
-        {pack = 'agricultural-science-pack',    item = 'biochamber',            groups = 2, full = FULL_MAX},
-        {pack = 'cryogenic-science-pack',       item = 'cryogenic-plant',       groups = 2, full = FULL_MAX},
-        {pack = 'promethium-science-pack',      item = 'big-mining-drill',      groups = 2, full = FULL_MAX},
+        {pack = 'metallurgic-science-pack',     item = 'uranium-cannon-shell', groups = 2, full = FULL_MAX},
+        {pack = 'electromagnetic-science-pack', item = 'railgun-ammo',         groups = 2, full = FULL_MAX},
+        {pack = 'agricultural-science-pack',    item = 'flamethrower-ammo',    groups = 2, full = FULL_MAX},
+        {pack = 'cryogenic-science-pack',       item = 'artillery-shell',      groups = 2, full = FULL_MAX},
+        {pack = 'promethium-science-pack',      item = 'atomic-bomb',          groups = 1, full = FULL_MAX},
     }},
 
     -- 大资本家压轴：全瓶种发金币（从市民组移入，商人组的终极形态）
@@ -540,13 +538,6 @@ local DEFAULT_CLASSES = {
         {pack = 'production-science-pack', item = 'space-platform-foundation',   groups = 10},
     }},
 
-    -- {key = 'captain', recipes = {
-
-    -- }, name = '船长', full = FULL_MAX, starter = {
-    --     {item = 'space-platform-starter-pack', count = 1},
-    -- }, unlock = {{pack = 'space-science-pack', level = 100}}, rewards = {
-    -- }},
-
     -- 注意：不再送 asteroid-reprocessing / advanced-asteroid-processing 科技（科技会整包解锁下列配方，概率就失效了），改为逐配方概率控制。
     {key = 'asteroidminer', recipes = {
         'metallic-asteroid-crushing', 
@@ -566,7 +557,7 @@ local DEFAULT_CLASSES = {
         {pack = 'space-science-pack',   item = 'asteroid-collector',          groups = 10, full = FULL_MAX},
         {pack = 'space-science-pack',   item = 'crusher',                     groups = 10, full = FULL_MAX},
         {pack = 'space-science-pack',   item = 'cargo-bay',                   groups = 10, full = FULL_MAX},
-        {pack = 'space-science-pack',   item = 'thruster',                    groups = 5, full = FULL_MAX},
+        {pack = 'space-science-pack',   item = 'thruster',                    groups = 10, full = FULL_MAX},
     }},
 
     -- 宇航·四星开拓者：起始科技 = 各星球发现科技；starter/rewards/recipes 待填。
@@ -687,11 +678,10 @@ local DEFAULT_CLASSES = {
     }, name = '保安', full = FULL_MID, starter = {
         {item = 'stone-wall', groups = 10},
     }, rewards = {
-        {pack = 'automation-science-pack', item = 'stone-wall',       groups = 20, full = FULL_LOW},
         {pack = 'automation-science-pack', item = 'radar',            groups = 1, full = FULL_LOW},
-        {pack = 'logistic-science-pack', item = 'gate',             groups = 1, full = FULL_LOW},
-
         {pack = 'automation-science-pack',        item = 'gun-turret',          groups = 5, full = FULL_LOW},
+        {pack = 'automation-science-pack', item = 'stone-wall',       groups = 20, full = FULL_LOW},
+        {pack = 'logistic-science-pack', item = 'gate',             groups = 1, full = FULL_LOW},
         {pack = 'military-science-pack',        item = 'flamethrower-turret', groups = 5, full = FULL_MID},
         {pack = 'chemical-science-pack',        item = 'laser-turret',        groups = 5, full = FULL_MAX},
         {pack = 'agricultural-science-pack', item = 'rocket-turret',        groups = 5, full = FULL_MAX},
@@ -754,6 +744,7 @@ local DEFAULT_CLASSES = {
         {pack = 'military-science-pack', item = 'cannon-shell',           groups = 10, full = FULL_LOW},
         {pack = 'chemical-science-pack', item = 'explosive-cannon-shell', groups = 10, full = FULL_MID},
         {pack = 'utility-science-pack', item = 'uranium-cannon-shell',   groups = 10, full = FULL_MAX},
+        {pack = 'space-science-pack',   item = 'explosive-uranium-cannon-shell', groups = 10, full = FULL_MAX},
     }},
     {key = 'rocketeer', recipes = {   -- 由原 techs 转换而来(科技自带的解锁配方)
         'rocket', 'explosive-rocket', 'atomic-bomb',
@@ -819,8 +810,8 @@ local DEFAULT_CLASSES = {
     }, name = '肉盾', full = FULL_MAX, starter = {   -- 全是盾
         {item = 'energy-shield-equipment', count = 20},
     }, rewards = {
-        {pack = 'military-science-pack', item = 'energy-shield-equipment',     groups = 20, full = FULL_LOW},
-        {pack = 'utility-science-pack',  item = 'energy-shield-mk2-equipment', groups = 20, full = FULL_MAX},
+        {pack = 'military-science-pack', item = 'energy-shield-equipment',     groups = 10, full = FULL_LOW},
+        {pack = 'utility-science-pack',  item = 'energy-shield-mk2-equipment', groups = 10, full = FULL_MAX},
     }},
     {key = 'powergear', recipes = {   -- 由原 techs 转换而来(科技自带的解锁配方)
         'solar-panel-equipment',
@@ -832,44 +823,44 @@ local DEFAULT_CLASSES = {
     }, name = '奶妈', full = FULL_MAX, starter = {   -- 发电+储能装置
         {item = 'fission-reactor-equipment', count = 1},
     }, rewards = {
-        {pack = 'logistic-science-pack',  item = 'solar-panel-equipment',     groups = 5, full = FULL_LOW},
-        {pack = 'chemical-science-pack',  item = 'fission-reactor-equipment', count = 10, full = FULL_MID},
-        {pack = 'cryogenic-science-pack', item = 'fusion-reactor-equipment',  count = 10, full = FULL_MAX},
+        {pack = 'logistic-science-pack',  item = 'solar-panel-equipment',     groups = 10, full = FULL_LOW},
+        {pack = 'chemical-science-pack',  item = 'fission-reactor-equipment', groups = 5, full = FULL_MID},
+        {pack = 'cryogenic-science-pack', item = 'fusion-reactor-equipment',  groups = 2, full = FULL_MAX},
         --
-        {pack = 'military-science-pack',  item = 'battery-equipment',         groups = 1, full = FULL_LOW},
-        {pack = 'utility-science-pack',   item = 'battery-mk2-equipment',     groups = 1, full = FULL_MID},
-        {pack = 'utility-science-pack',   item = 'battery-mk3-equipment',     groups = 1, full = FULL_MAX},
+        {pack = 'military-science-pack',  item = 'battery-equipment',         groups = 10, full = FULL_LOW},
+        {pack = 'utility-science-pack',   item = 'battery-mk2-equipment',     groups = 5, full = FULL_MID},
+        {pack = 'utility-science-pack',   item = 'battery-mk3-equipment',     groups = 2, full = FULL_MAX},
     }},
     {key = 'laserdefense', recipes = {   -- 由原 techs 转换而来(科技自带的解锁配方)
         'personal-laser-defense-equipment',
     }, name = '输出', full = FULL_MAX, starter = {   -- 全是激光
         {item = 'personal-laser-defense-equipment', count = 3},
     }, rewards = {
-        {pack = 'military-science-pack', item = 'personal-laser-defense-equipment', groups = 2},
+        {pack = 'military-science-pack', item = 'personal-laser-defense-equipment', groups = 10},
     }},
     {key = 'roboportgear', recipes = {   -- 由原 techs 转换而来(科技自带的解锁配方)
         'personal-roboport-equipment',
         'personal-roboport-mk2-equipment',
     }, name = '辅助', full = FULL_MAX, starter = {   -- 全是机器人
         {item = 'personal-roboport-equipment', count = 5},
+        {item = 'personal-roboport-equipment', groups = 1},
     }, rewards = {
-        {pack = 'logistic-science-pack', item = 'construction-robot',            groups = 10, full = FULL_LOW},
-        {pack = 'chemical-science-pack', item = 'personal-roboport-equipment',     groups = 5, full = FULL_MID},
-        {pack = 'utility-science-pack',  item = 'personal-roboport-mk2-equipment', count = 20, full = FULL_MAX},
+        {pack = 'chemical-science-pack', item = 'personal-roboport-equipment',     groups = 10, full = FULL_MID},
+        {pack = 'utility-science-pack',  item = 'personal-roboport-mk2-equipment', count = 10, full = FULL_MAX},
     }},
     {key = 'exoskeleton', recipes = {   -- 由原 techs 转换而来(科技自带的解锁配方)
         'exoskeleton-equipment',
     }, name = '快递员', full = FULL_MAX, starter = {   -- 全是外骨骼
         {item = 'exoskeleton-equipment', count = 2},
     }, rewards = {
-        {pack = 'chemical-science-pack', item = 'exoskeleton-equipment', groups = 2},
+        {pack = 'chemical-science-pack', item = 'exoskeleton-equipment', groups = 10},
     }},
     {key = 'toolbelt', recipes = {   -- 由原 techs 转换而来(科技自带的解锁配方)
         'toolbelt-equipment',
     }, name = '吃货', full = FULL_MAX, starter = {   -- 全是工具腰带
         {item = 'toolbelt-equipment', count = 1},
     }, rewards = {
-        {pack = 'logistic-science-pack', item = 'toolbelt-equipment', groups = 2},
+        {pack = 'logistic-science-pack', item = 'toolbelt-equipment', groups = 10},
     }},
 
     {section = 'farm'},
@@ -943,15 +934,6 @@ local DEFAULT_CLASSES = {
         {pack = 'agricultural-science-pack', item = 'jellynut',  groups = 10},
         {pack = 'agricultural-science-pack', item = 'jelly',     groups = 10},
     }},
-    -- {key = 'pharmacist', recipes = {   -- 由原 techs 转换而来(科技自带的解锁配方)
-    --     'nutrients-from-bioflux', 'copper-bacteria-cultivation', 'iron-bacteria-cultivation',
-    -- }, name = '培养员', full = FULL_MID, starter = {
-    --     {item = 'biochamber', groups = 1},
-    -- }, unlock = {{pack = 'agricultural-science-pack', level = 100}}, rewards = {
-    --     {pack = 'agricultural-science-pack', item = 'iron-bacteria',  groups = 2},
-    --     {pack = 'agricultural-science-pack', item = 'copper-bacteria',  groups = 2},
-    --     {pack = 'agricultural-science-pack', item = 'bioflux',     groups = 40},
-    -- }},
 }
 
 -- 纯数据深拷贝（DEFAULT_CLASSES 无函数/元表，递归即可）。
