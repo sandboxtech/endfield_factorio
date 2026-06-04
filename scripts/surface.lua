@@ -9,6 +9,28 @@ local events = require('scripts.events')
 -- 资源原型名 → 是否流体资源（开采产物含流体）。原型跨存档不变，模块级懒缓存（tile 替换 ore mask 用）。
 local FLUID_RES = {}
 
+-- 铺虚空的 tiles 条目【模块级复用缓冲】：每个虚空块原本新建 ~2300 个小表（1156 条目×{外表+position}），
+-- 大片虚空海域生成时 GC 分配洪峰可观。条目只建一次、逐块改坐标（set_tiles 调用期间引擎即拷贝，复用安全）。
+-- VOID_BUF：全虚空块专用，恒 1156 条不truncate；EDGE_BUF：跨边界块用，按需增长 + 显式截断到本块数量。
+local VOID_BUF
+local EDGE_BUF, EDGE_LEN = {}, 0
+local function void_tiles_full(left_top)
+    if not VOID_BUF then
+        VOID_BUF = {}
+        for i = 1, 34 * 34 do VOID_BUF[i] = {name = 'empty-space', position = {0, 0}} end
+    end
+    local i = 0
+    for x = -1, 32 do
+        for y = -1, 32 do
+            i = i + 1
+            local pos = VOID_BUF[i].position
+            pos[1] = left_top.x + x
+            pos[2] = left_top.y + y
+        end
+    end
+    return VOID_BUF
+end
+
 -- 各"世界变体"出现概率的可调常量（默认 1，游戏内 /c storage.prob_tile_remap=3 之类即可动态调）。
 local function prob(key) return storage['prob_' .. key] or 1 end
 
@@ -667,6 +689,7 @@ script.on_event(defines.events.on_surface_cleared, events.safe('surface_cleared'
                 acc = acc + e.w
                 if r <= acc then
                     storage.event_world[surface.name] = e.et
+                    if e.et == 'thunder' then storage.thunder_run = storage.run end   -- O(1) 标记：tick 的雷暴 handler 免每帧扫表
                     dbg_add('事件', e.et)
                     break
                 end
@@ -912,13 +935,7 @@ script.on_event(defines.events.on_chunk_generated, events.safe('chunk_generated'
         -- 整块在内切圆内 → 必为陆地，跳过
     elseif near >= (amax * outer) ^ 2 then
         -- 整块在外接圆外 → 必在椭圆外，整块铺虚空 + 跳过所有细节（map_features/市场/tile替换 对纯虚空块无用；染地已在最前画过）。
-        local tiles = {}
-        for x = -1, 32 do
-            for y = -1, 32 do
-                tiles[#tiles + 1] = {name = 'empty-space', position = {x = left_top.x + x, y = left_top.y + y}}
-            end
-        end
-        surface.set_tiles(tiles)
+        surface.set_tiles(void_tiles_full(left_top))   -- 复用缓冲：零新表分配
         return
     else
         -- 跨边界：逐格判定，把点旋转回主轴系再算归一化椭圆距离 + 噪声扰动边缘（smooth 倍频，平滑海湾/半岛）。
@@ -927,7 +944,7 @@ script.on_event(defines.events.on_chunk_generated, events.safe('chunk_generated'
         local nstart = storage.edge_noise_start or 0.8
         local nspan = math.max(0.01, 1 - nstart)
         local outer_d = 1 + rough   -- 噪声所能外扩的极限边界：d 超过它噪声救不回 → 免噪声直判虚空
-        local tiles = {}
+        local cnt = 0   -- 本块虚空格数（EDGE_BUF 复用缓冲的有效长度）
         -- 域扭曲【降采样】：噪声波长 ~167 格 >> 采样步长 4 格 → 每区块只采 10×10 网格点（200 次 fractal，
         -- 对比逐格 2312 次），逐格双线性插值，视觉无差。两通道(u/v 位移)各一张网格。
         local wgu, wgv
@@ -995,11 +1012,18 @@ script.on_event(defines.events.on_chunk_generated, events.safe('chunk_generated'
                     void = d > 1
                 end
                 if void and px * px + py * py > safe_sq then   -- 出生安全盘内豁免（硬保证不被虚空覆盖）
-                    tiles[#tiles + 1] = {name = 'empty-space', position = {x = px, y = py}}
+                    cnt = cnt + 1
+                    local e = EDGE_BUF[cnt]
+                    if not e then e = {name = 'empty-space', position = {0, 0}}; EDGE_BUF[cnt] = e end
+                    e.position[1], e.position[2] = px, py
                 end
             end
         end
-        if #tiles > 0 then surface.set_tiles(tiles) end
+        if cnt > 0 then
+            for i = cnt + 1, EDGE_LEN do EDGE_BUF[i] = nil end   -- 截断到本块数量（上块更长时清掉残留）
+            EDGE_LEN = cnt
+            surface.set_tiles(EDGE_BUF)
+        end
     end
 
     -- tile 替换【先于实体放置】：先把本块地砖换成最终形态，下面 map_features/市场的 find_non_colliding 才会

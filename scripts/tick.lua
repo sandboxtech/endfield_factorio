@@ -239,13 +239,15 @@ end
 local THUNDER_CHANCE = 1 / 36000
 events.on(defines.events.on_tick, events.safe('thunder', function()
     if not storage.event_world then return end
-    -- 早返回：本轮没有任何【雷暴星球】时，绝大多数 tick 在此一句廉价退出，省掉每帧遍历在线玩家。
-    -- event_world 只有 ~星球数 个条目，这趟扫描远比遍历全体在线玩家便宜。
-    local has_thunder = false
-    for _, ev in pairs(storage.event_world) do
-        if ev == 'thunder' then has_thunder = true; break end
+    -- 早返回 O(1)：storage.thunder_run == 本轮 run 才有雷暴星球（surface.lua 滚定时打标）。
+    -- 老档懒迁移：标记缺失时扫一次 event_world 补打（有=本轮 run，无=-1 恒不等），之后每帧单比较。
+    if storage.thunder_run == nil then
+        storage.thunder_run = -1
+        for _, ev in pairs(storage.event_world) do
+            if ev == 'thunder' then storage.thunder_run = storage.run; break end
+        end
     end
-    if not has_thunder then return end
+    if storage.thunder_run ~= storage.run then return end
     local victims = {}
     for _, player in pairs(game.connected_players) do
         if player.character and storage.event_world[player.surface.name] == 'thunder' then

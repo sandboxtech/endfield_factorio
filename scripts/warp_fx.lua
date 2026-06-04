@@ -115,7 +115,9 @@ events.on(defines.events.on_tick, function()
             -- 守卫用 ≤ 窗口（含已逾期 remaining ≤ 0），而非旧的 remaining>0：
             -- 一旦 remaining 因任何原因(reset 抛错没重置 warp_hours、投票骤减后被跨过等)已是负值，
             -- 旧守卫会永不再起 → 自动跃迁彻底卡死、HUD 卡在 0 分钟。这里逾期则 end_tick 夹到当前 tick，下个 tick 立即归零触发 reset。
-            if remaining <= LEAD_SECONDS * 60 then
+            -- 窗口放宽 1 秒（LEAD+1）：让倒计时状态提前就绪，首个数字("10")由下方主循环在跨过
+            -- 整秒边界的【那一 tick】精确触发——否则受 %60 探测网格限制，"10"最多晚 0.98 秒才出现。
+            if remaining <= (LEAD_SECONDS + 1) * 60 then
                 storage.warp_fx = {end_tick = game.tick + math.max(0, remaining), last = nil}
             end
         end
@@ -147,11 +149,14 @@ events.on(defines.events.on_tick, function()
         return
     end
 
-    -- 每跨过一个整数秒刷一帧（ttl=60，正好等于刷新间隔 → 旧字消失同刻新字出现，无缝、零重叠）。
+    -- 每跨过一个整数秒刷一帧。ttl = 到下一个整秒边界的【精确剩余】（整秒切换帧恒为 60；
+    -- 首帧可能是残秒，如 19）→ 旧字恰在新字出现那一刻消失，零重叠（旧版固定 ttl=60，
+    -- 首帧残秒会让"10"和"9"重叠最多近 1 秒）。sec > LEAD 不画（窗口放宽到 LEAD+1 的预备秒）。
     local sec = math.ceil(remain / 60)
-    if fx.last ~= sec then
+    if fx.last ~= sec and sec <= LEAD_SECONDS then
         fx.last = sec
-        draw_center(tostring(sec), countdown_color(sec), 12, 60, true)
+        local ttl = remain - (sec - 1) * 60   -- ∈ [1, 60]
+        draw_center(tostring(sec), countdown_color(sec), 12, ttl, true)
         play(TICK_SOUND)
     end
 end)
