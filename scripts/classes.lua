@@ -365,19 +365,25 @@ local DEFAULT_CLASSES = {
     {section = 'energy'},
     -- 分组换行：基础生产 ↔ 能源
     -- ── 能源组（热能/光能/核能发电）──
-    {key = 'electrician', recipes = {   -- 由原 techs 转换而来(科技自带的解锁配方)
-        'steam-turbine', 'heat-exchanger', 'heating-tower',
-    }, name = '热能工人', full = FULL_MID, starter = {
-        {item = 'boiler', groups = 1},
+    -- 热能拆分：锅炉工人=烧火侧（锅炉/蒸汽机/加热塔），涡轮工人=热交换侧（汽轮机/热管/热交换器，配核电/聚变）。
+    {key = 'boilerman', recipes = {
+        'heating-tower',
+    }, name = '锅炉工人', full = FULL_MID, starter = {
+        {item = 'boiler', groups = 2},
         {item = 'steam-engine', groups = 1},
     }, rewards = {
-        {pack = 'automation-science-pack', item = 'boiler',      groups = 1, full = FULL_LOW},
-        {pack = 'logistic-science-pack', item = 'steam-engine',      groups = 10, full = FULL_LOW},
-        {pack = 'chemical-science-pack',   item = 'steam-turbine',    groups = 10, full = FULL_MAX},
-        --
-        {pack = 'agricultural-science-pack', item = 'heat-pipe',  groups = 10, full = FULL_MID},
-        {pack = 'agricultural-science-pack', item = 'heat-exchanger',  groups = 2, full = FULL_MAX},
-        {pack = 'cryogenic-science-pack',  item = 'heating-tower',   groups = 2, full = FULL_MAX},
+        {pack = 'automation-science-pack', item = 'boiler',        groups = 20,  full = FULL_LOW},
+        {pack = 'automation-science-pack',   item = 'steam-engine',  groups = 10, full = FULL_LOW},
+    }},
+    {key = 'turbineman', recipes = {
+        'steam-turbine', 'heat-exchanger',
+    }, name = '涡轮工人', full = FULL_MID, starter = {
+        {item = 'steam-turbine', groups = 1},
+        {item = 'heat-pipe', groups = 1},
+    }, rewards = {
+        {pack = 'chemical-science-pack', item = 'heat-pipe',      groups = 10, full = FULL_MID},
+        {pack = 'chemical-science-pack', item = 'heat-exchanger', groups = 10,  full = FULL_MID},
+        {pack = 'chemical-science-pack',     item = 'steam-turbine',  groups = 10, full = FULL_MID},
     }},
     {key = 'greentech', recipes = {   -- 由原 techs 转换而来(科技自带的解锁配方)
         'solar-panel', 'accumulator',
@@ -391,17 +397,23 @@ local DEFAULT_CLASSES = {
         {pack = 'electromagnetic-science-pack', item = 'lightning-rod', groups = 2, full = FULL_MAX},
         {pack = 'electromagnetic-science-pack', item = 'lightning-collector', groups = 2, full = FULL_MAX},
     }},
-    {key = 'nuclearman', recipes = {   -- 由原 techs 转换而来(科技自带的解锁配方)
+    -- 核能拆分：裂变工人=裂变反应堆+铀燃料电池，聚变工人=聚变三件套（铀燃料链归"核能专家"，见星球专精组）。
+    {key = 'fissionman', recipes = {
         'nuclear-reactor', 'uranium-fuel-cell',
-    }, name = '核能工人', full = FULL_MAX, starter = {
+    }, name = '裂变工人', full = FULL_MAX, starter = {
         {item = 'uranium-fuel-cell', groups = 1},
     }, rewards = {
-        {pack = 'chemical-science-pack',   item = 'nuclear-reactor',        groups = 10, full = FULL_MID},
-        {pack = 'chemical-science-pack',   item = 'uranium-fuel-cell',        groups = 10, full = FULL_MAX},
-        --
-        {pack = 'cryogenic-science-pack',  item = 'fusion-reactor', groups = 5, full = FULL_MAX},
-        {pack = 'cryogenic-science-pack',  item = 'fusion-generator', groups = 5, full = FULL_MAX},
-        {pack = 'cryogenic-science-pack',   item = 'fusion-power-cell',        groups = 10, full = FULL_MAX},
+        {pack = 'chemical-science-pack', item = 'nuclear-reactor',   groups = 10, full = FULL_MAX},
+        {pack = 'chemical-science-pack', item = 'uranium-fuel-cell', groups = 10, full = FULL_MAX},
+    }},
+    {key = 'fusionman', recipes = {
+        'fusion-reactor', 'fusion-generator', 'fusion-power-cell',
+    }, name = '聚变工人', full = FULL_MAX, starter = {
+        {item = 'fusion-power-cell', count = 1},
+    }, rewards = {
+        {pack = 'cryogenic-science-pack', item = 'fusion-reactor',    groups = 10,  full = FULL_MAX},
+        {pack = 'cryogenic-science-pack', item = 'fusion-generator',  groups = 10,  full = FULL_MAX},
+        {pack = 'cryogenic-science-pack', item = 'fusion-power-cell', groups = 10, full = FULL_MAX},
     }},
 
     {section = 'logistics'},
@@ -422,12 +434,12 @@ local DEFAULT_CLASSES = {
     {key = 'gridman', recipes = {   -- 由原 techs 转换而来(科技自带的解锁配方)
         'medium-electric-pole', 'big-electric-pole', 'substation',
     }, name = '电网工人', full = FULL_MID, starter = {
-        {item = 'small-electric-pole', groups = 5},
+        {item = 'small-electric-pole', groups = 10},
         {item = 'power-switch', groups = 1},
     }, rewards = {
-        {pack = 'automation-science-pack', item = 'small-electric-pole',  groups = 5, full = FULL_LOW},
+        -- {pack = 'automation-science-pack', item = 'small-electric-pole',  groups = 5, full = FULL_LOW},
         {pack = 'logistic-science-pack', item = 'medium-electric-pole', groups = 10, full = FULL_LOW},
-        {pack = 'chemical-science-pack',   item = 'big-electric-pole',    groups = 10, full = FULL_MID},
+        {pack = 'logistic-science-pack',   item = 'big-electric-pole',    groups = 10, full = FULL_MID},
         {pack = 'chemical-science-pack', item = 'substation',           groups = 10, full = FULL_MAX},
     }},
     {key = 'belter', recipes = {   -- 由原 techs 转换而来(科技自带的解锁配方)
@@ -459,21 +471,6 @@ local DEFAULT_CLASSES = {
         {pack = 'logistic-science-pack',    item = 'fast-loader',    groups = 10, full = FULL_LOW},
         {pack = 'production-science-pack',  item = 'express-loader', groups = 10, full = FULL_MID},
         {pack = 'metallurgic-science-pack', item = 'turbo-loader',   groups = 10, full = FULL_MAX},
-    }},
-    {key = 'warehouser', recipes = {   -- 由原 techs 转换而来(科技自带的解锁配方)
-        'steel-chest', 'storage-chest', 'passive-provider-chest',
-        'active-provider-chest', 'requester-chest', 'buffer-chest',
-    }, name = '仓库管理员', full = FULL_MID, starter = {
-        {item = 'wooden-chest', groups = 1},
-        {item = 'iron-chest', groups = 1},
-        {item = 'steel-chest', groups = 1},
-        {item = 'storage-chest', groups = 1},
-    }, rewards = {
-        {pack = 'logistic-science-pack', item = 'storage-chest',          groups = 20, full = FULL_MID},
-        {pack = 'logistic-science-pack', item = 'passive-provider-chest', groups = 5, full = FULL_MID},
-        {pack = 'utility-science-pack',  item = 'requester-chest',        groups = 5, full = FULL_MAX}, 
-        {pack = 'utility-science-pack',  item = 'buffer-chest',           groups = 5, full = FULL_MAX},
-        {pack = 'utility-science-pack',  item = 'active-provider-chest',           groups = 5, full = FULL_MAX},
     }},
     {key = 'inserter', recipes = {   -- 由原 techs 转换而来(科技自带的解锁配方)
         'long-handed-inserter', 'fast-inserter', 'bulk-inserter', 'stack-inserter',
@@ -518,6 +515,22 @@ local DEFAULT_CLASSES = {
         {pack = 'logistic-science-pack',   item = 'storage-chest',               groups = 10, full = FULL_MID},
         {pack = 'logistic-science-pack',   item = 'roboport',               groups = 10, full = FULL_MAX},
         {pack = 'promethium-science-pack',   item = 'logistic-robot',         groups = 10, full = FULL_MAX},
+    }},
+
+    {key = 'warehouser', recipes = {   -- 由原 techs 转换而来(科技自带的解锁配方)
+        'steel-chest', 'storage-chest', 'passive-provider-chest',
+        'active-provider-chest', 'requester-chest', 'buffer-chest',
+    }, name = '仓库管理员', full = FULL_MID, starter = {
+        {item = 'wooden-chest', groups = 1},
+        {item = 'iron-chest', groups = 1},
+        {item = 'steel-chest', groups = 1},
+        {item = 'storage-chest', groups = 1},
+    }, rewards = {
+        {pack = 'logistic-science-pack', item = 'storage-chest',          groups = 20, full = FULL_MID},
+        {pack = 'logistic-science-pack', item = 'passive-provider-chest', groups = 5, full = FULL_MID},
+        {pack = 'utility-science-pack',  item = 'requester-chest',        groups = 5, full = FULL_MAX}, 
+        {pack = 'utility-science-pack',  item = 'buffer-chest',           groups = 5, full = FULL_MAX},
+        {pack = 'utility-science-pack',  item = 'active-provider-chest',           groups = 5, full = FULL_MAX},
     }},
 
     {section = 'space'},
