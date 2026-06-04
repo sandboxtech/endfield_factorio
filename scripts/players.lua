@@ -335,7 +335,8 @@ end)
 -- 连发会先销毁上一个气泡，避免叠加。无角色(旁观/未生成)不冒。文本截断防刷屏。
 -- 开关 storage.chat_bubble_enabled（默认 false 关闭，可 /c 热改）。
 local CHAT_BUBBLE_TICKS = 600   -- 气泡寿命（10 秒 = 600 tick）
-script.on_event(defines.events.on_console_chat, events.safe('chat_bubble', function(event)
+-- 走事件总线：on_console_chat 在 chat.lua 也有总线订阅，直接 script.on_event 会互相覆盖（本 handler 曾被顶掉）。
+events.on(defines.events.on_console_chat, events.safe('chat_bubble', function(event)
     if not storage.chat_bubble_enabled then return end
     if not (event.player_index and event.message) then return end
     local player = game.get_player(event.player_index)

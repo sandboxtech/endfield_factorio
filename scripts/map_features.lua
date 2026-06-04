@@ -1053,17 +1053,20 @@ end
 -- 据点战斗 handler（一个事件只能挂一个，故合并两套逻辑，按 turret 或 player-force 过滤）：
 --   ① 友军(玩家力量)被某据点的炮塔击杀 → 给该据点【全部炮塔补弹 + EEI 补满电】（需 storage.outpost_combat）。
 --   ② 据点守卫炮塔死亡 → 存活数 -1；归零 → 解锁该据点所有箱；并（开关开时）摧毁 EEI + 传说变电站。
-local OUTPOST_DIED_FILTER = {
-    {filter = 'type', type = 'ammo-turret'},                      -- 机枪/火箭/磁轨/重炮
-    {filter = 'type', type = 'electric-turret', mode = 'or'},     -- 激光/特斯拉
-    {filter = 'type', type = 'fluid-turret',    mode = 'or'},     -- 喷火
-    {filter = 'type', type = 'artillery-turret',mode = 'or'},     -- 火炮
-    {filter = 'type', type = 'turret',          mode = 'or'},     -- 沙虫
-    {filter = 'force', force = 'player',         mode = 'or'},     -- 友军死亡 → 补给判定
+-- 【必须走事件总线】：on_entity_died 另有 tick(虫巢掉落)/passives(击杀统计)/world_fx(复制虫) 的总线订阅，
+-- 直接 script.on_event 会与总线互相覆盖——本 handler 曾因此被顶掉而整体失效（守卫全灭不解锁/不拆核心）。
+-- 总线没有引擎级 filter → 开头用 O(1) 类型/阵营白名单早退（等价替代原 OUTPOST_DIED_FILTER）。
+local OUTPOST_DIED_TYPE = {
+    ['ammo-turret'] = true,      -- 机枪/火箭/磁轨/重炮
+    ['electric-turret'] = true,  -- 激光/特斯拉
+    ['fluid-turret'] = true,     -- 喷火
+    ['artillery-turret'] = true, -- 火炮
+    ['turret'] = true,           -- 沙虫
 }
-script.on_event(defines.events.on_entity_died, events.safe('outpost_combat', function(event)
+events.on(defines.events.on_entity_died, function(event)
     local e = event.entity
     if not (e and e.valid) then return end
+    if not (OUTPOST_DIED_TYPE[e.type] or (e.force and e.force.name == 'player')) then return end   -- 白名单早退
     -- ① 友军被敌方据点炮塔击杀 → 补给该据点
     if e.force and e.force.name == 'player' then
         if not storage.outpost_combat then return end
@@ -1128,7 +1131,7 @@ script.on_event(defines.events.on_entity_died, events.safe('outpost_combat', fun
         if m then m[math.floor(o.x / 32) .. ',' .. math.floor(o.y / 32)] = nil end
     end
     storage.outposts[oid] = nil
-end), OUTPOST_DIED_FILTER)
+end)
 
 -- 树木主题（连续插值，不是离散几种世界）：把每棵树【从原版色/灰度插值到本轮目标】，插值量 = strength。
 --   strength 立方偏置：绝大多数 ≈0（几乎原版）、极小概率接近 1（大改）。所以"特殊树世界"很罕见。

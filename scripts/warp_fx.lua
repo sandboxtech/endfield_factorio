@@ -58,8 +58,8 @@ local function draw_center(text, color, scale, ttl, follow)
 end
 
 -- 跃迁微光参数：柔和青白、峰值很低（不晃眼），随后由 on_tick 平滑淡出。
-local GLOW_COLOR = {r = 0.6, g = 0.9, b = 1.0}   -- 柔和青白（想要纯白改 {1,1,1}，想黑场眨眼改 {0,0,0}）
-local GLOW_PEAK  = 0.3                            -- 峰值透明度（越小越不晃眼；硬闪是 0.7）
+local GLOW_COLOR = {r = 0, g = 0, b = 0}          -- 纯黑（黑场眨眼；想要柔和青白改回 {0.6,0.9,1.0}，纯白 {1,1,1}）
+local GLOW_PEAK  = 0.6                            -- 峰值透明度：黑场要压得住画面，0.6 起步（青白光晕时用 0.3）
 local GLOW_TICKS = 24                             -- 淡出时长（tick），约 0.4 秒
 
 -- 当前淡出进度对应的一帧（alpha 从 GLOW_PEAK 线性降到 0）。挂固定坐标、只该玩家可见、ttl 短随即重画。
