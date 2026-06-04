@@ -267,6 +267,10 @@ script.on_event(defines.events.on_pre_player_left_game, function(event)
         return
     end
 
+    -- 离线杀死玩家的总开关（storage.kill_on_leave，默认 true）：杀死=尸体/货物留在当地、杜绝
+    -- "外星捡货下线、改天上线带回母星"。设 false 则离线保留角色与背包（/c storage.kill_on_leave=false）。
+    if storage.kill_on_leave == false then return end
+
     if player.character then
         M.kill_player(player)
         -- 删除可能落在飞船原点附近的尸体
