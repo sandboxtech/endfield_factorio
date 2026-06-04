@@ -319,19 +319,10 @@ local function loot_weights() return storage.loot_weights or DEFAULT_LOOT_WEIGHT
 function M.ensure_loot()
     storage.loot_weights = storage.loot_weights or deepcopy(DEFAULT_LOOT_WEIGHTS)
     storage.loot = storage.loot or deepcopy(DEFAULT_LOOT)   -- 物品名单也存 storage，可 /c 热改（加减物品）
-    -- 迁移：treasure 从单独 TREASURE_POOL 并入 loot 体系。老档已有的 storage.loot/loot_weights（旧结构、无 treasure）
-    -- 不会被上面的 `or` 更新 → 这里【缺则补】默认 treasure 类/箱型，否则 fill_treasure_chest 调 pick_loot 会拿到 nil 崩。
-    local has = false
-    for _, c in ipairs(storage.loot) do if c.cat == 'treasure' then has = true; break end end
-    if not has then
-        for _, c in ipairs(DEFAULT_LOOT) do if c.cat == 'treasure' then storage.loot[#storage.loot + 1] = deepcopy(c); break end end
-    end
-    -- 逐【箱型】键补齐：老档 storage.loot_weights 是非 nil 的旧表，loot_weights() 的 `or` 只整张兜底、不补缺键，
-    -- 缺哪个箱型(treasure 是后并入的)就给默认。比单补 treasure 更稳：将来新增箱型也自动覆盖，不会再喂 nil 给 pick_loot。
+    -- 逐【箱型】键补齐（非迁移，保留）：将来新增箱型时，已有存档的 loot_weights 自动补上默认，不会喂 nil 给 pick_loot。
     for box, w in pairs(DEFAULT_LOOT_WEIGHTS) do
         storage.loot_weights[box] = storage.loot_weights[box] or deepcopy(w)
     end
-    storage.treasure_pool = nil   -- 废弃键清理：treasure 已并入 storage.loot
 end
 
 -- （宝箱精选池已并入 DEFAULT_LOOT 的 'treasure' 类；木箱抽取见 fill_treasure_chest + DEFAULT_LOOT_WEIGHTS.treasure。）

@@ -351,11 +351,20 @@ function M.reset()
     end
     storage.chat_bubble = {} -- 清空聊天气泡引用（角色已死、气泡已随之销毁，避免残留无效引用）
 
-    -- 飞船全部瞬移回母星轨道并暂停；顺带清空各平台 surface 上的所有陨石(asteroid + asteroid-chunk)，
-    -- 避免上一轮飞来的陨石跨轮残留/继续砸船。
+    -- 跃迁时飞船去向由 storage.platform_warp_mode 控制（默认 'stay'，可 /c 热改）：
+    --   'stay'   = 停留原地，保持航行状态继续跑（不动它）
+    --   'home'   = 瞬移回母星轨道并暂停（旧行为）
+    --   'random' = 每艘各自随机挑一个星球轨道停靠并暂停
+    -- 无论哪种模式都清空平台 surface 上的所有陨石(asteroid + asteroid-chunk)，避免上一轮的陨石跨轮残留/继续砸船。
+    local pmode = storage.platform_warp_mode or 'stay'
     for _, platform in pairs(force.platforms) do
-        platform.space_location = 'nauvis'
-        platform.paused = true
+        if pmode == 'home' then
+            platform.space_location = 'nauvis'
+            platform.paused = true
+        elseif pmode == 'random' then
+            platform.space_location = constants.PLANETS[math.random(#constants.PLANETS)]
+            platform.paused = true
+        end
         local psurface = platform.surface
         if psurface and psurface.valid then
             for _, a in pairs(psurface.find_entities_filtered{type = {'asteroid', 'asteroid-chunk'}}) do

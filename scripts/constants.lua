@@ -72,41 +72,8 @@ local M = {
 -- on_configuration_changed 都可安全调用，老存档改版后迁移也能补齐新增字段。
 -- 注意：warp_hours 等"每轮重置的运行时状态"不在此处，由 on_init / reset 负责。
 function M.ensure_defaults()
-    -- 重构清理（每次调用都跑，幂等）：删除已废弃的 storage 键，并修正类型已变更的键。
-    -- on_init / on_configuration_changed / 每轮 reset 都会触发 → 老存档无需手动迁移，加载/跃迁即自愈。
-    for _, k in ipairs({'radius', 'radius_of', 'tree_remap', 'prob_tree_remap', 'schema_version',
-                        'prob_danger', 'danger_density', 'danger_theme', 'wreck_density',
-                        'loot_density_outpost', 'loot_density_perp', 'encounter_perp', 'encounter_empty',
-                        'enemy_death_push_minutes', 'vote_unlock_level', 'star_unlock_level',   -- *_unlock_level 废弃：投票/星星功能不再设等级门槛
-                        'thunder_chance'}) do   -- thunder_chance 废弃：雷暴概率改为 tick.lua 内固定常量 THUNDER_CHANCE，不再热改/不进 diff
-        storage[k] = nil
-    end
-    -- travel_chance 曾是标量、现改为【按星球的表】；旧标量会让 tc[星球] 索引数字崩服 → 非表一律清掉，由下方按星球重建。
-    if type(storage.travel_chance) ~= 'table' then storage.travel_chance = nil end
-    -- 科技瓶经验改名+换刻度：旧 storage.science_exp(以"组"计) → 新 storage.exp(以"瓶"计；1 组 = 200 瓶，故 ×200)。
-    -- 幂等：靠旧键 science_exp 是否存在；搬完置 nil，后续不再跑（故可常驻 ensure_defaults，不怕重复）。
-    if storage.science_exp then
-        storage.exp = storage.exp or {}
-        for name, packs in pairs(storage.science_exp) do
-            local d = storage.exp[name] or {}
-            for pk, v in pairs(packs) do d[pk] = (d[pk] or 0) + v * 200 end
-            storage.exp[name] = d
-        end
-        storage.science_exp = nil
-    end
-    -- enemy_autoplace_spread 拆成 freq/size 各自幅度：把旧统一键(含管理员 /c 改过的值)搬到两个新键，再删旧键。
-    -- 必须在【下方补默认】之前做 → 迁移值优先于新默认 4。幂等：旧键删掉后不再触发，老存档加载即自愈。
-    if storage.enemy_autoplace_spread ~= nil then
-        storage.enemy_freq_spread = storage.enemy_freq_spread or storage.enemy_autoplace_spread
-        storage.enemy_size_spread = storage.enemy_size_spread or storage.enemy_autoplace_spread
-        storage.enemy_autoplace_spread = nil
-    end
-    -- enemy_respawn_ticks 改名 respawn_ticks_by_enemy：把旧值(含管理员 /c 改过的)搬到新键，再删旧键。
-    -- 必须在【下方补默认】之前 → 迁移值优先于新默认。幂等：旧键删掉后不再触发，老档加载即自愈。
-    if storage.enemy_respawn_ticks ~= nil then
-        storage.respawn_ticks_by_enemy = storage.respawn_ticks_by_enemy or storage.enemy_respawn_ticks
-        storage.enemy_respawn_ticks = nil
-    end
+    -- （历史的一次性迁移代码——废弃键清理 / science_exp→exp 改名 / enemy_autoplace_spread 拆分 /
+    --   enemy_respawn_ticks 改名 / travel_chance 类型修正——已删除：线上所有存档均已跑过新代码完成迁移。）
 
     -- 标量默认（用 nil 判定，布尔 false/0 也能被正确保留）
     local d = {
@@ -181,18 +148,15 @@ function M.ensure_defaults()
         enemy_size_mul = 1,               -- 敌人巢穴 size 全局倍率：在 spread 浮动结果上再乘（>1 团更大、<1 更小）
 
         roboport_limit = 10000,           -- 单个机器人网络最多 roboport 数，超出则摧毁刚放的并退还
+        platform_warp_mode = 'stay',      -- 跃迁时飞船去向：'stay'=停留原地继续跑；'home'=瞬移回母星轨道并暂停；'random'=各自随机挑一个星球轨道停靠并暂停
     }
     M.scalar_defaults = d   -- 暴露标量默认值（供 /config 命令对比当前 storage 与默认）
     for k, v in pairs(d) do
         if storage[k] == nil then storage[k] = v end
     end
     -- 据点【箱子遭遇】出现率的每星球乘数（material/equipment/treasure/perpetual 四类一起乘，【不含】空据点）。
-    -- 缺失才补 → 保留 /c 调整。热改示例：/c storage.loot_planet_mul.gleba = 5
-    storage.loot_planet_mul = storage.loot_planet_mul or {}
-    local planet_mul = {nauvis = 1, vulcanus = 1, fulgora = 2, gleba = 3, aquilo = 4}
-    for p, m in pairs(planet_mul) do
-        if storage.loot_planet_mul[p] == nil then storage.loot_planet_mul[p] = m end
-    end
+    -- 热改示例：/c storage.loot_planet_mul.gleba = 5
+    storage.loot_planet_mul = storage.loot_planet_mul or {nauvis = 1, vulcanus = 1, fulgora = 2, gleba = 3, aquilo = 4}
     -- 各科技瓶【解锁延长跃迁的分钟数】。缺失才补 → 保留管理员 /c 的调整，并自动纳入将来新增的瓶。
     -- 热改示例：/c storage.warp_extend_minutes['cryogenic-science-pack'] = 90
     storage.warp_extend_minutes = storage.warp_extend_minutes or {}
@@ -269,11 +233,6 @@ function M.ensure_defaults()
                           'last_respawn_run', 'move_pos', 'bad_items', 'bad_entities', 'gen_debug', 'warp_vote', 'warp_vote_cost',
                           'obstacle_remap', 'fluid_remap', 'last_leaderboard', 'market_run', 'respawn_surface', 'chat_bubble', 'enemy_floor', 'action_cd', 'travel_open', 'event_period_min', 'charge', 'star', 'player_class', 'player_class_current', 'class_cd', 'travel_cd', 'vote_cd'}) do
         storage[key] = storage[key] or {}
-    end
-    -- 迁移：首次引入 player_class_current（当前职业）时，用现有 player_class（预约职业）作为初始当前职业，
-    -- 否则老存档进行中的世界里所有人当前职业会显示成默认 civilian，直到下次发装备才落定。仅当当前表为空才播种(幂等)。
-    if not next(storage.player_class_current) and next(storage.player_class) then
-        for name, key in pairs(storage.player_class) do storage.player_class_current[name] = key end
     end
     -- world_fx 全局开关（默认开；/c storage.world_fx.xxx=false 单独禁用某事件驱动效果）。
     -- 加新 fx 时在此列表补上同名键，并在 world_fx.lua register 对应逻辑。
