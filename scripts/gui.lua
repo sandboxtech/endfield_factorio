@@ -103,7 +103,7 @@ function M.players_gui()
 end
 
 -- ── 临时弹窗 ────────────────────────────────────────────────────────────────
--- 把信息类指令(教程/查看/倒计时/预览)的输出从聊天框搬到屏幕中央的独立窗口：不刷屏、可关闭。
+-- 把信息类指令(教程/查看/倒计时/荣誉榜等)的输出从聊天框搬到屏幕中央的独立窗口：不刷屏、可关闭。
 -- 关闭方式：点右上 × 或按 Esc/E（on_gui_closed）。重复打开自动替换旧窗，不堆叠。
 local POPUP_NAME = 'wn_popup'
 M.POPUP_NAME = POPUP_NAME
@@ -197,11 +197,12 @@ end
 function M.show_actions(player)
     if not player then return end
     -- 真按钮：name 复用 HUD 同名按钮 或 wn_act_* / tags，点击经 tick.on_gui_click 路由到 commands.* 。
-    local buttons = {
-        {name = 'wn_act_hof',      caption = {'wn.act-hof'},      tooltip = {'wn.act-hof-tip'}},
-        {name = 'wn_act_lastrank', caption = {'wn.act-lastrank'}, tooltip = {'wn.act-lastrank-tip'}},
-        {name = 'wn_act_suicide',  caption = {'wn.act-suicide'},  tooltip = {'wn.act-suicide-tip'}},
-    }
+    local buttons = {}
+    if storage.hall_of_fame_enabled ~= false then   -- 荣誉榜可选（storage 开关，关=隐藏按钮、reset 也停止记录）
+        buttons[#buttons + 1] = {name = 'wn_act_hof', caption = {'wn.act-hof'}, tooltip = {'wn.act-hof-tip'}}
+    end
+    buttons[#buttons + 1] = {name = 'wn_act_lastrank', caption = {'wn.act-lastrank'}, tooltip = {'wn.act-lastrank-tip'}}
+    buttons[#buttons + 1] = {name = 'wn_act_suicide',  caption = {'wn.act-suicide'},  tooltip = {'wn.act-suicide-tip'}}
     -- 【前往星球】组：总开关 storage.travel_enabled 开启后 5 个星球全显示；本轮未开放的置灰不可点。
     if storage.travel_enabled then
         buttons[#buttons + 1] = {label = true, caption = {'wn.actions-travel-group'}}

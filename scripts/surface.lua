@@ -458,7 +458,7 @@ script.on_event(defines.events.on_surface_cleared, events.safe('surface_cleared'
         cb = base + (math.random() - 0.5) * 0.10
     end
     surface.brightness_visual_weights = {r = cr, g = cg, b = cb}
-    surface.min_brightness = 0.15 * math.random()        -- 夜晚黑暗程度 0~0.15（越小越黑），纯表现
+    surface.min_brightness = 0.15 * math.random()        -- 夜晚黑暗程度 0~0.15（越小越黑）。影响渲染+虫子视野，不影响太阳能
     surface.show_clouds = math.random(1, 5) > 1          -- 1/5 概率无云，纯表现
     -- 阳光强度影响太阳能发电（玩法）→ 大概率正常、小概率小幅偏离
     surface.solar_power_multiplier = util.mostly_normal()
@@ -473,11 +473,13 @@ script.on_event(defines.events.on_surface_cleared, events.safe('surface_cleared'
     elseif not polar and math.random(1, 6) == 1 then
         surface.freeze_daytime = true
         surface.daytime = 0.56   -- 永夜
+        surface.min_brightness = math.max(surface.min_brightness, 0.05)   -- 永夜世界兜底下限：避免"永夜×纯黑"叠加整局摸黑
         dbg_add('昼夜', '永夜')
     end
-    if surface.solar_power_multiplier < 0.9 or surface.solar_power_multiplier > 1.1 then
-        dbg_add('昼夜', string.format('太阳能×%.2f', surface.solar_power_multiplier))
-    end
+    -- 夜色汇总进 /gen：夜亮=min_brightness(深夜渲染下限)，夜色=LUT 三通道权重，太阳能倍率联动展示。
+    -- 注意引擎机制：太阳能只跟昼夜曲线(长短/占比/永昼永夜)和 solar_power_multiplier 走，夜亮/夜色是纯视觉(+虫视野)。
+    dbg_add('昼夜', string.format('夜亮%.2f 夜色(%.2f/%.2f/%.2f) 太阳能×%.2f',
+        surface.min_brightness, cr, cg, cb, surface.solar_power_multiplier))
 
     -- 刷新星球【形状】：基准半径 r → 旋转椭圆（长轴 a、短轴 b、旋转角 angle）+ 噪声粗糙边缘 + 偏心中心。
     local r = storage.radius_standard * util.random_exp(2)

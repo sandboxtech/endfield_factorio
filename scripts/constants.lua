@@ -133,6 +133,9 @@ function M.ensure_defaults()
         -- 据点战斗规则（map_features）：① 敌方炮塔击杀友军 → 给该据点炮塔补弹 + EEI 补电；② 据点炮塔全灭 → 连同 EEI+变电站一起摧毁。关：/c storage.outpost_combat=false
         outpost_combat         = true,
         outpost_pave_prob      = 0.5,      -- 据点【强制铺地】概率：命中的据点，箱/守卫/变电站放不下时先铺对应地砖再硬放（水/熔岩/虚空旁不再缺斤短两）。0=关，1=全部强制
+        -- 世界荣誉榜（reset 跃迁结算记录、功能菜单查看）：
+        hall_of_fame_enabled   = true,     -- 总开关：false=不再记录新世界、功能菜单隐藏荣誉榜按钮（已有记录保留不删）
+        hall_of_fame_max       = 30,       -- 最大保留条数（按全员带走经验排序，超出裁掉队尾）
         event_chance = 0.5,               -- 每分钟【全服】发生一次世界事件的固定概率（与人数无关；命中后随机挑 1 名玩家）
         -- 科技世界(事件世界的一种)：每次从所有科技随机抽一个
         tech_world_lose_chance = 0.125,    -- 抽中【已研究】科技时，失去它的概率
@@ -254,7 +257,10 @@ function M.ensure_defaults()
     for _, key in ipairs({'width_of', 'height_of', 'shape_of', 'exp', 'player_stats', 'platform_age',
                           'ground_tint', 'tile_remap', 'event_world', 'loot_style', 'members',
                           'last_respawn_run', 'move_pos', 'bad_items', 'bad_entities', 'gen_debug', 'warp_vote', 'warp_vote_cost',
-                          'obstacle_remap', 'fluid_remap', 'last_leaderboard', 'market_run', 'respawn_surface', 'chat_bubble', 'enemy_floor', 'action_cd', 'travel_open', 'event_period_min', 'charge', 'star', 'player_class', 'player_class_current', 'class_cd', 'travel_cd', 'vote_cd', 'session_join'}) do
+                          'obstacle_remap', 'fluid_remap', 'last_leaderboard', 'market_run', 'respawn_surface', 'chat_bubble', 'enemy_floor', 'action_cd', 'travel_open', 'event_period_min', 'charge', 'star', 'player_class', 'player_class_current', 'class_cd', 'travel_cd', 'vote_cd', 'session_join',
+                          -- 补登记（原先散落在各模块 or {} 自建；标量和有专属 ensure 的键不在此列——classes/loot/loot_weights/market_prices 由各自 ensure 用 `or` 初始化，先建空表会让它们永不填充）：
+                          'enemy_floor2', 'outposts', 'outpost_of', 'pending_chest_tags', 'bad_loot_cats', 'respawn_home', 'class_names',
+                          'hall_of_fame', 'base_ticks_per_day', 'base_daytime_params', 'territory_cull'}) do
         storage[key] = storage[key] or {}
     end
     -- world_fx 全局开关（默认开；/c storage.world_fx.xxx=false 单独禁用某事件驱动效果）。

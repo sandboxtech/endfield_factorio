@@ -271,7 +271,7 @@ script.on_event(defines.events.on_gui_click, events.safe('gui_click', function(e
     elseif name == 'wn_btn_gameplay' then
         gui.show_tutorial(player)                   -- 第一个按钮：纯玩法&指令说明文字
     elseif name == 'wn_btn_actions' then
-        gui.show_actions(player)                    -- 第二个按钮：所有功能按钮（面板/投票/预览/排行/自杀/前往/出生星球）
+        gui.show_actions(player)                    -- 第二个按钮：所有功能按钮（荣誉榜/排行/自杀/前往/出生星球）
     elseif name == 'wn_admin_gen' then
         commands.admin_gen(player)                  -- 管理员红按钮：各星生成 debug
     elseif name == 'wn_admin_diff' then

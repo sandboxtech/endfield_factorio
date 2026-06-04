@@ -414,7 +414,9 @@ function M.show_stats(player)
             caption = {'wn.stats-entry', p.name, p.locale, planet, cname, lv, stars}, tags = {wn_stats_view = p.name},
             min_width = STATS_BTN_MIN_W}
     end
-    gui.show_popup(player, {'wn.stats-title', #game.connected_players}, {}, buttons, nil, nil, 4)   -- 4 列平铺成更宽的表；标题带在线人数
+    -- 列数随在线人数：每满 20 人加一列，封顶 4 列（≤20→1 列、21~40→2、41~60→3、≥61→4）。
+    local cols = math.min(4, math.ceil(#game.connected_players / 20))
+    gui.show_popup(player, {'wn.stats-title', #game.connected_players}, {}, buttons, nil, nil, cols)   -- 标题带在线人数
 end
 
 -- 看某玩家的详细统计（顶部说明 + 人物等级 + 三能力 + 6 项战绩）；底部【返回】回到玩家列表。

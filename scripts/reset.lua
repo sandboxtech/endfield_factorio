@@ -115,16 +115,17 @@ function M.reset()
     storage.last_leaderboard = summaries
     storage.last_leaderboard_run = storage.run - 1   -- 这份排行属于【刚结束的那个世界】(run 上面已 +1，故 -1)
 
-    -- 世界荣誉榜：记录【全员带走经验总量】最高的前 30 个世界（世界号 + 总经验 + 结束时 game.tick）。
+    -- 世界荣誉榜：记录【全员带走经验总量】最高的前 N 个世界（世界号 + 总经验 + 结束时 game.tick）。
     -- 总量 = 本轮所有玩家、所有瓶种经验之和；天数显示时由 tick 换算（commands.show_halloffame）。
+    -- 开关 storage.hall_of_fame_enabled（默认开，false=停止记录）；条数上限 storage.hall_of_fame_max（默认 30）。
     local world_total = 0
     for _, s in ipairs(summaries) do world_total = world_total + s.total end
-    if world_total > 0 then
+    if storage.hall_of_fame_enabled ~= false and world_total > 0 then
         storage.hall_of_fame = storage.hall_of_fame or {}   -- 老存档兜底
         local hof = storage.hall_of_fame
         hof[#hof + 1] = {run = storage.run - 1, exp = world_total, tick = game.tick}
         table.sort(hof, function(a, b) return a.exp > b.exp end)
-        for i = #hof, 31, -1 do hof[i] = nil end   -- 只留前 30
+        for i = #hof, (storage.hall_of_fame_max or 30) + 1, -1 do hof[i] = nil end   -- 超出上限裁队尾
     end
 
     -- 清理长期不活跃玩家（storage.player_cleanup_hours 小时没上线，默认 32，可 /c 热改）：
