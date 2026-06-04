@@ -6,6 +6,9 @@ local noise = require('scripts.noise')
 local constants = require('scripts.constants')
 local events = require('scripts.events')
 
+-- 资源原型名 → 是否流体资源（开采产物含流体）。原型跨存档不变，模块级懒缓存（tile 替换 ore mask 用）。
+local FLUID_RES = {}
+
 -- 各"世界变体"出现概率的可调常量（默认 1，游戏内 /c storage.prob_tile_remap=3 之类即可动态调）。
 local function prob(key) return storage['prob_' .. key] or 1 end
 
@@ -545,14 +548,6 @@ script.on_event(defines.events.on_surface_cleared, events.safe('surface_cleared'
     local cx = -(su * ca - sv * sa)      -- 椭圆中心地图坐标（spawn 在原点 → C = −d）
     local cy = -(su * sa + sv * ca)
     -- （环礁分量已删除：它是唯一在中心挖洞的形状，与"中心实心"的要求根本冲突。）
-    -- 月牙缺口 = 0.5×random 半径的圆形【咬除】（<0.1 跳过）：中心压在边缘带、且离出生点留足余量 → 中心恒实心。
-    local bite
-    local br = 0.5 * math.random()
-    if br >= 0.1 then
-        local bd = math.max(0.95, t + 0.15 + br) + math.random() * 0.15
-        local bpsi2 = math.random() * 2 * math.pi
-        bite = {u = math.cos(bpsi2) * bd, v = math.sin(bpsi2) * bd, r = br}
-    end
     -- 老存档兜底：ensure_defaults 没补到也不崩（索引 nil 表会先崩，必须在写入点保证表存在）。
     storage.width_of, storage.height_of, storage.shape_of =
         storage.width_of or {}, storage.height_of or {}, storage.shape_of or {}
@@ -564,13 +559,12 @@ script.on_event(defines.events.on_surface_cleared, events.safe('surface_cleared'
                                       pa1 = pa1, pk1 = pk1, pph1 = pph1,               -- 角向谐波 ×3
                                       pa2 = pa2, pk2 = pk2, pph2 = pph2,
                                       pa3 = pa3, pk3 = pk3, pph3 = pph3,
-                                      blobs = blobs, warp = warp, wseed = wseed, bite = bite}   -- 多叶/域扭曲/月牙
+                                      blobs = blobs, warp = warp, wseed = wseed}       -- 多叶/域扭曲
     -- /gen：形状变体一行（全中性=纯椭圆则不报）。
     local sparts = {}
     if se_n ~= 2 then sparts[#sparts + 1] = string.format('超椭圆n=%.1f', se_n) end
     if pa_total > 0 then sparts[#sparts + 1] = string.format('%s谐波Σ%.2f', sp ~= 0 and '螺旋' or '', pa_total) end
     if blobs then sparts[#sparts + 1] = '多叶×' .. #blobs end
-    if bite then sparts[#sparts + 1] = string.format('月牙%.2f', bite.r) end
     if warp > 0 then sparts[#sparts + 1] = string.format('扭曲%.2f', warp) end
     if #sparts > 0 then dbg_add('形状', table.concat(sparts, ' ')) end
     -- mapgen 区域要罩住【偏心 + 旋转 + 粗糙 + 形状外扩】后的整体：
@@ -830,13 +824,6 @@ script.on_event(defines.events.on_surface_cleared, events.safe('surface_cleared'
 
     surface.map_gen_settings = mgs
 
-    -- 地形测试钩子（/testgen 开启 storage.testgen_chart）：本星重生成参数就绪后立即全图勘探，
-    -- chart 会自动请求生成区块 → 打开地图直接看整体形状。范围 = mgs.width/2（恰罩住偏心+外扩+粗糙后的整体）。
-    if storage.testgen_chart then
-        local hw = math.ceil((mgs.width or 1024) / 2)
-        game.forces.player.chart(surface, {{-hw, -hw}, {hw, hw}})
-    end
-
     -- 市场不在这里放（出生区块此刻尚未生成）：改由下方 on_chunk_generated 在出生区块自然生成时惰性放置，
     -- 避免强制生成区块。chart 同理改到出生区块生成后（见 on_chunk_generated 母星分支）。
     -- 初始世界(on_init 首轮)的出生区块是场景预生成的、不会自然重生 → 首轮无市场，这是预期行为、不补。
@@ -889,13 +876,12 @@ script.on_event(defines.events.on_chunk_generated, events.safe('chunk_generated'
     local pa3, pk3, pph3 = (sh and sh.pa3) or 0, (sh and sh.pk3) or 0, (sh and sh.pph3) or 0
     local pa_total = pa1 + pa2 + pa3
     local sp = (sh and sh.sp) or 0                               -- 螺旋相位（谐波的径向扭转）
-    local bite = sh and sh.bite                                  -- 月牙咬除 {u,v,r}（主轴系归一化）
     local blobs = sh and sh.blobs                                -- 多叶 {{u,v,r},...}（主轴系归一化）
     local warp, wseed = (sh and sh.warp) or 0, (sh and sh.wseed) or 0   -- 域扭曲
     local ca, sa = math.cos(angle), math.sin(angle)   -- 把世界点旋转 −angle 回主轴系：u=dx*ca+dy*sa, v=−dx*sa+dy*ca
     local amax, bmin = math.max(a, b), math.min(a, b)  -- 外接圆 / 内切圆半径
     -- 出生安全盘【硬保证】：以出生点(地图原点)为圆心、半短轴×spawn_safe_frac(默认 0.3) 为半径的圆盘内
-    -- 【绝不铺虚空】——不依赖月牙/扭曲/噪声各自的解析约束，逐格最后一道闸直接豁免。
+    -- 【绝不铺虚空】——不依赖扭曲/噪声等各自的解析约束，逐格最后一道闸直接豁免。
     -- （默认参数下盘缘归一化距离 ≤ omax+0.3 ≤ 0.8 = edge_noise_start，正常根本碰不到边界，此闸只防极端配置/组合。）
     local safe_sq = ((storage.spawn_safe_frac or 0.3) * bmin) ^ 2
     -- 圆近似快判的保守系数：内界乘"形状最小收缩"（n<2 对角收缩、花瓣谷底、扭曲位移），
@@ -922,17 +908,8 @@ script.on_event(defines.events.on_chunk_generated, events.safe('chunk_generated'
     local ny = (ly <= cy and hy >= cy) and 0 or math.min(math.abs(ly - cy), math.abs(hy - cy))
     local far, near = fx * fx + fy * fy, nx * nx + ny * ny
 
-    -- 月牙快判：整块离咬除圆足够远才允许"必为陆地"跳过（咬除圆世界坐标 + 保守半径）。
-    local bite_clear = true
-    if bite then
-        local bwx = cx + (bite.u * a) * ca - (bite.v * b) * sa
-        local bwy = cy + (bite.u * a) * sa + (bite.v * b) * ca
-        local bnx = (lx <= bwx and hx >= bwx) and 0 or math.min(math.abs(lx - bwx), math.abs(hx - bwx))
-        local bny = (ly <= bwy and hy >= bwy) and 0 or math.min(math.abs(ly - bwy), math.abs(hy - bwy))
-        bite_clear = (bnx * bnx + bny * bny) >= (amax * bite.r * (1 + rough)) ^ 2
-    end
-    if far <= (bmin * inner) ^ 2 and bite_clear then
-        -- 整块在内切圆内（且在月牙咬除圆之外）→ 必为陆地，跳过
+    if far <= (bmin * inner) ^ 2 then
+        -- 整块在内切圆内 → 必为陆地，跳过
     elseif near >= (amax * outer) ^ 2 then
         -- 整块在外接圆外 → 必在椭圆外，整块铺虚空 + 跳过所有细节（map_features/市场/tile替换 对纯虚空块无用；染地已在最前画过）。
         local tiles = {}
@@ -1003,11 +980,6 @@ script.on_event(defines.events.on_chunk_generated, events.safe('chunk_generated'
                         d = math.min(d, d2) - 0.0625 * hsm * hsm
                     end
                 end
-                if bite then   -- 月牙咬除：圆内强制虚空（SDF 取 max → 咬除边缘同样吃 rough 噪声）
-                    local du2, dv2 = nu - bite.u, nv - bite.v
-                    local db = math.sqrt(du2 * du2 + dv2 * dv2) / bite.r
-                    if 2 - db > d then d = 2 - db end
-                end
                 local void = false
                 if d > outer_d then
                     void = true   -- 超过噪声外扩极限：免噪声直判（肥保守壳层的主要省耗点）
@@ -1036,6 +1008,7 @@ script.on_event(defines.events.on_chunk_generated, events.safe('chunk_generated'
     -- mask=all 整片；noise 平滑噪声区；tree/rock/ore 跟随原生树/石/矿分布（在其 tile 及邻近替换）。
     local remap = storage.tile_remap and storage.tile_remap[surface.name]
     if remap then
+        local nsamp_cache = {}   -- noise mask 降采样器（按 rule.seed 缓存；smooth 波长 167 >> 步长 4，视觉无差）
         local area = {{left_top.x, left_top.y}, {left_top.x + 32, left_top.y + 32}}
         for _, rule in ipairs(remap) do
             local found = prototypes.tile[rule.to] and surface.find_tiles_filtered{name = rule.from, area = area} or {}
@@ -1050,9 +1023,14 @@ script.on_event(defines.events.on_chunk_generated, events.safe('chunk_generated'
                         -- 判定：开采产物含流体即视为流体资源（比 resource_category 命名可靠）。
                         local fluid_res = false
                         if etype == 'resource' then
-                            local mp = e.prototype.mineable_properties
-                            for _, pr in ipairs(mp and mp.products or {}) do
-                                if pr.type == 'fluid' then fluid_res = true; break end
+                            fluid_res = FLUID_RES[e.name]
+                            if fluid_res == nil then   -- 原型不变 → 模块级缓存（纯由 prototypes 派生，无 desync 风险）
+                                fluid_res = false
+                                local mp = e.prototype.mineable_properties
+                                for _, pr in ipairs(mp and mp.products or {}) do
+                                    if pr.type == 'fluid' then fluid_res = true; break end
+                                end
+                                FLUID_RES[e.name] = fluid_res
                             end
                         end
                         if not fluid_res then
@@ -1075,7 +1053,13 @@ script.on_event(defines.events.on_chunk_generated, events.safe('chunk_generated'
                     if rule.mask == 'all' then
                         ok = true
                     elseif rule.mask == 'noise' then
-                        ok = noise.fractal(noise.octaves.smooth, p.x, p.y, rule.seed) > rule.threshold
+                        -- 匹配地砖多（>120）才建降采样网格（固定 100 次 fractal 换 N 次取值）；少量直接逐点。
+                        local nsamp = nsamp_cache[rule.seed]
+                        if nsamp == nil then
+                            nsamp = #found > 120 and noise.chunk_sampler(noise.octaves.smooth, left_top, rule.seed) or false
+                            nsamp_cache[rule.seed] = nsamp
+                        end
+                        ok = (nsamp and nsamp(p.x, p.y) or noise.fractal(noise.octaves.smooth, p.x, p.y, rule.seed)) > rule.threshold
                     else
                         ok = mark[math.floor(p.x) * 100000 + math.floor(p.y)] or false
                     end

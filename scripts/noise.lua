@@ -134,4 +134,34 @@ function M.fractal_warped(octaves, x, y, seed, angle, stretch, zoom)
     return M.fractal(octaves, rx, ry, seed)
 end
 
+
+-- 区块降采样器：低频倍频组（波长 >> 步长）按 step(默认4) 网格采样，返回 (px,py)→双线性插值 的取值闭包。
+-- 用于"区块内大量逐点取同一张低频噪声"的场合（tile 替换斑块/障碍互换/树调色）：固定 ~100 次 fractal 换无限次取值。
+-- 注意：高频细节被插值抹平，只适合波长 ≥ 4×step 的倍频组（smooth/blob 这类）；调用方应在【取样点很多】时才用
+-- （阈值 ~120 点，少于它直接逐点 fractal 反而便宜）。
+function M.chunk_sampler(octaves, lt, seed, step)
+    step = step or 4
+    local x0, y0 = lt.x - 1, lt.y - 1
+    local ng = math.ceil(34 / step)   -- 网格 0..ng，覆盖区块 ±1 圈
+    local grid = {}
+    for gy = 0, ng do
+        local row = {}
+        for gx = 0, ng do
+            row[gx] = M.fractal(octaves, x0 + gx * step, y0 + gy * step, seed)
+        end
+        grid[gy] = row
+    end
+    local inv = 1 / step
+    return function(px, py)
+        local fx, fy = (px - x0) * inv, (py - y0) * inv
+        local ix, iy = math.floor(fx), math.floor(fy)
+        if ix < 0 then ix = 0 elseif ix >= ng then ix = ng - 1 end
+        if iy < 0 then iy = 0 elseif iy >= ng then iy = ng - 1 end
+        local tx, ty = fx - ix, fy - iy
+        local r0, r1 = grid[iy], grid[iy + 1]
+        return (r0[ix] * (1 - tx) + r0[ix + 1] * tx) * (1 - ty)
+             + (r1[ix] * (1 - tx) + r1[ix + 1] * tx) * ty
+    end
+end
+
 return M

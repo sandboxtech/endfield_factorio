@@ -88,27 +88,6 @@ add_admin_command('reset', {'wn.run-reset-help'}, function(command)
     reset.reset()
 end)
 
--- 地形测试（单机调试用）：/testgen [标准半径|off]
---   /testgen        缩小半径(默认 256) → 立即跃迁 → 各星球【重生成就绪后】自动全图勘探（见 surface.lua 尾部钩子）
---   /testgen 400    用指定标准半径（min=一半, max=两倍）
---   /testgen off    关闭自动勘探 + 恢复默认半径（ensure_defaults 补回）
--- 自动勘探标志持久：之后每次 /reset 都会自动开图，测完记得 off。
-add_admin_command('testgen', '地形测试：/testgen [标准半径(默认256)|off] = 缩半径+立即跃迁+自动全图勘探', function(command)
-    local out = command.player_index and game.get_player(command.player_index) or game
-    if command.parameter == 'off' then
-        storage.testgen_chart = nil
-        storage.radius_standard, storage.radius_min, storage.radius_max = nil, nil, nil
-        constants.ensure_defaults()   -- 半径三键恢复默认
-        out.print('testgen 已关闭：自动勘探停用，半径恢复默认（下次跃迁生效）。')
-        return
-    end
-    local r = tonumber(command.parameter) or 256
-    storage.radius_standard, storage.radius_min, storage.radius_max = r, math.ceil(r / 2), r * 2
-    storage.testgen_chart = true
-    out.print(string.format('testgen：半径 %d（%d~%d），跃迁中，重生成后自动开图……', r, math.ceil(r / 2), r * 2))
-    reset.reset()
-end)
-
 -- ── 管理员功能：改由【HUD 左上角红按钮】触发（仅管理员可见可点），不再注册为命令。───────────────
 -- 按钮点击经 tick.on_gui_click 路由到这些 M.* 函数；函数内再校验 player.admin 兜底。
 

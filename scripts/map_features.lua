@@ -80,6 +80,16 @@ local function place_feature(surface, lt, def, A, S, Z, W)
     local threshold = (def.threshold or 0.72) - s * 0.32
 
     if def.amount then
+        -- 区块预筛：4×4 粗网格取噪声最大值，加上保守余量仍不过阈值 → 整块必无斑块，跳过 1024 格细扫。
+        -- 余量 0.55 = scrap 组高频两层权重占比(~0.44) + 网格间峰值滑漏(~0.1)：只会漏判"可能有"，不会误杀。
+        local coarse = -2
+        for gx = 0, 3 do
+            for gy = 0, 3 do
+                local cv = noise.fractal_warped(noise.octaves.scrap, lt.x + 4 + gx * 8, lt.y + 4 + gy * 8, fseed, A, S, Z)
+                if cv > coarse then coarse = cv end
+            end
+        end
+        if coarse + 0.55 < threshold then return end
         -- 资源：逐格按噪声填（需要连续矿块）。
         for x = 0, 31 do
             for y = 0, 31 do
@@ -1133,6 +1143,8 @@ local function theme_trees(surface, lt)
     local base_color   = noise.hash01(gseed * 2.2)   -- 本轮基色
     local color_spread = noise.hash01(gseed * 5.3)   -- 颜色随位置变化幅度：0=单一 ↔ 1=多样（连续）
     local trees = surface.find_entities_filtered{area = {{lt.x, lt.y}, {lt.x + 32, lt.y + 32}}, type = 'tree', limit = 512}   -- limit 封顶：超密树林区块只染前 512 棵，防单 tick 拖长（纯表现）
+    -- 树多（>120，密林）才建降采样网格；blob 组最高频波长 ~10 会被插值轻微抹平，颜色成片感更强，纯表现可接受。
+    local tsamp = #trees > 120 and noise.chunk_sampler(noise.octaves.blob, lt, gseed) or nil
     for _, t in pairs(trees) do
         if t.valid then
             local gmax = t.tree_gray_stage_index_max
@@ -1144,7 +1156,7 @@ local function theme_trees(surface, lt)
             local cmax = t.tree_color_index_max
             if cmax and cmax > 0 then
                 -- 颜色随位置平滑变化(低频噪声) → 成片同色；幅度由 color_spread 控制
-                local n = (noise.fractal(noise.octaves.blob, t.position.x, t.position.y, gseed) + 1) * 0.5
+                local n = ((tsamp and tsamp(t.position.x, t.position.y) or noise.fractal(noise.octaves.blob, t.position.x, t.position.y, gseed)) + 1) * 0.5
                 local cc = (base_color + (n - 0.5) * color_spread) % 1
                 local target = cc * cmax
                 local v = math.floor(t.tree_color_index + (target - t.tree_color_index) * strength + 0.5)
@@ -1226,11 +1238,14 @@ local function feature_entity_remap(surface, lt)
     local pool = obstacles_pool()
     if #pool == 0 then return end
     local seed, thr = rm.seed, rm.threshold or 0
-    for _, e in pairs(surface.find_entities_filtered{area = {{lt.x, lt.y}, {lt.x + 32, lt.y + 32}}, type = {'tree', 'simple-entity'}, limit = 512}) do
+    local ents = surface.find_entities_filtered{area = {{lt.x, lt.y}, {lt.x + 32, lt.y + 32}}, type = {'tree', 'simple-entity'}, limit = 512}
+    -- 实体多（>120，密林区块）才建降采样网格（smooth 波长 167 >> 步长 4，门控判定无视觉差）。
+    local nsamp = seed and #ents > 120 and noise.chunk_sampler(noise.octaves.smooth, lt, seed) or nil
+    for _, e in pairs(ents) do
         if e.valid then
             local p = e.position
             -- 无 seed(旧格式) → 全替换；有 seed → 仅噪声大团内替换（成片斑块，多半小、极少大）
-            if (not seed) or noise.fractal(noise.octaves.smooth, p.x, p.y, seed) > thr then
+            if (not seed) or (nsamp and nsamp(p.x, p.y) or noise.fractal(noise.octaves.smooth, p.x, p.y, seed)) > thr then
                 local to = rm.to or pool[math.random(#pool)]   -- 固定目标 或 每个随机取另一种
                 if to ~= e.name and prototypes.entity[to] then
                     e.destroy()
