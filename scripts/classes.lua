@@ -176,7 +176,7 @@ local DEFAULT_CLASSES = {
         {pack = 'promethium-science-pack', item = 'nuclear-fuel', groups = 5, full = FULL_MAX},
     }},
 
-    {key = 'producttrader', recipes = {   -- 由原 techs 转换而来(科技自带的解锁配方)
+    {key = 'partstrader', recipes = {   -- 由原 techs 转换而来(科技自带的解锁配方)
         'advanced-circuit', 'processing-unit',
     },  name = '零件商人', full = FULL_LOW, starter = {
         {item = 'electronic-circuit', count = 200},
