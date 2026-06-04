@@ -502,7 +502,7 @@ local DEFAULT_CLASSES = {
     {key = 'launcher', recipes = {   -- 由原 techs 转换而来(科技自带的解锁配方)
         'rocket-silo', 'cargo-landing-pad',   -- satellite 已被 SA 移除，不列
     }, name = '发射专家', full = FULL_MID, starter = {
-        {item = 'rocket-part', count = 1},
+        {item = 'space-platform-starter-pack', count = 1},
     }, unlock = {{pack = 'space-science-pack', level = 100}}, rewards = {
         {pack = 'metallurgic-science-pack',   item = 'low-density-structure',                    groups = 10},
         {pack = 'electromagnetic-science-pack',   item = 'processing-unit',                    groups = 5},

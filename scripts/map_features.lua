@@ -171,7 +171,8 @@ local DEFAULT_LOOT = {
         'pipe',  'pipe-to-ground',  'pump',  'offshore-pump',  'storage-tank',          -- 管道/流体
         'wooden-chest',  'iron-chest',  'steel-chest',  'active-provider-chest',  
         'passive-provider-chest',  'storage-chest',  'buffer-chest',  'requester-chest',  -- 箱
-        'construction-robot',  'logistic-robot',  'roboport',  'repair-pack',            -- 机器人
+        -- 'construction-robot',  'logistic-robot',  
+        'roboport',  'repair-pack',            -- 机器人
         'rail',  'rail-signal',  'rail-chain-signal',  'rail-ramp',  'rail-support',  
         'train-stop',  'locomotive',  'cargo-wagon',  'fluid-wagon',  -- 铁路
     }},
@@ -251,6 +252,7 @@ local DEFAULT_LOOT = {
         'heating-tower', 'centrifuge', 'assembling-machine-3', 'electric-furnace', 'tesla-turret',
         'railgun', 'railgun-ammo', 'railgun-turret', 'atomic-bomb',                     -- 顶级武器/弹药
         'artillery-turret', 'nuclear-reactor', 'toolbelt-equipment',
+        'construction-robot',  'logistic-robot', -- 机器人
     }},
     -- 永续箱【专属】类：想让无底箱单独无限刷的物品填这里（默认空，安全：空类直接跳过、不会崩）。
     -- 各箱型默认权重 0；用 /c storage.loot_weights.perp.perpetual = N 让永续箱开始刷本类。
