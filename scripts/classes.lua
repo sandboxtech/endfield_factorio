@@ -47,7 +47,7 @@ local FULL_MAX = 100000       -- 终极档（= MAX_LEVEL，练到满级正好拿
 local DEFAULT_CLASSES = {
     -- ── 基础生产组（红瓶起步：矿/板/齿轮/电路，满级线低 full=100，开局速成大宗）──
     -- 默认职业。
-    {section = '市民'}, 
+    {section = 'civilian'}, 
 
     {key = 'civilian', name = '市民', full = FULL_LOW, starter = {
         {item = 'automation-science-pack',   count = 1},
@@ -101,7 +101,7 @@ local DEFAULT_CLASSES = {
         'research-speed-4',
         'research-speed-5',
         'research-speed-6',
-    }, name = '发明家', full = FULL_LOW, starter = {
+    }, name = '发明大师', full = FULL_LOW, starter = {
         {item = 'lab', groups = 1},
     }, unlock = {{pack = 'automation-science-pack', level = 10}}, rewards = {
         {pack = 'automation-science-pack', item = 'lab',                 groups = 10, full = FULL_LOW},
@@ -111,7 +111,7 @@ local DEFAULT_CLASSES = {
 
     {key = 'civilengineer', recipes = {   -- 由原 techs 转换而来(科技自带的解锁配方)
         'cliff-explosives',
-    }, name = '土木牛马', full = FULL_LOW, starter = {
+    }, name = '土木大师', full = FULL_LOW, starter = {
         {item = 'cliff-explosives', groups = 1},
     }, unlock = {{pack = 'automation-science-pack', level = 10}}, rewards = {
         {pack = 'automation-science-pack', item = 'stone-brick',                 groups = 10, full = FULL_LOW},
@@ -120,25 +120,7 @@ local DEFAULT_CLASSES = {
         {pack = 'promethium-science-pack', item = 'foundation',                 groups = 10, full = FULL_MAX},
     }},
 
-    {key = 'banker', name = '大资本家', full = FULL_MAX, starter = {
-
-    }, unlock = {{pack = 'automation-science-pack', level = 1000}}, rewards = {
-        {pack = 'automation-science-pack', item = 'coin',   count = 100},
-        {pack = 'logistic-science-pack', item = 'coin',   count = 100},
-        {pack = 'military-science-pack', item = 'coin',   count = 100},
-        {pack = 'chemical-science-pack', item = 'coin',   count = 100},
-        {pack = 'production-science-pack', item = 'coin',   count = 100},
-        {pack = 'utility-science-pack', item = 'coin',   count = 100},
-        {pack = 'space-science-pack', item = 'coin', count = 100},
-        --
-        {pack = 'metallurgic-science-pack',     item = 'coin', count = 100},
-        {pack = 'electromagnetic-science-pack', item = 'coin',  count = 100},
-        {pack = 'agricultural-science-pack', item = 'coin', count = 100},
-        {pack = 'cryogenic-science-pack', item = 'coin', count = 100},
-        {pack = 'promethium-science-pack', item = 'coin', count = 100},
-    }},
-
-    {section = '杂货商人'}, 
+    {section = 'merchant'},
     -- 矿物
     {key = 'oreman', techs = {'mining-productivity-1', 'mining-productivity-2'}, name = '矿物商人', full = FULL_LOW, starter = {
         {item = 'iron-ore', groups = 6},
@@ -196,7 +178,7 @@ local DEFAULT_CLASSES = {
 
     {key = 'producttrader', recipes = {   -- 由原 techs 转换而来(科技自带的解锁配方)
         'advanced-circuit', 'processing-unit',
-    },  name = '产品商人', full = FULL_LOW, starter = {
+    },  name = '零件商人', full = FULL_LOW, starter = {
         {item = 'electronic-circuit', count = 200},
         {item = 'iron-gear-wheel', count = 200},
     }, unlock = {{pack = 'automation-science-pack', level = 10}}, rewards = {
@@ -209,7 +191,48 @@ local DEFAULT_CLASSES = {
         {pack = 'cryogenic-science-pack', item = 'processing-unit', groups = 2, full = FULL_MAX},
     }},
 
-    {section = '生产'},   -- 分区标题（无 key，职业窗口里渲染成粗体小标题）
+    -- 机器
+    {key = 'machinetrader', name = '机器商人', full = FULL_LOW, starter = {
+        {item = 'coin', count = 10},
+        {item = 'assembling-machine-1', count = 10},
+        {item = 'steel-furnace', count = 10},
+        {item = 'electric-mining-drill', count = 10},
+    }, unlock = {{pack = 'automation-science-pack', level = 10}}, rewards = {
+        {pack = 'automation-science-pack', item = 'assembling-machine-1',  groups = 2, full = FULL_LOW},
+        {pack = 'logistic-science-pack',   item = 'electric-mining-drill', groups = 2, full = FULL_LOW},
+        {pack = 'military-science-pack',   item = 'steel-furnace',         groups = 2, full = FULL_LOW},
+        {pack = 'chemical-science-pack',   item = 'assembling-machine-2',  groups = 2, full = FULL_MID},
+        {pack = 'production-science-pack', item = 'electric-furnace',      groups = 2, full = FULL_MID},
+        {pack = 'utility-science-pack',    item = 'assembling-machine-3',  groups = 2, full = FULL_MID},
+        {pack = 'space-science-pack',      item = 'oil-refinery',          groups = 2, full = FULL_MID},
+        --
+        {pack = 'metallurgic-science-pack',     item = 'foundry',               groups = 2, full = FULL_MAX},
+        {pack = 'electromagnetic-science-pack', item = 'electromagnetic-plant', groups = 2, full = FULL_MAX},
+        {pack = 'agricultural-science-pack',    item = 'biochamber',            groups = 2, full = FULL_MAX},
+        {pack = 'cryogenic-science-pack',       item = 'cryogenic-plant',       groups = 2, full = FULL_MAX},
+        {pack = 'promethium-science-pack',      item = 'big-mining-drill',      groups = 2, full = FULL_MAX},
+    }},
+
+    -- 大资本家压轴：全瓶种发金币（从市民组移入，商人组的终极形态）
+    {key = 'banker', name = '大资本家', full = FULL_MAX, starter = {
+
+    }, unlock = {{pack = 'automation-science-pack', level = 1000}}, rewards = {
+        {pack = 'automation-science-pack', item = 'coin',   count = 100},
+        {pack = 'logistic-science-pack', item = 'coin',   count = 100},
+        {pack = 'military-science-pack', item = 'coin',   count = 100},
+        {pack = 'chemical-science-pack', item = 'coin',   count = 100},
+        {pack = 'production-science-pack', item = 'coin',   count = 100},
+        {pack = 'utility-science-pack', item = 'coin',   count = 100},
+        {pack = 'space-science-pack', item = 'coin', count = 100},
+        --
+        {pack = 'metallurgic-science-pack',     item = 'coin', count = 100},
+        {pack = 'electromagnetic-science-pack', item = 'coin',  count = 100},
+        {pack = 'agricultural-science-pack', item = 'coin', count = 100},
+        {pack = 'cryogenic-science-pack', item = 'coin', count = 100},
+        {pack = 'promethium-science-pack', item = 'coin', count = 100},
+    }},
+
+    {section = 'basic'},   -- 分区标题（无 key，职业窗口里渲染成粗体小标题）
 
     {key = 'miner', recipes = {   -- 由原 techs 转换而来(科技自带的解锁配方)
         'electric-mining-drill',
@@ -341,9 +364,9 @@ local DEFAULT_CLASSES = {
     }},
 
 
-    {section = '能源 · 物流'},
-    -- 分组换行：基础生产 ↔ 能源化工
-    -- ── 能源化工组（电力/蒸汽/太阳能/化工/石油/管道/核能/回收）──
+    {section = 'energy'},
+    -- 分组换行：基础生产 ↔ 能源
+    -- ── 能源组（热能/光能/核能发电）──
     {key = 'electrician', recipes = {   -- 由原 techs 转换而来(科技自带的解锁配方)
         'steam-turbine', 'heat-exchanger', 'heating-tower',
     }, name = '热能工人', full = FULL_MID, starter = {
@@ -354,6 +377,7 @@ local DEFAULT_CLASSES = {
         {pack = 'logistic-science-pack', item = 'steam-engine',      groups = 10, full = FULL_LOW},
         {pack = 'chemical-science-pack',   item = 'steam-turbine',    groups = 10, full = FULL_MAX},
         --
+        {pack = 'agricultural-science-pack', item = 'heat-pipe',  groups = 5, full = FULL_MAX},
         {pack = 'agricultural-science-pack', item = 'heat-exchanger',  groups = 2, full = FULL_MAX},
         {pack = 'cryogenic-science-pack',  item = 'heating-tower',   groups = 2, full = FULL_MAX},
     }},
@@ -383,6 +407,8 @@ local DEFAULT_CLASSES = {
         {pack = 'cryogenic-science-pack',   item = 'fusion-power-cell',        groups = 10, full = FULL_MAX},
     }},
 
+    {section = 'logistics'},
+    -- ── 物流组（管道/电网/传送带/装卸/仓储/机械臂/火车/机器人）──
     {key = 'plumber', recipes = {   -- 由原 techs 转换而来(科技自带的解锁配方)
         'storage-tank', 'pump',
     }, name = '管道工人', full = FULL_LOW, starter = {
@@ -497,31 +523,30 @@ local DEFAULT_CLASSES = {
         {pack = 'promethium-science-pack',   item = 'logistic-robot',         groups = 10, full = FULL_MAX},
     }},
 
-    {section = '航天'},
+    {section = 'space'},
 
-    {key = 'launcher', recipes = {   -- 由原 techs 转换而来(科技自带的解锁配方)
+    {key = 'captain', recipes = {   -- 由原 techs 转换而来(科技自带的解锁配方)
         'rocket-silo', 'cargo-landing-pad',   -- satellite 已被 SA 移除，不列
-    }, name = '发射专家', full = FULL_MID, starter = {
+        'thruster',    -- 由原 techs 转换而来
+        'thruster-fuel',
+        'thruster-oxidizer',
+        {'advanced-thruster-fuel', p = 0.5}, 
+        {'advanced-thruster-oxidizer', p = 0.5},
+    }, name = '飞船船长', full = FULL_MID, starter = {
         {item = 'space-platform-starter-pack', count = 1},
     }, unlock = {{pack = 'space-science-pack', level = 100}}, rewards = {
         {pack = 'metallurgic-science-pack',   item = 'low-density-structure',                    groups = 10},
         {pack = 'electromagnetic-science-pack',   item = 'processing-unit',                    groups = 5},
         {pack = 'agricultural-science-pack',   item = 'rocket-fuel',                    groups = 25},
+        {pack = 'production-science-pack', item = 'space-platform-foundation',   groups = 10},
     }},
 
-    {key = 'captain', recipes = {
-        'thruster',    -- 由原 techs 转换而来
-        'thruster-fuel',
-        'thruster-oxidizer',                                                       -- 基础推进器燃料/氧化剂：恒解锁
-        {'advanced-thruster-fuel', p = 0.5}, 
-        {'advanced-thruster-oxidizer', p = 0.5},     -- 高级款：各 50% 每轮掷
-    }, name = '船长', full = FULL_MAX, starter = {
-        {item = 'space-platform-starter-pack', count = 1},
-    }, unlock = {{pack = 'space-science-pack', level = 100}}, rewards = {
-        {pack = 'production-science-pack', item = 'space-platform-foundation',   groups = 20},
-        {pack = 'space-science-pack',   item = 'cargo-bay',                   groups = 10},
-        {pack = 'space-science-pack',   item = 'thruster',                    groups = 10},
-    }},
+    -- {key = 'captain', recipes = {
+
+    -- }, name = '船长', full = FULL_MAX, starter = {
+    --     {item = 'space-platform-starter-pack', count = 1},
+    -- }, unlock = {{pack = 'space-science-pack', level = 100}}, rewards = {
+    -- }},
 
     -- 注意：不再送 asteroid-reprocessing / advanced-asteroid-processing 科技（科技会整包解锁下列配方，概率就失效了），改为逐配方概率控制。
     {key = 'asteroidminer', recipes = {
@@ -533,12 +558,16 @@ local DEFAULT_CLASSES = {
         {'oxide-asteroid-reprocessing', p = 0.8}, 
         {'advanced-metallic-asteroid-crushing', p = 0.5}, 
         {'advanced-carbonic-asteroid-crushing', p = 0.5}, 
-        {'advanced-oxide-asteroid-crushing', p = 0.5}, 
+        {'advanced-oxide-asteroid-crushing', p = 0.5},
+    }, techs = {
+        {'asteroid-productivity', p = 0.5},   -- 星岩产能（无限科技）：是科技不是配方，放 techs 才生效
     }, name = '小行星带矿工', full = FULL_MAX, starter = {
         {item = 'space-platform-starter-pack', count = 1},
     }, unlock = {{pack = 'space-science-pack', level = 100}}, rewards = {
-        {pack = 'space-science-pack',   item = 'asteroid-collector',          groups = 20},
-        {pack = 'space-science-pack',   item = 'crusher',                     groups = 20},
+        {pack = 'space-science-pack',   item = 'asteroid-collector',          groups = 10, full = FULL_MAX},
+        {pack = 'space-science-pack',   item = 'crusher',                     groups = 10, full = FULL_MAX},
+        {pack = 'space-science-pack',   item = 'cargo-bay',                   groups = 10, full = FULL_MAX},
+        {pack = 'space-science-pack',   item = 'thruster',                    groups = 5, full = FULL_MAX},
     }},
 
     -- 宇航·四星开拓者：起始科技 = 各星球发现科技；starter/rewards/recipes 待填。
@@ -607,9 +636,24 @@ local DEFAULT_CLASSES = {
         {pack = 'cryogenic-science-pack', item = 'heating-tower',   groups = 2, full = FULL_MAX},
     }},
 
-    {section = '星球专精'},
+    {section = 'planet'},
     -- 分组换行：农牧 ↔ 科学/星球
     -- ── 星球专精组（各星球招牌机器/材料 + 太空平台；满级线 1000，需对应高级瓶 100 级解锁）──
+    -- 核能专家：与核能工人(nuclearman)分工——工人专注【反应堆与燃料电池】（裂变/聚变发电），
+    -- 专家专注【铀燃料链】：铀矿开采+离心(uranium-processing)、Kovarex 浓缩(顺带解锁核燃料 nuclear-fuel 配方)、
+    -- 乏燃料棒后处理(nuclear-fuel-reprocessing)。奖励也只给铀链材料，不与工人的反应堆/离心机重叠。
+    {key = 'nuclear', techs = {
+        'uranium-processing',
+        'kovarex-enrichment-process',
+        'nuclear-fuel-reprocessing',
+    }, name = '核能专家', full = FULL_MAX, starter = {
+
+    }, unlock = {{pack = 'production-science-pack', level = 500}}, rewards = {
+        {pack = 'chemical-science-pack',   item = 'uranium-ore',  groups = 10},
+        {pack = 'production-science-pack', item = 'uranium-235',  groups = 5},
+        {pack = 'utility-science-pack',    item = 'nuclear-fuel', groups = 10},
+    }},
+
     {key = 'metallurgist', techs = {'low-density-structure-productivity'}, name = '铸造专家', full = FULL_MAX, starter = {
 
     }, unlock = {{pack = 'metallurgic-science-pack', level = 500}}, rewards = {
@@ -640,7 +684,7 @@ local DEFAULT_CLASSES = {
         {pack = 'promethium-science-pack', item = 'biolab',            groups = 20},
     }},
 
-    {section = '战斗'},
+    {section = 'combat'},
     -- 分组换行：物流 ↔ 战斗
     -- ── 战斗组（弹药/手雷/核弹；练灰瓶 military，部分另练蓝瓶 chemical）──
     {key = 'guard', recipes = {   -- 由原 techs 转换而来(科技自带的解锁配方)
@@ -770,7 +814,7 @@ local DEFAULT_CLASSES = {
 
     }},
 
-    {section = '装备护甲'},
+    {section = 'gear'},
     -- 分组换行：战斗 ↔ 装备护甲
     -- ── 装备护甲组（护甲网格组件 + 终极机甲；按各组件解锁科技配瓶）──
     -- 角色网格分工：每个职业专精一类护甲网格组件。
@@ -833,7 +877,7 @@ local DEFAULT_CLASSES = {
         {pack = 'logistic-science-pack', item = 'toolbelt-equipment', groups = 2},
     }},
 
-    {section = '农牧'},
+    {section = 'farm'},
     -- 分组换行：装备护甲 ↔ 农牧
     -- ── 农牧组（鱼/虫卵/种子/腐败物，Gleba 生态，主练草瓶 agricultural）──
     {key = 'hunter', recipes = {   -- 由原 techs 转换而来(科技自带的解锁配方)

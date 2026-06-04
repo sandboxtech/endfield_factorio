@@ -247,16 +247,13 @@ function M.show_classes(player)
     if not player then return end
     local cur = classes.current_key(player)    -- 当前职业（本世界生效）
     local res = classes.selected_key(player)   -- 预约职业（下次跃迁生效）
-    -- 分区标题中文 → locale key 映射（英文环境走 wn.class-section-*，中文 fallback def.section）。
-    local SECTION_KEY = {['生产'] = 'basic', ['能源 · 物流'] = 'energy', ['战斗'] = 'combat',
-                         ['装备护甲'] = 'gear', ['农牧'] = 'farm', ['星球专精'] = 'planet', ['星球开荒'] = 'pioneer',
-                         ['航天'] = 'space', ['市民'] = 'civilian', ['杂货商人'] = 'merchant'}
+    -- 分区标题：section 值就是 locale key（如 {section = 'energy'}），查 wn.class-section-<key>，
+    -- locale 缺词条时 fallback 显示 key 原文。
     local buttons = {}
     for _, def in ipairs(classes.all()) do
         if not def.key or def.key == '' then
             if def.section then
-                local skey = SECTION_KEY[def.section] or def.section
-                buttons[#buttons + 1] = {label = true, caption = classes.text_loc('wn.class-section-' .. skey, nil, def.section)}   -- 分区标题：locale 优先(英文友好)，fallback def.section 中文
+                buttons[#buttons + 1] = {label = true, caption = classes.text_loc('wn.class-section-' .. def.section, nil, def.section)}
             end
             buttons[#buttons + 1] = {newrow = true}   -- 空职业（无 key 的 {}/{section=} 占位）= UI 换行/分组分隔
         else
