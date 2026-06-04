@@ -489,15 +489,18 @@ local DEFAULT_CLASSES = {
     {key = 'traindriver', recipes = {   -- 由原 techs 转换而来(科技自带的解锁配方)
         'rail', 'locomotive', 'cargo-wagon', 'train-stop',
         'rail-signal', 'rail-chain-signal',
+        'rail-ramp', 'rail-support',   -- 高架铁路组件（elevated-rails DLC）
     }, name = '火车司机', full = FULL_LOW, starter = {
         {item = 'locomotive', groups = 1},
         {item = 'cargo-wagon', groups = 1},
         {item = 'fluid-wagon', groups = 1},
     }, rewards = {
-        {pack = 'logistic-science-pack',   item = 'rail',              groups = 30},
-        {pack = 'logistic-science-pack',   item = 'train-stop',        groups = 1},
-        {pack = 'logistic-science-pack',   item = 'rail-signal',       groups = 1},
-        {pack = 'logistic-science-pack',   item = 'rail-chain-signal', groups = 1},
+        {pack = 'logistic-science-pack',   item = 'rail',              groups = 20},
+        {pack = 'logistic-science-pack',   item = 'train-stop',        groups = 2},
+        {pack = 'logistic-science-pack',   item = 'rail-signal',       groups = 2},
+        {pack = 'logistic-science-pack',   item = 'rail-chain-signal', groups = 2},
+        {pack = 'production-science-pack', item = 'rail-ramp',         groups = 5, full = FULL_MID},
+        {pack = 'production-science-pack', item = 'rail-support',      groups = 5, full = FULL_MID},
     }},
 
     {key = 'roboticist', recipes = {   -- 由原 techs 转换而来(科技自带的解锁配方)
