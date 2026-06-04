@@ -192,13 +192,12 @@ function M.show_tutorial(player)
     })
 end
 
--- 弹出【功能菜单】（HUD 第二个按钮）。科技瓶经验/跃迁/停留/预览 已各有独立入口，这里不再重复。
+-- 弹出【功能菜单】（HUD 第二个按钮）。科技瓶经验/跃迁/停留 已各有独立入口，这里不再重复。
 --   保留：上局排行 / 自杀；再按【前往星球】【出生星球】两组分块。
 function M.show_actions(player)
     if not player then return end
     -- 真按钮：name 复用 HUD 同名按钮 或 wn_act_* / tags，点击经 tick.on_gui_click 路由到 commands.* 。
     local buttons = {
-        {name = 'wn_act_preview',  caption = {'wn.act-preview'},  tooltip = {'wn.act-preview-tip'}},
         {name = 'wn_act_lastrank', caption = {'wn.act-lastrank'}, tooltip = {'wn.act-lastrank-tip'}},
         {name = 'wn_act_suicide',  caption = {'wn.act-suicide'},  tooltip = {'wn.act-suicide-tip'}},
     }

@@ -64,14 +64,4 @@ function M.collect(player)
     return round_gain
 end
 
--- 预览：若现在跃迁，背包里的科技瓶各能换多少经验（按瓶汇总，不写入 storage、不打印）。
--- 返回 { [瓶名] = 经验, ... }，只含 >0 的项；与 M.collect 同一算法（sum_packs）。
-function M.preview(player)
-    -- 同 collect：取本体角色（含地图/遥控视角的玩家），从角色实体取背包。
-    local character = body_character(player)
-    local inventory = character and character.get_inventory(defines.inventory.character_main)
-    if not inventory then return {} end
-    return sum_packs(inventory)
-end
-
 return M

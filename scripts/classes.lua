@@ -377,7 +377,7 @@ local DEFAULT_CLASSES = {
         {pack = 'logistic-science-pack', item = 'steam-engine',      groups = 10, full = FULL_LOW},
         {pack = 'chemical-science-pack',   item = 'steam-turbine',    groups = 10, full = FULL_MAX},
         --
-        {pack = 'agricultural-science-pack', item = 'heat-pipe',  groups = 5, full = FULL_MAX},
+        {pack = 'agricultural-science-pack', item = 'heat-pipe',  groups = 10, full = FULL_MID},
         {pack = 'agricultural-science-pack', item = 'heat-exchanger',  groups = 2, full = FULL_MAX},
         {pack = 'cryogenic-science-pack',  item = 'heating-tower',   groups = 2, full = FULL_MAX},
     }},
@@ -396,10 +396,9 @@ local DEFAULT_CLASSES = {
     {key = 'nuclearman', recipes = {   -- 由原 techs 转换而来(科技自带的解锁配方)
         'nuclear-reactor', 'uranium-fuel-cell',
     }, name = '核能工人', full = FULL_MAX, starter = {
-        {item = 'centrifuge', count = 2},
+        {item = 'uranium-fuel-cell', groups = 1},
     }, rewards = {
-        {pack = 'chemical-science-pack',   item = 'centrifuge',        groups = 5, full = FULL_MID},
-        {pack = 'chemical-science-pack',   item = 'nuclear-reactor',        groups = 5, full = FULL_MID},
+        {pack = 'chemical-science-pack',   item = 'nuclear-reactor',        groups = 10, full = FULL_MID},
         {pack = 'chemical-science-pack',   item = 'uranium-fuel-cell',        groups = 10, full = FULL_MAX},
         --
         {pack = 'cryogenic-science-pack',  item = 'fusion-reactor', groups = 5, full = FULL_MAX},
@@ -637,21 +636,17 @@ local DEFAULT_CLASSES = {
     }},
 
     {section = 'planet'},
-    -- 分组换行：农牧 ↔ 科学/星球
-    -- ── 星球专精组（各星球招牌机器/材料 + 太空平台；满级线 1000，需对应高级瓶 100 级解锁）──
-    -- 核能专家：与核能工人(nuclearman)分工——工人专注【反应堆与燃料电池】（裂变/聚变发电），
-    -- 专家专注【铀燃料链】：铀矿开采+离心(uranium-processing)、Kovarex 浓缩(顺带解锁核燃料 nuclear-fuel 配方)、
-    -- 乏燃料棒后处理(nuclear-fuel-reprocessing)。奖励也只给铀链材料，不与工人的反应堆/离心机重叠。
+
     {key = 'nuclear', techs = {
         'uranium-processing',
         'kovarex-enrichment-process',
         'nuclear-fuel-reprocessing',
     }, name = '核能专家', full = FULL_MAX, starter = {
-
+        {item = 'centrifuge', groups = 1},
     }, unlock = {{pack = 'production-science-pack', level = 500}}, rewards = {
-        {pack = 'chemical-science-pack',   item = 'uranium-ore',  groups = 10},
-        {pack = 'production-science-pack', item = 'uranium-235',  groups = 5},
-        {pack = 'utility-science-pack',    item = 'nuclear-fuel', groups = 10},
+        {pack = 'chemical-science-pack', item = 'uranium-238',  groups = 10, full = FULL_MID},
+        {pack = 'chemical-science-pack', item = 'uranium-235',  groups = 10, full = FULL_MID},
+        {pack = 'chemical-science-pack',   item = 'centrifuge',        groups = 10, full = FULL_MAX},
     }},
 
     {key = 'metallurgist', techs = {'low-density-structure-productivity'}, name = '铸造专家', full = FULL_MAX, starter = {

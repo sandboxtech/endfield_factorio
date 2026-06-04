@@ -185,22 +185,9 @@ function M.admin_diff(player)
     gui.show_popup(player, '参数：当前值 vs 默认值', lines)
 end
 
--- 以下原"控制台指令"(预览/排行/自杀/前往星球)已【改为教程弹窗里的按钮】，指令注册移除；
+-- 以下原"控制台指令"(排行/自杀/前往星球)已【改为教程弹窗里的按钮】，指令注册移除；
 -- 核心逻辑抽成 M.* 供按钮点击调用（tick.on_gui_click → 这里）。
-
--- 预览：若现在立即跃迁，背包里的科技瓶各能换多少经验。
-function M.show_preview(player)
-    if not player then return end
-    local gain = science_exp.preview(player)   -- 各瓶预计可得经验（瓶数×品质）
-    local lines = {}
-    for _, pack in ipairs(constants.science_packs) do
-        if (gain[pack] or 0) > 0 then
-            lines[#lines + 1] = {'wn.preview-entry', pack, string.format('%g', gain[pack])}
-        end
-    end
-    if #lines == 0 then lines[1] = {'wn.preview-none'} end
-    gui.show_popup(player, {'wn.preview-header'}, lines)
-end
+-- （"跃迁经验预览"按钮已删除：science_exp.preview 一并移除。）
 
 -- /lastrank（/paihang 同功能，中文别名 /排行）：查看【上一个世界】每人带走的科技瓶经验排行榜。
 -- 数据在跃迁时由 reset.lua 存进 storage.last_leaderboard（只保留上一个世界这一份，每次跃迁覆盖）。

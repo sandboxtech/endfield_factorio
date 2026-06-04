@@ -293,8 +293,6 @@ script.on_event(defines.events.on_gui_click, events.safe('gui_click', function(e
         commands.cast_warp_vote(player, 'oppose')
     elseif name == 'wn_act_extend' then
         commands.buy_warp_extend(player)            -- 星星窗口"花星星延长倒计时"按钮
-    elseif name == 'wn_act_preview' then
-        commands.show_preview(player)               -- 教程弹窗里的功能按钮（原 /预览 等指令已改按钮）
     elseif name == 'wn_act_lastrank' then
         commands.show_lastrank(player)
     elseif name == 'wn_act_suicide' then
