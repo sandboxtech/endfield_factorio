@@ -633,12 +633,13 @@ script.on_event(defines.events.on_surface_cleared, events.safe('surface_cleared'
         treasure  = math.random() ^ 2,   -- 木箱(宝箱)
         perpetual = math.random() ^ 2,   -- 永续箱遭遇
         empty     = math.random() ^ 2,   -- 空据点遭遇(纯敌人)
+        machine   = math.random() ^ 2,   -- 传说生产建筑据点
     }
     -- debug 摘要：五类遭遇各自的本世界密度（占各自上限的百分比）。
     local ls = storage.loot_style[surface.name]
-    dbg_add('遭遇', string.format('材料%d%% 装备%d%% 宝箱%d%% 永续%d%% 空据%d%%',
+    dbg_add('遭遇', string.format('材料%d%% 装备%d%% 宝箱%d%% 永续%d%% 空据%d%% 机器%d%%',
         ls.material * 100 + 0.5, ls.equipment * 100 + 0.5, ls.treasure * 100 + 0.5,
-        ls.perpetual * 100 + 0.5, ls.empty * 100 + 0.5))
+        ls.perpetual * 100 + 0.5, ls.empty * 100 + 0.5, ls.machine * 100 + 0.5))
 
     -- （飞船残骸 wreck_density 滚定已移除：残骸改由 map_features.feat_outpost 在据点处非线性生成。）
 

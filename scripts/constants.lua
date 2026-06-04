@@ -124,6 +124,7 @@ function M.ensure_defaults()
         loot_density_treasure  = 1,        -- 木箱（宝箱）
         loot_density_perpetual = 1,        -- 永续箱遭遇
         loot_density_empty     = 1,        -- 空据点遭遇（纯敌人）
+        loot_density_machine   = 1,        -- 传说生产建筑据点（机器三锁、必带敌方电网核心）
         chest_count_pow        = 2,        -- 据点奖励箱【数量】公式 floor(1+4·random^此值·riches) 的指数：越大越偏向少箱（1=接近均匀，2=默认，6=极偏 1 箱）
         chest_map_tags         = true,     -- 据点生成宝箱时，在中心打一个【该箱类型图标】的地图标签（无文本）。关：/c storage.chest_map_tags=false
         -- 永续箱（infinity-chest）三个属性，默认全 false=现状。/c storage.perpetual_xxx=true 开。
