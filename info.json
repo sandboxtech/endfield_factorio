@@ -4,7 +4,8 @@
   "title": "无尽跃迁",
   "author": "虚无群友",
   "contact": "Q群293280221",
-  "homepage": "https://www.factorio.com",
+  "homepage": "https://github.com/sandboxtech/endfield_factorio",
+  "description": "建好工厂，跃迁奔向下一个星系，一局接一局。攒瓶子练职业，越玩越强。Endless Warptorio: build, warp to a fresh star system, repeat. 11 languages.",
   "dependencies": [
     "base >= 2.0.0",
     "elevated-rails >= 2.0.0",

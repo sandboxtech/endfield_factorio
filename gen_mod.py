@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # 打包【mod portal 发布用】zip：把场景包成一个含 scenarios/ 目录的模组。
 #   结构：<模组名>_<版本>.zip / <模组名>_<版本>/ { info.json(模组版), thumbnail.png(可选), scenarios/endfield_factorio/<场景5组件> }
-#   模组名/版本/作者等取自场景 info.json（版本两边共用，发新版只改场景 info.json 一处）。
+#   全部元数据（名字/版本/简介/主页等）取自场景 info.json，本脚本不写死任何文案，改文案直接改 info.json。
 # 用法：
 #   python3 gen_mod.py            # 输出到 <项目>/<模组名>_<版本>.zip
 #   python3 gen_mod.py --desktop  # 输出到 桌面（带任意参数即放桌面）
@@ -12,25 +12,17 @@ ROOT = os.path.dirname(os.path.abspath(__file__))
 SCENARIO_NAME = 'endfield_factorio'   # 场景文件夹名（游戏内"新游戏→场景"显示的目录）
 ITEMS = ['scripts', 'locale', 'control.lua', 'description.json', 'info.json']
 
-# 元数据取自场景 info.json：模组与场景同名同版（版本必须 x.y.z 且每段 ≤ 65535）
+# 元数据全部取自场景 info.json：模组与场景同名同版（版本必须 x.y.z 且每段 ≤ 65535）
 with open(os.path.join(ROOT, 'info.json'), encoding='utf-8') as f:
     scen = json.load(f)
 MOD_NAME, VERSION = scen['name'], scen['version']
 if not re.fullmatch(r'\d+\.\d+\.\d+', VERSION) or any(int(p) > 65535 for p in VERSION.split('.')):
     sys.exit(f'版本号 {VERSION} 不合法：必须 x.y.z 且每段 ≤ 65535')
 
-# 模组 info.json：只放模组字段（场景专属的 quality_required 等不带过去）
-mod_info = {
-    'name': MOD_NAME,
-    'version': VERSION,
-    'title': scen.get('title', MOD_NAME),
-    'author': scen.get('author', ''),
-    'contact': scen.get('contact', ''),
-    'homepage': 'https://github.com/sandboxtech/endfield_factorio',
-    'description': '建好工厂，跃迁奔向下一个星系，一局接一局。攒瓶子练职业，越玩越强。Endless Warptorio: build, warp to a fresh star system, repeat. 11 languages.',
-    'factorio_version': scen.get('factorio_version', '2.0'),
-    'dependencies': scen.get('dependencies', ['base >= 2.0.0']),
-}
+# 模组 info.json：只挑模组认的字段照搬（场景专属的 quality_required 等不带过去），缺的字段不写
+MOD_FIELDS = ['name', 'version', 'title', 'author', 'contact', 'homepage',
+              'description', 'factorio_version', 'dependencies']
+mod_info = {k: scen[k] for k in MOD_FIELDS if k in scen}
 
 # 目标基准：带参数 → 桌面（Windows 桌面，从 /mnt/c/Users/<用户> 推断）；否则项目目录内
 if len(sys.argv) > 1:
