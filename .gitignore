@@ -7,5 +7,8 @@ set_classes.txt
 # gen_scenario.py 打包出的干净场景副本，不跟踪
 endfield_factorio/
 
+# gen_mod.py 打包出的 mod portal 发布 zip，不跟踪
+endless-warptorio_*.zip
+
 # gen_item_values.py 生成的职业价值分析，不跟踪（改完 classes.lua 跑一次 gen 即可重新生成）
 class_values.txt

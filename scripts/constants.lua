@@ -75,13 +75,13 @@ function M.ensure_defaults()
 
     -- 标量默认（用 nil 判定，布尔 false/0 也能被正确保留）
     local d = {
-        richness_multiplier = 8,          -- 矿更富（每格储量）· rail world：原 4 的 ×2
+        richness_multiplier = 16,          -- 矿更富（每格储量）
         size_multiplier = 4,              -- 矿脉更大 · rail world：原 1 的 ×4
-        frequency_multiplier = 1,
+        frequency_multiplier = 2,
         local_specialty_multiplier = 0.25,
-        radius_standard = 768,            -- 标准(基准)半径：每星球真实半径 = clamp(standard × random_exp(2), radius_min, radius_max)
+        radius_standard = 512,            -- 标准(基准)半径：每星球真实半径 = clamp(standard × random_exp(2), radius_min, radius_max)
         radius_min = 256,                 -- 真实半径下限
-        radius_max = 1536,                -- 真实半径上限
+        radius_max = 1024,                -- 真实半径上限
         planet_eccentricity = 0.2,        -- 星球椭圆离心系数(原 0.35)：越小越圆，0=全圆。实际 ecc=(rand-rand)×此值，长短轴比最大 (1+e):(1-e)
         edge_noise_start = 0.8,           -- 星球边界噪声起作用的归一化半径：小于它必为陆地(噪声权重 0)，向 1 线性升满 → 内侧不再有虚空噪声洞（调小=洞可更深入，0=旧行为；接近 1=近纯椭圆）
         spawn_offset_pow = 2,             -- 出生点偏离星球中心的非线性指数 B：归一化距离 = spawn_offset_max×random^B。越大越贴中心；1=线性；<1 偏向外缘
@@ -116,7 +116,7 @@ function M.ensure_defaults()
         enemy_evo_max = 1,                -- 敌人进化度上限：每局随机 evo = min(1, 此值×(1-√r))，线性递减（>1 把分布推向高进化、更多猛虫；<1 压低上限）
         -- 战利品密度：全局乘数 × 各类乘数（相乘共同影响）。默认全 1，可 /c 单独热改：2 更多、0.5 更少、0 不刷。
         -- 遭遇出现率乘数：全局 × 各类（默认全 1，相乘）。基础频率见 map_features.ENCOUNTER_BASE；实际率还乘每世界 random² 密度。
-        loot_density           = 0.5,        -- 全局总乘数（五类一起生效）
+        loot_density           = 1,        -- 全局总乘数（五类一起生效）
         loot_density_material  = 1,        -- 钢箱（材料）
         loot_density_equipment = 1,        -- 铁箱（设备）
         loot_density_treasure  = 1,        -- 木箱（宝箱）
@@ -144,7 +144,7 @@ function M.ensure_defaults()
         respawn_ticks = 600,              -- 默认复活：600 tick = 10 秒
         respawn_ticks_by_enemy = 1800,    -- 被敌方打死：1800 tick = 30 秒
         respawn_step_ticks = 300,         -- 跃迁致死：出生星球每远一个，复活多等的 tick（300 = 5 秒）
-        warp_vote_divisor = 5,            -- 跃迁投票阈值除数：净同意 > ceil(在线人数/此值) 才推进（5=1/5，越大越易过）
+        warp_vote_divisor = 10,            -- 跃迁投票阈值除数：净同意 > ceil(在线人数/此值) 才推进（5=1/5，越大越易过）
         travel_enabled = true,           -- 前往星球【总开关】（默认开）。关闭：/c storage.travel_enabled=false。开启后每轮每个外星球还要各自过 travel_chance。
         action_cd_minutes = 3,            -- 投票+传送共享冷却（分钟），防止玩家频繁刷动作
         charge_max_hours = 30,            -- 星星充能上限（游戏内小时）：随游戏时间累积、封顶此值（1 星星=1 分钟=3600 tick；满充=30h=1800 星星）
