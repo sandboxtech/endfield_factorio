@@ -213,6 +213,24 @@ function M.show_lastrank(player)
     gui.show_popup(player, {'wn.lastrank-header', storage.last_leaderboard_run or 0}, lines)
 end
 
+-- 统计数据（功能菜单按钮）：全服累计的火箭发射次数 + 送上太空的科技瓶（按瓶种类）。
+-- 数据由 rocket.lua 在 on_cargo_pod_finished_ascending 累加（storage.rocket_launches / storage.rocket_packs），跨世界永久累计。
+function M.show_server_stats(player)
+    if not player then return end
+    local lines = {{'wn.serverstats-rockets', storage.rocket_launches or 0}}
+    local packs, total = storage.rocket_packs or {}, 0
+    lines[#lines + 1] = {'wn.serverstats-packs-title'}
+    for _, name in ipairs(constants.science_packs) do   -- 固定按 12 瓶标准顺序列出，没发过的不显示
+        local n = packs[name]
+        if n and n > 0 then
+            total = total + n
+            lines[#lines + 1] = {'wn.serverstats-pack', name, n}
+        end
+    end
+    lines[#lines + 1] = {'wn.serverstats-packs-total', total}
+    gui.show_popup(player, {'wn.serverstats-header'}, lines)
+end
+
 -- ── 动作冷却（按【桶】区分，每玩家独立计时）──────────────────────────────────────
 -- 前往星球(travel_cd)、投票跃迁/停留(vote_cd)、转账星星(action_cd) 各用一条【独立】冷却，互不挤占。
 -- 时长统一读 storage.action_cd_minutes（默认 3 分钟，可 /c 热改）。

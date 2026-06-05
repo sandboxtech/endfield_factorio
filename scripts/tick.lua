@@ -83,6 +83,9 @@ script.on_event(defines.events.on_gui_click, events.safe('gui_click', function(e
         commands.show_halloffame(player)            -- 功能菜单"世界荣誉榜"按钮
     elseif name == 'wn_act_lastrank' then
         commands.show_lastrank(player)
+    elseif name == 'wn_act_serverstats' then
+        commands.show_server_stats(player)          -- 功能菜单"统计数据"按钮：全服火箭/瓶子统计
+
     elseif name == 'wn_act_suicide' then
         commands.do_suicide(player)
     elseif event.element.tags and event.element.tags.wn_travel then

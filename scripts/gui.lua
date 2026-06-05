@@ -202,6 +202,7 @@ function M.show_actions(player)
         buttons[#buttons + 1] = {name = 'wn_act_hof', caption = {'wn.act-hof'}, tooltip = {'wn.act-hof-tip'}}
     end
     buttons[#buttons + 1] = {name = 'wn_act_lastrank', caption = {'wn.act-lastrank'}, tooltip = {'wn.act-lastrank-tip'}}
+    buttons[#buttons + 1] = {name = 'wn_act_serverstats', caption = {'wn.act-serverstats'}, tooltip = {'wn.act-serverstats-tip'}}
     buttons[#buttons + 1] = {name = 'wn_act_suicide',  caption = {'wn.act-suicide'},  tooltip = {'wn.act-suicide-tip'}}
     -- 【前往星球】组：总开关 storage.travel_enabled 开启后 5 个星球全显示；本轮未开放的置灰不可点。
     if storage.travel_enabled then

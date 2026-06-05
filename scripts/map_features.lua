@@ -1053,6 +1053,8 @@ local function place_encounter(surface, lt)
                     local c = place_reward_chest(surface, center, e.kind, floor)
                     if c then chests[#chests + 1] = c end
                 end
+                -- 一个箱子都没放成（永续箱选物全失败/挤不下等）→ 放弃本据点，不放守卫，免得留下"白打的空据点"。
+                if #chests == 0 then return end
             end
             -- 敌人：出生点 96 格内不放（保护新手）。machine 据点【必带】电网核心（EEI+变电站）：
             -- 先建好传给 place_guards（不再等电炮惰性建）→ 传说建筑落地即有敌网供电，清空守卫后核心照常摧毁。
