@@ -311,7 +311,13 @@ local DEFAULT_CLASSES = {
 
     {key = 'moduler', recipes = {
         'beacon',
-    }, techs = {'modules'}, name = '插件工人', full = FULL_MID, starter = {
+        'quality-module',
+        'speed-module',
+        'efficiency-module',
+        'productivity-module',
+    }, techs = {
+
+    }, name = '插件工人', full = FULL_MID, starter = {
         {item = 'beacon', groups = 10},
         {item = 'speed-module-2', groups = 1},
         {item = 'efficiency-module-2', groups = 1},
@@ -646,10 +652,12 @@ local DEFAULT_CLASSES = {
 
     {section = 'planet'},
 
-    {key = 'nuclear', techs = {
+    {key = 'nuclear', recipes = {
+        'centrifuge',                  -- 原 uranium-processing 科技
         'uranium-processing',
-        'kovarex-enrichment-process',
-        'nuclear-fuel-reprocessing',
+        'kovarex-enrichment-process',  -- 原 kovarex-enrichment-process 科技
+        'nuclear-fuel',
+        'nuclear-fuel-reprocessing',   -- 原 nuclear-fuel-reprocessing 科技
     }, name = '核能专家', full = FULL_MAX, starter = {
         {item = 'centrifuge', groups = 1},
     }, unlock = {{pack = 'production-science-pack', level = 500}}, rewards = {
