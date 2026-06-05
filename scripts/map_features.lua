@@ -142,7 +142,8 @@ local DEFAULT_LOOT = {
     {cat = 'raw',        items = {
         'iron-ore',  'copper-ore',  'uranium-ore',  'tungsten-ore',  'holmium-ore',   -- 金属矿
         'coal',  'stone',  'calcite',  'lithium',                                      -- 非金属/化工矿
-        'scrap',  'carbon',  'wood',  'raw-fish',  'ice',  'spoilage',                          -- 其它原料（spoilage 不腐烂、可作化学燃料）
+        'scrap',  'carbon',  'wood',    'ice',  'spoilage',                          -- 其它原料（spoilage 不腐烂、可作化学燃料）
+        --'raw-fish',
     }},
     -- 材料/中间品
     -- 材料：原料/铸锭/板材/燃料/化工（回收机回收【得自身】的基础材料）
