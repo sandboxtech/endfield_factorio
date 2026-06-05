@@ -376,10 +376,11 @@ local DEFAULT_CLASSES = {
         {pack = 'automation-science-pack',   item = 'steam-engine',  groups = 10, full = FULL_LOW},
     }},
     {key = 'turbineman', recipes = {
-        'steam-turbine', 'heat-exchanger',
+        'steam-turbine', 'heat-pipe', 'heat-exchanger',
     }, name = '涡轮工人', full = FULL_MID, starter = {
-        {item = 'steam-turbine', groups = 1},
-        {item = 'heat-pipe', groups = 1},
+        {item = 'steam-turbine', groups = 10},
+        {item = 'heat-exchanger', count = 10},
+        {item = 'heat-pipe', count = 50},
     }, rewards = {
         {pack = 'chemical-science-pack', item = 'heat-pipe',      groups = 10, full = FULL_MID},
         {pack = 'chemical-science-pack', item = 'heat-exchanger', groups = 10,  full = FULL_MID},
@@ -737,6 +738,8 @@ local DEFAULT_CLASSES = {
 
     {key = 'grenadier', recipes = {
         'explosives',
+        'grenade',
+        'cluster-grenade',
     }, name = '爆破队', full = FULL_MID, starter = {
         {item = 'grenade', groups = 1},
     }, rewards = {
@@ -772,7 +775,7 @@ local DEFAULT_CLASSES = {
     }},
 
     {key = 'tanker', recipes = {   -- 由原 techs 转换而来(科技自带的解锁配方)
-        'cannon-shell', 'explosive-cannon-shell',
+        'tank', 'cannon-shell', 'explosive-cannon-shell',
     }, name = '大运司机', full = FULL_MID, starter = {
         {item = 'tank', count = 1},
     }, unlock = {{pack = 'military-science-pack', level = 100}}, rewards = {
@@ -784,7 +787,7 @@ local DEFAULT_CLASSES = {
         {pack = 'space-science-pack',   item = 'explosive-uranium-cannon-shell', groups = 10, full = FULL_MAX},
     }},
     {key = 'rocketeer', recipes = {   -- 由原 techs 转换而来(科技自带的解锁配方)
-        'rocket', 'explosive-rocket', 'atomic-bomb',
+        'rocket-launcher','rocket', 'explosive-rocket', 'atomic-bomb', 
     }, name = '胖子发射器', full = FULL_MAX, starter = {
         {item = 'rocket-launcher', count = 1},
         {item = 'rocket', count = 100},
