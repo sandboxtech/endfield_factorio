@@ -1,0 +1,2 @@
+# 行尾统一 LF：Windows 编辑器存出 CRLF 时 git 自动归一，避免整文件换行假 diff
+* text=auto eol=lf
