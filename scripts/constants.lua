@@ -205,6 +205,7 @@ function M.ensure_defaults()
         -- 'oil-processing', 'uranium-processing', 'biter-egg-handling',
         -- 'planet-discovery-vulcanus', 'planet-discovery-gleba',
         -- 'planet-discovery-fulgora', 'planet-discovery-aquilo',
+        'epic-quality', 'legendary-quality',
     }
     storage.unlock_recipes = storage.unlock_recipes or {
         'iron-stick', 'steel-plate', 'ice-melting',
