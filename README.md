@@ -1,5 +1,7 @@
 # 异星工厂·无尽跃迁 (Endless Warptorio)
 
+> 本项目由 Claude Code 参与开发。Developed with Claude Code.
+
 Factorio 2.0 + Space Age 自定义多人场景：建好工厂，跃迁奔向下一个星系，一局接一局，永远有新地图。
 
 Endless Warptorio: a custom multiplayer scenario for Factorio 2.0 + Space Age. Build up, warp to a fresh star system, repeat. Available in 11 languages.
@@ -18,21 +20,19 @@ Endless Warptorio: a custom multiplayer scenario for Factorio 2.0 + Space Age. B
 
 ## 安装
 
-方式一（推荐）：从 [Mod Portal](https://mods.factorio.com/mod/endless-warptorio) 安装模组 **无尽跃迁 (endless-warptorio)**，新游戏 → 场景 → 选择本场景。
-
-方式二（开发者）：把本仓库放进 Factorio 的 `scenarios/` 目录（Windows：`%APPDATA%\Factorio\scenarios\endfield_factorio`），效果相同。也可以用 `python gen_scenario.py` 打出一个只含运行时文件的干净场景包。
-
 需要 Factorio 2.0 与 Space Age DLC。
+
+- 方式一（推荐）：从 [Mod Portal](https://mods.factorio.com/mod/endless-warptorio) 安装模组 **无尽跃迁 (endless-warptorio)**，新游戏 → 场景 → 选择本场景。
+- 方式二（开发者）：把本仓库放进 Factorio 的 `scenarios/` 目录（Windows：`%APPDATA%\Factorio\scenarios\endfield_factorio`）。
 
 ## 使用建议
 
-- **建议用于多人长期服务器，不推荐单人游戏。** 跃迁倒计时、双货币、投票、职业分工等机制都按多人在线节奏设计，单人玩节奏失衡、乐趣大减。
-- **这是场景，不依赖模组运行。** 模组只是分发场景的载体：开图时全部脚本就写进了存档，之后服务器照常跑、玩家直接进，谁都不需要装这个模组，后续卸载模组也不影响已有存档。
-- 模组版与 `scenarios/` 目录版二选一即可；两者都装时"新游戏 → 场景"会出现两个同名条目，注意区分。
+- **建议用于多人长期服务器，不推荐单人游戏**：各机制都按多人在线节奏设计。
+- **这是场景，不依赖模组运行**：开图时脚本已写进存档，服务器和加入的玩家都不需要装模组，卸载模组也不影响已有存档。
 
 ## License
 
-[CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/)（公有领域）：随意使用、修改、二次分发，无需署名。
+[CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/)（公有领域）。
 
 ## 项目结构
 
