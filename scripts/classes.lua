@@ -113,11 +113,13 @@ local DEFAULT_CLASSES = {
         'cliff-explosives',
     }, name = '土木大师', full = FULL_LOW, starter = {
         {item = 'cliff-explosives', groups = 1},
+        {item = 'foundation', groups = 1},
     }, unlock = {{pack = 'automation-science-pack', level = 10}}, rewards = {
-        {pack = 'automation-science-pack', item = 'stone-brick',                 groups = 10, full = FULL_LOW},
-        {pack = 'logistic-science-pack', item = 'concrete',                 groups = 10, full = FULL_MID},
-        {pack = 'space-science-pack', item = 'refined-concrete',                 groups = 10, full = FULL_MID},
-        {pack = 'promethium-science-pack', item = 'foundation',                 groups = 10, full = FULL_MAX},
+        {pack = 'automation-science-pack', item = 'stone-brick',                 groups = 5, full = FULL_LOW},
+        {pack = 'logistic-science-pack', item = 'concrete',                 groups = 5, full = FULL_MID},
+        {pack = 'space-science-pack', item = 'refined-concrete',                 groups = 5, full = FULL_MID},
+        {pack = 'cryogenic-science-pack', item = 'foundation',                 groups = 10, full = FULL_MAX},
+        {pack = 'metallurgic-science-pack', item = 'cliff-explosives',                 groups = 10, full = FULL_MAX},
     }},
 
     {section = 'merchant'},
