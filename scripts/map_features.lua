@@ -665,7 +665,7 @@ local function place_reward_chest(surface, pos, kind, floor)
 end
 
 -- 据点【传说生产建筑】彩蛋：player force 但 不可拆/不可开/不可摧毁 → 只能就地接电使用（可旋转、随机朝向；
--- 配方玩家自行接电路网络设置，这里不配置）。塞满传说 3 级插件：biolab=产能，其余=品质/速度二选一；
+-- 组装机类已代开"电路网络设配方"开关，玩家接线发配方信号即可设配方，见下方 circuit_set_recipe）。塞满传说 3 级插件：biolab=产能，其余=品质/速度二选一；
 -- 主插件：biolab 恒产能 3；其余 速度:节能:品质 = 6:3:1。再随机把 0~2 个槽位(不超过槽数)换成传说节能 3。
 -- 旁边再试放 0~3 个传说插件塔（各 2 个传说插件、同样锁死：机器放品质 → 塔恒 2 节能 3(速度光环扣品质率)；
 -- 否则塔内 2 个节能 3 各自独立 80% 变速度 3）。
@@ -700,6 +700,11 @@ local function place_bonus_machine(surface, center, floor)
     if not m then return end
     lock_fixture(m)
     pave_under(surface, m, pf)   -- 补齐占地 +1 圈（find 可能落到预铺区边缘）
+    -- 组装机类开启【电路网络设配方】：机器 operable=false 玩家开不了 GUI、勾不了这个框，由脚本代开 →
+    -- 玩家接红/绿线发配方信号即可远程设配方。furnace 类(电炉/回收机)配方随输入自动定、biolab 无配方，没有此开关。
+    if m.type == 'assembling-machine' then
+        m.get_or_create_control_behavior().circuit_set_recipe = true
+    end
     local inv = m.get_module_inventory()
     local mod   -- 主插件名（下方插件塔按它决定放速度还是节能）
     if inv and #inv > 0 then
@@ -1008,6 +1013,25 @@ local function place_encounter(surface, lt)
     end
     for _, e in ipairs(ENCOUNTERS) do
         if math.random() <= encounter_chance(surface, e.kind) * nmul then   -- 命中此遭遇（用全局 RNG，不再坐标哈希 → 随运行状态/人数/时间变，每局每次不可预测）
+            -- 可建性采样（命中才采，省开销；【不预铺地砖】，看原生地砖）：中心+四向共 5 个候选点，
+            -- 每点检查 7×7 地块全部可承载建筑（tile 不带 water_tile 碰撞层；水/氨海/油海/熔岩/虚空都带 → 不可建。
+            -- 不用 can_place_entity 试放：树/石也算实体碰撞，会把密林据点误杀——而树石不是真障碍，铺地 set_tiles
+            -- 自动清、find 找位会躲）。7×7 = 箱组预铺尺寸，也装得下最大守卫(特斯拉 4×4)与传说建筑(5×5)。
+            -- 任一点通过 = 据点有立足地；全失败（落在大片海面）→ 大概率放弃整个据点（不再强制铺地造陆），
+            -- 仅 storage.outpost_unbuildable_prob（默认 0.05，/c 热改）小概率仍按老流程铺地成"孤岛据点"。
+            local buildable = false
+            for _, off in ipairs({{0, 0}, {-8, 0}, {8, 0}, {0, -8}, {0, 8}}) do
+                local bx, by, ok = math.floor(center.x) + off[1], math.floor(center.y) + off[2], true
+                for dx = -3, 3 do
+                    for dy = -3, 3 do
+                        local t = surface.get_tile(bx + dx, by + dy)
+                        if not (t and t.valid) or t.collides_with('water_tile') then ok = false; break end
+                    end
+                    if not ok then break end
+                end
+                if ok then buildable = true; break end
+            end
+            if not buildable and math.random() >= (storage.outpost_unbuildable_prob or 0.05) then return end
             -- 强制铺地掷骰（storage.outpost_pave_prob，默认 0.5）：现仅作用于【空据点】守卫的救援铺地；
             -- 有地板的据点（普通箱/永续/传说建筑）的箱/守卫/核心/建筑一律【必铺式】（先铺后放、失败回滚）。
             local pave = math.random() < (storage.outpost_pave_prob or 0.5)
@@ -1030,8 +1054,10 @@ local function place_encounter(surface, lt)
             end
             -- 敌人：出生点 96 格内不放（保护新手）。machine 据点【必带】电网核心（EEI+变电站）：
             -- 先建好传给 place_guards（不再等电炮惰性建）→ 传说建筑落地即有敌网供电，清空守卫后核心照常摧毁。
+            -- aquilo 不放守卫：冰原 heating 机制会把敌方炮塔【冻结】（runtime 无法给敌方供热），
+            -- 摆着不开火还把箱子永远锁死 → 跳过；箱子走 register_outpost 的"无守卫"分支当场解锁。
             local guards, core, extras = {}, nil, nil
-            if not near_spawn then
+            if not near_spawn and surface.name ~= 'aquilo' then
                 local precore = (e.kind == 'machine') and build_power_core(surface, center, floor) or nil
                 guards, core, extras = place_guards(surface, center, e.danger * (0.4 + 0.6 * frac) * danger_mul, floor, e.kind == 'empty', pave, precore)
                 guards = guards or {}
