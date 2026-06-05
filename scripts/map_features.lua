@@ -664,7 +664,8 @@ local function place_reward_chest(surface, pos, kind, floor)
     return chest   -- 返回箱实体（供据点登记/解锁；perpetual 分支返回 bool，不参与解锁）
 end
 
--- 据点【传说生产建筑】彩蛋：player force 但 不可拆/不可开/不可摧毁 → 只能就地接电使用（可旋转、随机朝向；
+-- 据点【传说生产建筑】彩蛋：force=player（落地即可用：biolab 跑玩家科技、组装机配方按玩家解锁判定），
+-- 但 不可拆/不可开/不可摧毁 → 只能就地接电使用（可旋转、随机朝向；
 -- 组装机类已代开"电路网络设配方"开关，玩家接线发配方信号即可设配方，见下方 circuit_set_recipe）。塞满传说 3 级插件：biolab=产能，其余=品质/速度二选一；
 -- 主插件：biolab 恒产能 3；其余 速度:节能:品质 = 6:3:1。再随机把 0~2 个槽位(不超过槽数)换成传说节能 3。
 -- 旁边再试放 0~3 个传说插件塔（各 2 个传说插件、同样锁死：机器放品质 → 塔恒 2 节能 3(速度光环扣品质率)；
@@ -694,8 +695,9 @@ local function place_bonus_machine(surface, center, floor)
     pave_for_placement(surface, tp, pf, 4)
     local p = surface.find_non_colliding_position(name, tp, 4, 1)
     if not p then return end
-    -- force=neutral：避免被闪电/流弹击中时给玩家弹"建筑受攻击"警报（三锁后功能不受影响，接电/电路照常）。
-    local m = surface.create_entity{name = name, force = 'neutral', position = p,
+    -- force=player：neutral 的 lab 不研究、组装机配方解锁按 neutral 算（等于停摆）→ 必须归玩家才真正可用。
+    -- destructible=false 不掉血，闪电/流弹也不会弹"建筑受攻击"警报（当初改 neutral 防警报的理由不成立）。
+    local m = surface.create_entity{name = name, force = 'player', position = p,
                                     direction = math.random(0, 3) * 4, quality = 'legendary'}
     if not m then return end
     lock_fixture(m)
@@ -729,7 +731,7 @@ local function place_bonus_machine(surface, center, floor)
         local bp0 = {x = p.x + math.cos(ang) * r, y = p.y + math.sin(ang) * r}
         pave_for_placement(surface, bp0, pf, 2)   -- 先铺 5×5 再找位（同建筑：必铺地板就先铺）
         local bp = surface.find_non_colliding_position('beacon', bp0, 2, 1)
-        local b = bp and surface.create_entity{name = 'beacon', force = 'neutral', position = bp, quality = 'legendary'}
+        local b = bp and surface.create_entity{name = 'beacon', force = 'player', position = bp, quality = 'legendary'}
         do
             if b then
                 lock_fixture(b)
@@ -916,7 +918,6 @@ local function unlock_chests(chests)
         if c.valid then c.minable_flag = true; c.operable = true end
     end
 end
-
 -- 给单个炮塔补满（敌方炮塔击杀友军时调用）：弹药炮塔补满弹仓，喷火塔补流体，电炮无弹仓→跳过(电力由 EEI 单独补)。
 local REFILL_AMMO = {['gun-turret'] = 'firearm-magazine', ['rocket-turret'] = 'rocket',
                      ['railgun-turret'] = 'railgun-ammo', ['artillery-turret'] = 'artillery-shell'}
@@ -1149,10 +1150,12 @@ events.on(defines.events.on_entity_died, function(event)
             local gps = '[gps=' .. math.floor(o.x) .. ',' .. math.floor(o.y) .. ',' .. surf.name .. ']'
             game.print({'wn.outpost-cleared', killer_name(event.cause) or '?', o.icon or CHEST_ICON[o.kind] or 'steel-chest', gps})
         end
-        -- 删中心地图标记(空据点本就没标记，find 不到→no-op；玩家已手删同理静默)
-        for _, tag in pairs(game.forces.player.find_chart_tags(surf, {{o.x - 1, o.y - 1}, {o.x + 1, o.y + 1}})) do
-            if tag.valid then tag.destroy() end
+        if o.kind ~= 'perpetual' then -- 删中心地图标记(空据点本就没标记，find 不到→no-op；玩家已手删同理静默)
+            for _, tag in pairs(game.forces.player.find_chart_tags(surf, {{o.x - 1, o.y - 1}, {o.x + 1, o.y + 1}})) do
+                if tag.valid then tag.destroy() end
+            end
         end
+
         local m = storage.pending_chest_tags and storage.pending_chest_tags[surf.name]
         if m then m[math.floor(o.x / 32) .. ',' .. math.floor(o.y / 32)] = nil end
     end
