@@ -658,25 +658,33 @@ local DEFAULT_CLASSES = {
         {pack = 'chemical-science-pack',   item = 'centrifuge',        groups = 10, full = FULL_MAX},
     }},
 
-    {key = 'metallurgist', techs = {'low-density-structure-productivity', 煤炭合成p=0.5}, name = '铸造专家', full = FULL_MAX, starter = {
+    {key = 'metallurgist', recipes = {
+        'coal-liquefaction', -- 煤炭液化
+    }, techs = {'low-density-structure-productivity'}, name = '铸造专家', full = FULL_MAX, starter = {
 
     }, unlock = {{pack = 'metallurgic-science-pack', level = 500}}, rewards = {
         {pack = 'metallurgic-science-pack', item = 'foundry', groups = 10},
         {pack = 'metallurgic-science-pack', item = 'big-mining-drill', groups = 10},
     }},
-    {key = 'electromancer', techs = {'processing-unit-productivity', 废料回收}, name = '电磁专家', full = FULL_MAX, starter = {
+    {key = 'electromancer', recipes = {
+        'scrap-recycling', -- 垃圾回收
+    }, techs = {'processing-unit-productivity'}, name = '电磁专家', full = FULL_MAX, starter = {
 
     }, unlock = {{pack = 'electromagnetic-science-pack', level = 500}}, rewards = {
         {pack = 'electromagnetic-science-pack', item = 'electromagnetic-plant', groups = 10},
         {pack = 'electromagnetic-science-pack', item = 'recycler', groups = 10},
     }},
-    {key = 'biologist', techs = {'rocket-fuel-productivity'}, name = '生物专家', full = FULL_MAX, starter = {
+    {key = 'biologist', recipes = {
+        'coal-synthesis', -- 煤合成
+    }, techs = {'rocket-fuel-productivity'}, name = '生物专家', full = FULL_MAX, starter = {
 
     }, unlock = {{pack = 'agricultural-science-pack', level = 500}}, rewards = {
         {pack = 'agricultural-science-pack', item = 'biochamber', groups = 10},
         {pack = 'agricultural-science-pack', item = 'agricultural-tower', groups = 10},
     }},
-    {key = 'physicist', techs = {'rocket-part-productivity'}, name = '物理专家', full = FULL_MAX, starter = {
+    {key = 'physicist', recipes = {
+        'fluoroketone-cooling', -- 氟酮冷却
+    }, techs = {'rocket-part-productivity'}, name = '物理专家', full = FULL_MAX, starter = {
 
     }, unlock = {{pack = 'cryogenic-science-pack', level = 500}}, rewards = {
         {pack = 'cryogenic-science-pack', item = 'cryogenic-plant', groups = 10},
