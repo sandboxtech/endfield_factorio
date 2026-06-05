@@ -428,6 +428,10 @@ function M.show_stats(player)
         local def = classes.current_def(p)   -- 显示【当前】职业（本世界生效），非预约/下次
         -- 职业名三层兜底：locale 词条 → storage.class_names 热改 → def.name 中文默认。
         local cname = def and classes.text_loc('wn.class-name-' .. def.key, (storage.class_names or {})[def.key], def.name or def.key) or ''
+        -- 预约职业 ≠ 当前职业 → 职业名染红（下次跃迁会换职业；富文本 color 可嵌套，红色盖过词条里的 acid）
+        if classes.selected_key(p) ~= classes.current_key(p) then
+            cname = {'', '[color=red]', cname, '[/color]'}
+        end
         buttons[#buttons + 1] = {name = 'wn_stats_view_' .. p.index,   -- 名称 语言 星球 职业 等级 星星
             caption = {'wn.stats-entry', p.name, p.locale, planet, cname, lv, stars}, tags = {wn_stats_view = p.name},
             min_width = STATS_BTN_MIN_W}

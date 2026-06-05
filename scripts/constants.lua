@@ -107,7 +107,7 @@ function M.ensure_defaults()
         prob_tile_remap = 3,              -- tile 替换世界
         prob_obstacle_remap = 1,          -- 障碍换障碍世界（0=关）
         prob_fluid_remap = 1,             -- 流体资源互换世界（0=关）
-        replicant_chance = 0.5,           -- 复制虫：玩家建筑被虫破坏时，按此概率原地冒新虫（全局，world_fx 开关另控）
+        replicant_mul = 1,                -- 复制虫概率乘数：实际冒虫率 = 本轮 danger × 此值（0=关，可 /c 热改）
         nest_coin = 6,                    -- 杀死虫巢掉落的金币数（开关：0=不掉金币）。可 /c storage.nest_coin=N 热改
         -- 玩家方杀虫巢触发"获得随机科技"的概率：每轮 reset 在 [min,max] 内随机滚定本世界值（存 storage.nest_tech_chance）。
         nest_tech_chance_min = 0.001,     -- 下限（0.1%）。两值设相等=固定概率；都设 0=关闭
@@ -202,11 +202,11 @@ function M.ensure_defaults()
     -- 缺失才补空表 → 保留 /c 的填充。热改示例：/c storage.unlock_techs = {'logistics-2', 'steel-processing'}
     --                                          /c storage.unlock_recipes = {'rail', 'pistol'}
     storage.unlock_techs = storage.unlock_techs or {
-        -- 'oil-processing', 'uranium-processing', 'biter-egg-handling',
-        -- 'planet-discovery-vulcanus', 'planet-discovery-gleba',
-        -- 'planet-discovery-fulgora', 'planet-discovery-aquilo',
+        'planet-discovery-vulcanus', 'planet-discovery-gleba',
+        'planet-discovery-fulgora', 'planet-discovery-aquilo',
         'epic-quality', 'legendary-quality',
     }
+        -- 'oil-processing', 'uranium-processing', 'biter-egg-handling',
     storage.unlock_recipes = storage.unlock_recipes or {
         'iron-stick', 'steel-plate', 'ice-melting',
         'solar-panel', 'accumulator',

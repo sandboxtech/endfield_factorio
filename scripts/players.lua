@@ -5,6 +5,7 @@ local gui = require('scripts.gui')
 local passives = require('scripts.passives')
 local respawn_gifts = require('scripts.respawn_gifts')
 local player_stats = require('scripts.player_stats')
+local classes = require('scripts.classes')
 
 local M = {}
 
@@ -55,6 +56,14 @@ end
 function M.print_status(target, viewer)
     local function s(k) return passives.get_stat(target.index, k) end
     local function blank() viewer.print('') end
+
+    -- ⓪ 职业两行：当前(本世界生效) / 预约(下次跃迁生效)。职业名三层兜底：locale → storage.class_names 热改 → def.name 默认。
+    local function cname(def)
+        return classes.text_loc('wn.class-name-' .. def.key, (storage.class_names or {})[def.key], def.name or def.key)
+    end
+    viewer.print({'wn.status-class-current', cname(classes.current_def(target))})
+    viewer.print({'wn.status-class-next', cname(classes.def_of(target))})
+    blank()
 
     -- ① 人物等级 = 开局金币 = floor(√在线分钟)
     local om = s('online_minutes')

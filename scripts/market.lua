@@ -141,7 +141,8 @@ function M.place_on_surface(surface_name)
     -- 清掉市场地坪上【任何会挡住放置】的实体（树/悬崖/石头/战利品箱…），只保留矿脉(resource，不挡建筑)和玩家(character)。
     -- 注意：map_features 在本区块【先于】市场运行、可能在出生点附近落一个战利品箱(container)正好压在市场点上，
     -- 导致 create_entity('market') 碰撞返回 nil、市场放不出，这正是"有时没市场"的主因。故按区域清干净、不再只清树石。
-    for _, e in pairs(surface.find_entities_filtered{area = {{bx - 2, by - 2}, {bx + 2, by + 2}}}) do
+    -- 范围 ±3：盖住市场 3×3 + 四角灯（市场中心 ±2）；重复调用时也顺带清掉旧灯/旧隐形电源（destroy 不受 destructible 限制）。
+    for _, e in pairs(surface.find_entities_filtered{area = {{bx - 3, by - 3}, {bx + 3, by + 3}}}) do
         if e.valid and e.type ~= 'resource' and e.type ~= 'character' then e.destroy() end
     end
     -- 铺一块 5×5 混凝土地坪，去掉水/岩浆/油海/不平地形保证放置成功。
@@ -164,6 +165,37 @@ function M.place_on_surface(surface_name)
     if not ent then return nil end
     ent.destructible = false   -- 不可摧毁
     ent.minable = false        -- 不可挖取
+
+    -- 以市场【实际落点】为锚（create_entity 会按 3×3 网格吸附，可能不等于 {bx, by}）。
+    local mx, my = ent.position.x, ent.position.y
+    -- 隐形供电：与市场重叠放一个 hidden-electric-energy-interface（零碰撞、不可选中），
+    -- 运行时改成 1MW 输出 / 1GJ 缓冲（power_production 单位是 J/tick）。
+    local eei = surface.create_entity{name = 'hidden-electric-energy-interface', position = {mx, my}, force = force}
+    if eei then
+        eei.electric_buffer_size = 1e9       -- 1GJ
+        eei.power_production = 1e6 / 60      -- 1MW
+        eei.power_usage = 0
+        eei.destructible = false
+        eei.minable = false
+    end
+    -- 市场左右各一根小电杆：两杆相距 4 格自动连线成一个电网，供电范围(各 5×5)合起来正好罩住
+    -- 中心的 EEI 和四角灯 → 灯出生即亮；玩家电杆搭过来也能白嫖 EEI 那 1MW。
+    for _, ox in ipairs({-2, 2}) do
+        local pole = surface.create_entity{name = 'small-electric-pole', position = {mx + ox, my}, force = force}
+        if pole then
+            pole.destructible = false
+            pole.minable = false
+        end
+    end
+    -- 市场四个对角各放一盏灯（市场 3×3，±2 正好斜角贴边）。
+    for _, off in ipairs({{-2, -2}, {2, -2}, {-2, 2}, {2, 2}}) do
+        local lamp = surface.create_entity{name = 'small-lamp', position = {mx + off[1], my + off[2]}, force = force}
+        if lamp then
+            lamp.destructible = false
+            lamp.minable = false
+        end
+    end
+
     stock(ent)
     return ent                 -- 放置成功（调用方据此标记本轮已放、不再重试）
 end

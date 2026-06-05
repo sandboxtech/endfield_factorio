@@ -72,6 +72,7 @@ local DEFAULT_CLASSES = {
         {'biolab', p = 0.5},
     }, name = '哲学大师', full = FULL_LOW, starter = {
         {item = 'chemical-science-pack',   count = 1},
+        {item = 'biolab',   count = 1},
     }, rewards = {
         {pack = 'logistic-science-pack', item = 'automation-science-pack',   count=10},
     }},
@@ -318,9 +319,9 @@ local DEFAULT_CLASSES = {
     }, techs = {
 
     }, name = '插件工人', full = FULL_MID, starter = {
-        {item = 'beacon', groups = 10},
-        {item = 'speed-module-2', groups = 1},
-        {item = 'efficiency-module-2', groups = 1},
+        {item = 'beacon', groups = 1},
+        {item = 'speed-module', groups = 1},
+        {item = 'efficiency-module', groups = 1},
     }, unlock = {{pack = 'production-science-pack', level = 10}}, rewards = {
         {pack = 'production-science-pack', item = 'beacon', groups = 10, full = FULL_LOW},
         {pack = 'space-science-pack', item = 'beacon', groups = 10, full = FULL_MID},
@@ -725,7 +726,6 @@ local DEFAULT_CLASSES = {
         'uranium-rounds-magazine',
     }, name = '田明建', full = FULL_MID, starter = {
         {item = 'submachine-gun', count = 1},
-        {item = 'firearm-magazine', groups = 10},
     }, rewards = {
         {pack = 'automation-science-pack', item = 'firearm-magazine', groups = 10, full = FULL_LOW},
         {pack = 'military-science-pack', item = 'piercing-rounds-magazine', groups = 10, full = FULL_MID},
@@ -737,7 +737,6 @@ local DEFAULT_CLASSES = {
         'shotgun-shell', 'piercing-shotgun-shell',
     }, name = '山上彻也', full = FULL_LOW, starter = {
         {item = 'combat-shotgun', count = 1},
-        {item = 'shotgun-shell', groups = 10},
     }, rewards = {
         {pack = 'military-science-pack', item = 'shotgun-shell', groups = 10, full = FULL_LOW},
         {pack = 'utility-science-pack', item = 'piercing-shotgun-shell', groups = 10, full = FULL_MID},
@@ -747,8 +746,7 @@ local DEFAULT_CLASSES = {
         'flamethrower', 'flamethrower-ammo', 'flamethrower-turret',
     }, name = '李梅', full = FULL_MID, starter = {
         {item = 'flamethrower', count = 1},
-        {item = 'flamethrower-ammo', groups = 1},
-    }, rewards = {
+    }, unlock = {{pack = 'military-science-pack', level = 10}}, rewards = {
         {pack = 'military-science-pack', item = 'flamethrower-ammo', groups = 10, full = FULL_LOW},
         {pack = 'military-science-pack', item = 'flamethrower-turret', groups = 10, full = FULL_MID},
         {pack = 'utility-science-pack',  item = 'flamethrower-turret', groups = 10, full = FULL_MAX},
@@ -759,17 +757,14 @@ local DEFAULT_CLASSES = {
         'grenade',
         'cluster-grenade',
     }, name = '爆破队', full = FULL_MID, starter = {
-        {item = 'grenade', groups = 1},
-    }, rewards = {
+    }, unlock = {{pack = 'military-science-pack', level = 10}}, rewards = {
         {pack = 'military-science-pack', item = 'grenade', groups = 20, full = FULL_LOW},
         {pack = 'utility-science-pack',  item = 'cluster-grenade', groups = 20, full = FULL_MID},
     }},
     {key = 'poisoner', recipes = {
         'poison-capsule', 'slowdown-capsule',
     }, name = '毒师', full = FULL_MID, starter = {
-        {item = 'poison-capsule', groups = 1},
-        {item = 'slowdown-capsule', groups = 1},
-    }, rewards = {
+    }, unlock = {{pack = 'military-science-pack', level = 10}}, rewards = {
         {pack = 'military-science-pack', item = 'poison-capsule', groups = 10, full = FULL_LOW},
         {pack = 'chemical-science-pack', item = 'slowdown-capsule', groups = 10, full = FULL_MID},
         {pack = 'utility-science-pack',  item = 'poison-capsule', groups = 10, full = FULL_MAX},
@@ -777,8 +772,7 @@ local DEFAULT_CLASSES = {
     {key = 'droner', recipes = {
         'defender-capsule', {'distractor-capsule', p = 0.8}, {'destroyer-capsule', p = 0.5},
     }, name = 'DJI顾客', full = FULL_MID, starter = {
-        {item = 'defender-capsule', count = 20},
-    }, rewards = {
+    }, unlock = {{pack = 'military-science-pack', level = 10}}, rewards = {
         {pack = 'military-science-pack',  item = 'defender-capsule', groups = 10, full = FULL_LOW},
         {pack = 'chemical-science-pack',  item = 'distractor-capsule', groups = 10, full = FULL_MID},
         {pack = 'utility-science-pack',   item = 'destroyer-capsule', groups = 10, full = FULL_MAX},
@@ -787,7 +781,6 @@ local DEFAULT_CLASSES = {
     {key = 'minelayer', recipes = {
         'land-mine',
     }, name = '雷神', full = FULL_MID, starter = {
-        {item = 'land-mine', count = 200},
     }, unlock = {{pack = 'military-science-pack', level = 100}}, rewards = {
         {pack = 'military-science-pack', item = 'land-mine', groups = 40},
     }},
@@ -797,8 +790,6 @@ local DEFAULT_CLASSES = {
     }, name = '大运司机', full = FULL_MID, starter = {
         {item = 'tank', count = 1},
     }, unlock = {{pack = 'military-science-pack', level = 100}}, rewards = {
-        {pack = 'military-science-pack', item = 'tank', groups = 1, full = FULL_MAX},
-        --
         {pack = 'military-science-pack', item = 'cannon-shell', groups = 10, full = FULL_LOW},
         {pack = 'chemical-science-pack', item = 'explosive-cannon-shell', groups = 10, full = FULL_MID},
         {pack = 'utility-science-pack', item = 'uranium-cannon-shell', groups = 10, full = FULL_MAX},
@@ -808,10 +799,9 @@ local DEFAULT_CLASSES = {
         'rocket-launcher','rocket', 'explosive-rocket', 'atomic-bomb', 
     }, name = '胖子发射器', full = FULL_MAX, starter = {
         {item = 'rocket-launcher', count = 1},
-        {item = 'rocket', count = 100},
     }, unlock = {{pack = 'chemical-science-pack', level = 100}}, rewards = {
-        {pack = 'military-science-pack', item = 'rocket', groups = 10, full = FULL_LOW},
-        {pack = 'chemical-science-pack', item = 'explosive-rocket', groups = 10, full = FULL_MID},
+        {pack = 'military-science-pack', item = 'rocket', groups = 10, full = FULL_MID},
+        {pack = 'chemical-science-pack', item = 'explosive-rocket', groups = 10, full = FULL_MAX},
         {pack = 'utility-science-pack',  item = 'atomic-bomb', groups = 10, full = FULL_MAX},
         {pack = 'agricultural-science-pack', item = 'rocket-turret',        groups = 10, full = FULL_MAX},
         --
