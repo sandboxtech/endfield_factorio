@@ -558,7 +558,7 @@ local OUTPOST_ROCKET = {{65, 'rocket'}, {32, 'explosive-rocket'}, {3, 'atomic-bo
 local OUTPOST_GUARDS = {
     {name = 'laser-turret', electric = true},             -- 激光：electric-turret，靠 substation+供电接口子电网
     {name = 'tesla-turret', electric = true},             -- 特斯拉枪：electric-turret，同样靠子电网供电（无弹药）
-    {name = 'flamethrower-turret', fluid = 'crude-oil'},  -- 喷火：fluid_box 无 filter，灌原油即可开火
+    -- {name = 'flamethrower-turret', fluid = 'crude-oil'},  -- 喷火：fluid_box 无 filter，灌原油即可开火
     {name = 'gun-turret', mag = true},                    -- 机枪：per 个随机弹种、加满
     {name = 'rocket-turret', rocket = true},              -- 火箭炮：ammo-turret，随机普通/爆破火箭，极小概率核弹(少量)
     {name = 'railgun-turret', electric = true, ammo = 'railgun-ammo'},   -- 磁轨炮：ammo-turret 但【耗电】，需子电网供电 + 塞磁轨弹（缺一不开火）
