@@ -1,8 +1,9 @@
 -- 事件驱动的"世界效果"(world_fx)：监听游戏事件，在满足条件的世界里触发。
 -- 走 scripts/events 事件总线订阅 → 不会与其它同事件注册互相覆盖。
--- 每个 fx 有一个【全局开关】storage.world_fx[name]（默认开；游戏内 /c storage.world_fx.xxx=false 即可禁用）。
+-- 每个 fx 有一个【全局开关】storage.world_fx[name]（默认值见 constants.ensure_defaults，replicant 默认关；
+-- 游戏内 /c storage.world_fx.xxx=true/false 即可开关）。
 -- 开关只是总闸；具体触发由各 fx 自身条件/概率控制（如 replicant 按本轮危险度 danger 滚）。
--- 加新 fx：在此 register 一个，并到 constants.ensure_defaults 的 world_fx 默认列表补上同名键。
+-- 加新 fx：在此 register 一个，并到 constants.ensure_defaults 的 world_fx 默认表补上 键=默认值。
 local events = require('scripts.events')
 local util = require('scripts.util')
 local map_features = require('scripts.map_features')

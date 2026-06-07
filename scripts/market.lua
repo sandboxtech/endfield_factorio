@@ -195,6 +195,15 @@ function M.place_on_surface(surface_name)
             lamp.minable = false
         end
     end
+    -- 市场正下方一排 3 个钢箱（公共储物）：市场 3×3 下缘外一格(my+2)，夹在两盏下角灯之间，
+    -- 仍在 5×5 地坪和 ±3 清场范围内。不可摧毁/挖取（重复放置时由上面的区域 destroy 清旧）。
+    for _, ox in ipairs({-1, 0, 1}) do
+        local chest = surface.create_entity{name = 'steel-chest', position = {mx + ox, my + 2}, force = force}
+        if chest then
+            chest.destructible = false
+            chest.minable = false
+        end
+    end
 
     stock(ent)
     return ent                 -- 放置成功（调用方据此标记本轮已放、不再重试）

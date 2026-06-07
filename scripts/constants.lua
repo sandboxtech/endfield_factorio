@@ -41,7 +41,7 @@ local M = {
         fulgora  = 'electromagnetic-science-pack',  -- 电浆星 → 电磁瓶
         aquilo   = 'cryogenic-science-pack',        -- 极地 → 低温瓶
     },
-    PLANET_REQ_LEVEL = 10,            -- 星球门槛等级：对应科技瓶需达此级
+    PLANET_REQ_LEVEL = 0,             -- 星球门槛等级：0=无门槛(人人可前往/可设出生星球)。机制保留，改回 >0 即恢复瓶等级要求
 
     -- 跃迁计时相关的可调值【不在这里】，它们放进 storage（见 ensure_defaults），以便 /c 热改、持久、同步：
     --   storage.warp_initial_minutes / warp_extend_default_minutes / warp_extend_minutes[瓶] / warp_vote_target_minutes
@@ -259,11 +259,12 @@ function M.ensure_defaults()
                           'hall_of_fame', 'base_ticks_per_day', 'base_daytime_params', 'territory_cull', 'loot_noise'}) do
         storage[key] = storage[key] or {}
     end
-    -- world_fx 全局开关（默认开；/c storage.world_fx.xxx=false 单独禁用某事件驱动效果）。
-    -- 加新 fx 时在此列表补上同名键，并在 world_fx.lua register 对应逻辑。
+    -- world_fx 全局开关（/c storage.world_fx.xxx=true/false 单独开关某事件驱动效果）。
+    -- 加新 fx 时在此表补上 键=默认值，并在 world_fx.lua register 对应逻辑。replicant 默认关。
+    -- 注意：只补 nil，老存档里已是 true 的不会被改回 false（要关得 /c 手动改）。
     storage.world_fx = storage.world_fx or {}
-    for _, fx in ipairs({'replicant'}) do
-        if storage.world_fx[fx] == nil then storage.world_fx[fx] = true end
+    for fx, default in pairs({replicant = false}) do
+        if storage.world_fx[fx] == nil then storage.world_fx[fx] = default end
     end
 end
 

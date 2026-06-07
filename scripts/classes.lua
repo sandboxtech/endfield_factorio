@@ -387,7 +387,7 @@ local DEFAULT_CLASSES = {
     {key = 'turbineman', recipes = {
         'steam-turbine', 'heat-pipe', 'heat-exchanger',
     }, name = '涡轮工人', full = FULL_MID, starter = {
-        {item = 'steam-turbine', groups = 10},
+        {item = 'steam-turbine', count = 10},
         {item = 'heat-exchanger', count = 10},
         {item = 'heat-pipe', count = 50},
     }, rewards = {

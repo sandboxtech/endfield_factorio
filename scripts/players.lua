@@ -1,6 +1,7 @@
 -- 玩家生命周期：创建/加入/离开/重生/死亡。
 local constants = require('scripts.constants')
 local events = require('scripts.events')
+local util = require('scripts.util')
 local gui = require('scripts.gui')
 local passives = require('scripts.passives')
 local respawn_gifts = require('scripts.respawn_gifts')
@@ -63,6 +64,9 @@ function M.print_status(target, viewer)
     end
     viewer.print({'wn.status-class-current', cname(classes.current_def(target))})
     viewer.print({'wn.status-class-next', cname(classes.def_of(target))})
+    -- ⓪b 出生星球（跃迁/死亡复活 + 领起手装备的星球）。用 M.respawn_surface_name：局部版在本函数之后才定义，此处引用不到。
+    local home = M.respawn_surface_name(target)
+    viewer.print({'wn.status-home-planet', home, util.planet_name(home)})
     blank()
 
     -- ① 人物等级 = 开局金币 = floor(√在线分钟)
