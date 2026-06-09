@@ -428,7 +428,30 @@ script.on_event(defines.events.on_surface_created, events.safe('surface_created'
     end
     local mgs = surface.map_gen_settings
     mgs.seed = math.random(1, 4294967295)
+    -- 飞船(平台)尺寸上限：把平台表面的生成宽/高都钳到 max_platform_size → 限制最大可铺装面积（512×512）。
+    -- 非平台表面（星球）不动：星球尺寸另由 surface_cleared 的随机半径逻辑决定。
+    local cap = storage.max_platform_size
+    if surface.platform and cap and cap > 0 then
+        mgs.width = cap
+        mgs.height = cap
+    end
     surface.map_gen_settings = mgs
+end))
+
+-- 飞船(平台)数量上限：平台从【等待起步包】(waiting_for_starter_pack=0) 成形那一刻判定。
+-- 若该阵营平台总数已超 max_platform_count，则销毁这艘新成形的平台并全服广播（防玩家无限造船）。
+-- old_state==0 是创建后的首次状态切换，正好对应"新船真正生成"的时机，不会误伤已有的船。
+script.on_event(defines.events.on_space_platform_changed_state, events.safe('platform_limit', function(event)
+    local platform = event.platform
+    if not (platform and platform.valid) then return end
+    if event.old_state ~= defines.space_platform_state.waiting_for_starter_pack then return end
+    local cap = storage.max_platform_count
+    if not (cap and cap > 0) then return end
+    local force = platform.force
+    if force and table_size(force.platforms) > cap then
+        platform.destroy(1)   -- destroy(reason=1)：算作"被销毁"，飞船连同表面一起删
+        game.print({'wn.too-many-platforms', cap})
+    end
 end))
 
 -- 表面被 clear（跃迁触发）时执行完整随机生成。
