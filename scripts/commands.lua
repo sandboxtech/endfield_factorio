@@ -309,6 +309,31 @@ end
 --   · can_oppose 反对：净同意 > 0 才可投(可抵消/拉回)。净票已为 0 再反对会压成负数、纯浪费 → 禁。
 --   · can_extend 加时间：仅此项需"未处于投票提前(5分钟)倒计时状态"；已提前则倒计时被钳 5分钟、加时间无意义 → 禁。
 -- 注：threshold 随在线人数变化，net 可能短暂落在 [0,threshold] 之外（如人数骤减使 threshold 降到 net 之下），属合理边缘、不另处理。
+-- 投票花费（随本地图已游玩分钟数变化）：cost = base + mul × max(0, 已玩分钟 − star_vote_thres)，钳到 ≥0。
+-- vote='agree' 取跃迁档(base_warp/mul_warp)，'oppose' 取停留档(base_stay/mul_stay)。供 show_star 显示与 cast 扣费同源。
+local function vote_cost(vote)
+    local played = (game.tick - (storage.run_start_tick or game.tick)) / constants.min_to_tick   -- 本地图已游玩分钟
+    local over = math.max(0, played - (storage.star_vote_thres or 10))
+    local base, mul
+    if vote == 'agree' then
+        base, mul = storage.star_vote_base_warp or 300, storage.star_vote_mul_warp or 1
+    else
+        base, mul = storage.star_vote_base_stay or 300, storage.star_vote_mul_stay or -1
+    end
+    return math.max(0, math.floor(base + mul * over))
+end
+M.vote_cost = vote_cost   -- 导出给星星窗口显示两个按钮的实时花费
+
+-- 计入投票【总人数】需求的活跃在线人数：挂机超过 star_vote_afk_min 分钟的视同下线、不计（afk_time 单位 tick）。
+local function active_voter_count()
+    local afk_ticks = (storage.star_vote_afk_min or 30) * constants.min_to_tick
+    local n = 0
+    for _, p in pairs(game.connected_players) do
+        if p.afk_time < afk_ticks then n = n + 1 end
+    end
+    return n
+end
+
 local function warp_vote_state()
     storage.warp_vote = storage.warp_vote or {}
     local agree, oppose = 0, 0
@@ -316,7 +341,7 @@ local function warp_vote_state()
         if v == 'agree' then agree = agree + 1 elseif v == 'oppose' then oppose = oppose + 1 end
     end
     local net = agree - oppose
-    local threshold = math.ceil(#game.connected_players / (storage.warp_vote_divisor or 5))
+    local threshold = math.ceil(active_voter_count() / (storage.warp_vote_divisor or 5))
     local in_countdown = storage.warp_vote_delta ~= nil   -- 已进入投票提前(5分钟)倒计时状态
     return {
         agree = agree, oppose = oppose, net = net, threshold = threshold, in_countdown = in_countdown,
@@ -332,7 +357,7 @@ local function warp_vote_eval()
     for _, v in pairs(storage.warp_vote) do
         if v == 'agree' then agree = agree + 1 elseif v == 'oppose' then oppose = oppose + 1 end
     end
-    local n = #game.connected_players
+    local n = active_voter_count()   -- 挂机超 star_vote_afk_min 分钟者不计入总人数（视同下线）
     local threshold = math.ceil(n / (storage.warp_vote_divisor or 5))   -- 默认 1/5，可 /c storage.warp_vote_divisor 热改
     local net = agree - oppose
     game.print({'wn.warp-vote-status', agree, oppose, net, threshold})
@@ -464,7 +489,7 @@ function M.show_star(player)
     local maxstars = math.floor(maxt / constants.min_to_tick)    -- 满充颗数
     -- 进度按【整数颗】算（不按 tick）：可领 <1 颗时 claimable=0 → frac=0 → progress_bar 第一格暗，不再被零头点亮。
     local frac = (maxstars > 0) and (claimable / maxstars) or 0
-    local vc = storage.star_vote_cost or 100
+    local wc, sc = vote_cost('agree'), vote_cost('oppose')   -- 跃迁/停留票各自实时花费（随已游玩时长变化）
     local ec, em = storage.star_extend_cost or 100, storage.star_extend_minutes or 10
     local cap, used = storage.star_extend_cap or 60, storage.star_extend_used or 0
     local st = warp_vote_state()   -- 投票/加时间可用性：余额够仍要满足态势条件，否则按钮置灰（见 warp_vote_state 规则）
@@ -482,10 +507,10 @@ function M.show_star(player)
             tooltip = (pend < constants.min_to_tick) and {'wn.star-none-yet'} or nil},
         -- ── 花费区（花费说明 + 投跃迁/停留/延长）──
         {label = true, caption = {'wn.star-spend-help'}},                                -- 花费说明（区首行 → 与星星区换行）
-        {name = 'wn_btn_warp',   caption = {'wn.star-btn-warp', vc},
-            enabled = (bal >= vc) and st.can_agree and not voted, tooltip = {'wn.star-btn-warp-tip', vc}},
-        {name = 'wn_btn_stay',   caption = {'wn.star-btn-stay', vc},
-            enabled = (bal >= vc) and st.can_oppose and not voted, tooltip = {'wn.star-btn-stay-tip', vc}},
+        {name = 'wn_btn_warp',   caption = {'wn.star-btn-warp', wc},
+            enabled = (bal >= wc) and st.can_agree and not voted, tooltip = {'wn.star-btn-warp-tip', wc}},
+        {name = 'wn_btn_stay',   caption = {'wn.star-btn-stay', sc},
+            enabled = (bal >= sc) and st.can_oppose and not voted, tooltip = {'wn.star-btn-stay-tip', sc}},
         {name = 'wn_act_extend', caption = {'wn.star-btn-extend', em, ec},
             enabled = (bal >= ec) and (used < cap) and st.can_extend, tooltip = {'wn.star-btn-extend-tip', em, ec, used, cap}},
     }
@@ -627,7 +652,7 @@ function M.cast_warp_vote(player, vote)
         return
     end
     if on_cooldown(player, 'vote_cd', 'wn.cd-vote') then return end   -- 投票冷却（被拒不扣星星）
-    local cost = storage.star_vote_cost or 100
+    local cost = vote_cost(vote)   -- 按【投的票种】算花费：跃迁(agree)/停留(oppose) 各自基数+乘数
     if not spend_stars(player, cost) then player.print({'wn.star-need', cost}); return end   -- 星星不足：不投、不占冷却
     storage.warp_vote = storage.warp_vote or {}
     storage.warp_vote[player.name] = vote

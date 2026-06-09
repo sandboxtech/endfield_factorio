@@ -82,11 +82,11 @@ function M.ensure_defaults()
         radius_standard = 512,            -- 标准(基准)半径：每星球真实半径 = clamp(standard × random_exp(2), radius_min, radius_max)
         radius_min = 256,                 -- 真实半径下限
         radius_max = 1024,                -- 真实半径上限
-        planet_eccentricity = 0.2,        -- 星球椭圆离心系数(原 0.35)：越小越圆，0=全圆。实际 ecc=(rand-rand)×此值，长短轴比最大 (1+e):(1-e)
-        edge_noise_start = 0.8,           -- 星球边界噪声起作用的归一化半径：小于它必为陆地(噪声权重 0)，向 1 线性升满 → 内侧不再有虚空噪声洞（调小=洞可更深入，0=旧行为；接近 1=近纯椭圆）
+        planet_eccentricity = 0.25,        -- 星球椭圆离心系数(原 0.35)：越小越圆，0=全圆。实际 ecc=(rand-rand)×此值，长短轴比最大 (1+e):(1-e)
+        edge_noise_start = 0.75,           -- 星球边界噪声起作用的归一化半径：小于它必为陆地(噪声权重 0)，向 1 线性升满 → 内侧不再有虚空噪声洞（调小=洞可更深入，0=旧行为；接近 1=近纯椭圆）
         spawn_offset_pow = 2,             -- 出生点偏离星球中心的非线性指数 B：归一化距离 = spawn_offset_max×random^B。越大越贴中心；1=线性；<1 偏向外缘
         spawn_offset_max = 0.5,           -- 出生点偏离星球中心的最大归一化距离（实际还会钳到 edge_noise_start−0.05 以内，保证出生必踩陆地）
-        spawn_safe_frac = 0.3,            -- 出生安全盘半径 = 半短轴×此值：盘内【绝不】铺虚空（环礁/月牙/扭曲/噪声全部豁免，硬保证）
+        spawn_safe_frac = 0.25,            -- 出生安全盘半径 = 半短轴×此值：盘内【绝不】铺虚空（环礁/月牙/扭曲/噪声全部豁免，硬保证）
         -- 悬崖随机化（surface.random_cliff_mgs，nauvis/vulcanus/fulgora/gleba）：大概率正常微浮动，偏向简单。
         cliff_easy_chance = 0.35,         -- 【稀崖世界】概率：行距×1~3 + 连续度×0.2~1（缺口多更好走）。0=关
         cliff_hard_chance = 0.1,          -- 【密崖世界】概率：行距×0.6~1 + 连续度×1~1.15（温和上限）。0=关
@@ -100,7 +100,7 @@ function M.ensure_defaults()
         day_shape_chance = 0.25,          -- 昼夜占比重塑概率：命中时白天占比在 20%~80% 随机（原版 50%），暮光对称收放；未命中回原版
         territory_cull_max = 0.5,         -- 领地删除率上限 A：每轮删除率 p = A×random^B，新领地生成时按 p 掷骰删除（连巨虫）。0=关
         territory_cull_pow = 2,           -- 领地删除率指数 B：越大 p 越偏 0（大概率几乎不删、小概率删近 A）
-        platform_lifetime = 30,
+        platform_lifetime = 100,
         difficulty = 1,
         debug = true,                     -- 向管理员打印每次世界生成的属性
         prob_ground_tint = 2,             -- 染地世界出现概率乘数（0=关）
@@ -144,16 +144,23 @@ function M.ensure_defaults()
         respawn_ticks = 600,              -- 默认复活：600 tick = 10 秒
         respawn_ticks_by_enemy = 1800,    -- 被敌方打死：1800 tick = 30 秒
         respawn_step_ticks = 300,         -- 跃迁致死：出生星球每远一个，复活多等的 tick（300 = 5 秒）
-        warp_vote_divisor = 10,            -- 跃迁投票阈值除数：净同意 > ceil(在线人数/此值) 才推进（5=1/5，越大越易过）
+        warp_vote_divisor = 5,            -- 跃迁投票阈值除数：净同意 > ceil(在线人数/此值) 才推进（5=1/5，越大越易过）
         travel_enabled = true,           -- 前往星球【总开关】（默认开）。关闭：/c storage.travel_enabled=false。开启后每轮每个外星球还要各自过 travel_chance。
         action_cd_minutes = 3,            -- 投票+传送共享冷却（分钟），防止玩家频繁刷动作
         charge_max_hours = 30,            -- 星星充能上限（游戏内小时）：随游戏时间累积、封顶此值（1 星星=1 分钟=3600 tick；满充=30h=1800 星星）
         -- 星星消费（投跃迁/停留票、买延长）：均在【星星窗口】里花。可 /c 热改。
-        star_vote_cost = 100,             -- 投一次跃迁/停留票花的星星数
-        star_extend_cost = 100,           -- 花星星给本世界倒计时延长一次的星星数
+        -- 投票花费按【本地图已游玩分钟数】随时间变化：cost = base + mul × max(0, 已游玩分钟 − star_vote_thres)，再钳到 ≥0。
+        -- 跃迁 mul 默认 +1（玩越久越贵，鼓励早走），停留 mul 默认 −1（玩越久越便宜，鼓励留下）；门槛前(10分钟内)恒为 base。
+        star_vote_base_warp = 300,        -- 投跃迁票基础花费（star_vote_thres 分钟内恒为此值）
+        star_vote_base_stay = 300,        -- 投停留票基础花费
+        star_vote_mul_warp = 1,           -- 跃迁票花费的每分钟乘数（超过门槛后每多 1 分钟 +mul 星星）
+        star_vote_mul_stay = -1,          -- 停留票花费的每分钟乘数（默认 −1：超门槛后每分钟便宜 1 星星，钳到 0）
+        star_vote_thres = 10,             -- 投票花费门槛（分钟）：本地图游玩未超此值时花费=base，超出部分才按 mul 计
+        star_vote_afk_min = 30,           -- 挂机超过此分钟数的玩家不计入投票【总人数】需求（视同下线，afk_time 判定）
+        star_extend_cost = 300,           -- 花星星给本世界倒计时延长一次的星星数
         star_extend_minutes = 10,         -- 每次延长加的分钟
         star_extend_cap = 60,             -- 每星系（run）花星星延长的累计上限（分钟），达到后按钮禁用
-        class_cd_minutes = 0.5,           -- 切换职业的冷却（分钟）：纯防刷消息，切换本就要下次跃迁才生效
+        class_cd_minutes = 1,           -- 切换职业的冷却（分钟）：纯防刷消息，切换本就要下次跃迁才生效
         grant_trigger_techs = false,      -- 开局是否赠送所有【触发科技】（捕获虫巢/扔物入太空那类）。默认关；开：/c storage.grant_trigger_techs=true
         unlock_all_planets = true,        -- 开局是否自动解锁所有星球【传送点】（可前往，但不点亮 planet-discovery 发现科技）。关：/c storage.unlock_all_planets=false
         class_tech_stack = true,         -- 多个职业指向同一【无限科技】时：false=固定研究第一级(level=2,不累加)；true=每个职业各 +1 级(累加叠高)
