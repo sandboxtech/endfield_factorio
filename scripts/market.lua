@@ -199,6 +199,10 @@ function M.place_on_surface(surface_name)
     -- 仍在 5×5 地坪和 ±3 清场范围内。不可摧毁/挖取（重复放置时由上面的区域 destroy 清旧）。
     for _, ox in ipairs({-1, 0, 1}) do
         local chest = surface.create_entity{name = 'steel-chest', position = {mx + ox, my + 2}, force = force}
+        if chest then
+            chest.destructible = false
+            chest.minable = false
+        end
         local chest = surface.create_entity{name = 'steel-chest', position = {mx + ox, my - 2}, force = force}
         if chest then
             chest.destructible = false
