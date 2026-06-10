@@ -133,21 +133,21 @@ function M.kill_player(player)
 end
 
 -- 权限组：每个玩家按资历分到一个自定义 permission group（内置 'Default' 不留人）。三组：
---   A newcomer 新手  ：只禁蓝图类(BLOCK_BLUEPRINT)。新玩家默认。
---   C veteran  老兵  ：不禁任何动作。warps ≥ storage.perm_warps_c(默认5) 或 管理员/会员 → C。
---   D restricted 受限：禁 BLOCK_GRIEF(科研/删飞船)。仅 /perm、/bpperm 手动指派，warps 不会进 D。
+--   newcomer   新手：只禁蓝图类(BLOCK_BLUEPRINT)。新玩家默认。
+--   veteran    老兵：不禁任何动作。warps ≥ storage.perm_warps_c(默认5) 或 管理员/会员 → veteran。
+--   restricted 受限：禁 BLOCK_GRIEF(科研/删飞船)。仅 /perm 手动指派，warps 不会进 restricted。
 -- 各组默认禁用动作【只初始化时配一次】(setup_perm_groups + perm_defaults_applied 守卫)；之后脚本不再碰，
 -- 管理员可游戏内 /permissions 手动调、不被覆盖。要重置默认：删 perm_defaults_applied 或在 /permissions 删该组。
-local TIER_A, TIER_C, TIER_D = 'newcomer', 'veteran', 'restricted'   -- 组名=permission group 标识符
-M.TIER = {A = TIER_A, C = TIER_C, D = TIER_D}   -- 暴露给 commands（/bpperm、/perm 校验目标组名）
+local TIER_NEWCOMER, TIER_VETERAN, TIER_RESTRICTED = 'newcomer', 'veteran', 'restricted'   -- 组名=permission group 标识符
+M.TIER = {newcomer = TIER_NEWCOMER, veteran = TIER_VETERAN, restricted = TIER_RESTRICTED}   -- 暴露给 commands（/perm 校验目标组名）
 
--- 【蓝图类】（仅 A 禁）：蓝图库/导入/红图(拆除规划器)/升级规划器。
+-- 【蓝图类】（仅 newcomer 禁）：蓝图库/导入/红图(拆除规划器)/升级规划器。
 local BLOCK_BLUEPRINT = {
     'open_blueprint_library_gui', 'grab_blueprint_record', 'import_blueprint', 'import_blueprint_string',
     'import_blueprints_filtered', 'delete_blueprint_library', 'delete_blueprint_record', 'drop_blueprint_record',
     'reassign_blueprint', 'deconstruct', 'upgrade',
 }
--- 【共享破坏】（仅 D 禁，用户指定）：全队科研 + 共享飞船平台
+-- 【共享破坏】（仅 restricted 禁，用户指定）：全队科研 + 共享飞船平台
 local BLOCK_GRIEF = {
     'start_research', 'cancel_research', 'move_research', 'set_research_finished_stops_game',
     'delete_space_platform', 'cancel_delete_space_platform',
@@ -157,11 +157,11 @@ local function concat_lists(...)
     for _, l in ipairs({...}) do for _, v in ipairs(l) do out[#out + 1] = v end end
     return out
 end
--- 各层级【默认禁用动作】表：A=蓝图类、C=空（不禁）、D=共享破坏。仅建组/初始化时套用一次（见 setup_perm_groups）。
+-- 各层级【默认禁用动作】表：newcomer=蓝图类、veteran=空（不禁）、restricted=共享破坏。仅建组/初始化时套用一次（见 setup_perm_groups）。
 local PERM_BLOCK = {
-    [TIER_A] = BLOCK_BLUEPRINT,
-    [TIER_C] = {},
-    [TIER_D] = BLOCK_GRIEF,
+    [TIER_NEWCOMER]   = BLOCK_BLUEPRINT,
+    [TIER_VETERAN]    = {},
+    [TIER_RESTRICTED] = BLOCK_GRIEF,
 }
 local ALL_MANAGED = concat_lists(BLOCK_BLUEPRINT, BLOCK_GRIEF)   -- 受管动作全集（建组时对全集逐个允许/禁止）
 
@@ -187,7 +187,7 @@ local function get_tier_group(name)
     return g
 end
 
--- 【一次性】场景初始化时把 A/C/D 配成默认禁用动作；storage.perm_defaults_applied 守卫只跑一次。
+-- 【一次性】场景初始化时把三组(newcomer/veteran/restricted)配成默认禁用动作；storage.perm_defaults_applied 守卫只跑一次。
 -- 之后脚本绝不再改这三组的动作（管理员用 /permissions 手动调，脚本不覆盖）。由 control.lua 的 on_init / on_configuration_changed 调。
 function M.setup_perm_groups()
     if storage.perm_defaults_applied then return end
@@ -199,13 +199,13 @@ function M.setup_perm_groups()
     storage.perm_defaults_applied = true
 end
 
--- 玩家应在哪个层级：① /bpperm 覆盖（storage.bp_override[名]=组名）→ 直接用；② 管理员/会员 → C 老兵；③ 否则按 warps 阈值。
+-- 玩家应在哪个层级：① /perm 覆盖（storage.bp_override[名]=组名）→ 直接用；② 管理员/会员 → veteran 老兵；③ 否则按 warps 阈值。
 local function tier_for(player)
     local ov = (storage.bp_override or {})[player.name]   -- 单独覆盖：值为 'newcomer'/'veteran'/'restricted'；nil 或非法→走默认
     if ov and PERM_BLOCK[ov] then return ov end
-    if player.admin or (storage.members or {})[player.name] then return TIER_C end
-    if passives.get_stat(player.index, 'warps') >= (storage.perm_warps_c or 5) then return TIER_C end
-    return TIER_A
+    if player.admin or (storage.members or {})[player.name] then return TIER_VETERAN end
+    if passives.get_stat(player.index, 'warps') >= (storage.perm_warps_c or 5) then return TIER_VETERAN end
+    return TIER_NEWCOMER
 end
 
 local function update_blueprint_perm(player)
@@ -215,16 +215,16 @@ local function update_blueprint_perm(player)
 end
 M.update_blueprint_perm = update_blueprint_perm
 
--- 兼容旧权限组：把仍在【旧组】的玩家搬进新组（'no_blueprint'→A 新手；'Default'/已删的'voyager'→C 老兵）。
--- 幂等：只动【当前正好在旧组】的玩家；迁移后他们在 A/C/D，再调即 no-op。之后正常 warps 逻辑（join/warp）接管。
+-- 兼容旧权限组：把仍在【旧组】的玩家搬进新组（'no_blueprint'→newcomer 新手；'Default'/已删的'voyager'→veteran 老兵）。
+-- 幂等：只动【当前正好在旧组】的玩家；迁移后他们在 newcomer/veteran/restricted，再调即 no-op。之后正常 warps 逻辑（join/warp）接管。
 -- 含离线玩家（game.players 持久），保证 Default 组迁移后【不留人】。其它管理员自建组一律不动。
 -- 由 control.lua 的 on_configuration_changed 调一次（升级老存档时）。
 function M.migrate_perm_groups()
     local perms = game.permissions
-    local nb = perms.get_group('no_blueprint')   -- 旧受限组 → A 新手
-    local df = perms.get_group('Default')         -- 内置 Default（不留人）→ C 老兵
-    local vy = perms.get_group('voyager')         -- 已删的 B 航者 → C 老兵
-    local ga, gc = get_tier_group(TIER_A), get_tier_group(TIER_C)
+    local nb = perms.get_group('no_blueprint')   -- 旧受限组 → newcomer 新手
+    local df = perms.get_group('Default')         -- 内置 Default（不留人）→ veteran 老兵
+    local vy = perms.get_group('voyager')         -- 已删的航者 → veteran 老兵
+    local ga, gc = get_tier_group(TIER_NEWCOMER), get_tier_group(TIER_VETERAN)
     for _, p in pairs(game.players) do
         local g = p.permission_group
         if nb and g == nb and ga then p.permission_group = ga

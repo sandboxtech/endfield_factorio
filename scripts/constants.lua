@@ -36,7 +36,7 @@ local M = {
     OFF_PLANETS = {'vulcanus', 'gleba', 'fulgora', 'aquilo'},         -- 仅外星（travel 开放概率、本轮可达判定用）
 
     -- 嵌套配置表的【默认值】（模块字段单一来源）：既给 ensure_defaults 兜底，又给 /diff 展开对比（见 commands.admin_diff）。
-    -- 投票花费·星星（原扁平 star_vote_* 已整合进此命名空间，/c storage.star_vote.base_warp=…；老档由 one_shot_migrations 迁移）。
+    -- 投票花费·星星（命名空间，/c storage.star_vote.base_warp=…）。
     star_vote_default = {base_warp = 300, base_stay = 300, mul_warp = 1, mul_stay = -1, thres = 10, afk_min = 10},
     -- 奖励箱填充量（全部数字单一来源，map_features.fill_chest 读取，/c storage.fill.<键>=… 热改、/diff 可见）。
     -- 每箱：<前缀>_lo/_hi 填几格(随机区间)、<前缀>_exp 每格数量指数(数量=堆叠×random^exp；0=整堆)。
@@ -87,55 +87,11 @@ local M = {
     },
 }
 
--- ════════════ 一次性迁移【ONE-SHOT-MIGRATION】════════════════════════════════════════════════════
--- 所有"迁移成功后可删"的代码【集中在此函数】。删除前提：确认线上不再有未加载过本函数的老存档。
--- 删法：删掉本函数定义 + ensure_defaults 顶部的 one_shot_migrations() 调用即可，其余照常工作。
--- 每条迁移都【幂等】(老键已清/新表已建时为 no-op)，多次调用安全。
-local function one_shot_migrations()
-    -- ① 废弃标量：loot_density_<类>（已由 storage.encounter_base[类] 取代）→ 删除孤儿键。
-    for _, k in ipairs({'loot_density_material', 'loot_density_equipment', 'loot_density_treasure',
-                        'loot_density_perpetual', 'loot_density_empty', 'loot_density_machine'}) do
-        storage[k] = nil
-    end
-    -- ② 扁平 → 命名空间整合：把旧扁平键搬进新表(保留管理员 /c 改过的值)，再删旧键。
-    --    {新表名, {新子键 = 旧扁平键, …}}
-    local moves = {
-        {'star_vote', {base_warp = 'star_vote_base_warp', base_stay = 'star_vote_base_stay',
-                       mul_warp = 'star_vote_mul_warp',   mul_stay = 'star_vote_mul_stay',
-                       thres = 'star_vote_thres',         afk_min = 'star_vote_afk_min'}},
-        {'fill',      {logi_lo = 'fill_logi_lo',   logi_hi = 'fill_logi_hi',   logi_exp = 'fill_logi_exp',
-                       equip_lo = 'fill_equip_lo', equip_hi = 'fill_equip_hi', equip_exp = 'fill_equip_exp'}},
-    }
-    for _, mv in ipairs(moves) do
-        local tbl, map = mv[1], mv[2]
-        for newk, oldk in pairs(map) do
-            if storage[oldk] ~= nil then
-                storage[tbl] = storage[tbl] or {}
-                if storage[tbl][newk] == nil then storage[tbl][newk] = storage[oldk] end
-                storage[oldk] = nil
-            end
-        end
-    end
-    -- ③ 权限组化历史遗留键删除：blueprint_warps（旧蓝图解锁次数）、perm_warps_b（已删的 B 航者阈值）→ 现仅剩 perm_warps_c。
-    storage.blueprint_warps = nil
-    storage.perm_warps_b = nil
-    -- ④ bp_override 归一到新组名：旧布尔 true→'veteran' 老兵 / false→'newcomer' 新手；已删的 'voyager'(B)→'veteran' 老兵。
-    if storage.bp_override then
-        for nm, v in pairs(storage.bp_override) do
-            if v == true or v == 'voyager' then storage.bp_override[nm] = 'veteran'
-            elseif v == false then storage.bp_override[nm] = 'newcomer' end
-        end
-    end
-end
--- ════════════ 一次性迁移【ONE-SHOT-MIGRATION】END ════════════════════════════════════════════════
-
 -- 给 storage 里的可调常量/必需表设默认值（仅当缺失时）。幂等 → on_init 与
 -- on_configuration_changed 都可安全调用，老存档改版后迁移也能补齐新增字段。
 -- 注意：warp_hours 等"每轮重置的运行时状态"不在此处，由 on_init / reset 负责。
 function M.ensure_defaults()
-    one_shot_migrations()   -- 先迁移（搬旧键/删废弃键），再走下面的默认补齐。删除时机见函数上方注释。
-    -- （更早的历史一次性迁移——science_exp→exp 改名 / enemy_autoplace_spread 拆分 / enemy_respawn_ticks 改名 /
-    --   travel_chance 类型修正——已删除：线上所有存档均已跑过完成迁移。）
+    -- （历史一次性迁移已全部删除：线上所有存档均已跑过完成迁移。下面仅做缺失键的默认补齐。）
 
     -- 标量默认（用 nil 判定，布尔 false/0 也能被正确保留）
     local d = {
@@ -241,7 +197,7 @@ function M.ensure_defaults()
     for k, v in pairs(d) do
         if storage[k] == nil then storage[k] = v end
     end
-    -- 命名空间表【逐键补齐】（保留 /c 调整、保留 one_shot_migrations 搬过来的旧值；将来新增子键自动补默认）：
+    -- 命名空间表【逐键补齐】（保留 /c 调整的旧值；将来新增子键自动补默认）：
     storage.star_vote = storage.star_vote or {}                 -- 投票花费·星星（/diff 可见）
     for k, v in pairs(M.star_vote_default) do
         if storage.star_vote[k] == nil then storage.star_vote[k] = v end

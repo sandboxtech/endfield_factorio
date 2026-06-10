@@ -122,8 +122,8 @@ function M.ensure_all()
     market.ensure_prices()
 end
 
--- 手动跑全部 ensure（控制台或管理员）：补齐新增默认、迁移老存档、修类型。管理员校验在 add_admin_command 集中做。
-add_admin_command('ensureall', '补齐全部默认/迁移：标量+必需表+职业表+战利品权重', function(command)
+-- 手动跑全部 ensure（控制台或管理员）：补齐缺失的默认值/必需表。管理员校验在 add_admin_command 集中做。
+add_admin_command('ensureall', '补齐全部默认：标量+必需表+职业表+战利品权重+市价', function(command)
     local player = command.player_index and game.get_player(command.player_index)
     M.ensure_all()
     ;(player or game).print('ensure_all 已执行：默认值/必需表/职业表/战利品权重均已补齐。')
@@ -469,10 +469,10 @@ end
 add_command('kickout', {'wn.kickout-help'}, member_kick_cmd)
 -- 所有命令统一【只用英文名】，不再注册中文/拼音别名。
 
--- 三级权限组的【字母 → 组名】映射（/bpperm、/perm 共用）。组名定义见 players.TIER。
-local PERM_LETTER = {a = players.TIER.A, c = players.TIER.C, d = players.TIER.D}
-local PERM_LABEL  = {[players.TIER.A] = 'A 新手(禁蓝图)',
-                     [players.TIER.C] = 'C 老兵(无限制)', [players.TIER.D] = 'D 受限(禁科研/飞船)'}
+-- 三级权限组的【输入字母 → 组名】映射（/perm 用，apply_perm_override 共享）。组名定义见 players.TIER。
+local PERM_LETTER = {a = players.TIER.newcomer, c = players.TIER.veteran, d = players.TIER.restricted}
+local PERM_LABEL  = {[players.TIER.newcomer] = '新手(禁蓝图)',
+                     [players.TIER.veteran] = '老兵(无限制)', [players.TIER.restricted] = '受限(禁科研/飞船)'}
 -- 把目标【钉】到某层级或清除覆盖：letter 为 a/c/d → 写 storage.bp_override[名]=组名；auto/clear → 清除（恢复按 warps）。
 -- 返回一句【结果描述】(给调用方决定私聊还是公屏)，非法输入返回 nil。
 local function apply_perm_override(target, mode)
@@ -490,21 +490,7 @@ local function apply_perm_override(target, mode)
     return '已把 ' .. target.name .. ' 移到权限组【' .. (PERM_LABEL[grp] or grp) .. '】'
 end
 
--- ── 管理员：把玩家钉到指定权限组（A/C/D）或清除覆盖 ─────────────────────────────
--- /bpperm <玩家名> <a|c|d|auto>：a 新手(禁蓝图) / c 老兵(无限) / d 受限(禁科研/飞船) / auto 恢复自动。回显只给执行的管理员。
-local function bpperm_cmd(command)
-    local sink = (command.player_index and game.get_player(command.player_index)) or game
-    local name = arg_name(command)
-    local target = name and game.get_player(name)
-    if not target then sink.print({'wn.member-no-such', name or ''}); return end
-    local mode = command.parameter and string.match(command.parameter, '%S+%s+(%S+)')
-    local msg = apply_perm_override(target, mode)
-    if not msg then sink.print('用法：/bpperm <玩家名> <a|c|d|auto>  （a新手禁蓝图/c老兵无限/d受限/auto恢复自动）'); return end
-    sink.print('[权限] ' .. msg)
-end
-add_admin_command('bpperm', '管理员：把玩家钉到权限组 A/C/D 或恢复自动。用法 /bpperm <玩家名> <a|c|d|auto>', bpperm_cmd)
-
--- ── 会员：把玩家移到【C 老兵(信任)】或【D 受限(惩戒)】，或恢复自动。结果【公屏通知】全服。────────────
+-- ── 会员：把玩家移到【veteran 老兵(信任)】或【restricted 受限(惩戒)】，或恢复自动。结果【公屏通知】全服。────────────
 -- /perm <玩家名> <c|d|auto>：c=信任(无限制)、d=受限(只剩走路聊天)、auto=恢复按跃迁次数自动判定。会员/管理员可用。
 local function perm_cmd(command)
     local actor, target, sink = member_cmd_targets(command)   -- 校验执行者是会员 + 解析目标
@@ -520,7 +506,7 @@ local function perm_cmd(command)
     -- 公屏通知（含执行人）：moderation 行为透明可见。控制台执行(actor 为 nil)署名 <控制台>。
     game.print('[权限] ' .. (actor and actor.name or '<控制台>') .. '：' .. msg)
 end
-add_command('perm', '会员：把玩家移到 C 信任 / D 受限 / auto 恢复。用法 /perm <玩家名> <c|d|auto>', perm_cmd)
+add_command('perm', '会员：把玩家移到 c 信任(老兵) / d 受限 / auto 恢复。用法 /perm <玩家名> <c|d|auto>', perm_cmd)
 
 -- ── 管理员：单独设置玩家的【背包格加成总数】（覆盖，不叠加）────────────────────
 -- /invbonus <玩家名> <数量>：把该玩家背包格加成【覆盖】为该数（替代全员基础 storage.inv_slots_bonus，不在其上叠加）。
