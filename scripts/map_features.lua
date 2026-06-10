@@ -512,7 +512,12 @@ local function fillv(key)
     return v
 end
 -- storage.fill.<lokey>~<hikey> 之间取随机整数（两端都回退默认）。
-local function fill_rand(lokey, hikey) return math.random(fillv(lokey), fillv(hikey)) end
+-- 兜底：取整 + 若管理员 /c 把 lo 调得比 hi 大则交换，避免 math.random(大,小) 崩（interval is empty）。
+local function fill_rand(lokey, hikey)
+    local lo, hi = math.floor(fillv(lokey)), math.floor(fillv(hikey))
+    if lo > hi then lo, hi = hi, lo end
+    return math.random(lo, hi)
+end
 
 -- 【统一填箱函数】所有箱型唯一的填充入口（取代原 fill_loot / fill_material_chest / fill_treasure_chest）。opts：
 --   weights : 类权重表（loot_weights().X）；先按权重选类、类内等概率选物品。

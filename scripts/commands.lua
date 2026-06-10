@@ -472,7 +472,7 @@ add_command('kickout', {'wn.kickout-help'}, member_kick_cmd)
 -- 三级权限组的【字母 → 组名】映射（/bpperm、/perm 共用）。组名定义见 players.TIER。
 local PERM_LETTER = {a = players.TIER.A, c = players.TIER.C, d = players.TIER.D}
 local PERM_LABEL  = {[players.TIER.A] = 'A 新手(禁蓝图)',
-                     [players.TIER.C] = 'C 老兵(无限制)', [players.TIER.D] = 'D 受限(禁科研/飞船/喇叭)'}
+                     [players.TIER.C] = 'C 老兵(无限制)', [players.TIER.D] = 'D 受限(禁科研/飞船)'}
 -- 把目标【钉】到某层级或清除覆盖：letter 为 a/c/d → 写 storage.bp_override[名]=组名；auto/clear → 清除（恢复按 warps）。
 -- 返回一句【结果描述】(给调用方决定私聊还是公屏)，非法输入返回 nil。
 local function apply_perm_override(target, mode)
@@ -491,7 +491,7 @@ local function apply_perm_override(target, mode)
 end
 
 -- ── 管理员：把玩家钉到指定权限组（A/C/D）或清除覆盖 ─────────────────────────────
--- /bpperm <玩家名> <a|c|d|auto>：a 新手(禁蓝图) / c 老兵(无限) / d 受限(禁科研/飞船/喇叭) / auto 恢复自动。回显只给执行的管理员。
+-- /bpperm <玩家名> <a|c|d|auto>：a 新手(禁蓝图) / c 老兵(无限) / d 受限(禁科研/飞船) / auto 恢复自动。回显只给执行的管理员。
 local function bpperm_cmd(command)
     local sink = (command.player_index and game.get_player(command.player_index)) or game
     local name = arg_name(command)

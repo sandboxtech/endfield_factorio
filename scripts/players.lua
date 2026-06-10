@@ -132,16 +132,13 @@ function M.kill_player(player)
     player.character.die()
 end
 
--- ── 三级权限组（A/C 按累计在线跃迁次数 warps 晋级；D 受限只能由会员/管理员手动指派。内置 'Default' 组【永不留人】）─
---   A 新手 newcomer  ：只禁【蓝图类】（蓝图库/导入/红图拆除/升级规划器）。所有新玩家默认 A。
---   C 老兵 veteran   ：达 storage.perm_warps_c（默认5）次跃迁 → 无任何限制。管理员/会员直接 C。
---   D 受限 restricted：惩戒组（会员 /perm <名> d 指派）→ 禁【全队科研 + 共享飞船平台 + 全局喇叭/显示屏】。
---                      仅靠 storage.bp_override 指派，warps 永不进 D。
--- 【重要】三组的默认禁用动作【只在场景初始化(或建组)时配置一次】(M.setup_perm_groups，storage.perm_defaults_applied 守卫)；
---   之后脚本【绝不再改动作】——管理员用游戏内 /permissions 手动调整，脚本只负责把玩家【分到】哪个组，不覆盖手动改。
---   要把某组恢复成代码默认：删掉 storage.perm_defaults_applied，或在 /permissions 删掉该组（下次被建组时按默认重配）。
--- 受管动作名都按 runtime-api 校验、加 nil 守卫。晋级阈值 storage.perm_warps_c 可 /c 热改。
-local TIER_A, TIER_C, TIER_D = 'newcomer', 'veteran', 'restricted'   -- 组名=permission group 标识符（改名只需改这几处）
+-- 权限组：每个玩家按资历分到一个自定义 permission group（内置 'Default' 不留人）。三组：
+--   A newcomer 新手  ：只禁蓝图类(BLOCK_BLUEPRINT)。新玩家默认。
+--   C veteran  老兵  ：不禁任何动作。warps ≥ storage.perm_warps_c(默认5) 或 管理员/会员 → C。
+--   D restricted 受限：禁 BLOCK_GRIEF(科研/删飞船)。仅 /perm、/bpperm 手动指派，warps 不会进 D。
+-- 各组默认禁用动作【只初始化时配一次】(setup_perm_groups + perm_defaults_applied 守卫)；之后脚本不再碰，
+-- 管理员可游戏内 /permissions 手动调、不被覆盖。要重置默认：删 perm_defaults_applied 或在 /permissions 删该组。
+local TIER_A, TIER_C, TIER_D = 'newcomer', 'veteran', 'restricted'   -- 组名=permission group 标识符
 M.TIER = {A = TIER_A, C = TIER_C, D = TIER_D}   -- 暴露给 commands（/bpperm、/perm 校验目标组名）
 
 -- 【蓝图类】（仅 A 禁）：蓝图库/导入/红图(拆除规划器)/升级规划器。
@@ -150,13 +147,10 @@ local BLOCK_BLUEPRINT = {
     'import_blueprints_filtered', 'delete_blueprint_library', 'delete_blueprint_record', 'drop_blueprint_record',
     'reassign_blueprint', 'deconstruct', 'upgrade',
 }
--- 【共享破坏】（仅 D 禁，用户指定）：全队科研 + 共享飞船平台 + 全局喇叭/显示屏。
+-- 【共享破坏】（仅 D 禁，用户指定）：全队科研 + 共享飞船平台
 local BLOCK_GRIEF = {
     'start_research', 'cancel_research', 'move_research', 'set_research_finished_stops_game',
-    'delete_space_platform', 'cancel_delete_space_platform', 'rename_space_platform',
-    'change_programmable_speaker_parameters', 'change_programmable_speaker_alert_parameters', 'change_programmable_speaker_circuit_parameters',
-    'edit_display_panel', 'edit_display_panel_always_show', 'edit_display_panel_icon',
-    'edit_display_panel_parameters', 'edit_display_panel_show_in_chart', 'edit_display_panel_single_entry',
+    'delete_space_platform', 'cancel_delete_space_platform',
 }
 local function concat_lists(...)
     local out = {}
