@@ -151,11 +151,10 @@ function M.reset()
         if player.surface then
             -- 跃迁清场：这次复活去【出生星球】(含此刻已是死亡状态、待复活的玩家)。一次性，复活时消费(见 players.place_on_respawn)。
             storage.respawn_home[player.index] = true
-            local inventory = player.get_inventory(defines.inventory.character_main)
-            if player.character then
+            -- 用【本体角色】判定：map/remote(遥控/地图)视角下 player.character 为 nil，但本体角色常留在飞船上，
+            -- 按 player.character 会漏杀 → 背包(科技瓶)跨轮存活、白嫖经验。有本体角色就杀(尸体留当地)，否则清空。
+            if science_exp.body_character(player) then
                 players.kill_player(player)
-            elseif inventory then
-                inventory.clear()
             else
                 player.clear_items_inside()
             end

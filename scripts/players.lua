@@ -5,6 +5,7 @@ local util = require('scripts.util')
 local gui = require('scripts.gui')
 local passives = require('scripts.passives')
 local respawn_gifts = require('scripts.respawn_gifts')
+local science_exp = require('scripts.science_exp')
 local player_stats = require('scripts.player_stats')
 local classes = require('scripts.classes')
 
@@ -119,9 +120,13 @@ end
 -- 脚本杀死玩家：在玩家【当前所在位置】直接处死，尸体(背包货物)留在死亡原地、不搬运。
 -- 不会被带回母星：自杀走"其他死法"，由 place_on_respawn 判定在【当前星球】复活，货要取回得回原地。
 -- 复活去哪由 on_player_respawned → place_on_respawn 决定（玩家的复活星球，默认母星）；这里只设个母星 force 兜底。
--- 用于所有"杀死玩家"的入口（跃迁清场 / 自杀 / 离场 等）。无 character 时跳过。
+-- 用于所有"杀死玩家"的入口（跃迁清场 / 自杀 / 离场 等）。真·无角色(死亡)时跳过。
+-- 必须取【本体角色实体】：map/remote(遥控/地图)视角下 player.character 为 nil，但本体角色仍在(常在飞船上)，
+-- 若按 player.character 跳过，遥控视角玩家就杀不掉、背包跨轮存活 → 白嫖经验。
 function M.kill_player(player)
-    if not player or not player.character then return end
+    if not player then return end
+    local char = science_exp.body_character(player)
+    if not char then return end
     local force = player.force
     -- force 出生点兜底设母星（实际复活落点以 place_on_respawn 为准）
     local nauvis = game.surfaces['nauvis']
@@ -129,7 +134,7 @@ function M.kill_player(player)
         local norigin = force.get_spawn_position(nauvis)
         force.set_spawn_position(nauvis.find_non_colliding_position('character', norigin, 64, 1) or norigin, nauvis)
     end
-    player.character.die()
+    char.die()
 end
 
 -- 权限组：每个玩家按资历分到一个自定义 permission group（内置 'Default' 不留人）。三组：
@@ -349,7 +354,7 @@ script.on_event(defines.events.on_pre_player_left_game, function(event)
     -- "外星捡货下线、改天上线带回母星"。设 false 则离线保留角色与背包（/c storage.kill_on_leave=false）。
     if storage.kill_on_leave == false then return end
 
-    if player.character then
+    if science_exp.body_character(player) then   -- 含遥控/地图视角：本体角色仍在就杀（kill_player 内部同样按本体角色）
         M.kill_player(player)
         -- 删除可能落在飞船原点附近的尸体
         for _, space_platform in pairs(game.forces.player.platforms) do

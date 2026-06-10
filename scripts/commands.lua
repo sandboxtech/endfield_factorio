@@ -293,10 +293,14 @@ end
 local function travel_inventories_empty(player)
     local cur = player.cursor_stack
     if cur and cur.valid_for_read then return false end
+    -- 必须从【本体角色实体】取背包：map/remote(遥控/地图)视角下 player.character 为 nil，
+    -- player.get_inventory 取不到背包(返回 nil)，会被误判为空、放行带货跨星球。
+    local char = science_exp.body_character(player)
+    if not char then return false end   -- 拿不到角色(死亡等)无法核实 → 按"非空"拒绝，宁可拦住
     for _, inv in ipairs({defines.inventory.character_main,
                           defines.inventory.character_trash,
                           defines.inventory.character_ammo}) do
-        local i = player.get_inventory(inv)
+        local i = char.get_inventory(inv)
         if i and not i.is_empty() then return false end
     end
     return true
