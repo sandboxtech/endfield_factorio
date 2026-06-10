@@ -469,33 +469,58 @@ end
 add_command('kickout', {'wn.kickout-help'}, member_kick_cmd)
 -- 所有命令统一【只用英文名】，不再注册中文/拼音别名。
 
--- ── 管理员：单独设置玩家的【蓝图权限】开/关 ──────────────────────────────────
--- /bpperm <玩家名> <on|off>：覆盖该玩家的蓝图/受限组判定。on=强制解锁(进 Default)、off=强制锁死(进受限组)。
--- 存 storage.bp_override[名]=true/false；清除覆盖（恢复按 warps/会员自动判定）用 /bpperm <玩家名> auto。
+-- 三级权限组的【字母 → 组名】映射（/bpperm、/perm 共用）。组名定义见 players.TIER。
+local PERM_LETTER = {a = players.TIER.A, c = players.TIER.C, d = players.TIER.D}
+local PERM_LABEL  = {[players.TIER.A] = 'A 新手(禁蓝图)',
+                     [players.TIER.C] = 'C 老兵(无限制)', [players.TIER.D] = 'D 受限(禁科研/飞船/喇叭)'}
+-- 把目标【钉】到某层级或清除覆盖：letter 为 a/c/d → 写 storage.bp_override[名]=组名；auto/clear → 清除（恢复按 warps）。
+-- 返回一句【结果描述】(给调用方决定私聊还是公屏)，非法输入返回 nil。
+local function apply_perm_override(target, mode)
+    mode = mode and string.lower(mode)
+    storage.bp_override = storage.bp_override or {}
+    if mode == 'auto' or mode == 'clear' or mode == 'nil' or mode == 'none' then
+        storage.bp_override[target.name] = nil
+        players.update_blueprint_perm(target)
+        return '已清除 ' .. target.name .. ' 的权限覆盖，恢复按跃迁次数/会员自动判定'
+    end
+    local grp = mode and PERM_LETTER[mode]
+    if not grp then return nil end
+    storage.bp_override[target.name] = grp
+    players.update_blueprint_perm(target)   -- 立即生效（在线玩家当场改组）
+    return '已把 ' .. target.name .. ' 移到权限组【' .. (PERM_LABEL[grp] or grp) .. '】'
+end
+
+-- ── 管理员：把玩家钉到指定权限组（A/C/D）或清除覆盖 ─────────────────────────────
+-- /bpperm <玩家名> <a|c|d|auto>：a 新手(禁蓝图) / c 老兵(无限) / d 受限(禁科研/飞船/喇叭) / auto 恢复自动。回显只给执行的管理员。
 local function bpperm_cmd(command)
     local sink = (command.player_index and game.get_player(command.player_index)) or game
     local name = arg_name(command)
     local target = name and game.get_player(name)
     if not target then sink.print({'wn.member-no-such', name or ''}); return end
     local mode = command.parameter and string.match(command.parameter, '%S+%s+(%S+)')
+    local msg = apply_perm_override(target, mode)
+    if not msg then sink.print('用法：/bpperm <玩家名> <a|c|d|auto>  （a新手禁蓝图/c老兵无限/d受限/auto恢复自动）'); return end
+    sink.print('[权限] ' .. msg)
+end
+add_admin_command('bpperm', '管理员：把玩家钉到权限组 A/C/D 或恢复自动。用法 /bpperm <玩家名> <a|c|d|auto>', bpperm_cmd)
+
+-- ── 会员：把玩家移到【C 老兵(信任)】或【D 受限(惩戒)】，或恢复自动。结果【公屏通知】全服。────────────
+-- /perm <玩家名> <c|d|auto>：c=信任(无限制)、d=受限(只剩走路聊天)、auto=恢复按跃迁次数自动判定。会员/管理员可用。
+local function perm_cmd(command)
+    local actor, target, sink = member_cmd_targets(command)   -- 校验执行者是会员 + 解析目标
+    if not target then return end
+    local mode = command.parameter and string.match(command.parameter, '%S+%s+(%S+)')
     mode = mode and string.lower(mode)
-    storage.bp_override = storage.bp_override or {}
-    if mode == 'on' or mode == 'true' or mode == '1' then
-        storage.bp_override[target.name] = true
-        sink.print('[蓝图权限] 已【强制解锁】 ' .. target.name .. ' 的蓝图/信号等受限权限')
-    elseif mode == 'off' or mode == 'false' or mode == '0' then
-        storage.bp_override[target.name] = false
-        sink.print('[蓝图权限] 已【强制锁死】 ' .. target.name .. '（进受限组）')
-    elseif mode == 'auto' or mode == 'clear' or mode == 'nil' then
-        storage.bp_override[target.name] = nil
-        sink.print('[蓝图权限] 已清除 ' .. target.name .. ' 的覆盖，恢复按跃迁次数/会员自动判定')
-    else
-        sink.print('用法：/bpperm <玩家名> <on|off|auto>  （on=强制解锁, off=强制锁死, auto=恢复自动）')
+    if not (mode == 'c' or mode == 'd' or mode == 'auto' or mode == 'clear' or mode == 'none' or mode == 'nil') then
+        sink.print('用法：/perm <玩家名> <c|d|auto>  （c=信任无限制 / d=受限惩戒 / auto=恢复自动）')
         return
     end
-    players.update_blueprint_perm(target)   -- 立即生效（在线玩家当场改组）
+    local msg = apply_perm_override(target, mode)
+    if not msg then sink.print('用法：/perm <玩家名> <c|d|auto>'); return end
+    -- 公屏通知（含执行人）：moderation 行为透明可见。控制台执行(actor 为 nil)署名 <控制台>。
+    game.print('[权限] ' .. (actor and actor.name or '<控制台>') .. '：' .. msg)
 end
-add_admin_command('bpperm', '单独设置某玩家蓝图/信号等受限权限。用法 /bpperm <玩家名> <on|off|auto>', bpperm_cmd)
+add_command('perm', '会员：把玩家移到 C 信任 / D 受限 / auto 恢复。用法 /perm <玩家名> <c|d|auto>', perm_cmd)
 
 -- ── 管理员：单独设置玩家的【背包格加成总数】（覆盖，不叠加）────────────────────
 -- /invbonus <玩家名> <数量>：把该玩家背包格加成【覆盖】为该数（替代全员基础 storage.inv_slots_bonus，不在其上叠加）。

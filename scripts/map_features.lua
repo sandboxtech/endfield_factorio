@@ -8,6 +8,7 @@
 -- 由 surface.lua 的 on_chunk_generated 对各真实星球圆内区块调用 M.generate。
 local noise = require('scripts.noise')
 local events = require('scripts.events')
+local constants = require('scripts.constants')   -- 仅取 fill_default 作为奖励箱填充参数的默认来源（纯叶子模块，无 require 循环）
 
 local M = {}
 
@@ -503,21 +504,23 @@ local function item_ok(name)
     return false
 end
 
--- 取某组奖励箱【填充参数】(lo, hi, exp)：storage.fill.<prefix>_lo/hi/exp，缺省回退默认（与 constants.fill_default 一致）。
-local FILL_FALLBACK = {logi = {8, 18, 2}, equip = {10, 24, 2}}
-local function fill_amount(prefix)
-    local f = storage.fill or {}
-    local d = FILL_FALLBACK[prefix]
-    return f[prefix .. '_lo'] or d[1], f[prefix .. '_hi'] or d[2], f[prefix .. '_exp'] or d[3]
+-- 取单个奖励箱【填充参数】：storage.fill.<key>，缺省回退 constants.fill_default（单一默认来源，避免散落魔法数字）。
+local function fillv(key)
+    local f = storage.fill
+    local v = f and f[key]
+    if v == nil then v = constants.fill_default[key] end
+    return v
 end
+-- storage.fill.<lokey>~<hikey> 之间取随机整数（两端都回退默认）。
+local function fill_rand(lokey, hikey) return math.random(fillv(lokey), fillv(hikey)) end
 
 -- 【统一填箱函数】所有箱型唯一的填充入口（取代原 fill_loot / fill_material_chest / fill_treasure_chest）。opts：
 --   weights : 类权重表（loot_weights().X）；先按权重选类、类内等概率选物品。
---   kinds   : 先选定几种物品名、之后只在其中抽（少种类叠多格 → 材料箱式）；nil=每格重抽（种类杂 → 设备/物流箱式）。
---   frac    : {lo,hi} 按箱格数的比例近装满（材料箱式，与 n 二选一）；省略时用 n。
---   n       : 抽几次/填几格（设备/物流/宝箱用）；frac 与 n 都没给则填满整箱。
+--   kinds   : 先选定几种物品名、之后只在其中抽（少种类叠多格 → 材料箱式）；nil=每格重抽（种类杂 → 设备/物流/宝箱式）。
+--   n       : 抽几次/填几格（不超过箱格数；省略=填满整箱）。
 --   exp     : 每格数量指数（数量 = 堆叠 × random^exp；0=整堆满格，越大每格越少）。省略默认 2。
 --   quality : 品质函数（默认 roll_quality 普通分布；木箱传 roll_treasure_quality）。
+-- 注：四类箱的【数字】全部来自 storage.fill（见 CHEST_SPEC 各 fill），本函数不含任何魔法数字。
 local function fill_chest(chest, opts)
     local inv = chest.get_inventory(defines.inventory.chest)
     if not inv then return end
@@ -531,13 +534,7 @@ local function fill_chest(chest, opts)
         end
         if #pool == 0 then return end
     end
-    local n
-    if opts.frac then
-        n = math.floor(cap * (opts.frac[1] + math.random() * (opts.frac[2] - opts.frac[1])) + 0.5)
-    else
-        n = opts.n or cap
-    end
-    n = math.min(math.max(n, pool and #pool or 1), cap)   -- 至少装下选定的种类、不超过箱格数
+    local n = math.min(math.max(opts.n or cap, pool and #pool or 1), cap)   -- 至少装下选定的种类、不超过箱格数
     local qfn = opts.quality or roll_quality
     for _ = 1, n do
         local name = pool and pool[math.random(#pool)] or pick_loot(opts.weights)
@@ -681,19 +678,24 @@ end
 -- ── 各箱型【统一处理表 CHEST_SPEC】（单一来源）──────────────────────────────────
 -- 每个箱型一条：name=放置的箱实体名(也作地图标签图标)；fill(chest,kind)=填充方式(统一走 fill_chest)；perpetual=true 表无限箱(单独 spawn，带墙/无敌)。
 -- 想加新箱型：在此加一条 {name, fill} 即可，place_reward_chest / CHEST_ICON 自动支持，无需再改分支。
--- 填充量从 storage.fill.* 读（fill_amount，可 /c 热改、/diff 可见）：五色物流箱共用 logi_*；铁(设备)箱 equip_*。
---   钢(材料)箱：material 类 + 选 1~3 种 + 近装满 frac + exp0(整堆)；木(宝)箱：treasure 类 + 1~2 件 + exp4 + 宝箱品质。四种全部经【统一】fill_chest。
+-- 填充【全部数字】统一从 storage.fill.* 读（fillv/fill_rand，可 /c 热改、/diff 可见），CHEST_SPEC 里不留任何魔法数字：
+--   钢(材料)箱：material 类 + 选 material_kinds 种 + 填 material_lo~hi 格(钢箱48格,默认40~48≈近装满) + material_exp(0=整堆)；
+--   铁(设备)箱：equip_lo~hi 格 + equip_exp；木(宝)箱：treasure_lo~hi 件 + treasure_exp + 宝箱品质；五色物流箱：logi_lo~hi 格 + logi_exp。
+-- 四类全部经【统一】fill_chest；区别只在权重表/是否选定种类/品质函数（算法形态），数字一律来自 storage.fill。
 local CHEST_SPEC = {
-    material  = {name = 'steel-chest',   fill = function(c) fill_chest(c, {weights = loot_weights().material, kinds = math.random(1, 3), exp = 0, frac = {0.85, 1.0}}) end},
-    equipment = {name = 'iron-chest',    fill = function(c) local lo, hi, exp = fill_amount('equip'); fill_chest(c, {weights = loot_weights().equipment, n = math.random(lo, hi), exp = exp}) end},
-    treasure  = {name = 'wooden-chest',  fill = function(c) fill_chest(c, {weights = loot_weights().treasure, n = math.random(1, 2), exp = 4, quality = roll_treasure_quality}) end},
+    material  = {name = 'steel-chest',   fill = function(c) fill_chest(c, {weights = loot_weights().material,
+                    n = fill_rand('material_lo', 'material_hi'), exp = fillv('material_exp'),
+                    kinds = fill_rand('material_kinds_lo', 'material_kinds_hi')}) end},
+    equipment = {name = 'iron-chest',    fill = function(c) fill_chest(c, {weights = loot_weights().equipment,
+                    n = fill_rand('equip_lo', 'equip_hi'), exp = fillv('equip_exp')}) end},
+    treasure  = {name = 'wooden-chest',  fill = function(c) fill_chest(c, {weights = loot_weights().treasure,
+                    n = fill_rand('treasure_lo', 'treasure_hi'), exp = fillv('treasure_exp'), quality = roll_treasure_quality}) end},
     perpetual = {name = 'infinity-chest', perpetual = true},
 }
 -- 五色物流箱：实体名各异、填充统一（各自专属权重表 loot_weights()[kind] + 共用 fill.logi_* 量）。批量并入 CHEST_SPEC。
 for kind, ename in pairs(LOGI_CHEST_NAME) do
     CHEST_SPEC[kind] = {name = ename, fill = function(c)
-        local lo, hi, exp = fill_amount('logi')
-        fill_chest(c, {weights = loot_weights()[kind], n = math.random(lo, hi), exp = exp})
+        fill_chest(c, {weights = loot_weights()[kind], n = fill_rand('logi_lo', 'logi_hi'), exp = fillv('logi_exp')})
     end}
 end
 -- 据点中心地图标签图标 = 各箱型实体（从 CHEST_SPEC 派生，单一来源，含 perpetual=infinity-chest）。

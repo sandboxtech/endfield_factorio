@@ -154,7 +154,7 @@
 | `class_tech_stack` | true | 多职业指向同一无限科技：true=各 +1 级累加；false=固定第一级 |
 | `grant_trigger_techs` | false | 开局是否赠送所有触发科技（捕获虫巢/扔物入太空那类） |
 | `unlock_all_planets` | true | 开局自动解锁所有星球传送点（不点亮发现科技） |
-| `blueprint_warps` | 1 | 解锁蓝图库/导入/红图所需跃迁次数（0=进服即解锁；会员/管理员恒解锁）。见 `/bpperm` 按人覆盖 |
+| `perm_warps_c` | 5 | 新手 A → 老兵 C 所需累计在线跃迁次数（C=无限制、含解锁蓝图）。会员/管理员恒 C。见下「权限组体系」 |
 
 ### 玩家管理
 | 参数 | 默认 | 说明 |
@@ -252,16 +252,23 @@
 例：`/c storage.star_vote.base_warp = 500`。
 
 ### 奖励箱填充量 `storage.fill.<子键>`
-据点奖励箱填几格、每格几个（数量=堆叠×random^exp；exp 越大每格越少）。五色物流箱共用 `logi_*`、铁(设备)箱 `equip_*`。
+**所有箱型**的填充数字单一来源（钢/铁/木/五色物流都从这里读，代码里不再有写死的数字）。
+每箱：`<前缀>_lo`~`<前缀>_hi` 填几格（随机区间）、`<前缀>_exp` 每格数量指数（数量=堆叠×random^exp，0=整堆、越大每格越少）。
 
 | 子键 | 默认 | 说明 |
 |---|---|---|
-| `logi_lo` / `logi_hi` | 8 / 18 | 五色物流箱填几格 |
-| `logi_exp` | 2 | 五色物流箱每格数量指数 |
+| `material_lo` / `material_hi` | 40 / 48 | 钢(材料)箱填几格（钢箱共 48 格，默认≈近装满） |
+| `material_exp` | 0 | 钢箱每格数量指数（0=整堆满格） |
+| `material_kinds_lo` / `material_kinds_hi` | 1 / 3 | 钢箱先选几种物品（整箱只填这几种） |
 | `equip_lo` / `equip_hi` | 10 / 24 | 铁(设备)箱填几格 |
 | `equip_exp` | 2 | 铁(设备)箱每格数量指数 |
+| `treasure_lo` / `treasure_hi` | 1 / 2 | 木(宝)箱填几件 |
+| `treasure_exp` | 4 | 木箱每格数量指数（极偏少，多为几个） |
+| `logi_lo` / `logi_hi` | 8 / 18 | 五色物流箱填几格（5 色共用） |
+| `logi_exp` | 2 | 五色物流箱每格数量指数 |
 
-例：`/c storage.fill.logi_hi = 30`。
+例：`/c storage.fill.logi_hi = 30`、`/c storage.fill.treasure_hi = 4`。
+> 四类箱的**算法形态**差异（钢箱选定 1~3 种、木箱用宝箱品质分布、各用不同权重表）仍在代码里，但所有**数字**都在此表。
 
 ---
 
@@ -269,14 +276,36 @@
 
 这些是表/集合型，需直接 `/c` 改（diff 不展开或只部分展开）：
 
-- `storage.gen_diff_whitelist`：能看到 `/gen`、`/diff`（含本窗）的管理员白名单。默认 `{hncsltok=true}`。
+- `storage.gen_diff_whitelist`：能看到 `/gen`、`/diff`（含本窗）的管理员白名单（默认含 `hncsltok`）。
   增删：`/c storage.gen_diff_whitelist['玩家名'] = true / nil`。
 - `storage.loot_weights[箱型][类]`：箱子里**偏向掉哪类货**（各箱型一张权重表，含五色物流箱 `logi_*`）。
   例：`/c storage.loot_weights.logi_requester.military = 300`。
 - `storage.loot[类]`：每类里**有哪些具体物品**名单。
-- `storage.bp_override[玩家名]` = true/false：按人覆盖蓝图/受限权限（见 `/bpperm`）。
+- `storage.bp_override[玩家名]` = `'newcomer'/'voyager'/'veteran'/'restricted'`：把人钉到某权限组（见 `/bpperm`、`/perm`）。
 - `storage.player_inv_bonus[玩家名]` = 数：按人覆盖背包格总数（见 `/invbonus`）。
 - `storage.loot_noise[星球]`：据点空间聚簇噪声（amp/seed），让据点成片密/疏。
+
+## 权限组体系（三级 A/C/D）
+
+所有玩家都在自定义组里（内置 `Default` 组**不留人**）。A→C 按累计在线跃迁次数 `warps` 自动晋级；D 仅靠会员/管理员手动指派。每次跃迁、进服都会重判【分到哪个组】。
+
+| 组 | 名(标识符) | 进组条件 | 默认禁用动作 |
+|---|---|---|---|
+| **A** | `newcomer` 新手 | 默认 | 仅【蓝图类】：蓝图库/导入/红图(拆除规划器)/升级规划器（11 个） |
+| **C** | `veteran` 老兵 | `warps ≥ perm_warps_c`（默认5）；管理员/会员恒 C | 无（完全不限） |
+| **D** | `restricted` 受限 | 仅 `/perm <名> d` 或 `/bpperm <名> d` 指派 | 全队科研 + 共享飞船平台 + 全局喇叭/显示屏（16 个）。**不禁蓝图/建造/采矿** |
+
+> **重要**：三组的**默认禁用动作只在场景初始化（或首次建组）时配置一次**（`players.setup_perm_groups`，`storage.perm_defaults_applied` 守卫）。
+> 之后**脚本绝不再改这三组的动作**——你可以用游戏内 **/permissions** 手动增删权限，脚本只负责把玩家**分到**哪个组、不覆盖你的手动改动。
+> 想把某组恢复成代码默认：删 `storage.perm_defaults_applied`，或在 /permissions 里删掉该组（下次被建组时按默认重配）。
+
+晋级阈值 `perm_warps_c` 在 diff 标量里、可 `/c` 热改。所有受管动作都按 runtime-api 校验、带 nil 守卫。
+
+**指令：**
+- `/bpperm <玩家> <a|c|d|auto>`（管理员）：把人钉到 A/C/D，`auto`=恢复按 warps 自动。回显只给执行者。
+- `/perm <玩家> <c|d|auto>`（**会员**可用）：`c`=信任(无限)、`d`=受限、`auto`=恢复自动。结果**公屏通知**全服。
+- 钉组写入 `storage.bp_override[玩家名]`；`auto` 即删除该键（恢复 warps 自动判定）。
+- 老存档升级时自动迁移：`no_blueprint`→A、`Default`/已删的 `voyager`→C（见 `players.migrate_perm_groups`）。
 
 ## 三种"权重/密度"别搞混
 | 想配什么 | 改哪 |

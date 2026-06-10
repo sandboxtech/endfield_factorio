@@ -38,8 +38,15 @@ local M = {
     -- 嵌套配置表的【默认值】（模块字段单一来源）：既给 ensure_defaults 兜底，又给 /diff 展开对比（见 commands.admin_diff）。
     -- 投票花费·星星（原扁平 star_vote_* 已整合进此命名空间，/c storage.star_vote.base_warp=…；老档由 one_shot_migrations 迁移）。
     star_vote_default = {base_warp = 300, base_stay = 300, mul_warp = 1, mul_stay = -1, thres = 10, afk_min = 30},
-    -- 奖励箱填充量（原扁平 fill_logi_*/fill_equip_* 已整合，/c storage.fill.logi_hi=…）。lo~hi 填几格、exp 每格数量指数(数量=堆叠×random^exp)。
-    fill_default = {logi_lo = 8, logi_hi = 18, logi_exp = 2, equip_lo = 10, equip_hi = 24, equip_exp = 2},
+    -- 奖励箱填充量（全部数字单一来源，map_features.fill_chest 读取，/c storage.fill.<键>=… 热改、/diff 可见）。
+    -- 每箱：<前缀>_lo/_hi 填几格(随机区间)、<前缀>_exp 每格数量指数(数量=堆叠×random^exp；0=整堆)。
+    -- 钢(材料)箱额外 material_kinds_lo/_hi=先选几种物品(只填这几种)；钢箱共 48 格，默认 40~48≈近装满。
+    fill_default = {
+        material_lo = 40, material_hi = 48, material_exp = 0, material_kinds_lo = 1, material_kinds_hi = 3,   -- 钢/材料箱
+        equip_lo = 10, equip_hi = 24, equip_exp = 2,                                                          -- 铁/设备箱
+        treasure_lo = 1, treasure_hi = 2, treasure_exp = 4,                                                   -- 木/宝箱
+        logi_lo = 8, logi_hi = 18, logi_exp = 2,                                                              -- 五色物流箱(共用)
+    },
     loot_planet_mul_default = {nauvis = 1, vulcanus = 1, fulgora = 3, gleba = 3, aquilo = 3},   -- 每星宝箱据点密度乘数
     warp_extend_default = {                                                                      -- 每瓶解锁的延长跃迁分钟
         ['automation-science-pack'] = 30, ['logistic-science-pack'] = 60,
@@ -108,6 +115,16 @@ local function one_shot_migrations()
                 if storage[tbl][newk] == nil then storage[tbl][newk] = storage[oldk] end
                 storage[oldk] = nil
             end
+        end
+    end
+    -- ③ 权限组化历史遗留键删除：blueprint_warps（旧蓝图解锁次数）、perm_warps_b（已删的 B 航者阈值）→ 现仅剩 perm_warps_c。
+    storage.blueprint_warps = nil
+    storage.perm_warps_b = nil
+    -- ④ bp_override 归一到新组名：旧布尔 true→'veteran' 老兵 / false→'newcomer' 新手；已删的 'voyager'(B)→'veteran' 老兵。
+    if storage.bp_override then
+        for nm, v in pairs(storage.bp_override) do
+            if v == true or v == 'voyager' then storage.bp_override[nm] = 'veteran'
+            elseif v == false then storage.bp_override[nm] = 'newcomer' end
         end
     end
 end
@@ -218,7 +235,7 @@ function M.ensure_defaults()
         chat_bubble_enabled = false,      -- 玩家聊天头顶冒对话气泡（默认关）。开：/c storage.chat_bubble_enabled=true
         player_cleanup_hours = 32,        -- 跃迁时清理多少小时没上线的玩家对象（释放蓝图/快捷键等存档膨胀；经验/统计按名字存，不丢）
         kill_on_leave = true,             -- 玩家离线时杀死其角色（尸体/货物留当地，防外星捡货下线带回）。false=离线保留角色与背包
-        blueprint_warps = 1,              -- 解锁蓝图库/导入/红图所需的跃迁次数（0=进服即解锁；会员/管理员恒解锁不看此值）
+        perm_warps_c = 5,                 -- 新手 A → 老兵 C 所需累计在线跃迁次数（C=无任何限制，含解锁蓝图）。会员/管理员恒 C、不看此值
     }
     M.scalar_defaults = d   -- 暴露标量默认值（供 /config 命令对比当前 storage 与默认）
     for k, v in pairs(d) do
@@ -239,9 +256,9 @@ function M.ensure_defaults()
     for p, v in pairs(M.loot_planet_mul_default) do
         if storage.loot_planet_mul[p] == nil then storage.loot_planet_mul[p] = v end
     end
-    -- /gen 与 /diff 弹窗的【可见白名单】：管理员名在表内才弹（默认不展示）。默认含 hncsltok。
+    -- /gen 与 /diff 弹窗的【可见白名单】：管理员名在表内才弹（默认不展示）。
     -- 热改：/c storage.gen_diff_whitelist['玩家名'] = true   删：…= nil
-    storage.gen_diff_whitelist = storage.gen_diff_whitelist or {hncsltok = true}
+    storage.gen_diff_whitelist = storage.gen_diff_whitelist or {}
     -- 各科技瓶【解锁延长跃迁的分钟数】。缺失才补 → 保留管理员 /c 的调整，并自动纳入将来新增的瓶。
     -- 热改示例：/c storage.warp_extend_minutes['cryogenic-science-pack'] = 90   （/diff 可见）
     storage.warp_extend_minutes = storage.warp_extend_minutes or {}

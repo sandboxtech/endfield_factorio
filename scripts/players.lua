@@ -132,114 +132,111 @@ function M.kill_player(player)
     player.character.die()
 end
 
--- ── 受限权限组 'no_blueprint'：跃迁满 BLUEPRINT_WARPS 次（warps 统计）才解锁 ──
--- 用 permission group 实现：未达次数(或新玩家)放进 'no_blueprint' 受限组，禁掉一批【影响全队/他人、却不影响自己
--- 基础游玩(建造/采矿/战斗/移动)】的动作；达标后(及管理员/会员)放回 'Default' 组解除全部限制。
--- 本地框选创建、使用自己手上的蓝图仍允许（手上已持有的蓝图放 ghost 走普通建造动作，服务端拦不住，这点挡不住）。
--- 设计原则：只禁【会破坏共享体验】的动作（蓝图库/红图/全队科研/信号电路/全局喇叭与显示屏/共享地图标记/共享铁路与飞船/
--- 火箭发射/权限组），不禁纯个人本地操作（设过滤/优先级/堆叠数等只作用于自己机器的动作不拦）。
-local BLUEPRINT_WARPS = 1   -- 解锁所需的跃迁次数（默认值；运行时以 storage.blueprint_warps 优先，可 /c 热改）
-local BLUEPRINT_BLOCKED = {
-    -- 蓝图 / 红图（含删除共享蓝图库）
-    'open_blueprint_library_gui',   -- 打开蓝图库
-    'grab_blueprint_record',        -- 从库里取出蓝图到手
-    'import_blueprint',             -- 导入蓝图（进库）
-    'import_blueprint_string',      -- 粘贴蓝图字符串
-    'import_blueprints_filtered',   -- 过滤导入
-    'delete_blueprint_library',     -- 删除整座共享蓝图库（防新人清空他人蓝图）
-    'delete_blueprint_record',      -- 删除蓝图库里单条蓝图
-    'drop_blueprint_record',        -- 拖动/移动蓝图库条目
-    'reassign_blueprint',           -- 重指派蓝图记录
-    'deconstruct',                  -- 红图(拆除规划器)框选标记拆除；手动采矿不受影响
-    'upgrade',                      -- 升级规划器框选（同红图类，批量改他人建筑）
-    -- 全队科研（任何一项都改全 force 科研队列，纯影响他人）
-    'start_research',
-    'cancel_research',
-    'move_research',
-    'set_research_finished_stops_game',
-    -- 火箭：提前发射他人的火箭
-    'launch_rocket',
-    -- 信号 / 电路网络（信号相关：组合器/常量信号/连线/电路条件/电源开关）
-    'set_signal',                           -- 常量组合器设信号
-    'switch_constant_combinator_state',     -- 常量组合器开关
-    'change_arithmetic_combinator_parameters',
-    'change_selector_combinator_parameters',
-    'set_combinator_description',
-    'add_decider_combinator_condition',
-    'add_decider_combinator_output',
-    'modify_decider_combinator_condition',
-    'modify_decider_combinator_output',
-    'remove_decider_combinator_condition',
-    'remove_decider_combinator_output',
-    'drag_decider_combinator_condition',
-    'drag_decider_combinator_output',
-    'set_circuit_condition',                -- 设电路启用条件
-    'set_circuit_mode_of_operation',
-    'set_behavior_mode',
-    'wire_dragging',                        -- 拉红/绿线（连/断电路网络）
-    'remove_cables',                        -- 剪线
-    'switch_power_switch_state',            -- 手动开关电源开关（可掐断共享供电）
-    -- 全局喇叭 / 显示屏（向所有玩家广播声音 / 在全队地图上显示提示）
-    'change_programmable_speaker_parameters',
-    'change_programmable_speaker_alert_parameters',
-    'change_programmable_speaker_circuit_parameters',
-    'edit_display_panel',
-    'edit_display_panel_always_show',
-    'edit_display_panel_icon',
-    'edit_display_panel_parameters',
-    'edit_display_panel_show_in_chart',
-    'edit_display_panel_single_entry',
-    -- 共享地图标记（force 级 chart tag，可被新人删光）
-    'edit_custom_tag',
-    'delete_custom_tag',
-    -- 共享铁路（改他人列车的站点/名字/数量上限/优先级、强行停车）
-    'set_train_stopped',
-    'change_train_stop_station',
-    'change_train_name',
-    'set_trains_limit',
-    'set_train_stop_priority',
-    -- 共享飞船平台（删除/重命名他人飞船）
-    'delete_space_platform',
-    'cancel_delete_space_platform',
-    'rename_space_platform',
-    -- 权限组本身（非管理员本就受限，再兜一层）
-    'add_permission_group',
-    'delete_permission_group',
-    'edit_permission_group',
-    'import_permissions_string',
+-- ── 三级权限组（A/C 按累计在线跃迁次数 warps 晋级；D 受限只能由会员/管理员手动指派。内置 'Default' 组【永不留人】）─
+--   A 新手 newcomer  ：只禁【蓝图类】（蓝图库/导入/红图拆除/升级规划器）。所有新玩家默认 A。
+--   C 老兵 veteran   ：达 storage.perm_warps_c（默认5）次跃迁 → 无任何限制。管理员/会员直接 C。
+--   D 受限 restricted：惩戒组（会员 /perm <名> d 指派）→ 禁【全队科研 + 共享飞船平台 + 全局喇叭/显示屏】。
+--                      仅靠 storage.bp_override 指派，warps 永不进 D。
+-- 【重要】三组的默认禁用动作【只在场景初始化(或建组)时配置一次】(M.setup_perm_groups，storage.perm_defaults_applied 守卫)；
+--   之后脚本【绝不再改动作】——管理员用游戏内 /permissions 手动调整，脚本只负责把玩家【分到】哪个组，不覆盖手动改。
+--   要把某组恢复成代码默认：删掉 storage.perm_defaults_applied，或在 /permissions 删掉该组（下次被建组时按默认重配）。
+-- 受管动作名都按 runtime-api 校验、加 nil 守卫。晋级阈值 storage.perm_warps_c 可 /c 热改。
+local TIER_A, TIER_C, TIER_D = 'newcomer', 'veteran', 'restricted'   -- 组名=permission group 标识符（改名只需改这几处）
+M.TIER = {A = TIER_A, C = TIER_C, D = TIER_D}   -- 暴露给 commands（/bpperm、/perm 校验目标组名）
+
+-- 【蓝图类】（仅 A 禁）：蓝图库/导入/红图(拆除规划器)/升级规划器。
+local BLOCK_BLUEPRINT = {
+    'open_blueprint_library_gui', 'grab_blueprint_record', 'import_blueprint', 'import_blueprint_string',
+    'import_blueprints_filtered', 'delete_blueprint_library', 'delete_blueprint_record', 'drop_blueprint_record',
+    'reassign_blueprint', 'deconstruct', 'upgrade',
 }
--- 取（缺则建）受限组并重设禁用动作（幂等）。permission group 持久存档，create 重复会返回 nil，故 get 优先。
--- defines.input_action[name] 取不到（版本改名/拼错）时返回 nil，set_allows_action(nil,…) 会崩 → 先校验跳过并 log。
-local function blueprint_locked_group()
-    local perms = game.permissions
-    local g = perms.get_group('no_blueprint') or perms.create_group('no_blueprint')
-    if g then
-        for _, name in ipairs(BLUEPRINT_BLOCKED) do
-            local act = defines.input_action[name]
-            if act ~= nil then g.set_allows_action(act, false)
-            else log('endfield: 受限组跳过无效 input_action 名: ' .. tostring(name)) end
-        end
+-- 【共享破坏】（仅 D 禁，用户指定）：全队科研 + 共享飞船平台 + 全局喇叭/显示屏。
+local BLOCK_GRIEF = {
+    'start_research', 'cancel_research', 'move_research', 'set_research_finished_stops_game',
+    'delete_space_platform', 'cancel_delete_space_platform', 'rename_space_platform',
+    'change_programmable_speaker_parameters', 'change_programmable_speaker_alert_parameters', 'change_programmable_speaker_circuit_parameters',
+    'edit_display_panel', 'edit_display_panel_always_show', 'edit_display_panel_icon',
+    'edit_display_panel_parameters', 'edit_display_panel_show_in_chart', 'edit_display_panel_single_entry',
+}
+local function concat_lists(...)
+    local out = {}
+    for _, l in ipairs({...}) do for _, v in ipairs(l) do out[#out + 1] = v end end
+    return out
+end
+-- 各层级【默认禁用动作】表：A=蓝图类、C=空（不禁）、D=共享破坏。仅建组/初始化时套用一次（见 setup_perm_groups）。
+local PERM_BLOCK = {
+    [TIER_A] = BLOCK_BLUEPRINT,
+    [TIER_C] = {},
+    [TIER_D] = BLOCK_GRIEF,
+}
+local ALL_MANAGED = concat_lists(BLOCK_BLUEPRINT, BLOCK_GRIEF)   -- 受管动作全集（建组时对全集逐个允许/禁止）
+
+-- 把某组按其默认禁用表配置一遍（对 ALL_MANAGED 逐个允许/禁止）。【仅建组/初始化时调】，之后不再覆盖。
+-- defines.input_action[name] 取不到（版本改名/拼错）返回 nil，set_allows_action(nil,…) 会崩 → 先校验跳过并 log。
+local function apply_default_blocks(g, block_list)
+    local block = {}
+    for _, a in ipairs(block_list or {}) do block[a] = true end
+    for _, a in ipairs(ALL_MANAGED) do
+        local act = defines.input_action[a]
+        if act ~= nil then g.set_allows_action(act, not block[a])
+        else log('endfield: 权限组跳过无效 input_action 名: ' .. tostring(a)) end
     end
+end
+
+-- 取组用于【分配玩家】：已存在 → 原样返回（绝不改其动作，尊重管理员 /permissions 手动调）；不存在 → 新建并配默认一次。
+local function get_tier_group(name)
+    local perms = game.permissions
+    local g = perms.get_group(name)
+    if g then return g end                              -- 已存在：不碰动作
+    g = perms.create_group(name)
+    if g then apply_default_blocks(g, PERM_BLOCK[name]) end   -- 新建：套默认一次
     return g
 end
 
--- 按玩家 warps 把其分到 受限组 / Default 组。优先级：
---   ① storage.bp_override[名]（管理员 /bpperm 单独指定 true=放行/false=锁死，nil=不覆盖走默认判定）；
---   ② 否则：管理员永不受限、【会员】(storage.members)直接解锁、或 warps 达标 → 解锁。
+-- 【一次性】场景初始化时把 A/C/D 配成默认禁用动作；storage.perm_defaults_applied 守卫只跑一次。
+-- 之后脚本绝不再改这三组的动作（管理员用 /permissions 手动调，脚本不覆盖）。由 control.lua 的 on_init / on_configuration_changed 调。
+function M.setup_perm_groups()
+    if storage.perm_defaults_applied then return end
+    local perms = game.permissions
+    for name, block in pairs(PERM_BLOCK) do
+        local g = perms.get_group(name) or perms.create_group(name)
+        if g then apply_default_blocks(g, block) end
+    end
+    storage.perm_defaults_applied = true
+end
+
+-- 玩家应在哪个层级：① /bpperm 覆盖（storage.bp_override[名]=组名）→ 直接用；② 管理员/会员 → C 老兵；③ 否则按 warps 阈值。
+local function tier_for(player)
+    local ov = (storage.bp_override or {})[player.name]   -- 单独覆盖：值为 'newcomer'/'veteran'/'restricted'；nil 或非法→走默认
+    if ov and PERM_BLOCK[ov] then return ov end
+    if player.admin or (storage.members or {})[player.name] then return TIER_C end
+    if passives.get_stat(player.index, 'warps') >= (storage.perm_warps_c or 5) then return TIER_C end
+    return TIER_A
+end
+
 local function update_blueprint_perm(player)
     if not (player and player.valid) then return end
-    local ov = (storage.bp_override or {})[player.name]   -- 单独覆盖：true/false 直接拍板，nil 走默认
-    local unlocked
-    if ov ~= nil then
-        unlocked = ov
-    else
-        unlocked = player.admin or (storage.members or {})[player.name]
-                   or passives.get_stat(player.index, 'warps') >= (storage.blueprint_warps or BLUEPRINT_WARPS)
-    end
-    local g = unlocked and game.permissions.get_group('Default') or blueprint_locked_group()
+    local g = get_tier_group(tier_for(player))   -- 只取/建组并指派，不改组的动作
     if g then player.permission_group = g end
 end
 M.update_blueprint_perm = update_blueprint_perm
+
+-- 兼容旧权限组：把仍在【旧组】的玩家搬进新组（'no_blueprint'→A 新手；'Default'/已删的'voyager'→C 老兵）。
+-- 幂等：只动【当前正好在旧组】的玩家；迁移后他们在 A/C/D，再调即 no-op。之后正常 warps 逻辑（join/warp）接管。
+-- 含离线玩家（game.players 持久），保证 Default 组迁移后【不留人】。其它管理员自建组一律不动。
+-- 由 control.lua 的 on_configuration_changed 调一次（升级老存档时）。
+function M.migrate_perm_groups()
+    local perms = game.permissions
+    local nb = perms.get_group('no_blueprint')   -- 旧受限组 → A 新手
+    local df = perms.get_group('Default')         -- 内置 Default（不留人）→ C 老兵
+    local vy = perms.get_group('voyager')         -- 已删的 B 航者 → C 老兵
+    local ga, gc = get_tier_group(TIER_A), get_tier_group(TIER_C)
+    for _, p in pairs(game.players) do
+        local g = p.permission_group
+        if nb and g == nb and ga then p.permission_group = ga
+        elseif gc and ((df and g == df) or (vy and g == vy)) then p.permission_group = gc end
+    end
+end
 
 -- 刷新所有在线玩家蓝图权限（每次跃迁 warps+1 后由 reset 调用，让刚满 2 次的玩家即时解锁）。
 function M.refresh_blueprint_perms()

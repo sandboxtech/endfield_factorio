@@ -45,12 +45,12 @@ M.offers = {
     {'personal-roboport-mk2-equipment',  1,  120},
     'sep',
 
-    -- 矿石补给：2 金币换 50 矿石（1 组），开局/缺料时应急补给（性价比已下调）。
-    {'iron-ore',                        50,    2},
-    {'copper-ore',                      50,    2},
-    {'stone',                           50,    2},
-    {'coal',                            50,    2},
-    {'wood',                            50,    2},
+    -- 1 金币换 50 矿石（1 组），开局/缺料时应急补给（性价比已下调）。
+    {'iron-ore',                        50,    1},
+    {'copper-ore',                      50,    1},
+    {'stone',                           50,    1},
+    {'coal',                            50,    1},
+    {'wood',                            50,    1},
 }
 
 -- 价格存进 storage.market_prices（item → 金币价），可运行时热改：
@@ -195,10 +195,11 @@ function M.place_on_surface(surface_name)
             lamp.minable = false
         end
     end
-    -- 市场正下方一排 3 个钢箱（公共储物）：市场 3×3 下缘外一格(my+2)，夹在两盏下角灯之间，
+    -- 市场一排 6 个钢箱
     -- 仍在 5×5 地坪和 ±3 清场范围内。不可摧毁/挖取（重复放置时由上面的区域 destroy 清旧）。
     for _, ox in ipairs({-1, 0, 1}) do
         local chest = surface.create_entity{name = 'steel-chest', position = {mx + ox, my + 2}, force = force}
+        local chest = surface.create_entity{name = 'steel-chest', position = {mx + ox, my - 2}, force = force}
         if chest then
             chest.destructible = false
             chest.minable = false
