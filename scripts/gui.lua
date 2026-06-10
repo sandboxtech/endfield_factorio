@@ -64,8 +64,9 @@ function M.player_gui(player)
         end
     end
 
-    -- 管理员专属【红按钮】：仅管理员可见可点（普通玩家不创建 → 看不到）。点击经 tick.on_gui_click 路由到 commands.admin_*。
-    if player.admin then
+    -- 管理员专属【红按钮】：仅【白名单内】管理员可见可点（普通玩家/非白名单管理员不创建 → 看不到）。点击经 tick.on_gui_click 路由到 commands.admin_*。
+    -- 白名单 storage.gen_diff_whitelist（默认含 hncsltok）；与 commands.admin_gen/diff 的门控一致，默认不展示。
+    if player.admin and (storage.gen_diff_whitelist or {})[player.name] then
         player.gui.top.add{type = 'empty-widget'}.style.width = 12
         for _, b in ipairs({
             {name = 'wn_admin_gen',     caption = 'GEN',   tip = {'wn.admin-gen-tip'}},

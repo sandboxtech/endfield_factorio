@@ -34,6 +34,21 @@ local M = {
     -- 星球列表（多处共用：reset 清表/进化度、gui 前往/出生、travel 开放概率）。改这一处即全改，避免各处漂移。
     PLANETS = {'nauvis', 'vulcanus', 'gleba', 'fulgora', 'aquilo'},   -- 母星 + 4 外星（标准顺序）
     OFF_PLANETS = {'vulcanus', 'gleba', 'fulgora', 'aquilo'},         -- 仅外星（travel 开放概率、本轮可达判定用）
+
+    -- 嵌套配置表的【默认值】（模块字段单一来源）：既给 ensure_defaults 兜底，又给 /diff 展开对比（见 commands.admin_diff）。
+    -- 投票花费·星星（原扁平 star_vote_* 已整合进此命名空间，/c storage.star_vote.base_warp=…；老档由 one_shot_migrations 迁移）。
+    star_vote_default = {base_warp = 300, base_stay = 300, mul_warp = 1, mul_stay = -1, thres = 10, afk_min = 30},
+    -- 奖励箱填充量（原扁平 fill_logi_*/fill_equip_* 已整合，/c storage.fill.logi_hi=…）。lo~hi 填几格、exp 每格数量指数(数量=堆叠×random^exp)。
+    fill_default = {logi_lo = 8, logi_hi = 18, logi_exp = 2, equip_lo = 10, equip_hi = 24, equip_exp = 2},
+    loot_planet_mul_default = {nauvis = 1, vulcanus = 1, fulgora = 3, gleba = 3, aquilo = 3},   -- 每星宝箱据点密度乘数
+    warp_extend_default = {                                                                      -- 每瓶解锁的延长跃迁分钟
+        ['automation-science-pack'] = 30, ['logistic-science-pack'] = 60,
+        ['military-science-pack'] = 60,   ['chemical-science-pack'] = 60,
+        ['production-science-pack'] = 60, ['utility-science-pack'] = 60,
+        ['space-science-pack'] = 60,     ['metallurgic-science-pack'] = 60,
+        ['electromagnetic-science-pack'] = 60, ['agricultural-science-pack'] = 60,
+        ['cryogenic-science-pack'] = 120, ['promethium-science-pack'] = 120,
+    },
     -- 星球门槛：前往该星球 / 设其为出生星球，需对应科技瓶达 PLANET_REQ_LEVEL 级（否则按钮置灰）。母星(nauvis)无门槛。
     PLANET_PACK = {
         vulcanus = 'metallurgic-science-pack',      -- 火山 → 金属瓶
@@ -66,12 +81,45 @@ local M = {
     },
 }
 
+-- ════════════ 一次性迁移【ONE-SHOT-MIGRATION】════════════════════════════════════════════════════
+-- 所有"迁移成功后可删"的代码【集中在此函数】。删除前提：确认线上不再有未加载过本函数的老存档。
+-- 删法：删掉本函数定义 + ensure_defaults 顶部的 one_shot_migrations() 调用即可，其余照常工作。
+-- 每条迁移都【幂等】(老键已清/新表已建时为 no-op)，多次调用安全。
+local function one_shot_migrations()
+    -- ① 废弃标量：loot_density_<类>（已由 storage.encounter_base[类] 取代）→ 删除孤儿键。
+    for _, k in ipairs({'loot_density_material', 'loot_density_equipment', 'loot_density_treasure',
+                        'loot_density_perpetual', 'loot_density_empty', 'loot_density_machine'}) do
+        storage[k] = nil
+    end
+    -- ② 扁平 → 命名空间整合：把旧扁平键搬进新表(保留管理员 /c 改过的值)，再删旧键。
+    --    {新表名, {新子键 = 旧扁平键, …}}
+    local moves = {
+        {'star_vote', {base_warp = 'star_vote_base_warp', base_stay = 'star_vote_base_stay',
+                       mul_warp = 'star_vote_mul_warp',   mul_stay = 'star_vote_mul_stay',
+                       thres = 'star_vote_thres',         afk_min = 'star_vote_afk_min'}},
+        {'fill',      {logi_lo = 'fill_logi_lo',   logi_hi = 'fill_logi_hi',   logi_exp = 'fill_logi_exp',
+                       equip_lo = 'fill_equip_lo', equip_hi = 'fill_equip_hi', equip_exp = 'fill_equip_exp'}},
+    }
+    for _, mv in ipairs(moves) do
+        local tbl, map = mv[1], mv[2]
+        for newk, oldk in pairs(map) do
+            if storage[oldk] ~= nil then
+                storage[tbl] = storage[tbl] or {}
+                if storage[tbl][newk] == nil then storage[tbl][newk] = storage[oldk] end
+                storage[oldk] = nil
+            end
+        end
+    end
+end
+-- ════════════ 一次性迁移【ONE-SHOT-MIGRATION】END ════════════════════════════════════════════════
+
 -- 给 storage 里的可调常量/必需表设默认值（仅当缺失时）。幂等 → on_init 与
 -- on_configuration_changed 都可安全调用，老存档改版后迁移也能补齐新增字段。
 -- 注意：warp_hours 等"每轮重置的运行时状态"不在此处，由 on_init / reset 负责。
 function M.ensure_defaults()
-    -- （历史的一次性迁移代码——废弃键清理 / science_exp→exp 改名 / enemy_autoplace_spread 拆分 /
-    --   enemy_respawn_ticks 改名 / travel_chance 类型修正——已删除：线上所有存档均已跑过新代码完成迁移。）
+    one_shot_migrations()   -- 先迁移（搬旧键/删废弃键），再走下面的默认补齐。删除时机见函数上方注释。
+    -- （更早的历史一次性迁移——science_exp→exp 改名 / enemy_autoplace_spread 拆分 / enemy_respawn_ticks 改名 /
+    --   travel_chance 类型修正——已删除：线上所有存档均已跑过完成迁移。）
 
     -- 标量默认（用 nil 判定，布尔 false/0 也能被正确保留）
     local d = {
@@ -79,6 +127,7 @@ function M.ensure_defaults()
         size_multiplier = 4,              -- 矿脉更大 · rail world：原 1 的 ×4
         frequency_multiplier = 2,
         local_specialty_multiplier = 0.25,
+        tech_price_multiplier = 2,         -- 科技成本倍率（reset 每轮设到 game.difficulty_settings）。改后下次跃迁生效
         radius_standard = 512,            -- 标准(基准)半径：每星球真实半径 = clamp(standard × random_exp(2), radius_min, radius_max)
         radius_min = 256,                 -- 真实半径下限
         radius_max = 1024,                -- 真实半径上限
@@ -114,15 +163,11 @@ function M.ensure_defaults()
         nest_tech_chance_max = 0.01,      -- 上限（1%）
         enemy_dmg_max = 12,               -- 敌人武器伤害上限倍率：每种伤害类型各自独立随机加成 [0, 此值]，线性递减分布（12=最高+1200%，越高越罕见）
         enemy_evo_max = 1,                -- 敌人进化度上限：每局随机 evo = min(1, 此值×(1-√r))，线性递减（>1 把分布推向高进化、更多猛虫；<1 压低上限）
-        -- 战利品密度：全局乘数 × 各类乘数（相乘共同影响）。默认全 1，可 /c 单独热改：2 更多、0.5 更少、0 不刷。
-        -- 遭遇出现率乘数：全局 × 各类（默认全 1，相乘）。基础频率见 map_features.ENCOUNTER_BASE；实际率还乘每世界 random² 密度。
-        loot_density           = 1,        -- 全局总乘数（五类一起生效）
-        loot_density_material  = 1,        -- 钢箱（材料）
-        loot_density_equipment = 1,        -- 铁箱（设备）
-        loot_density_treasure  = 1,        -- 木箱（宝箱）
-        loot_density_perpetual = 1,        -- 永续箱遭遇
-        loot_density_empty     = 1,        -- 空据点遭遇（纯敌人）
-        loot_density_machine   = 1,        -- 传说生产建筑据点（机器三锁、必带敌方电网核心）
+        -- 遭遇出现率：全局乘数 loot_density × 每类基础频率 storage.encounter_base[类]（后者替代了旧的 loot_density_<类型> 各类乘数，
+        -- 按类热改直接编辑 encounter_base，见 map_features.DEFAULT_ENCOUNTER_BASE）；实际率还乘每世界 random² 密度与每星 loot_planet_mul。
+        loot_density           = 1,        -- 全局总乘数（所有类一起生效）：2 更多、0.5 更少、0 不刷
+        -- （奖励箱填充量 fill_logi_*/fill_equip_* 已整合进命名空间 storage.fill.*，见 fill_default；不再是扁平标量。）
+        inv_slots_bonus        = 50,       -- 全员基础背包格加成（reset 每轮设到 force）。/invbonus 按人覆盖以此为基准。改后下次跃迁生效
         chest_count_pow        = 2,        -- 据点奖励箱【数量】公式 floor(1+4·random^此值·riches) 的指数：越大越偏向少箱（1=接近均匀，2=默认，6=极偏 1 箱）
         chest_map_tags         = true,     -- 据点生成宝箱时，在中心打一个【该箱类型图标】的地图标签（无文本）。关：/c storage.chest_map_tags=false
         -- 永续箱（infinity-chest）三个属性，默认全 false=现状。/c storage.perpetual_xxx=true 开。
@@ -149,14 +194,9 @@ function M.ensure_defaults()
         action_cd_minutes = 3,            -- 投票+传送共享冷却（分钟），防止玩家频繁刷动作
         charge_max_hours = 30,            -- 星星充能上限（游戏内小时）：随游戏时间累积、封顶此值（1 星星=1 分钟=3600 tick；满充=30h=1800 星星）
         -- 星星消费（投跃迁/停留票、买延长）：均在【星星窗口】里花。可 /c 热改。
-        -- 投票花费按【本地图已游玩分钟数】随时间变化：cost = base + mul × max(0, 已游玩分钟 − star_vote_thres)，再钳到 ≥0。
+        -- 投票花费按【本地图已游玩分钟数】随时间变化：cost = base + mul × max(0, 已游玩分钟 − thres)，再钳到 ≥0。
         -- 跃迁 mul 默认 +1（玩越久越贵，鼓励早走），停留 mul 默认 −1（玩越久越便宜，鼓励留下）；门槛前(10分钟内)恒为 base。
-        star_vote_base_warp = 300,        -- 投跃迁票基础花费（star_vote_thres 分钟内恒为此值）
-        star_vote_base_stay = 300,        -- 投停留票基础花费
-        star_vote_mul_warp = 1,           -- 跃迁票花费的每分钟乘数（超过门槛后每多 1 分钟 +mul 星星）
-        star_vote_mul_stay = -1,          -- 停留票花费的每分钟乘数（默认 −1：超门槛后每分钟便宜 1 星星，钳到 0）
-        star_vote_thres = 10,             -- 投票花费门槛（分钟）：本地图游玩未超此值时花费=base，超出部分才按 mul 计
-        star_vote_afk_min = 30,           -- 挂机超过此分钟数的玩家不计入投票【总人数】需求（视同下线，afk_time 判定）
+        -- （base/mul/thres/afk_min 已整合进命名空间 storage.star_vote.*，见 star_vote_default；不再是扁平标量。）
         star_extend_cost = 300,           -- 花星星给本世界倒计时延长一次的星星数
         star_extend_minutes = 10,         -- 每次延长加的分钟
         star_extend_cap = 60,             -- 每星系（run）花星星延长的累计上限（分钟），达到后按钮禁用
@@ -184,21 +224,28 @@ function M.ensure_defaults()
     for k, v in pairs(d) do
         if storage[k] == nil then storage[k] = v end
     end
-    -- 据点【箱子遭遇】出现率的每星球乘数（material/equipment/treasure/perpetual 四类一起乘，【不含】空据点）。
-    -- 热改示例：/c storage.loot_planet_mul.gleba = 5
-    storage.loot_planet_mul = storage.loot_planet_mul or {nauvis = 1, vulcanus = 1, fulgora = 3, gleba = 3, aquilo = 3}
+    -- 命名空间表【逐键补齐】（保留 /c 调整、保留 one_shot_migrations 搬过来的旧值；将来新增子键自动补默认）：
+    storage.star_vote = storage.star_vote or {}                 -- 投票花费·星星（/diff 可见）
+    for k, v in pairs(M.star_vote_default) do
+        if storage.star_vote[k] == nil then storage.star_vote[k] = v end
+    end
+    storage.fill = storage.fill or {}                           -- 奖励箱填充量（/diff 可见）
+    for k, v in pairs(M.fill_default) do
+        if storage.fill[k] == nil then storage.fill[k] = v end
+    end
+    -- 据点【箱子遭遇】出现率的每星球乘数（material/equipment/treasure/perpetual 等类一起乘，【不含】空据点）。逐键补齐(保留 /c 调整)。
+    -- 热改示例：/c storage.loot_planet_mul.gleba = 5   （/diff 可见，见 commands.admin_diff）
+    storage.loot_planet_mul = storage.loot_planet_mul or {}
+    for p, v in pairs(M.loot_planet_mul_default) do
+        if storage.loot_planet_mul[p] == nil then storage.loot_planet_mul[p] = v end
+    end
+    -- /gen 与 /diff 弹窗的【可见白名单】：管理员名在表内才弹（默认不展示）。默认含 hncsltok。
+    -- 热改：/c storage.gen_diff_whitelist['玩家名'] = true   删：…= nil
+    storage.gen_diff_whitelist = storage.gen_diff_whitelist or {hncsltok = true}
     -- 各科技瓶【解锁延长跃迁的分钟数】。缺失才补 → 保留管理员 /c 的调整，并自动纳入将来新增的瓶。
-    -- 热改示例：/c storage.warp_extend_minutes['cryogenic-science-pack'] = 90
+    -- 热改示例：/c storage.warp_extend_minutes['cryogenic-science-pack'] = 90   （/diff 可见）
     storage.warp_extend_minutes = storage.warp_extend_minutes or {}
-    local warp_ext = {
-        ['automation-science-pack'] = 30, ['logistic-science-pack'] = 60,
-        ['military-science-pack'] = 60,   ['chemical-science-pack'] = 60,
-        ['production-science-pack'] = 60, ['utility-science-pack'] = 60,
-        ['space-science-pack'] = 60,     ['metallurgic-science-pack'] = 60,
-        ['electromagnetic-science-pack'] = 60, ['agricultural-science-pack'] = 60,
-        ['cryogenic-science-pack'] = 120, ['promethium-science-pack'] = 120,
-    }
-    for pack, m in pairs(warp_ext) do
+    for pack, m in pairs(M.warp_extend_default) do
         if storage.warp_extend_minutes[pack] == nil then storage.warp_extend_minutes[pack] = m end
     end
     -- 每个【外星球】单独的开放概率：每次跃迁各自掷一次决定本轮能否前往（"外星来人帮忙"）。默认 1.0（恒开）。
@@ -265,7 +312,8 @@ function M.ensure_defaults()
                           'obstacle_remap', 'fluid_remap', 'last_leaderboard', 'market_run', 'respawn_surface', 'chat_bubble', 'enemy_floor', 'action_cd', 'travel_open', 'charge', 'star', 'player_class', 'player_class_current', 'class_cd', 'travel_cd', 'vote_cd', 'session_join',
                           -- 补登记（原先散落在各模块 or {} 自建；标量和有专属 ensure 的键不在此列——classes/loot/loot_weights/market_prices 由各自 ensure 用 `or` 初始化，先建空表会让它们永不填充）：
                           'enemy_floor2', 'outposts', 'outpost_of', 'pending_chest_tags', 'bad_loot_cats', 'respawn_home', 'class_names',
-                          'hall_of_fame', 'base_ticks_per_day', 'base_daytime_params', 'territory_cull', 'loot_noise'}) do
+                          'hall_of_fame', 'base_ticks_per_day', 'base_daytime_params', 'territory_cull', 'loot_noise',
+                          'bp_override', 'player_inv_bonus'}) do
         storage[key] = storage[key] or {}
     end
     -- world_fx 全局开关（/c storage.world_fx.xxx=true/false 单独开关某事件驱动效果）。

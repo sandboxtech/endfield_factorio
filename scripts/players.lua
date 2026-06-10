@@ -132,36 +132,110 @@ function M.kill_player(player)
     player.character.die()
 end
 
--- ── 蓝图权限：跃迁满 BLUEPRINT_WARPS 次（warps 统计）才解锁【蓝图库 + 导入蓝图字符串 + 红图(拆除规划器)】──
--- 用 permission group 实现：未达次数(或新玩家)放进 'no_blueprint' 受限组，禁掉进库/取库/导入字符串/拆除框选等动作；
--- 达标后(及管理员)放回 'Default' 组。本地框选创建、使用自己手上的蓝图仍允许。
--- 注意：手上【已持有】的蓝图去放 ghost 走的是普通建造动作，服务端无法在此单独拦截，这点挡不住。
-local BLUEPRINT_WARPS = 1   -- 解锁蓝图/红图所需的跃迁次数（默认值；运行时以 storage.blueprint_warps 优先，可 /c 热改）
+-- ── 受限权限组 'no_blueprint'：跃迁满 BLUEPRINT_WARPS 次（warps 统计）才解锁 ──
+-- 用 permission group 实现：未达次数(或新玩家)放进 'no_blueprint' 受限组，禁掉一批【影响全队/他人、却不影响自己
+-- 基础游玩(建造/采矿/战斗/移动)】的动作；达标后(及管理员/会员)放回 'Default' 组解除全部限制。
+-- 本地框选创建、使用自己手上的蓝图仍允许（手上已持有的蓝图放 ghost 走普通建造动作，服务端拦不住，这点挡不住）。
+-- 设计原则：只禁【会破坏共享体验】的动作（蓝图库/红图/全队科研/信号电路/全局喇叭与显示屏/共享地图标记/共享铁路与飞船/
+-- 火箭发射/权限组），不禁纯个人本地操作（设过滤/优先级/堆叠数等只作用于自己机器的动作不拦）。
+local BLUEPRINT_WARPS = 1   -- 解锁所需的跃迁次数（默认值；运行时以 storage.blueprint_warps 优先，可 /c 热改）
 local BLUEPRINT_BLOCKED = {
+    -- 蓝图 / 红图（含删除共享蓝图库）
     'open_blueprint_library_gui',   -- 打开蓝图库
     'grab_blueprint_record',        -- 从库里取出蓝图到手
     'import_blueprint',             -- 导入蓝图（进库）
     'import_blueprint_string',      -- 粘贴蓝图字符串
     'import_blueprints_filtered',   -- 过滤导入
+    'delete_blueprint_library',     -- 删除整座共享蓝图库（防新人清空他人蓝图）
+    'delete_blueprint_record',      -- 删除蓝图库里单条蓝图
+    'drop_blueprint_record',        -- 拖动/移动蓝图库条目
+    'reassign_blueprint',           -- 重指派蓝图记录
     'deconstruct',                  -- 红图(拆除规划器)框选标记拆除；手动采矿不受影响
+    'upgrade',                      -- 升级规划器框选（同红图类，批量改他人建筑）
+    -- 全队科研（任何一项都改全 force 科研队列，纯影响他人）
+    'start_research',
+    'cancel_research',
+    'move_research',
+    'set_research_finished_stops_game',
+    -- 火箭：提前发射他人的火箭
+    'launch_rocket',
+    -- 信号 / 电路网络（信号相关：组合器/常量信号/连线/电路条件/电源开关）
+    'set_signal',                           -- 常量组合器设信号
+    'switch_constant_combinator_state',     -- 常量组合器开关
+    'change_arithmetic_combinator_parameters',
+    'change_selector_combinator_parameters',
+    'set_combinator_description',
+    'add_decider_combinator_condition',
+    'add_decider_combinator_output',
+    'modify_decider_combinator_condition',
+    'modify_decider_combinator_output',
+    'remove_decider_combinator_condition',
+    'remove_decider_combinator_output',
+    'drag_decider_combinator_condition',
+    'drag_decider_combinator_output',
+    'set_circuit_condition',                -- 设电路启用条件
+    'set_circuit_mode_of_operation',
+    'set_behavior_mode',
+    'wire_dragging',                        -- 拉红/绿线（连/断电路网络）
+    'remove_cables',                        -- 剪线
+    'switch_power_switch_state',            -- 手动开关电源开关（可掐断共享供电）
+    -- 全局喇叭 / 显示屏（向所有玩家广播声音 / 在全队地图上显示提示）
+    'change_programmable_speaker_parameters',
+    'change_programmable_speaker_alert_parameters',
+    'change_programmable_speaker_circuit_parameters',
+    'edit_display_panel',
+    'edit_display_panel_always_show',
+    'edit_display_panel_icon',
+    'edit_display_panel_parameters',
+    'edit_display_panel_show_in_chart',
+    'edit_display_panel_single_entry',
+    -- 共享地图标记（force 级 chart tag，可被新人删光）
+    'edit_custom_tag',
+    'delete_custom_tag',
+    -- 共享铁路（改他人列车的站点/名字/数量上限/优先级、强行停车）
+    'set_train_stopped',
+    'change_train_stop_station',
+    'change_train_name',
+    'set_trains_limit',
+    'set_train_stop_priority',
+    -- 共享飞船平台（删除/重命名他人飞船）
+    'delete_space_platform',
+    'cancel_delete_space_platform',
+    'rename_space_platform',
+    -- 权限组本身（非管理员本就受限，再兜一层）
+    'add_permission_group',
+    'delete_permission_group',
+    'edit_permission_group',
+    'import_permissions_string',
 }
 -- 取（缺则建）受限组并重设禁用动作（幂等）。permission group 持久存档，create 重复会返回 nil，故 get 优先。
+-- defines.input_action[name] 取不到（版本改名/拼错）时返回 nil，set_allows_action(nil,…) 会崩 → 先校验跳过并 log。
 local function blueprint_locked_group()
     local perms = game.permissions
     local g = perms.get_group('no_blueprint') or perms.create_group('no_blueprint')
     if g then
         for _, name in ipairs(BLUEPRINT_BLOCKED) do
-            g.set_allows_action(defines.input_action[name], false)
+            local act = defines.input_action[name]
+            if act ~= nil then g.set_allows_action(act, false)
+            else log('endfield: 受限组跳过无效 input_action 名: ' .. tostring(name)) end
         end
     end
     return g
 end
 
--- 按玩家 warps 把其分到 受限组 / Default 组。管理员永不受限；【会员】(storage.members) 直接解锁，无需跃迁次数。
+-- 按玩家 warps 把其分到 受限组 / Default 组。优先级：
+--   ① storage.bp_override[名]（管理员 /bpperm 单独指定 true=放行/false=锁死，nil=不覆盖走默认判定）；
+--   ② 否则：管理员永不受限、【会员】(storage.members)直接解锁、或 warps 达标 → 解锁。
 local function update_blueprint_perm(player)
     if not (player and player.valid) then return end
-    local unlocked = player.admin or (storage.members or {})[player.name]
-                     or passives.get_stat(player.index, 'warps') >= (storage.blueprint_warps or BLUEPRINT_WARPS)
+    local ov = (storage.bp_override or {})[player.name]   -- 单独覆盖：true/false 直接拍板，nil 走默认
+    local unlocked
+    if ov ~= nil then
+        unlocked = ov
+    else
+        unlocked = player.admin or (storage.members or {})[player.name]
+                   or passives.get_stat(player.index, 'warps') >= (storage.blueprint_warps or BLUEPRINT_WARPS)
+    end
     local g = unlocked and game.permissions.get_group('Default') or blueprint_locked_group()
     if g then player.permission_group = g end
 end

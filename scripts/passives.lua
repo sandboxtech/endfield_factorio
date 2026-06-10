@@ -81,6 +81,12 @@ function M.apply(player)
     if not c then return end
     for _, ab in ipairs(M.abilities) do ab.apply(c, M.skill_factor(player.index, ab)) end
     c.character_health_bonus = M.health_bonus(player.index)   -- 额外生命值：100×log10(死亡数+1)
+    -- 每人【单独】背包格加成（管理员 /invbonus 设，存 storage.player_inv_bonus[名]）：语义是【覆盖总数】而非叠加。
+    -- force.character_inventory_slots_bonus 已给全员设了基础 storage.inv_slots_bonus(默认50)；这里在角色上加
+    -- (覆盖值 − 基础) → 总加成 = 基础 + (覆盖−基础) = 覆盖值。未设覆盖则角色加 0，保持全员基础。
+    local override = (storage.player_inv_bonus or {})[player.name]
+    local base = storage.inv_slots_bonus or 50
+    c.character_inventory_slots_bonus = override and (override - base) or 0
 end
 
 -- ---------------------------------------------------------------------------

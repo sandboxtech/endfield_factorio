@@ -316,7 +316,55 @@ local DEFAULT_LOOT_WEIGHTS = {
         space = 1,  treasure = 100,
         trash = 0,  perpetual = 1,
     },
+    -- 【五色物流箱】据点专属权重（敌方据点小概率出现，见 DEFAULT_ENCOUNTER_BASE 的 logi_*；各自独立可单独热改）。
+    -- 按箱子语义各有偏向：主动供给→产品/材料堆量；被动供给→原料/材料；储物→大杂烩(含 trash)；
+    -- 缓冲→中间件/物流件；请求→军事/装备/模块(高价值请求)。
+    logi_active = {   -- 主动供给箱(紫)：成品/材料为主，往网络里推货
+        raw = 30,  material = 200,  product = 350,  logistics = 60,  circuit = 20,  power = 20,
+        production = 20,  module = 20,  military = 20,  equipment = 20,  science = 0,
+        space = 5,  treasure = 2,  trash = 5,  perpetual = 0,
+    },
+    logi_passive = {   -- 被动供给箱(红)：原料/基础材料
+        raw = 200,  material = 300,  product = 120,  logistics = 40,  circuit = 5,  power = 10,
+        production = 10,  module = 5,  military = 10,  equipment = 10,  science = 0,
+        space = 5,  treasure = 2,  trash = 10,  perpetual = 0,
+    },
+    logi_storage = {   -- 储物箱(黄)：大杂烩，含 trash/桶装
+        raw = 80,  material = 150,  product = 150,  logistics = 80,  circuit = 20,  power = 20,
+        production = 20,  module = 20,  military = 20,  equipment = 20,  science = 0,
+        space = 10,  treasure = 3,  trash = 120,  perpetual = 0,
+    },
+    logi_buffer = {   -- 缓冲箱(绿)：中间件 + 物流件
+        raw = 20,  material = 120,  product = 300,  logistics = 250,  circuit = 30,  power = 20,
+        production = 30,  module = 30,  military = 20,  equipment = 20,  science = 0,
+        space = 10,  treasure = 3,  trash = 5,  perpetual = 0,
+    },
+    logi_requester = {   -- 请求箱(蓝)：军事/装备/模块等高价值
+        raw = 10,  material = 80,  product = 150,  logistics = 120,  circuit = 40,  power = 30,
+        production = 60,  module = 120,  military = 150,  equipment = 150,  science = 1,
+        space = 15,  treasure = 5,  trash = 1,  perpetual = 0,
+    },
 }
+
+-- 五色物流箱：据点 kind → 实际放置的箱实体名（同时是地图标签图标的物品名，五者都是有效 item）。
+local LOGI_CHEST_NAME = {
+    logi_active    = 'active-provider-chest',
+    logi_passive   = 'passive-provider-chest',
+    logi_storage   = 'storage-chest',
+    logi_buffer    = 'buffer-chest',
+    logi_requester = 'requester-chest',
+}
+
+-- 各类遭遇【每区块基础频率】（世界密度=1 时的上限）。常→稀：空据点 > 钢(材料) > 铁(设备) > 木(宝箱) ≈ 永续箱 > 传说建筑。
+-- 五色物流箱据点【每个】基础频率都比永续箱(0.0075)低（小权重出现）。
+-- 【存 storage.encounter_base，可 /c 按类热改】，直接替代了旧的 loot_density_<类型> 各类乘数（编辑本表即等价单独调某类密度）。
+--   例：/c storage.encounter_base.material = 0.06     钢箱据点更密
+--       /c storage.encounter_base.logi_requester = 0.01   请求箱据点更常见
+--       /c storage.encounter_base = nil               恢复默认(下次 ensure 重建)
+local DEFAULT_ENCOUNTER_BASE = {material = 0.03, equipment = 0.015, treasure = 0.0075, perpetual = 0.0075, empty = 0.08, machine = 0.0015,
+    logi_active = 0.001, logi_passive = 0.001, logi_storage = 0.001, logi_buffer = 0.001, logi_requester = 0.001}
+M.DEFAULT_ENCOUNTER_BASE = DEFAULT_ENCOUNTER_BASE   -- 暴露给 /diff 展开对比（commands.admin_diff）
+local function encounter_base() return storage.encounter_base or DEFAULT_ENCOUNTER_BASE end
 
 -- 战利品权重【存 storage.loot_weights，可 /c 热改】（同 classes 那套）：DEFAULT 只是初始默认。
 --   例：/c storage.loot_weights.material.science = 5    调钢箱出科技瓶的权重
@@ -336,9 +384,14 @@ function M.ensure_loot()
     for box, w in pairs(DEFAULT_LOOT_WEIGHTS) do
         storage.loot_weights[box] = storage.loot_weights[box] or deepcopy(w)
     end
+    -- 遭遇基础频率也存 storage，可 /c 按类热改（替代旧 loot_density_<类>）。逐键补齐：将来新增类自动补默认，保留管理员已调值。
+    storage.encounter_base = storage.encounter_base or deepcopy(DEFAULT_ENCOUNTER_BASE)
+    for kind, v in pairs(DEFAULT_ENCOUNTER_BASE) do
+        if storage.encounter_base[kind] == nil then storage.encounter_base[kind] = v end
+    end
 end
 
--- （宝箱精选池已并入 DEFAULT_LOOT 的 'treasure' 类；木箱抽取见 fill_treasure_chest + DEFAULT_LOOT_WEIGHTS.treasure。）
+-- （宝箱精选池已并入 DEFAULT_LOOT 的 'treasure' 类；木箱抽取见 CHEST_SPEC.treasure 的 fill_chest + DEFAULT_LOOT_WEIGHTS.treasure。）
 
 -- storage.loot 某类被 /c 改成空表时的兜底：返回 DEFAULT_LOOT 里同名类的物品（默认填充）；找不到/默认也空则空表。
 local function default_items_for(cat)
@@ -450,26 +503,46 @@ local function item_ok(name)
     return false
 end
 
--- 往箱子塞普通品质战利品：抽 n 次，每次 count = loot_count(name, exp)。
---   kinds 给定 → 先选定 kinds 种物品，n 次都在这几种里抽（少种类、同种叠多组 → 材料箱）；
---   kinds 为 nil → 每次重新抽（种类杂 → 设备箱）。
-local function fill_loot(chest, n, weights, exp, kinds)
+-- 取某组奖励箱【填充参数】(lo, hi, exp)：storage.fill.<prefix>_lo/hi/exp，缺省回退默认（与 constants.fill_default 一致）。
+local FILL_FALLBACK = {logi = {8, 18, 2}, equip = {10, 24, 2}}
+local function fill_amount(prefix)
+    local f = storage.fill or {}
+    local d = FILL_FALLBACK[prefix]
+    return f[prefix .. '_lo'] or d[1], f[prefix .. '_hi'] or d[2], f[prefix .. '_exp'] or d[3]
+end
+
+-- 【统一填箱函数】所有箱型唯一的填充入口（取代原 fill_loot / fill_material_chest / fill_treasure_chest）。opts：
+--   weights : 类权重表（loot_weights().X）；先按权重选类、类内等概率选物品。
+--   kinds   : 先选定几种物品名、之后只在其中抽（少种类叠多格 → 材料箱式）；nil=每格重抽（种类杂 → 设备/物流箱式）。
+--   frac    : {lo,hi} 按箱格数的比例近装满（材料箱式，与 n 二选一）；省略时用 n。
+--   n       : 抽几次/填几格（设备/物流/宝箱用）；frac 与 n 都没给则填满整箱。
+--   exp     : 每格数量指数（数量 = 堆叠 × random^exp；0=整堆满格，越大每格越少）。省略默认 2。
+--   quality : 品质函数（默认 roll_quality 普通分布；木箱传 roll_treasure_quality）。
+local function fill_chest(chest, opts)
     local inv = chest.get_inventory(defines.inventory.chest)
     if not inv then return end
-    n = math.min(n, #inv)   -- 抽取次数不超过箱子格数：小箱(木16)也能装满，又不溢出浪费
+    local cap = #inv
     local pool
-    if kinds then
+    if opts.kinds then
         pool = {}
-        for _ = 1, kinds do
-            local name = pick_loot(weights)
+        for _ = 1, opts.kinds do
+            local name = pick_loot(opts.weights)
             if item_ok(name) then pool[#pool + 1] = name end
         end
         if #pool == 0 then return end
     end
+    local n
+    if opts.frac then
+        n = math.floor(cap * (opts.frac[1] + math.random() * (opts.frac[2] - opts.frac[1])) + 0.5)
+    else
+        n = opts.n or cap
+    end
+    n = math.min(math.max(n, pool and #pool or 1), cap)   -- 至少装下选定的种类、不超过箱格数
+    local qfn = opts.quality or roll_quality
     for _ = 1, n do
-        local name = pool and pool[math.random(#pool)] or pick_loot(weights)
+        local name = pool and pool[math.random(#pool)] or pick_loot(opts.weights)
         if item_ok(name) then
-            inv.insert{name = name, count = loot_count(name, exp), quality = roll_quality()}
+            inv.insert{name = name, count = loot_count(name, opts.exp), quality = qfn()}
         end
     end
 end
@@ -572,50 +645,18 @@ local function chunk_rng(left_top, offset)
     return noise.hash01(left_top.x * 0.1234 + left_top.y * 0.3717 + offset * 1.7 + (storage.run or 0) * 0.011)
 end
 
--- 六类遭遇【每区块基础频率】（世界密度=1 时的上限）。常→稀：空据点 > 钢(材料) > 铁(设备) > 木(宝箱) ≈ 永续箱 > 传说建筑。
-local ENCOUNTER_BASE = {material = 0.03, equipment = 0.015, treasure = 0.0075, perpetual = 0.0075, empty = 0.08, machine = 0.0015}
-
--- 本世界本类遭遇的【每区块实际出现概率】，五类【统一口径】：
---   世界密度(surface.lua 滚的 random^2，每星每类独立) × 基础频率 ENCOUNTER_BASE × 全局乘数 storage.loot_density × 该类乘数 storage.loot_density_<类型>。
---   后两者默认 1、可 /c 单独热改（loot_density 全局；loot_density_material/equipment/treasure/perpetual/empty 各类）。无世界密度则兜底 0.3。
+-- 本世界本类遭遇的【每区块实际出现概率】，各类【统一口径】：
+--   世界密度(surface.lua 滚的 random^2，每星每类独立) × 基础频率 storage.encounter_base[类] × 全局乘数 storage.loot_density × 每星乘数 loot_planet_mul。
+--   基础频率本身按类可 /c 热改（见 DEFAULT_ENCOUNTER_BASE），已替代旧的 loot_density_<类型> 各类乘数。无世界密度则兜底 0.3。
 local function encounter_chance(surface, kind)
     local style = storage.loot_style and storage.loot_style[surface.name]
     local wd = (style and style[kind]) or 0.3
     -- 事件世界/平台等不在表里 → 1）。空据点(纯敌人)不乘。
     local pm = (kind ~= 'empty') and storage.loot_planet_mul and storage.loot_planet_mul[surface.name] or 1
-    return wd * ENCOUNTER_BASE[kind] * (storage.loot_density or 1) * (storage['loot_density_' .. kind] or 1) * pm
+    return wd * (encounter_base()[kind] or 0) * (storage.loot_density or 1) * pm
 end
 
--- 钢箱 = 材料箱填充：1~3 种材料、接近装满。高效填法：每种【一次性 insert 满堆叠×分到的格数】，整箱只需 1~3 次 insert。普通品质。
-local function fill_material_chest(inv)
-    -- 选 1~3 种材料（无效名跳过）
-    local kinds = {}
-    for _ = 1, math.random(1, 3) do
-        local name = pick_loot(loot_weights().material)
-        if item_ok(name) then kinds[#kinds + 1] = name end
-    end
-    if #kinds == 0 then return end
-    -- 接近装满：填 random(0.85~1.0) 比例的格子，按种类均分（最后一种吃余数）
-    local slots = #inv
-    local fill = math.max(#kinds, math.floor(slots * (0.85 + math.random() * 0.15) + 0.5))
-    local per = math.floor(fill / #kinds)
-    for i, name in ipairs(kinds) do
-        local n_slots = (i == #kinds) and (fill - per * (#kinds - 1)) or per   -- 最后一种吃掉余数
-        local ss = prototypes.item[name].stack_size
-        if n_slots > 0 then inv.insert{name = name, count = ss * n_slots, quality = roll_quality()} end
-    end
-end
-
--- 木箱 = 宝箱：稀有。1~2 种高价值物品，每件【几个】(count = ss×random^4，极偏低)。走 loot 体系的 treasure 类，不掉科技瓶。
-local function fill_treasure_chest(inv)
-    -- 走统一 loot 体系：storage.loot.treasure（物品名单）+ storage.loot_weights.treasure（类权重）均可 /c 热改、持久、同步。
-    for _ = 1, math.random(1, 2) do
-        local name = pick_loot(loot_weights().treasure)
-        if item_ok(name) then
-            inv.insert{name = name, count = loot_count(name, 4), quality = roll_treasure_quality()}
-        end
-    end
-end
+-- （钢箱/木箱的专用填法已并入【统一填箱】fill_chest：钢箱=材料类+kinds+frac 近装满+exp0 整堆；木箱=宝箱类+1~2件+exp4+宝箱品质。见 CHEST_SPEC。）
 
 -- 【太空类】地块：星球外虚空/硬边界。据点的铺地跳过它们（不在太空上架地板），水/油海/岩浆则照铺。
 local SPACE_TILES = {['empty-space'] = true, ['out-of-map'] = true}
@@ -637,15 +678,39 @@ local function pave_for_placement(surface, pos, floor, half)
     surface.set_tiles(tiles)
 end
 
--- 据点奖励箱：按种类放一个箱并填充。material/equipment/treasure = 普通可拆箱(destructible=false 不受伤、仍可手拆收取)；perpetual = 无限箱。
+-- ── 各箱型【统一处理表 CHEST_SPEC】（单一来源）──────────────────────────────────
+-- 每个箱型一条：name=放置的箱实体名(也作地图标签图标)；fill(chest,kind)=填充方式(统一走 fill_chest)；perpetual=true 表无限箱(单独 spawn，带墙/无敌)。
+-- 想加新箱型：在此加一条 {name, fill} 即可，place_reward_chest / CHEST_ICON 自动支持，无需再改分支。
+-- 填充量从 storage.fill.* 读（fill_amount，可 /c 热改、/diff 可见）：五色物流箱共用 logi_*；铁(设备)箱 equip_*。
+--   钢(材料)箱：material 类 + 选 1~3 种 + 近装满 frac + exp0(整堆)；木(宝)箱：treasure 类 + 1~2 件 + exp4 + 宝箱品质。四种全部经【统一】fill_chest。
+local CHEST_SPEC = {
+    material  = {name = 'steel-chest',   fill = function(c) fill_chest(c, {weights = loot_weights().material, kinds = math.random(1, 3), exp = 0, frac = {0.85, 1.0}}) end},
+    equipment = {name = 'iron-chest',    fill = function(c) local lo, hi, exp = fill_amount('equip'); fill_chest(c, {weights = loot_weights().equipment, n = math.random(lo, hi), exp = exp}) end},
+    treasure  = {name = 'wooden-chest',  fill = function(c) fill_chest(c, {weights = loot_weights().treasure, n = math.random(1, 2), exp = 4, quality = roll_treasure_quality}) end},
+    perpetual = {name = 'infinity-chest', perpetual = true},
+}
+-- 五色物流箱：实体名各异、填充统一（各自专属权重表 loot_weights()[kind] + 共用 fill.logi_* 量）。批量并入 CHEST_SPEC。
+for kind, ename in pairs(LOGI_CHEST_NAME) do
+    CHEST_SPEC[kind] = {name = ename, fill = function(c)
+        local lo, hi, exp = fill_amount('logi')
+        fill_chest(c, {weights = loot_weights()[kind], n = math.random(lo, hi), exp = exp})
+    end}
+end
+-- 据点中心地图标签图标 = 各箱型实体（从 CHEST_SPEC 派生，单一来源，含 perpetual=infinity-chest）。
+local CHEST_ICON = {}
+for kind, spec in pairs(CHEST_SPEC) do CHEST_ICON[kind] = spec.name end
+
+-- 据点奖励箱：查 CHEST_SPEC 放一个箱并按其 fill 填充。普通箱 destructible=false 不受伤、不可开/拆（守卫全灭 unlock_chests 才翻开）；perpetual = 无限箱(单独 spawn)。
 -- 中心区已由 place_encounter 在箱组开工前【统一预铺一次】（省掉每箱重复 set_tiles）；
 -- 这里只留兜底救援：个别箱仍挤不下时小铺一次再重试（仍失败则原地硬放，create 失败由下游兜住）。
 local function place_reward_chest(surface, pos, kind, floor)
-    if kind == 'perpetual' then
+    local spec = CHEST_SPEC[kind]
+    if not spec then return false end   -- 未知箱型兜底（理论到不了：ENCOUNTERS 的 kind 都在 CHEST_SPEC 里）
+    if spec.perpetual then
         local p = surface.find_non_colliding_position('steel-chest', pos, 4, 1) or pos
         return spawn_perpetual_chest(surface, p)
     end
-    local chest_name = (kind == 'equipment' and 'iron-chest') or (kind == 'treasure' and 'wooden-chest') or 'steel-chest'
+    local chest_name = spec.name
     local p = surface.find_non_colliding_position(chest_name, pos, 4, 1)
     if not p and floor then
         pave_for_placement(surface, pos, floor)
@@ -657,11 +722,8 @@ local function place_reward_chest(surface, pos, kind, floor)
     chest.destructible = false   -- 不可摧毁（闪电/战斗误炸不掉内容）
     chest.operable = false       -- 不可打开 GUI → 玩家只能用机械臂抓取内容
     chest.minable_flag = false   -- 不可手拆（守卫全灭 unlock_chests 才翻开）
-    local inv = chest.get_inventory(defines.inventory.chest)
-    if not inv then return false end
-    if kind == 'equipment' then fill_loot(chest, math.random(10, 24), loot_weights().equipment, 2)
-    elseif kind == 'treasure' then fill_treasure_chest(inv)
-    else fill_material_chest(inv) end
+    if not chest.get_inventory(defines.inventory.chest) then return false end   -- 无库存槽（异常）→ 视为失败
+    spec.fill(chest, kind)   -- 统一填充入口（各箱型 fill 均调用 fill_chest）
     return chest   -- 返回箱实体（供据点登记/解锁；perpetual 分支返回 bool，不参与解锁）
 end
 
@@ -702,6 +764,7 @@ local function place_bonus_machine(surface, center, floor)
                                     direction = math.random(0, 3) * 4, quality = 'legendary'}
     if not m then return end
     lock_fixture(m)
+    local parts = {m}   -- 收集本据点【可解锁】实体（机器 + 旁边插件塔）：守卫全灭后一并设为可挖+可开（见 place_encounter/unlock_chests）
     pave_under(surface, m, pf)   -- 补齐占地 +1 圈（find 可能落到预铺区边缘）
     -- 组装机类开启【电路网络设配方】：机器 operable=false 玩家开不了 GUI、勾不了这个框，由脚本代开 →
     -- 玩家接红/绿线发配方信号即可远程设配方。furnace 类(电炉/回收机)配方随输入自动定、biolab 无配方，没有此开关。
@@ -736,6 +799,7 @@ local function place_bonus_machine(surface, center, floor)
         do
             if b then
                 lock_fixture(b)
+                parts[#parts + 1] = b   -- 插件塔也随据点清空一并解锁
                 pave_under(surface, b, pf)   -- 补齐占地 +1 圈
                 local bi = b.get_module_inventory()
                 if bi then
@@ -753,16 +817,13 @@ local function place_bonus_machine(surface, center, floor)
             end
         end
     end
-    return m
+    return m, parts
 end
 
--- 据点中心地图标签：图标 = 该宝箱类型对应的箱子物品（无文本）。仅 storage.chest_map_tags 开启时打。
+-- 据点中心地图标签：图标 = 该宝箱类型对应的箱子物品（无文本，CHEST_ICON 由 CHEST_SPEC 派生）。仅 storage.chest_map_tags 开启时打。
 -- 标签属 player 力量，reset 每轮统一清空（见 reset.lua），不跨轮残留。
 -- 注意：add_chart_tag 要求区块【已 charted】才生效（未勘探返回 nil 不创建）。区块生成(on_chunk_generated)时
 -- 多半尚未 charted，故：先直接试打（已勘探就成），失败则存入 storage.pending_chest_tags，等 on_chunk_charted 补打。
-local CHEST_ICON = {
-    material = 'steel-chest', equipment = 'iron-chest', treasure = 'wooden-chest', perpetual = 'infinity-chest',
-}
 local function add_chest_tag(surface, x, y, icon)
     if not prototypes.item[icon] then return nil end   -- 物品名失效则不打（避免无效 SignalID 报错）
     return game.forces.player.add_chart_tag(surface, {position = {x = x, y = y}, icon = {type = 'item', name = icon}})
@@ -790,7 +851,9 @@ function M.flush_chunk_tags(surface, cx, cy)
     -- 补打前校验：标签位附近确实还有奖励箱才打。tile 替换(surface.lua)可能在 map_features 放箱后把箱子脚下
     -- 改成水/熔岩/虚空、连箱一起删(set_tiles 默认删碰撞实体)，那样就别留空标记。
     local found = surface.find_entities_filtered{position = {t.x, t.y}, radius = 6,
-        name = {'steel-chest', 'iron-chest', 'wooden-chest', 'infinity-chest'}, force = 'neutral', limit = 1}
+        name = {'steel-chest', 'iron-chest', 'wooden-chest', 'infinity-chest',
+                'active-provider-chest', 'passive-provider-chest', 'storage-chest', 'buffer-chest', 'requester-chest'},
+        force = 'neutral', limit = 1}
     if #found == 0 then return end
     add_chest_tag(surface, t.x, t.y, t.icon)
 end
@@ -984,6 +1047,12 @@ end
 local ENCOUNTERS = {
     {seed = 605, kind = 'perpetual', danger = 0.9},
     {seed = 631, kind = 'machine',   danger = 0.4},    -- 传说生产建筑据点（与箱子互斥、必带电网核心）
+    -- 五色物流箱据点（小概率、各自独立；放在普通箱之前争取优先命中，清空守卫后解锁可挖可用）。
+    {seed = 641, kind = 'logi_active',    danger = 0.1},
+    {seed = 643, kind = 'logi_passive',   danger = 0.1},
+    {seed = 647, kind = 'logi_storage',   danger = 0.1},
+    {seed = 653, kind = 'logi_buffer',    danger = 0.1},
+    {seed = 659, kind = 'logi_requester', danger = 0.1},
     {seed = 601, kind = 'treasure',  danger = 0.12},
     {seed = 557, kind = 'equipment', danger = 0.08},
     {seed = 503, kind = 'material',  danger = 0.05},
@@ -995,6 +1064,9 @@ local function place_encounter(surface, lt)
     local _w, _h = storage.width_of and storage.width_of[surface.name], storage.height_of and storage.height_of[surface.name]
     local R = (_w and _h) and (_w + _h) / 2 or storage.radius_standard or 2048   -- 椭圆等效半径；老存档兜底
     local frac = math.min(1, math.sqrt(d2) / R)
+    -- 宝箱数量【密度补偿系数】=标准半径/当前半径：小世界半径小、可建区块少 → 系数>1，每据点箱更多；大世界系数<1、更稀。
+    -- 目的：不同大小的世界，整局能掏到的箱总量大致持平（密度随半径反比缩放）。无 radius_standard 的老档退回 1（不变）。
+    local radius_density_mul = (storage.radius_standard or R) / R
     local near_spawn = d2 < 96 * 96
     local center = {x = lt.x + math.random(6, 25) + 0.5, y = lt.y + math.random(6, 25) + 0.5}
     -- 据点中心落在【太空类】地块（星球外虚空/硬边界，含 tile 替换造出的虚空斑）→ 整个据点跳过；
@@ -1044,12 +1116,14 @@ local function place_encounter(surface, lt)
             -- 奖励：箱子据点放同类箱若干，数量 floor(1+4·random^pow·riches)；传说建筑据点放 1 台机器（互斥，见 ENCOUNTERS）。
             local chests, machine = {}, nil
             if e.kind == 'machine' then
-                machine = place_bonus_machine(surface, center, floor)
+                local parts
+                machine, parts = place_bonus_machine(surface, center, floor)
                 if not machine then return end   -- 必铺后仍放不下（罕见）→ 本遭遇放弃
+                chests = parts   -- 机器+插件塔进 chests：守卫全灭后 unlock_chests 设为可挖+可开（归玩家收取/使用；force 本就是 player）
             elseif e.kind ~= 'empty' then
                 -- 整组箱子开工前【统一预铺一次】7×7（替代旧的每箱各铺：省 N−1 次 set_tiles）。
                 if floor then pave_for_placement(surface, center, floor, 3) end
-                for _ = 1, math.floor((1 + 11 * math.random() ^ (storage.chest_count_pow or 3) * riches_mul)) do
+                for _ = 1, math.floor((1 + 11 * math.random() ^ (storage.chest_count_pow or 3) * riches_mul) * radius_density_mul) do
                     local c = place_reward_chest(surface, center, e.kind, floor)
                     if c then chests[#chests + 1] = c end
                 end
@@ -1073,7 +1147,7 @@ local function place_encounter(surface, lt)
             local icon = machine and machine.name or nil
             if #guards > 0 and (#chests > 0 or machine) then tag_encounter(surface, center, e.kind, icon) end
             -- 统一走 register_outpost（含 #guards==0）：其"无可追踪守卫"分支会当场解锁非永续箱，
-            -- 并销毁已建出的孤儿电网核心/附属实体。machine 据点清空：公告+删标记+摧毁核心（机器三锁保留）。
+            -- 并销毁已建出的孤儿电网核心/附属实体。machine 据点清空：公告+删标记+摧毁核心，并把机器+插件塔解锁为【可挖+可开】。
             register_outpost(chests, guards, core, e.kind, center, extras, icon)
             return   -- 每地块至多一个遭遇，命中即停
         end

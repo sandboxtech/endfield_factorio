@@ -213,7 +213,7 @@ function M.reset()
     end
     force.friendly_fire = false   -- 禁止友军伤害：玩家的武器/爆炸不再伤到自家(同 force)建筑与队友
     force.maximum_following_robot_count = 50   -- 战斗无人机跟随上限提到 50（force.reset 会打回默认，故每次跃迁后重设）
-    force.character_inventory_slots_bonus = 50   -- 每个玩家固定 +50 背包格（同上，force.reset 会清，故每轮重设；取代旧的按礼包格数动态扩）
+    force.character_inventory_slots_bonus = storage.inv_slots_bonus or 50   -- 全员基础背包格加成（变量 storage.inv_slots_bonus，默认50；force.reset 会清，故每轮重设）。/invbonus 按人覆盖以此为基准算差值
 
     -- 每次跃迁后自动解锁所有星球【传送点】：无需研究 planet-discovery 即可前往，但【不】点亮发现科技（科技树里仍显示未发现）。
     -- 受开关 storage.unlock_all_planets 控制（默认 true，可 /c 关）。必须放在 force.reset() 之后，reset 会清空解锁状态，先解锁会被冲掉。
@@ -420,7 +420,7 @@ function M.reset()
 
     game.map_settings.asteroids.spawning_rate = util.mostly_normal()
     game.difficulty_settings.spoil_time_modifier = util.mostly_normal()   -- 腐败速度：大概率正常
-    game.difficulty_settings.technology_price_multiplier = 2              -- 每个世界科技成本恒为 2 倍
+    game.difficulty_settings.technology_price_multiplier = storage.tech_price_multiplier or 2   -- 科技成本倍率（变量 storage.tech_price_multiplier，默认2）。改后下次跃迁生效
 
     -- 对在线玩家重算速度技能（背包格数加成已改 force 级，见上 force 段，无需 per-player 处理）。
     for _, player in pairs(game.connected_players) do

@@ -506,7 +506,7 @@ script.on_event(defines.events.on_surface_cleared, events.safe('surface_cleared'
         cb = base + (math.random() - 0.5) * 0.10
     end
     surface.brightness_visual_weights = {r = cr, g = cg, b = cb}
-    surface.min_brightness = 0.15 * math.random()        -- 夜晚黑暗程度 0~0.15（越小越黑）。影响渲染+虫子视野，不影响太阳能
+    surface.min_brightness = 0.3 + 0.15 * math.random()  -- 夜晚最低亮度 0.3~0.45（下限抬到 0.3，夜晚不再纯黑）。影响渲染+虫子视野，不影响太阳能
     surface.show_clouds = math.random(1, 5) > 1          -- 1/5 概率无云，纯表现
     -- 阳光强度影响太阳能发电（玩法）→ 大概率正常、小概率小幅偏离
     surface.solar_power_multiplier = util.mostly_normal()

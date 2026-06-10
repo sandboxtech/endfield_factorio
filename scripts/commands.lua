@@ -91,10 +91,16 @@ end)
 -- ── 管理员功能：改由【HUD 左上角红按钮】触发（仅管理员可见可点），不再注册为命令。───────────────
 -- 按钮点击经 tick.on_gui_click 路由到这些 M.* 函数；函数内再校验 player.admin 兜底。
 
+-- /gen（世界生成摘要）与 /diff（参数对比）默认【不展示】，仅当管理员名在白名单 storage.gen_diff_whitelist 里才弹窗。
+-- 增删：/c storage.gen_diff_whitelist['玩家名'] = true / nil。
+local function gen_diff_visible(player)
+    return player and player.admin and (storage.gen_diff_whitelist or {})[player.name] and true or false
+end
+
 -- 查看各星球【最近一次世界生成】的 debug 摘要（surface.lua 每轮缓存进 storage.gen_debug 的多行数组）。
 local GEN_DEBUG_PLANETS = {'nauvis', 'vulcanus', 'fulgora', 'gleba', 'aquilo'}
 function M.admin_gen(player)
-    if not (player and player.admin) then return end
+    if not gen_diff_visible(player) then return end   -- 非白名单管理员：静默不弹（默认不展示）
     local lines = {}
     for _, name in ipairs(GEN_DEBUG_PLANETS) do
         local entry = storage.gen_debug and storage.gen_debug[name]
@@ -161,28 +167,59 @@ add_admin_command('deltech',   '管理员：从开局解锁清单移除科技 /d
 add_admin_command('addrecipe', '管理员：把配方加入开局解锁清单 /addrecipe <配方名...>', function(c) edit_unlock(c, 'recipe', true)  end)
 add_admin_command('delrecipe', '管理员：从开局解锁清单移除配方 /delrecipe <配方名...>', function(c) edit_unlock(c, 'recipe', false) end)
 
+-- /diff 里【按命名空间分组展开】的嵌套配置表：每个表的 子键 都作为一行单独的 diff 参数显示，
+-- 行文即【可直接 /c 的完整路径】(storage.<key>.<子键>)，并与默认值比对高亮。这把原先藏在表里、diff 看不见的
+-- 各类/各星参数全部拆出来可见可调（例：encounter_base.material、loot_planet_mul.gleba）。
+-- def 来源：constants 暴露的默认表 + map_features.DEFAULT_ENCOUNTER_BASE；travel_chance 默认全外星 1.0（按 OFF_PLANETS 现构）。
+local function diff_table_specs()
+    local travel_def = {}
+    for _, p in ipairs(constants.OFF_PLANETS) do travel_def[p] = 1.0 end
+    return {
+        {key = 'encounter_base',      label = '遭遇频率·每类',   def = map_features.DEFAULT_ENCOUNTER_BASE},
+        {key = 'loot_planet_mul',     label = '宝箱密度·每星',   def = constants.loot_planet_mul_default},
+        {key = 'travel_chance',       label = '前往概率·每星',   def = travel_def},
+        {key = 'warp_extend_minutes', label = '延长分钟·每瓶',   def = constants.warp_extend_default},
+        {key = 'star_vote',           label = '投票花费·星星',   def = constants.star_vote_default},
+        {key = 'fill',                label = '奖励箱填充量',     def = constants.fill_default},
+    }
+end
+
 -- 参数 diff（合并了原 /ensuredefaults + /config）：先跑一次 M.ensure_all（补默认/必需表/职业表/战利品权重 + 清废弃键/修类型，
--- 迁移），再弹窗对比【当前 storage】与【默认值】、改过的高亮。仅标量常量(constants.scalar_defaults)；
--- 表型(travel_chance/loot_planet_mul…)不在此列。只弹给本人、不公告。
+-- 迁移），再弹窗对比【当前 storage】与【默认值】、改过的高亮。标量常量(constants.scalar_defaults) +
+-- 命名空间分组的嵌套表(diff_table_specs：每子键一行，行文即 /c 路径)。只弹给本人、不公告。
 function M.admin_diff(player)
-    if not (player and player.admin) then return end
+    if not gen_diff_visible(player) then return end   -- 非白名单管理员：静默不弹（默认不展示）
     M.ensure_all()
     local defs = constants.scalar_defaults or {}
     local keys = {}
     for k in pairs(defs) do keys[#keys + 1] = k end
     table.sort(keys)
-    local lines, changed = {}, 0
-    for _, k in ipairs(keys) do
-        local cur, def = storage[k], defs[k]
+    local lines, changed, total = {}, 0, 0
+    -- 行渲染：cur==def 普通、否则高亮 + 标注默认值。统一计入 total/changed。
+    local function emit(label, cur, def)
+        total = total + 1
         if cur == def then
-            lines[#lines + 1] = k .. ' = ' .. tostring(cur)
+            lines[#lines + 1] = label .. ' = ' .. tostring(cur)
         else
             changed = changed + 1
-            lines[#lines + 1] = '[color=acid]' .. k .. ' = ' .. tostring(cur) .. '[/color]（默认 ' .. tostring(def) .. '）'
+            lines[#lines + 1] = '[color=acid]' .. label .. ' = ' .. tostring(cur) .. '[/color]（默认 ' .. tostring(def) .. '）'
         end
     end
-    table.insert(lines, 1, '已跑 ensure_all；已改 [color=acid]' .. changed .. '[/color] 项（高亮），共 ' .. #keys .. ' 项：')
-    gui.show_popup(player, '参数：当前值 vs 默认值', lines)
+    lines[#lines + 1] = '[color=yellow]── 标量参数 storage.<键> ──[/color]'
+    for _, k in ipairs(keys) do emit(k, storage[k], defs[k]) end
+    -- 命名空间分组的嵌套表：每组一个标题，组内每子键一行（行文 = storage.<key>.<子键>，可直接 /c）。
+    for _, spec in ipairs(diff_table_specs()) do
+        local cur = storage[spec.key] or {}
+        local sub, seen = {}, {}
+        for sk in pairs(spec.def) do if not seen[sk] then seen[sk] = true; sub[#sub + 1] = sk end end
+        for sk in pairs(cur)      do if not seen[sk] then seen[sk] = true; sub[#sub + 1] = sk end end
+        table.sort(sub)
+        lines[#lines + 1] = ''
+        lines[#lines + 1] = '[color=yellow]── ' .. spec.label .. '  storage.' .. spec.key .. '.<子键> ──[/color]'
+        for _, sk in ipairs(sub) do emit(spec.key .. '.' .. sk, cur[sk], spec.def[sk]) end
+    end
+    table.insert(lines, 1, '已跑 ensure_all；已改 [color=acid]' .. changed .. '[/color] 项（高亮），共 ' .. total .. ' 项：')
+    gui.show_popup(player, '参数：当前值 vs 默认值', lines, nil, nil, nil, nil, 680)
 end
 
 -- 以下原"控制台指令"(排行/自杀/前往星球)已【改为教程弹窗里的按钮】，指令注册移除；
@@ -313,12 +350,13 @@ end
 -- vote='agree' 取跃迁档(base_warp/mul_warp)，'oppose' 取停留档(base_stay/mul_stay)。供 show_star 显示与 cast 扣费同源。
 local function vote_cost(vote)
     local played = (game.tick - (storage.run_start_tick or game.tick)) / constants.min_to_tick   -- 本地图已游玩分钟
-    local over = math.max(0, played - (storage.star_vote_thres or 10))
+    local sv = storage.star_vote or {}   -- 命名空间（base_warp/base_stay/mul_warp/mul_stay/thres/afk_min），缺省回退默认
+    local over = math.max(0, played - (sv.thres or 10))
     local base, mul
     if vote == 'agree' then
-        base, mul = storage.star_vote_base_warp or 300, storage.star_vote_mul_warp or 1
+        base, mul = sv.base_warp or 300, sv.mul_warp or 1
     else
-        base, mul = storage.star_vote_base_stay or 300, storage.star_vote_mul_stay or -1
+        base, mul = sv.base_stay or 300, sv.mul_stay or -1
     end
     return math.max(0, math.floor(base + mul * over))
 end
@@ -326,7 +364,7 @@ M.vote_cost = vote_cost   -- 导出给星星窗口显示两个按钮的实时花
 
 -- 计入投票【总人数】需求的活跃在线人数：挂机超过 star_vote_afk_min 分钟的视同下线、不计（afk_time 单位 tick）。
 local function active_voter_count()
-    local afk_ticks = (storage.star_vote_afk_min or 30) * constants.min_to_tick
+    local afk_ticks = ((storage.star_vote or {}).afk_min or 30) * constants.min_to_tick
     local n = 0
     for _, p in pairs(game.connected_players) do
         if p.afk_time < afk_ticks then n = n + 1 end
@@ -430,6 +468,65 @@ end
 
 add_command('kickout', {'wn.kickout-help'}, member_kick_cmd)
 -- 所有命令统一【只用英文名】，不再注册中文/拼音别名。
+
+-- ── 管理员：单独设置玩家的【蓝图权限】开/关 ──────────────────────────────────
+-- /bpperm <玩家名> <on|off>：覆盖该玩家的蓝图/受限组判定。on=强制解锁(进 Default)、off=强制锁死(进受限组)。
+-- 存 storage.bp_override[名]=true/false；清除覆盖（恢复按 warps/会员自动判定）用 /bpperm <玩家名> auto。
+local function bpperm_cmd(command)
+    local sink = (command.player_index and game.get_player(command.player_index)) or game
+    local name = arg_name(command)
+    local target = name and game.get_player(name)
+    if not target then sink.print({'wn.member-no-such', name or ''}); return end
+    local mode = command.parameter and string.match(command.parameter, '%S+%s+(%S+)')
+    mode = mode and string.lower(mode)
+    storage.bp_override = storage.bp_override or {}
+    if mode == 'on' or mode == 'true' or mode == '1' then
+        storage.bp_override[target.name] = true
+        sink.print('[蓝图权限] 已【强制解锁】 ' .. target.name .. ' 的蓝图/信号等受限权限')
+    elseif mode == 'off' or mode == 'false' or mode == '0' then
+        storage.bp_override[target.name] = false
+        sink.print('[蓝图权限] 已【强制锁死】 ' .. target.name .. '（进受限组）')
+    elseif mode == 'auto' or mode == 'clear' or mode == 'nil' then
+        storage.bp_override[target.name] = nil
+        sink.print('[蓝图权限] 已清除 ' .. target.name .. ' 的覆盖，恢复按跃迁次数/会员自动判定')
+    else
+        sink.print('用法：/bpperm <玩家名> <on|off|auto>  （on=强制解锁, off=强制锁死, auto=恢复自动）')
+        return
+    end
+    players.update_blueprint_perm(target)   -- 立即生效（在线玩家当场改组）
+end
+add_admin_command('bpperm', '单独设置某玩家蓝图/信号等受限权限。用法 /bpperm <玩家名> <on|off|auto>', bpperm_cmd)
+
+-- ── 管理员：单独设置玩家的【背包格加成总数】（覆盖，不叠加）────────────────────
+-- /invbonus <玩家名> <数量>：把该玩家背包格加成【覆盖】为该数（替代全员基础 storage.inv_slots_bonus，不在其上叠加）。
+-- 数量可为 0/负数。存 storage.player_inv_bonus[名]；passives.apply 据此把角色 character_inventory_slots_bonus
+-- 设为 (数量 − 全员基础)，使总加成正好等于该数。换新角色/复活/跃迁后自动重设，此处对在线玩家当场重设一次。
+-- 清除覆盖（恢复全员基础）：/invbonus <玩家名> auto。回显只发给【执行的管理员本人】，不全服公告。
+local function invbonus_cmd(command)
+    local sink = (command.player_index and game.get_player(command.player_index)) or game
+    local name = arg_name(command)
+    local target = name and game.get_player(name)
+    if not target then sink.print({'wn.member-no-such', name or ''}); return end
+    storage.player_inv_bonus = storage.player_inv_bonus or {}
+    local base = storage.inv_slots_bonus or 50
+    local mode = command.parameter and string.match(command.parameter, '%S+%s+(%S+)')
+    if mode == 'auto' or mode == 'clear' or mode == 'nil' then
+        storage.player_inv_bonus[target.name] = nil
+        passives.apply(target)
+        sink.print('[背包加成] 已清除 ' .. target.name .. ' 的覆盖，恢复全员基础 ' .. base .. ' 格')
+        return
+    end
+    local num = command.parameter and string.match(command.parameter, '%S+%s+(-?%d+)')
+    if not num then
+        sink.print('用法：/invbonus <玩家名> <数量|auto>  （把背包格加成【覆盖】为该数，替代全员基础 ' .. base .. '；auto=恢复基础）')
+        return
+    end
+    local n = tonumber(num)
+    storage.player_inv_bonus[target.name] = n
+    passives.apply(target)   -- 立即重设角色 character_inventory_slots_bonus（= n − 全员基础，使总数恰为 n）
+    sink.print('[背包加成] 已把 ' .. target.name .. ' 的背包格加成【覆盖】为 ' .. n .. ' 格（全员基础 ' .. base .. '）')
+end
+add_admin_command('invbonus', '管理员：覆盖某玩家背包格加成总数。用法 /invbonus <玩家名> <数量|auto>', invbonus_cmd)
 
 -- ── 供 HUD 按钮调用（gui 点击经 tick.on_gui_click 路由到这里）──────────────────
 -- 弹出【统计】窗口（HUD 独立按钮）：列出所有在线玩家（名字 + 等级 + 职业），点某人看其详细统计。
