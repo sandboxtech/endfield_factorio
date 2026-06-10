@@ -37,7 +37,7 @@ local M = {
 
     -- 嵌套配置表的【默认值】（模块字段单一来源）：既给 ensure_defaults 兜底，又给 /diff 展开对比（见 commands.admin_diff）。
     -- 投票花费·星星（原扁平 star_vote_* 已整合进此命名空间，/c storage.star_vote.base_warp=…；老档由 one_shot_migrations 迁移）。
-    star_vote_default = {base_warp = 300, base_stay = 300, mul_warp = 1, mul_stay = -1, thres = 10, afk_min = 30},
+    star_vote_default = {base_warp = 300, base_stay = 300, mul_warp = 1, mul_stay = -1, thres = 10, afk_min = 10},
     -- 奖励箱填充量（全部数字单一来源，map_features.fill_chest 读取，/c storage.fill.<键>=… 热改、/diff 可见）。
     -- 每箱：<前缀>_lo/_hi 填几格(随机区间)、<前缀>_exp 每格数量指数(数量=堆叠×random^exp；0=整堆)。
     -- 钢(材料)箱额外 material_kinds_lo/_hi=先选几种物品(只填这几种)；钢箱共 48 格，默认 40~48≈近装满。
@@ -56,14 +56,13 @@ local M = {
         ['electromagnetic-science-pack'] = 60, ['agricultural-science-pack'] = 60,
         ['cryogenic-science-pack'] = 120, ['promethium-science-pack'] = 120,
     },
-    -- 星球门槛：前往该星球 / 设其为出生星球，需对应科技瓶达 PLANET_REQ_LEVEL 级（否则按钮置灰）。母星(nauvis)无门槛。
+    -- 星球↔科技瓶对应（前往/设出生星球的等级门槛按此瓶判定；门槛等级 = storage.planet_req_level，默认 0=无门槛）。母星(nauvis)无 pack 恒通过。
     PLANET_PACK = {
         vulcanus = 'metallurgic-science-pack',      -- 火山 → 金属瓶
         gleba    = 'agricultural-science-pack',     -- 草星 → 农业瓶
         fulgora  = 'electromagnetic-science-pack',  -- 电浆星 → 电磁瓶
         aquilo   = 'cryogenic-science-pack',        -- 极地 → 低温瓶
     },
-    PLANET_REQ_LEVEL = 0,             -- 星球门槛等级：0=无门槛(人人可前往/可设出生星球)。机制保留，改回 >0 即恢复瓶等级要求
 
     -- 跃迁计时相关的可调值【不在这里】，它们放进 storage（见 ensure_defaults），以便 /c 热改、持久、同步：
     --   storage.warp_initial_minutes / warp_extend_default_minutes / warp_extend_minutes[瓶] / warp_vote_target_minutes
@@ -208,6 +207,7 @@ function M.ensure_defaults()
         respawn_step_ticks = 300,         -- 跃迁致死：出生星球每远一个，复活多等的 tick（300 = 5 秒）
         warp_vote_divisor = 5,            -- 跃迁投票阈值除数：净同意 > ceil(在线人数/此值) 才推进（5=1/5，越大越易过）
         travel_enabled = true,           -- 前往星球【总开关】（默认开）。关闭：/c storage.travel_enabled=false。开启后每轮每个外星球还要各自过 travel_chance。
+        planet_req_level = 0,            -- 星球等级门槛：前往/设出生星球需对应科技瓶达此等级。默认 0=无门槛(人人可去任意星球)；改 >0 即恢复瓶等级要求（母星无 pack 恒通过）
         action_cd_minutes = 3,            -- 投票+传送共享冷却（分钟），防止玩家频繁刷动作
         charge_max_hours = 30,            -- 星星充能上限（游戏内小时）：随游戏时间累积、封顶此值（1 星星=1 分钟=3600 tick；满充=30h=1800 星星）
         -- 星星消费（投跃迁/停留票、买延长）：均在【星星窗口】里花。可 /c 热改。

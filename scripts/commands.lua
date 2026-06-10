@@ -364,7 +364,7 @@ M.vote_cost = vote_cost   -- 导出给星星窗口显示两个按钮的实时花
 
 -- 计入投票【总人数】需求的活跃在线人数：挂机超过 star_vote_afk_min 分钟的视同下线、不计（afk_time 单位 tick）。
 local function active_voter_count()
-    local afk_ticks = ((storage.star_vote or {}).afk_min or 30) * constants.min_to_tick
+    local afk_ticks = ((storage.star_vote or {}).afk_min or 10) * constants.min_to_tick
     local n = 0
     for _, p in pairs(game.connected_players) do
         if p.afk_time < afk_ticks then n = n + 1 end

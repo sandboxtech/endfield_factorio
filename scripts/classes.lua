@@ -1080,11 +1080,11 @@ function M.pack_level(player, pack)
     return math.min(M.MAX_LEVEL, math.floor(math.sqrt(passives.exp_total_for_pack(player.index, pack))))
 end
 
--- 星球门槛：前往 / 设出生星球需对应科技瓶达 constants.PLANET_REQ_LEVEL 级。母星(无 pack)恒通过。
+-- 星球门槛：前往 / 设出生星球需对应科技瓶达 storage.planet_req_level 级（可控变量，默认 0=无门槛、人人可去）。母星(无 pack)恒通过。
 -- 返回 met(bool 是否达标), pack(瓶名 or nil), cur(玩家当前该瓶等级), req(门槛等级)。
 function M.planet_gate(player, planet)
     local pack = constants.PLANET_PACK[planet]
-    local req = constants.PLANET_REQ_LEVEL
+    local req = storage.planet_req_level or 0
     if not pack then return true, nil, 0, req end
     local cur = M.pack_level(player, pack)
     return cur >= req, pack, cur, req
