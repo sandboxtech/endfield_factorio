@@ -548,7 +548,8 @@ local DEFAULT_CLASSES = {
     {section = 'space'},
 
     {key = 'captain', recipes = {
-        'rocket-silo', 'cargo-landing-pad',   -- satellite 已被 SA 移除，不列
+        'space-platform-foundation',
+        'rocket-silo', 'cargo-landing-pad',
         'thruster',    -- 由原 techs 转换而来
         'thruster-fuel',
         'thruster-oxidizer',

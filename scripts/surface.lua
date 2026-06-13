@@ -243,7 +243,7 @@ local PLANET_SRC = {
         {class = 'water',  tiles = {'gleba-deep-lake'}},
         {class = 'ground', tiles = {'lowland-olive-blubber', 'lowland-brown-blubber', 'lowland-pale-green', 'lowland-cream-cauliflower', 'lowland-dead-skin'}},
         {class = 'ground', tiles = {'midland-yellow-crust', 'midland-cracked-lichen', 'midland-turquoise-bark'}},
-        {class = 'ground', tiles = {'highland-dark-rock', 'highland-yellow-rock', 'natural-yumako-soil', 'natural-jellynut-soil'}},
+        {class = 'ground', tiles = {'highland-dark-rock', 'highland-yellow-rock'}}, -- 'natural-yumako-soil', 'natural-jellynut-soil'
     },
     aquilo = {
         {class = 'water',  tiles = {'ammoniacal-ocean', 'ammoniacal-ocean-2'}},
